@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { 
   ChartBar, 
@@ -45,14 +45,15 @@ import TaskManagementView from '@/components/TaskManagementView'
 import FolderManager from '@/components/FolderManager'
 import FolderBrowser from '@/components/FolderBrowser'
 import PhaseValidationManager from '@/components/PhaseValidationManager'
-import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
+import { useAuth } from '@/contexts/AuthContext'
 
 type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders'
 
 function App() {
+  const { profile, loading, signOut: authSignOut, isAuthenticated } = useAuth()
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
@@ -62,64 +63,34 @@ function App() {
   const [folderManagerOpen, setFolderManagerOpen] = useState(false)
   const [phaseValidationOpen, setPhaseValidationOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [showAuth, setShowAuth] = useState(false)
-  
-  const [currentUser, setCurrentUser] = useKV<User | null>('currentUser', {
-    id: 'user-1',
-    name: 'João Silva',
-    email: 'joao.silva@empresa.com',
-    role: 'admin',
-  })
-
-  const [users] = useKV<User[]>('users', [
-    {
-      id: 'user-1',
-      name: 'João Silva',
-      email: 'joao.silva@empresa.com',
-      role: 'admin',
-    },
-    {
-      id: 'user-2',
-      name: 'Maria Santos',
-      email: 'maria.santos@empresa.com',
-      role: 'analyst',
-    },
-    {
-      id: 'user-3',
-      name: 'Pedro Costa',
-      email: 'pedro.costa@empresa.com',
-      role: 'analyst',
-    },
-  ])
 
   const [notifications] = useKV<any[]>('notifications', [])
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
-    
-    if (token) {
-      setShowAuth(true)
+  const handleSignOut = async () => {
+    const success = await authSignOut()
+    if (success) {
+      toast.success('Você saiu do sistema')
+    } else {
+      toast.error('Erro ao sair do sistema')
     }
-  }, [])
-
-  const handleAuthSuccess = (user: User) => {
-    setShowAuth(false)
-    toast.success(`Bem-vindo, ${user.name}!`)
   }
 
-  const handleSignOut = () => {
-    setCurrentUser(null)
-    toast.success('Você saiu do sistema')
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
-  if (showAuth) {
-    return <MagicLinkAuth onAuthSuccess={handleAuthSuccess} />
+  if (!isAuthenticated || !profile) {
+    return <MagicLinkAuth />
   }
 
-  if (!currentUser) {
-    return <MagicLinkAuth onAuthSuccess={(user) => setCurrentUser(user)} />
-  }
+  const currentUser = profile
 
   const unreadCount = (notifications || []).filter((n: any) => !n.read).length
 
