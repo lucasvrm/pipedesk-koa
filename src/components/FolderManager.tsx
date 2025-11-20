@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import {
   Folder,
-  FolderOpen,
-  Circle,
   Star,
   Briefcase,
   Tag,
@@ -20,11 +18,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
-import { Folder as FolderType, User } from '@/lib/types'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
+import { Folder as FolderType, User } from '@/lib/types'
 
 interface FolderManagerProps {
   open: boolean
@@ -34,8 +38,6 @@ interface FolderManagerProps {
 
 const FOLDER_ICONS = [
   { value: 'folder', label: 'Pasta', icon: Folder },
-  { value: 'folder-open', label: 'Pasta Aberta', icon: FolderOpen },
-  { value: 'circle', label: 'Círculo', icon: Circle },
   { value: 'star', label: 'Estrela', icon: Star },
   { value: 'briefcase', label: 'Maleta', icon: Briefcase },
   { value: 'tag', label: 'Etiqueta', icon: Tag },
@@ -104,12 +106,12 @@ export default function FolderManager({ open, onOpenChange, currentUser }: Folde
 
     setFolders((current) => [...(current || []), newFolder])
     toast.success('Pasta criada com sucesso')
-    resetForm()
     setCreateDialogOpen(false)
+    resetForm()
   }
 
   const handleUpdate = () => {
-    if (!editingFolder || !formData.name.trim()) {
+    if (!formData.name.trim() || !editingFolder) {
       toast.error('Nome da pasta é obrigatório')
       return
     }
@@ -129,9 +131,9 @@ export default function FolderManager({ open, onOpenChange, currentUser }: Folde
           : f
       )
     )
-    toast.success('Pasta atualizada com sucesso')
-    resetForm()
+    toast.success('Pasta atualizada')
     setCreateDialogOpen(false)
+    resetForm()
   }
 
   const handleDelete = (folderId: string) => {
@@ -240,7 +242,6 @@ export default function FolderManager({ open, onOpenChange, currentUser }: Folde
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={2}
                 placeholder="Descrição opcional"
               />
             </div>
@@ -292,6 +293,7 @@ export default function FolderManager({ open, onOpenChange, currentUser }: Folde
                 {FOLDER_COLORS.map((color) => (
                   <button
                     key={color.value}
+                    type="button"
                     onClick={() => setFormData({ ...formData, color: color.value })}
                     className="w-8 h-8 rounded-full border-2 transition-all"
                     style={{
@@ -312,11 +314,13 @@ export default function FolderManager({ open, onOpenChange, currentUser }: Folde
                   return (
                     <button
                       key={iconOption.value}
+                      type="button"
                       onClick={() => setFormData({ ...formData, icon: iconOption.value })}
                       className="p-2 rounded border-2 transition-all"
                       style={{
                         borderColor: formData.icon === iconOption.value ? formData.color : 'transparent',
                       }}
+                      title={iconOption.label}
                     >
                       <IconComp size={20} />
                     </button>
@@ -330,8 +334,8 @@ export default function FolderManager({ open, onOpenChange, currentUser }: Folde
             <Button
               variant="outline"
               onClick={() => {
-                resetForm()
                 setCreateDialogOpen(false)
+                resetForm()
               }}
             >
               Cancelar
