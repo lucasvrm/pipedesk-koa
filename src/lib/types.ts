@@ -205,3 +205,31 @@ export interface MagicLink {
   usedAt?: string
   revokedAt?: string
 }
+
+export type CustomFieldType = 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'boolean' | 'url' | 'email'
+
+export interface CustomFieldDefinition {
+  id: string
+  name: string
+  key: string
+  type: CustomFieldType
+  entityType: 'deal' | 'track' | 'task'
+  required: boolean
+  options?: string[]
+  defaultValue?: any
+  placeholder?: string
+  helpText?: string
+  createdAt: string
+  createdBy: string
+  position: number
+}
+
+export interface CustomFieldValue {
+  id: string
+  fieldDefinitionId: string
+  entityId: string
+  entityType: 'deal' | 'track' | 'task'
+  value: any
+  updatedAt: string
+  updatedBy: string
+}

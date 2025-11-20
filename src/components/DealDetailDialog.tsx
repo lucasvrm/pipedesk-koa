@@ -21,13 +21,14 @@ import {
 } from '@/components/ui/select'
 import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
-import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle } from '@phosphor-icons/react'
+import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle, Tag } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
 import CreatePlayerDialog from './CreatePlayerDialog'
 import CommentsPanel from './CommentsPanel'
 import ActivityHistory from './ActivityHistory'
 import DocumentManager from './DocumentManager'
 import AINextSteps from './AINextSteps'
+import CustomFieldsRenderer from './CustomFieldsRenderer'
 import { toast } from 'sonner'
 
 interface DealDetailDialogProps {
@@ -161,10 +162,14 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
           <Separator className="my-4" />
 
           <Tabs defaultValue="players" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="players">
                 <Users className="mr-2" />
                 Players
+              </TabsTrigger>
+              <TabsTrigger value="fields">
+                <Tag className="mr-2" />
+                Campos
               </TabsTrigger>
               <TabsTrigger value="ai">
                 <Sparkle className="mr-2" />
@@ -208,6 +213,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                 </div>
               ) : (
                 <PlayerTracksList tracks={dealTracks} currentUser={currentUser} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="fields" className="space-y-4">
+              {currentUser && (
+                <CustomFieldsRenderer
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                  mode="edit"
+                />
               )}
             </TabsContent>
 

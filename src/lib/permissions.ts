@@ -11,6 +11,7 @@ export const PERMISSIONS = {
   VIEW_REAL_PLAYER_NAMES: ['admin', 'analyst', 'newbusiness'] as UserRole[],
   ASSIGN_TASKS: ['admin', 'analyst'] as UserRole[],
   MANAGE_INTEGRATIONS: ['admin'] as UserRole[],
+  MANAGE_SETTINGS: ['admin'] as UserRole[],
 }
 
 export function hasPermission(userRole: UserRole, permission: keyof typeof PERMISSIONS): boolean {

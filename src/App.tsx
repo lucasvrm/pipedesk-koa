@@ -12,6 +12,7 @@ import {
   MagnifyingGlass,
   GridFour,
   ShieldCheck,
+  Gear,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -35,6 +36,7 @@ import GlobalSearch from '@/components/GlobalSearch'
 import MasterMatrixView from '@/components/MasterMatrixView'
 import MagicLinkAuth from '@/components/MagicLinkAuth'
 import RBACDemo from '@/components/RBACDemo'
+import CustomFieldsManager from '@/components/CustomFieldsManager'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
@@ -48,6 +50,7 @@ function App() {
   const [createDealOpen, setCreateDealOpen] = useState(false)
   const [userManagementOpen, setUserManagementOpen] = useState(false)
   const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
+  const [customFieldsOpen, setCustomFieldsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   
@@ -113,6 +116,7 @@ function App() {
   const canManageUsers = hasPermission(currentUser?.role || 'client', 'MANAGE_USERS')
   const canViewAnalytics = hasPermission(currentUser?.role || 'client', 'VIEW_ANALYTICS')
   const canManageIntegrations = hasPermission(currentUser?.role || 'client', 'MANAGE_INTEGRATIONS')
+  const canManageSettings = hasPermission(currentUser?.role || 'client', 'MANAGE_SETTINGS')
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -238,6 +242,12 @@ function App() {
                     Google Workspace
                   </DropdownMenuItem>
                 )}
+                {canManageSettings && (
+                  <DropdownMenuItem onClick={() => setCustomFieldsOpen(true)}>
+                    <Gear className="mr-2" />
+                    Campos Customizados
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
@@ -278,6 +288,11 @@ function App() {
           <GoogleIntegrationDialog
             open={googleIntegrationOpen}
             onOpenChange={setGoogleIntegrationOpen}
+            currentUser={currentUser}
+          />
+          <CustomFieldsManager
+            open={customFieldsOpen}
+            onOpenChange={setCustomFieldsOpen}
             currentUser={currentUser}
           />
         </>
