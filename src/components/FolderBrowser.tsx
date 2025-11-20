@@ -25,7 +25,7 @@ import {
   User,
 } from '@/lib/types'
 import { formatCurrency } from '@/lib/helpers'
-import CrossTagDialog from './CrossTagDialog'
+import CrossTagDialog from '@/features/deals/components/CrossTagDialog'
 
 interface FolderBrowserProps {
   currentUser: User

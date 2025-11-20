@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Flag, LinkSimple } from '@phosphor-icons/react'
 import { useState, useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import CreateTaskDialog from './CreateTaskDialog'
+import CreateTaskDialog from '@/features/tasks/components/CreateTaskDialog'
 import { formatDate } from '@/lib/helpers'
 
 interface PlayerGanttProps {

@@ -25,7 +25,7 @@ import { Task, PlayerTrack, MasterDeal, User, Comment } from '@/lib/types'
 import { formatDate, formatDateTime } from '@/lib/helpers'
 import { toast } from 'sonner'
 import CreateTaskDialog from './CreateTaskDialog'
-import CommentsPanel from './CommentsPanel'
+import CommentsPanel from '@/components/CommentsPanel'
 
 interface TaskDetailDialogProps {
   task: Task

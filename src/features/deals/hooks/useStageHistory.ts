@@ -1,5 +1,5 @@
 import { StageHistory } from '@/lib/types'
-import { useSupabase } from './useSupabase'
+import { useSupabase } from '@/hooks/useSupabase'
 
 export function useStageHistory(playerTrackId?: string) {
   return useSupabase<StageHistory>('stage_history', {
