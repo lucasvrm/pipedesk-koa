@@ -1,82 +1,49 @@
 import { useEffect, useState } from 'react'
-import { useKV } from '@github/spark/hooks'
-import { User } from '@/lib/types'
-import { MagicLink, isMagicLinkValid } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle, XCircle, Clock, ArrowRight } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { CheckCircle, XCircle, Clock, ArrowRight, EnvelopeSimple } from '@phosphor-icons/react'
+import { useAuth } from '@/contexts/AuthContext'
+import { toast } from 'sonner'
 
-interface MagicLinkAuthProps {
-  onAuthSuccess: (user: User) => void
-}
-
-export default function MagicLinkAuth({ onAuthSuccess }: MagicLinkAuthProps) {
-  const [users] = useKV<User[]>('users', [])
-  const [magicLinks, setMagicLinks] = useKV<MagicLink[]>('magicLinks', [])
-  const [currentUser, setCurrentUser] = useKV<User | null>('currentUser', null)
-  
-  const [status, setStatus] = useState<'checking' | 'valid' | 'invalid' | 'expired' | 'used'>('checking')
-  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null)
+export default function MagicLinkAuth() {
+  const { signInWithMagicLink, user } = useAuth()
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
-
-    if (!token) {
-      setStatus('invalid')
-      return
+    // Check if we're coming back from a magic link
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token')) {
+      setVerifying(true)
+      // Supabase will automatically handle the token verification
+      // The AuthProvider will detect the session change
     }
+  }, [])
 
-    const link = (magicLinks || []).find(l => l.token === token)
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault()
     
-    if (!link) {
-      setStatus('invalid')
+    if (!email) {
+      toast.error('Por favor, insira seu email')
       return
     }
 
-    if (!isMagicLinkValid(link)) {
-      if (link.usedAt) {
-        setStatus('used')
-      } else if (link.revokedAt) {
-        setStatus('invalid')
-      } else {
-        setStatus('expired')
-      }
-      return
-    }
-
-    const user = (users || []).find(u => u.id === link.userId)
+    setStatus('sending')
+    const success = await signInWithMagicLink(email)
     
-    if (!user) {
-      setStatus('invalid')
-      return
-    }
-
-    setMagicLinks((current) =>
-      (current || []).map((l) =>
-        l.id === link.id
-          ? { ...l, usedAt: new Date().toISOString() }
-          : l
-      )
-    )
-
-    setAuthenticatedUser(user)
-    setStatus('valid')
-  }, [magicLinks, users, setMagicLinks])
-
-  const handleContinue = () => {
-    if (authenticatedUser) {
-      setCurrentUser(authenticatedUser)
-      window.history.replaceState({}, '', '/')
-      onAuthSuccess(authenticatedUser)
+    if (success) {
+      setStatus('sent')
+      toast.success('Magic link enviado! Verifique seu email.')
+    } else {
+      setStatus('error')
+      toast.error('Erro ao enviar magic link. Tente novamente.')
     }
   }
 
-  const handleRequestNewLink = () => {
-    window.location.href = '/request-access'
-  }
-
-  if (status === 'checking') {
+  if (verifying) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -85,34 +52,44 @@ export default function MagicLinkAuth({ onAuthSuccess }: MagicLinkAuthProps) {
               <Clock className="animate-spin" />
               Verificando acesso...
             </CardTitle>
+            <CardDescription>
+              Aguarde enquanto confirmamos sua autenticação
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
     )
   }
 
-  if (status === 'valid' && authenticatedUser) {
+  if (status === 'sent') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-success">
               <CheckCircle weight="fill" />
-              Acesso Autorizado
+              Magic Link Enviado
             </CardTitle>
             <CardDescription>
-              Bem-vindo ao DealFlow Manager
+              Verifique seu email para acessar o DealFlow Manager
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg bg-muted">
-              <p className="text-sm text-muted-foreground mb-1">Você está entrando como:</p>
-              <p className="font-semibold">{authenticatedUser.name}</p>
-              <p className="text-sm text-muted-foreground">{authenticatedUser.email}</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Enviamos um link de acesso para:
+              </p>
+              <p className="font-semibold">{email}</p>
             </div>
-            <Button onClick={handleContinue} className="w-full">
-              Continuar para Dashboard
-              <ArrowRight className="ml-2" />
+            <p className="text-sm text-muted-foreground">
+              Clique no link do email para fazer login. O link expira em 1 hora.
+            </p>
+            <Button 
+              onClick={() => setStatus('idle')} 
+              variant="outline" 
+              className="w-full"
+            >
+              Enviar para outro email
             </Button>
           </CardContent>
         </Card>
@@ -124,25 +101,48 @@ export default function MagicLinkAuth({ onAuthSuccess }: MagicLinkAuthProps) {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <XCircle weight="fill" />
-            Link Inválido
-          </CardTitle>
+          <CardTitle>Bem-vindo ao DealFlow Manager</CardTitle>
           <CardDescription>
-            {status === 'expired' && 'Este link de acesso expirou'}
-            {status === 'used' && 'Este link de acesso já foi utilizado'}
-            {status === 'invalid' && 'Este link de acesso não é válido'}
+            Insira seu email para receber um link de acesso
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {status === 'expired' && 'Por favor, solicite um novo link de acesso ao administrador do sistema.'}
-            {status === 'used' && 'Links de acesso só podem ser usados uma vez. Solicite um novo link ao administrador.'}
-            {status === 'invalid' && 'Verifique se você copiou o link completo ou solicite um novo.'}
-          </p>
-          <Button onClick={handleRequestNewLink} variant="outline" className="w-full">
-            Solicitar Novo Acesso
-          </Button>
+        <CardContent>
+          <form onSubmit={handleSendMagicLink} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={status === 'sending'}
+                required
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={status === 'sending'}
+            >
+              {status === 'sending' ? (
+                <>
+                  <Clock className="mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <EnvelopeSimple className="mr-2" />
+                  Enviar Magic Link
+                </>
+              )}
+            </Button>
+          </form>
+          {status === 'error' && (
+            <div className="mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+              Erro ao enviar magic link. Tente novamente.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

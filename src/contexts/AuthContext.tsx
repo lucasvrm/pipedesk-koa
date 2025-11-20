@@ -1,17 +1,36 @@
-import { useState, useEffect } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
-import { User as SupabaseUser } from '@supabase/supabase-js'
 import { User } from '@/lib/types'
 
-export function useAuth() {
+interface AuthContextType {
+  user: SupabaseUser | null
+  profile: User | null
+  session: Session | null
+  loading: boolean
+  error: Error | null
+  signInWithMagicLink: (email: string) => Promise<boolean>
+  signOut: () => Promise<boolean>
+  isAuthenticated: boolean
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
@@ -20,11 +39,13 @@ export function useAuth() {
       }
     })
 
-    // Listen for auth changes
+    // Subscribe to auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
       setUser(session?.user ?? null)
+      
       if (session?.user) {
         fetchProfile(session.user.id)
       } else {
@@ -33,7 +54,9 @@ export function useAuth() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchProfile = async (userId: string) => {
@@ -53,7 +76,7 @@ export function useAuth() {
     }
   }
 
-  const signInWithMagicLink = async (email: string) => {
+  const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
       setError(null)
       const { error } = await supabase.auth.signInWithOtp({
@@ -70,13 +93,14 @@ export function useAuth() {
     }
   }
 
-  const signOut = async () => {
+  const signOut = async (): Promise<boolean> => {
     try {
       setError(null)
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       setUser(null)
       setProfile(null)
+      setSession(null)
       return true
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to sign out'))
@@ -84,13 +108,24 @@ export function useAuth() {
     }
   }
 
-  return {
+  const value: AuthContextType = {
     user,
     profile,
+    session,
     loading,
     error,
     signInWithMagicLink,
     signOut,
     isAuthenticated: !!user,
   }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }

@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { useDeals } from '@/hooks/useDeals'
 import { usePlayerTracks } from '@/hooks/usePlayerTracks'
 import { useTasks } from '@/hooks/useTasks'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/contexts/AuthContext'
 import { MasterDeal, OperationType, DealStatus } from '@/lib/types'
 
 export default function SupabaseExampleComponent() {
