@@ -64,7 +64,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange }: DealDetai
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">{formatCurrency(deal.volume)}</p>
+                <p className="text-xl md:text-2xl font-bold break-words">{formatCurrency(deal.volume)}</p>
               </CardContent>
             </Card>
 
@@ -75,7 +75,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange }: DealDetai
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">{formatDate(deal.deadline)}</p>
+                <p className="text-xl md:text-2xl font-bold">{formatDate(deal.deadline)}</p>
               </CardContent>
             </Card>
 
@@ -86,7 +86,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange }: DealDetai
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">{dealTracks.filter(t => t.status === 'active').length}</p>
+                <p className="text-xl md:text-2xl font-bold">{dealTracks.filter(t => t.status === 'active').length}</p>
               </CardContent>
             </Card>
           </div>

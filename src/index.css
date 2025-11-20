@@ -93,3 +93,9 @@
 .currency-input {
   font-variant-numeric: tabular-nums;
 }
+
+.card-value {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}

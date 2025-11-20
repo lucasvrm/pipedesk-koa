@@ -43,11 +43,11 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Negócios Ativos</CardTitle>
-            <TrendUp className="h-4 w-4 text-muted-foreground" />
+            <TrendUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeDeals.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-xl md:text-2xl font-bold">{activeDeals.length}</div>
+            <p className="text-xs text-muted-foreground mt-1 truncate">
               {activeTracks.length} players em negociação
             </p>
           </CardContent>
@@ -56,11 +56,11 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Volume Total</CardTitle>
-            <CurrencyCircleDollar className="h-4 w-4 text-muted-foreground" />
+            <CurrencyCircleDollar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalVolume)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-xl md:text-2xl font-bold break-words">{formatCurrency(totalVolume)}</div>
+            <p className="text-xs text-muted-foreground mt-1 truncate">
               Pipeline ativo
             </p>
           </CardContent>
@@ -69,11 +69,11 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Forecast Ponderado</CardTitle>
-            <TrendUp className="h-4 w-4 text-success" />
+            <TrendUp className="h-4 w-4 text-success flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(weightedPipeline)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-xl md:text-2xl font-bold break-words">{formatCurrency(weightedPipeline)}</div>
+            <p className="text-xs text-muted-foreground mt-1 truncate">
               Baseado em probabilidades
             </p>
           </CardContent>
@@ -82,11 +82,11 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
+            <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-xl md:text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground mt-1 truncate">
               {concludedDeals.length} concluídos / {cancelledDeals.length} cancelados
             </p>
           </CardContent>

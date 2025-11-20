@@ -20,11 +20,11 @@ export default function PlayerTracksList({ tracks }: PlayerTracksListProps) {
             key={track.id}
             className="p-4 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-colors"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h4 className="font-semibold mb-1">{track.playerName}</h4>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{formatCurrency(track.trackVolume)}</span>
+            <div className="flex items-start justify-between mb-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold mb-1 truncate">{track.playerName}</h4>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                  <span className="break-words">{formatCurrency(track.trackVolume)}</span>
                   <span>•</span>
                   <Badge
                     variant="secondary"
@@ -38,9 +38,9 @@ export default function PlayerTracksList({ tracks }: PlayerTracksListProps) {
                   </Badge>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-medium">{probability}% prob.</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="text-right flex-shrink-0">
+                <div className="text-sm font-medium whitespace-nowrap">{probability}% prob.</div>
+                <div className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatCurrency(weighted)} ponderado
                 </div>
               </div>
@@ -49,7 +49,7 @@ export default function PlayerTracksList({ tracks }: PlayerTracksListProps) {
             <Progress value={probability} className="h-2" />
 
             {track.notes && (
-              <p className="text-sm text-muted-foreground mt-3">{track.notes}</p>
+              <p className="text-sm text-muted-foreground mt-3 break-words">{track.notes}</p>
             )}
           </div>
         )
