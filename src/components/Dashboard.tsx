@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,14 +8,17 @@ import {
   CheckCircle,
   XCircle,
 } from '@phosphor-icons/react'
-import { MasterDeal, PlayerTrack } from '@/lib/types'
+import { MasterDeal, PlayerTrack, PlayerStage } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
 import { STAGE_PROBABILITIES } from '@/lib/types'
 import DealsList from './DealsList'
+import DealsByStageChart from './DealsByStageChart'
+import { toast } from 'sonner'
 
 export default function Dashboard() {
   const [masterDeals] = useKV<MasterDeal[]>('masterDeals', [])
   const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
+  const [stageFilter, setStageFilter] = useState<PlayerStage | null>(null)
 
   const activeDeals = (masterDeals || []).filter(d => d.status === 'active' && !d.deletedAt)
   const concludedDeals = (masterDeals || []).filter(d => d.status === 'concluded')
@@ -31,6 +35,25 @@ export default function Dashboard() {
   const conversionRate = (masterDeals || []).length > 0
     ? (concludedDeals.length / (masterDeals || []).length) * 100
     : 0
+
+  // Prepare chart data
+  const stageChartData = [
+    { stage: 'nda' as PlayerStage, label: 'NDA', count: activeTracks.filter(t => t.currentStage === 'nda').length },
+    { stage: 'analysis' as PlayerStage, label: 'Análise', count: activeTracks.filter(t => t.currentStage === 'analysis').length },
+    { stage: 'proposal' as PlayerStage, label: 'Proposta', count: activeTracks.filter(t => t.currentStage === 'proposal').length },
+    { stage: 'negotiation' as PlayerStage, label: 'Negociação', count: activeTracks.filter(t => t.currentStage === 'negotiation').length },
+    { stage: 'closing' as PlayerStage, label: 'Fechamento', count: activeTracks.filter(t => t.currentStage === 'closing').length },
+  ]
+
+  const handleStageClick = (stage: PlayerStage) => {
+    setStageFilter(stage === stageFilter ? null : stage)
+    const stageName = stageChartData.find(s => s.stage === stage)?.label
+    toast.info(`${stage === stageFilter ? 'Removido filtro' : 'Filtrando'} por estágio: ${stageName}`)
+  }
+
+  const filteredActiveTracks = stageFilter 
+    ? activeTracks.filter(t => t.currentStage === stageFilter)
+    : activeTracks
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
@@ -123,29 +146,31 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Players por Estágio</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries({
-              nda: 'NDA',
-              analysis: 'Análise',
-              proposal: 'Proposta',
-              negotiation: 'Negociação',
-              closing: 'Fechamento',
-            }).map(([stage, label]) => {
-              const count = activeTracks.filter(t => t.currentStage === stage).length
-              return (
-                <div key={stage} className="flex items-center justify-between">
-                  <span className="text-sm">{label}</span>
-                  <Badge variant="secondary">{count}</Badge>
-                </div>
-              )
-            })}
-          </CardContent>
-        </Card>
+        <DealsByStageChart 
+          data={stageChartData}
+          onStageClick={handleStageClick}
+        />
       </div>
+
+      {stageFilter && (
+        <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between">
+          <div>
+            <p className="font-medium">
+              Filtro ativo: {stageChartData.find(s => s.stage === stageFilter)?.label}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Mostrando {filteredActiveTracks.length} players neste estágio
+            </p>
+          </div>
+          <Badge 
+            variant="outline" 
+            className="cursor-pointer hover:bg-destructive/10"
+            onClick={() => handleStageClick(stageFilter)}
+          >
+            Limpar filtro
+          </Badge>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

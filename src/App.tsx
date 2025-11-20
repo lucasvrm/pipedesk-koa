@@ -49,13 +49,15 @@ import TaskManagementView from '@/components/TaskManagementView'
 import FolderManager from '@/components/FolderManager'
 import FolderBrowser from '@/components/FolderBrowser'
 import PhaseValidationManager from '@/components/PhaseValidationManager'
+import DataRoomView from '@/components/DataRoomView'
+import AuditLogView from '@/components/AuditLogView'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
 
-type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders' | 'dataroom' | 'audit'
 
 function App() {
   const { profile, loading, signOut: authSignOut, isAuthenticated } = useAuth()
@@ -273,6 +275,19 @@ function App() {
                   Gerenciar Pastas
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <div className="px-2 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="compact-mode" className="text-sm font-normal cursor-pointer">
+                      Visão Compacta
+                    </Label>
+                    <Switch
+                      id="compact-mode"
+                      checked={compactMode}
+                      onCheckedChange={setCompactMode}
+                    />
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
@@ -295,6 +310,8 @@ function App() {
         {currentPage === 'rbac' && currentUser && (
           <RBACDemo currentUser={currentUser} />
         )}
+        {currentPage === 'dataroom' && <DataRoomView />}
+        {currentPage === 'audit' && <AuditLogView />}
       </main>
 
       <GlobalSearch

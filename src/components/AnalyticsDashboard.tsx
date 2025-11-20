@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Download, ChartLine, Clock, Target, Users, Funnel } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import ConversionTrendChart from './ConversionTrendChart'
 
 interface AnalyticsDashboardProps {
   currentUser: User
@@ -204,6 +205,37 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
       closing: 'Fechamento',
     }
     return labels[stage]
+  }
+
+  // Prepare conversion trend data (last 6 months)
+  const conversionTrendData = (() => {
+    const monthsData = []
+    const now = new Date()
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthKey = date.toISOString().slice(0, 7)
+      const monthLabel = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+      
+      const monthDeals = filteredDeals.filter(d => d.createdAt.startsWith(monthKey))
+      const monthConcluded = monthDeals.filter(d => d.status === 'concluded').length
+      const monthCancelled = monthDeals.filter(d => d.status === 'cancelled').length
+      const monthTotal = monthConcluded + monthCancelled
+      const rate = monthTotal > 0 ? Math.round((monthConcluded / monthTotal) * 100) : 0
+      
+      monthsData.push({
+        period: monthLabel,
+        concluded: monthConcluded,
+        cancelled: monthCancelled,
+        conversionRate: rate,
+      })
+    }
+    
+    return monthsData
+  })()
+
+  const handlePeriodClick = (period: string) => {
+    toast.info(`Filtrando por período: ${period}`)
   }
 
   return (
@@ -448,6 +480,11 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
           </div>
         </CardContent>
       </Card>
+
+      <ConversionTrendChart 
+        data={conversionTrendData}
+        onDataPointClick={handlePeriodClick}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
