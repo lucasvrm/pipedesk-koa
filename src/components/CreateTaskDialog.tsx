@@ -25,7 +25,7 @@ import { generateId } from '@/lib/helpers'
 import { toast } from 'sonner'
 
 interface CreateTaskDialogProps {
-  playerTrackId: string
+  playerTrackId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   editingTask?: Task | null
@@ -124,6 +124,11 @@ export default function CreateTaskDialog({
       )
       toast.success('Tarefa atualizada')
     } else {
+      if (!playerTrackId) {
+        toast.error('Selecione um player track')
+        return
+      }
+      
       const maxPosition = Math.max(0, ...(allTasks.filter(t => t.playerTrackId === playerTrackId).map(t => t.position)))
       
       const newTask: Task = {

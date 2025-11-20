@@ -13,6 +13,7 @@ import {
   GridFour,
   ShieldCheck,
   Gear,
+  ListChecks,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -37,12 +38,13 @@ import MasterMatrixView from '@/components/MasterMatrixView'
 import MagicLinkAuth from '@/components/MagicLinkAuth'
 import RBACDemo from '@/components/RBACDemo'
 import CustomFieldsManager from '@/components/CustomFieldsManager'
+import TaskManagementView from '@/components/TaskManagementView'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 
-type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -143,6 +145,14 @@ function App() {
               >
                 <Kanban className="mr-2" />
                 Negócios
+              </Button>
+              <Button
+                variant={currentPage === 'tasks' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentPage('tasks')}
+              >
+                <ListChecks className="mr-2" />
+                Tarefas
               </Button>
               <Button
                 variant={currentPage === 'kanban' ? 'secondary' : 'ghost'}
@@ -261,6 +271,7 @@ function App() {
       <main className="flex-1">
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'deals' && <DealsView />}
+        {currentPage === 'tasks' && currentUser && <TaskManagementView currentUser={currentUser} />}
         {currentPage === 'kanban' && currentUser && <MasterMatrixView currentUser={currentUser} />}
         {currentPage === 'analytics' && currentUser && (
           <AnalyticsDashboard currentUser={currentUser} />
@@ -318,6 +329,15 @@ function App() {
         >
           <Kanban className="mb-1" />
           <span className="text-xs">Negócios</span>
+        </Button>
+        <Button
+          variant={currentPage === 'tasks' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setCurrentPage('tasks')}
+          className="flex-col h-auto py-2 px-3"
+        >
+          <ListChecks className="mb-1" />
+          <span className="text-xs">Tarefas</span>
         </Button>
         <Button
           size="sm"
