@@ -22,6 +22,8 @@ import {
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,11 +55,13 @@ import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePreferences } from '@/contexts/PreferencesContext'
 
 type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders' | 'dataroom' | 'audit'
 
 function App() {
   const { profile, loading, signOut: authSignOut, isAuthenticated } = useAuth()
+  const { compactMode, setCompactMode } = usePreferences()
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
@@ -253,16 +257,18 @@ function App() {
                   Gerenciar Pastas
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setCurrentPage('dataroom')}>
-                  <Database className="mr-2" />
-                  Virtual Data Room
-                </DropdownMenuItem>
-                {canManageUsers && (
-                  <DropdownMenuItem onClick={() => setCurrentPage('audit')}>
-                    <ClockCounterClockwise className="mr-2" />
-                    Log de Auditoria
-                  </DropdownMenuItem>
-                )}
+                <div className="px-2 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="compact-mode" className="text-sm font-normal cursor-pointer">
+                      Visão Compacta
+                    </Label>
+                    <Switch
+                      id="compact-mode"
+                      checked={compactMode}
+                      onCheckedChange={setCompactMode}
+                    />
+                  </div>
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
