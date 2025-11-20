@@ -19,22 +19,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType } from '@/lib/types'
+import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
-import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank } from '@phosphor-icons/react'
+import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag } from '@phosphor-icons/react'
 import TaskList from './TaskList'
 import PlayerKanban from './PlayerKanban'
 import PlayerGantt from './PlayerGantt'
 import PlayerCalendar from './PlayerCalendar'
+import CommentsPanel from './CommentsPanel'
+import AINextSteps from './AINextSteps'
+import DocumentManager from './DocumentManager'
+import ActivityHistory from './ActivityHistory'
+import CustomFieldsRenderer from './CustomFieldsRenderer'
 import { toast } from 'sonner'
 
 interface PlayerTrackDetailDialogProps {
   track: PlayerTrack
   open: boolean
   onOpenChange: (open: boolean) => void
+  currentUser?: User
 }
 
-export default function PlayerTrackDetailDialog({ track, open, onOpenChange }: PlayerTrackDetailDialogProps) {
+export default function PlayerTrackDetailDialog({ track, open, onOpenChange, currentUser }: PlayerTrackDetailDialogProps) {
   const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
   const [trackViewPreferences, setTrackViewPreferences] = useKV<Record<string, ViewType>>('trackViewPreferences', {})
   
@@ -209,22 +215,38 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange }: P
         <Separator className="my-4" />
 
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
             <TabsTrigger value="list">
-              <ListChecks className="mr-2" />
-              Lista
+              <ListChecks className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Lista</span>
             </TabsTrigger>
             <TabsTrigger value="kanban">
-              <KanbanIcon className="mr-2" />
-              Kanban
+              <KanbanIcon className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Kanban</span>
             </TabsTrigger>
             <TabsTrigger value="gantt">
-              <ChartLine className="mr-2" />
-              Gantt
+              <ChartLine className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Gantt</span>
             </TabsTrigger>
             <TabsTrigger value="calendar">
-              <CalendarBlank className="mr-2" />
-              Calendário
+              <CalendarBlank className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Calendário</span>
+            </TabsTrigger>
+            <TabsTrigger value="fields">
+              <Tag className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Campos</span>
+            </TabsTrigger>
+            <TabsTrigger value="ai">
+              <Sparkle className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">IA</span>
+            </TabsTrigger>
+            <TabsTrigger value="comments">
+              <ChatCircle className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Comentários</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents">
+              <FileText className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Docs</span>
             </TabsTrigger>
           </TabsList>
 
@@ -242,6 +264,42 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange }: P
 
           <TabsContent value="calendar" className="mt-4">
             <PlayerCalendar playerTrackId={track.id} />
+          </TabsContent>
+
+          <TabsContent value="fields" className="space-y-4">
+            {currentUser && (
+              <CustomFieldsRenderer
+                entityId={track.id}
+                entityType="track"
+                currentUser={currentUser}
+                mode="edit"
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-4">
+            <AINextSteps trackId={track.id} currentStage={track.currentStage} />
+          </TabsContent>
+
+          <TabsContent value="comments" className="space-y-4">
+            {currentUser && (
+              <CommentsPanel
+                entityId={track.id}
+                entityType="track"
+                currentUser={currentUser}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-4">
+            {currentUser && (
+              <DocumentManager
+                entityId={track.id}
+                entityType="track"
+                currentUser={currentUser}
+                entityName={track.playerName}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

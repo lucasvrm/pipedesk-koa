@@ -79,6 +79,7 @@ export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksLi
           track={selectedTrack}
           open={!!selectedTrack}
           onOpenChange={(open) => !open && setSelectedTrack(null)}
+          currentUser={currentUser}
         />
       )}
     </>
