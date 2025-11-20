@@ -133,7 +133,7 @@ function App() {
         <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-6">
             <h1 className="text-xl font-bold text-primary tracking-tight">
-              DCM - Koa Capital
+              PipeDesk
             </h1>
             
             <nav className="hidden md:flex items-center gap-2">
