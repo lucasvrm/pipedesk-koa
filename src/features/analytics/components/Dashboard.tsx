@@ -11,8 +11,8 @@ import {
 import { MasterDeal, PlayerTrack, PlayerStage } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
 import { STAGE_PROBABILITIES } from '@/lib/types'
-import DealsList from './DealsList'
-import DealsByStageChart from './DealsByStageChart'
+import DealsList from '@/features/deals/components/DealsList'
+import DealsByStageChart from '@/features/deals/components/DealsByStageChart'
 import { toast } from 'sonner'
 
 export default function Dashboard() {

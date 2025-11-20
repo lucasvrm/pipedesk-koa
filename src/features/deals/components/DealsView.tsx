@@ -14,7 +14,7 @@ import { MasterDeal, DealStatus, User } from '@/lib/types'
 import { MagnifyingGlass, FunnelSimple, CheckSquare, X } from '@phosphor-icons/react'
 import DealsList from './DealsList'
 import BulkOperations from './BulkOperations'
-import { useDeals } from '@/hooks/useDeals'
+import { useDeals } from '@/features/deals/hooks/useDeals'
 
 export default function DealsView() {
   const { data: masterDeals, loading } = useDeals()

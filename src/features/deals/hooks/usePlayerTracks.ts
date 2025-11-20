@@ -1,5 +1,5 @@
 import { PlayerTrack } from '@/lib/types'
-import { useSupabase } from './useSupabase'
+import { useSupabase } from '@/hooks/useSupabase'
 
 export function usePlayerTracks(masterDealId?: string) {
   return useSupabase<PlayerTrack>('player_tracks', {
