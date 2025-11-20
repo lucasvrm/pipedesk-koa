@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import {
   Dialog,
@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
+import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User, MasterDeal } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
 import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag } from '@phosphor-icons/react'
 import TaskList from './TaskList'
@@ -31,6 +31,8 @@ import AINextSteps from './AINextSteps'
 import DocumentManager from './DocumentManager'
 import ActivityHistory from './ActivityHistory'
 import CustomFieldsRenderer from './CustomFieldsRenderer'
+import PhaseValidationDialog from './PhaseValidationDialog'
+import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
 import { toast } from 'sonner'
 
 interface PlayerTrackDetailDialogProps {
@@ -43,6 +45,12 @@ interface PlayerTrackDetailDialogProps {
 export default function PlayerTrackDetailDialog({ track, open, onOpenChange, currentUser }: PlayerTrackDetailDialogProps) {
   const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
   const [trackViewPreferences, setTrackViewPreferences] = useKV<Record<string, ViewType>>('trackViewPreferences', {})
+  const [deals] = useKV<MasterDeal[]>('deals', [])
+  const [phaseRules] = useKV<PhaseTransitionRule[]>('phaseTransitionRules', [])
+  
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false)
+  const [pendingStageChange, setPendingStageChange] = useState<PlayerStage | null>(null)
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   
   const currentView = (trackViewPreferences || {})[track.id] || 'list'
 
@@ -61,8 +69,9 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
   const probability = STAGE_PROBABILITIES[track.currentStage]
   const weighted = calculateWeightedVolume(track.trackVolume, probability)
+  const masterDeal = (deals || []).find(d => d.id === track.masterDealId)
 
-  const handleStageChange = (newStage: PlayerStage) => {
+  const performStageChange = (newStage: PlayerStage) => {
     const oldStage = track.currentStage
     
     trackStageChange(track.id, newStage, oldStage)
@@ -80,6 +89,24 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
       )
     )
     toast.success(`Estágio atualizado para ${STAGE_LABELS[newStage]}`)
+  }
+
+  const handleStageChange = (newStage: PlayerStage) => {
+    if (newStage === track.currentStage) return
+
+    const validation = validatePhaseTransition(track, masterDeal, newStage, phaseRules || [])
+    
+    setValidationResult(validation)
+    setPendingStageChange(newStage)
+    setValidationDialogOpen(true)
+  }
+
+  const handleValidationConfirm = () => {
+    if (pendingStageChange && validationResult?.isValid) {
+      performStageChange(pendingStageChange)
+      setPendingStageChange(null)
+      setValidationResult(null)
+    }
   }
 
   const handleStatusChange = (newStatus: DealStatus) => {
@@ -303,6 +330,17 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {validationResult && pendingStageChange && (
+        <PhaseValidationDialog
+          open={validationDialogOpen}
+          onOpenChange={setValidationDialogOpen}
+          currentStage={track.currentStage}
+          targetStage={pendingStageChange}
+          validationResult={validationResult}
+          onConfirm={handleValidationConfirm}
+        />
+      )}
     </Dialog>
   )
 }

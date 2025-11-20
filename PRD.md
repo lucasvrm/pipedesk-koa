@@ -110,10 +110,21 @@
    - Supports deals, player tracks, and tasks
    - Zero data duplication with single source of truth
    - Tag management dialog with multi-select interface
+18. **Phase Validation with Conditional Requirements** - Pipefy-inspired process engineering ✨
+   - Configure rules that block phase transitions based on field conditions
+   - Multiple validation operators (equals, greater_than, less_than, contains, is_filled, is_empty)
+   - Support for both track and deal fields in validation rules
+   - AND/OR logic for multiple conditions
+   - Custom error messages per rule
+   - Visual feedback when validation fails
+   - Enable/disable rules without deletion
+   - Prevents human error by enforcing compliance requirements
+   - Guarantees critical information is collected before advancing
+   - Admin-configurable validation rules
 
 ### 🚧 Planned for Future Iterations
 
-18. **Custom Fields/Metadata** - Extensible data model for dynamic field definitions
+19. **Custom Fields/Metadata** - Extensible data model for dynamic field definitions
 19. **Advanced Edge Case Handling**
    - Orphaned task recovery with soft delete
    - Concurrent edit detection with conflict UI
@@ -124,6 +135,7 @@
 21. **Advanced Gantt Features** - Critical path highlighting and resource allocation
 22. **Real-time Collaboration** - WebSocket-based live updates across users
 23. **Mobile Apps** - Native iOS and Android applications
+24. **Automation Workflows** - Zapier-style if-this-then-that automation builder
 
 ---
 
@@ -210,6 +222,14 @@ DCM - Koa Capital is a specialized hierarchical project management system for M&
 - **Trigger**: Click tag icon on any entity or use folder browser
 - **Progression**: Open cross-tag dialog → Select multiple folders → Designate primary folder with star → Save → Entity appears in all selected locations → Any edit updates everywhere
 - **Success criteria**: Entity count badges accurate, primary folder indicator visible, updates propagate instantly, no data duplication
+
+### Phase Validation with Conditional Requirements
+- **Functionality**: Configurable rules that prevent stage transitions when specific field conditions aren't met
+- **Purpose**: Enforce compliance and process standardization by ensuring critical data is collected before advancing
+- **Trigger**: Admin configures rules in Phase Validation Manager, triggered automatically when user changes player track stage
+- **Progression**: Admin creates rule → Sets from/to stages → Adds conditions → User attempts stage change → Validation runs → If passes: stage changes → If fails: dialog shows blocked with requirements → User fills missing data → Retries successfully
+- **Success criteria**: Rules block transitions correctly, validation feedback is clear, custom error messages display, enable/disable works, supports AND/OR logic
+
 
 ## Edge Case Handling
 

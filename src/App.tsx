@@ -15,6 +15,7 @@ import {
   Gear,
   ListChecks,
   FolderOpen,
+  GitBranch,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -42,6 +43,7 @@ import CustomFieldsManager from '@/components/CustomFieldsManager'
 import TaskManagementView from '@/components/TaskManagementView'
 import FolderManager from '@/components/FolderManager'
 import FolderBrowser from '@/components/FolderBrowser'
+import PhaseValidationManager from '@/components/PhaseValidationManager'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
@@ -57,6 +59,7 @@ function App() {
   const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
   const [customFieldsOpen, setCustomFieldsOpen] = useState(false)
   const [folderManagerOpen, setFolderManagerOpen] = useState(false)
+  const [phaseValidationOpen, setPhaseValidationOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   
@@ -270,6 +273,12 @@ function App() {
                     Campos Customizados
                   </DropdownMenuItem>
                 )}
+                {canManageSettings && (
+                  <DropdownMenuItem onClick={() => setPhaseValidationOpen(true)}>
+                    <GitBranch className="mr-2" />
+                    Validação de Fases
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
@@ -326,6 +335,11 @@ function App() {
           <FolderManager
             open={folderManagerOpen}
             onOpenChange={setFolderManagerOpen}
+            currentUser={currentUser}
+          />
+          <PhaseValidationManager
+            open={phaseValidationOpen}
+            onOpenChange={setPhaseValidationOpen}
             currentUser={currentUser}
           />
         </>
