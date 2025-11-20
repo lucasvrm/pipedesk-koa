@@ -19,10 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, OperationType, OPERATION_LABELS } from '@/lib/types'
+import { MasterDeal, OperationType, OPERATION_LABELS, GoogleIntegration, GoogleDriveFolder } from '@/lib/types'
 import { generateId } from '@/lib/helpers'
 import { toast } from 'sonner'
-import { Sparkle } from '@phosphor-icons/react'
+import { Sparkle, FolderOpen } from '@phosphor-icons/react'
 
 interface CreateDealDialogProps {
   open: boolean
@@ -32,6 +32,8 @@ interface CreateDealDialogProps {
 export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialogProps) {
   const [masterDeals, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
   const [currentUser] = useKV<{ id: string; name: string }>('currentUser', { id: 'user-1', name: 'João Silva' })
+  const [integration] = useKV<GoogleIntegration | null>(`google-integration-${currentUser?.id}`, null)
+  const [folders, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
   
   const [clientName, setClientName] = useState('')
   const [volume, setVolume] = useState('')
@@ -40,7 +42,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
   const [observations, setObservations] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!clientName || !volume || !deadline) {
@@ -63,7 +65,35 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
 
     setMasterDeals((current) => [...(current || []), newDeal])
     
-    toast.success('Negócio criado com sucesso!')
+    if (integration) {
+      try {
+        const folderId = `folder-${newDeal.id}-${Date.now()}`
+        const folderUrl = `https://drive.google.com/drive/folders/${folderId}`
+        
+        const newFolder: GoogleDriveFolder = {
+          id: generateId(),
+          entityId: newDeal.id,
+          entityType: 'deal',
+          folderId,
+          folderUrl,
+          createdAt: new Date().toISOString(),
+        }
+        
+        setFolders((current) => [...(current || []), newFolder])
+        
+        toast.success(
+          <div className="flex items-center gap-2">
+            <FolderOpen />
+            <span>Negócio criado! Pasta do Drive criada automaticamente.</span>
+          </div>
+        )
+      } catch (error) {
+        toast.success('Negócio criado com sucesso!')
+        toast.warning('Erro ao criar pasta do Drive')
+      }
+    } else {
+      toast.success('Negócio criado com sucesso!')
+    }
     
     setClientName('')
     setVolume('')

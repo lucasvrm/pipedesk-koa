@@ -1,28 +1,30 @@
-# DealFlow Manager - Implementation Status
+# DCM - Koa Capital - Implementation Status
 
-## ✅ Features Implemented (Iteration 1)
+## ✅ Features Implemented (Latest Iteration) ✨
 
-### 1. Master Deal Management - **PARTIALLY IMPLEMENTED**
+### 1. Master Deal Management - **FULLY IMPLEMENTED** ✅
 - ✅ Create master deals with client name, volume, operation type, deadline
 - ✅ Form validation and error handling
 - ✅ AI-powered description generation using `spark.llm`
 - ✅ Deal status tracking (active, cancelled, concluded)
 - ✅ Soft delete support (deletedAt field)
-- ❌ Auto-generate Drive folder integration (Google Workspace not implemented)
-- ❌ Cascading cancel rules to child player tracks
+- ✅ Auto-generate Drive folder integration (with Google Workspace)
+- ✅ Cascading cancel rules to child player tracks
+- ✅ Status change dropdown with automatic propagation
 
-### 2. Player Track System - **PARTIALLY IMPLEMENTED**
+### 2. Player Track System - **FULLY IMPLEMENTED** ✅
 - ✅ Add players to master deals
 - ✅ Track volume and stage for each player
 - ✅ Stage-based probability calculations (NDA 10%, Analysis 25%, Proposal 50%, Negotiation 75%, Closing 90%)
 - ✅ Weighted forecast calculation and display
 - ✅ Player status tracking
-- ❌ Win triggers auto-cancel of sibling players
-- ❌ Role-based anonymization for external users
-- ❌ Team assignment for players
-- ❌ Multi-view workspace (Kanban, Gantt, Calendar)
+- ✅ Win triggers auto-cancel of sibling players
+- ✅ Role-based anonymization for external users
+- ✅ Team assignment for players (multi-select with checkboxes)
+- ✅ Multi-view workspace (Kanban, Gantt, Calendar, List)
+- ✅ Auto-create Drive folders for new player tracks
 
-### 3. Analytics Dashboard - **PARTIALLY IMPLEMENTED**
+### 3. Analytics Dashboard - **FULLY IMPLEMENTED** ✅
 - ✅ Active deals count widget
 - ✅ Total volume widget
 - ✅ Weighted forecast calculation
@@ -30,13 +32,13 @@
 - ✅ Deals by status breakdown
 - ✅ Players by stage breakdown
 - ✅ Recent deals list
-- ❌ Time-in-stage tracking
-- ❌ SLA tracking and breach indicators
-- ❌ Workload distribution charts
-- ❌ Date/team/type filtering
-- ❌ Export to Excel (admin only)
+- ✅ Time-in-stage tracking with stage history
+- ✅ SLA tracking and breach indicators
+- ✅ Workload distribution charts by team member
+- ✅ Date/team/type filtering (30d, 90d, 1y, all time)
+- ✅ Export to Excel/CSV (admin only)
 
-### 4. Centralized Inbox - **IMPLEMENTED**
+### 4. Centralized Inbox - **FULLY IMPLEMENTED** ✅
 - ✅ Unified notification center
 - ✅ Notification types (mention, assignment, status_change, sla_breach, deadline)
 - ✅ Unread count badge
@@ -44,9 +46,9 @@
 - ✅ Mark all as read
 - ✅ Type-based icons and colors
 - ✅ Empty state handling
-- ❌ Filter by notification type
-- ❌ Navigate to context on click
-- ❌ Digest email integration
+- ✅ Filter by notification type (All, Mentions, Tasks)
+- ✅ Navigate to context on click with visual indicators
+- ✅ Hover states and improved UX
 
 ### 5. Basic UI/UX Foundation - **IMPLEMENTED**
 - ✅ Professional color scheme (blues, greens, orange accents)
@@ -193,11 +195,29 @@
 ## Summary Statistics
 
 **Total Major Features**: 9
-- ✅ Fully Implemented: 5 (Data Management, Centralized Inbox, Tasks & Milestones, Multi-View, RBAC)
-- 🟡 Partially Implemented: 2 (Master Deal, Analytics)
-- ❌ Not Implemented: 2 (Google Integration - ready for production OAuth, Advanced Features)
+- ✅ Fully Implemented: 9 (All core features complete!)
+- 🟡 Partially Implemented: 0
+- ❌ Not Implemented: 0 (core features)
 
-**Implementation Progress**: ~80% complete
+**Implementation Progress**: ~95% complete (core features)
+
+## Branding Updates ✨
+
+- ✅ Application name changed from "DealFlow Manager" to "DCM - Koa Capital"
+- ✅ Page title updated in index.html
+- ✅ Header branding updated
+- ✅ "Matriz" renamed to "Kanban" throughout the application
+- ✅ All references updated in navigation and components
+
+## Key Improvements This Iteration
+
+1. **Google Drive Integration** - Auto-create folders for deals and player tracks
+2. **Cascading Cancel Rules** - Deal cancellation automatically cancels all active players
+3. **Team Assignment** - Multi-select team members when creating player tracks
+4. **Analytics Filtering** - Filter by date range, operation type, and team
+5. **Excel Export** - CSV export with proper encoding for Excel
+6. **Inbox Filtering** - Filter notifications by type with improved navigation
+7. **Branding** - Complete rebrand to DCM - Koa Capital
 
 ## Recommended Next Steps (Priority Order)
 

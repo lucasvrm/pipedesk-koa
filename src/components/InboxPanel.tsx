@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import {
   Sheet,
@@ -9,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Notification } from '@/lib/types'
 import { formatDateTime } from '@/lib/helpers'
 import { 
@@ -17,6 +19,7 @@ import {
   WarningCircle,
   User,
   Tag,
+  ArrowRight,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +30,7 @@ interface InboxPanelProps {
 
 export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const [notifications, setNotifications] = useKV<Notification[]>('notifications', [])
+  const [filter, setFilter] = useState<'all' | Notification['type']>('all')
 
   const handleMarkAsRead = (id: string) => {
     setNotifications((current) =>
@@ -37,6 +41,17 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const handleMarkAllAsRead = () => {
     setNotifications((current) => (current || []).map((n) => ({ ...n, read: true })))
   }
+
+  const handleNavigate = (notification: Notification) => {
+    handleMarkAsRead(notification.id)
+    if (notification.link) {
+      onOpenChange(false)
+    }
+  }
+
+  const filteredNotifications = (notifications || []).filter((n) => 
+    filter === 'all' || n.type === filter
+  )
 
   const unreadCount = (notifications || []).filter((n) => !n.read).length
 
@@ -71,6 +86,16 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
           </SheetDescription>
         </SheetHeader>
 
+        <div className="mt-4">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all">Todas</TabsTrigger>
+              <TabsTrigger value="mention">Menções</TabsTrigger>
+              <TabsTrigger value="assignment">Tarefas</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
         {unreadCount > 0 && (
           <>
             <Button
@@ -86,24 +111,24 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
         )}
 
         <div className="mt-6 space-y-4">
-          {(!notifications || notifications.length === 0) ? (
+          {(!filteredNotifications || filteredNotifications.length === 0) ? (
             <div className="text-center py-12 text-muted-foreground">
               <Bell className="mx-auto mb-3 h-12 w-12 opacity-50" />
               <p>Nenhuma notificação</p>
             </div>
           ) : (
-            notifications
+            filteredNotifications
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .map((notification) => (
                 <div
                   key={notification.id}
                   className={cn(
-                    'p-4 rounded-lg border cursor-pointer transition-colors',
+                    'p-4 rounded-lg border cursor-pointer transition-colors hover:bg-secondary/50',
                     notification.read
                       ? 'bg-card border-border'
                       : 'bg-accent/5 border-accent/20'
                   )}
-                  onClick={() => handleMarkAsRead(notification.id)}
+                  onClick={() => handleNavigate(notification)}
                 >
                   <div className="flex gap-3">
                     <div className="mt-0.5">
@@ -120,9 +145,14 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                         {formatDateTime(notification.createdAt)}
                       </p>
                     </div>
-                    {!notification.read && (
-                      <div className="h-2 w-2 rounded-full bg-accent mt-2" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {!notification.read && (
+                        <div className="h-2 w-2 rounded-full bg-accent" />
+                      )}
+                      {notification.link && (
+                        <ArrowRight className="text-muted-foreground" size={16} />
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import {
   MasterDeal,
@@ -6,11 +7,14 @@ import {
   User,
   StageHistory,
   PlayerStage,
+  OperationType,
 } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Download, ChartLine, Clock, Target, Users } from '@phosphor-icons/react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Download, ChartLine, Clock, Target, Users, Funnel } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface AnalyticsDashboardProps {
@@ -24,6 +28,10 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
   const [users] = useKV<User[]>('users', [])
   const [stageHistory] = useKV<StageHistory[]>('stageHistory', [])
 
+  const [dateFilter, setDateFilter] = useState<'all' | '30d' | '90d' | '1y'>('all')
+  const [teamFilter, setTeamFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<OperationType | 'all'>('all')
+
   const canView = hasPermission(currentUser.role, 'VIEW_ANALYTICS')
   const canExport = hasPermission(currentUser.role, 'EXPORT_DATA')
 
@@ -35,12 +43,41 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
     )
   }
 
-  const activeDeals = (deals || []).filter((d) => d.status === 'active').length
-  const activeTracks = (tracks || []).filter((t) => t.status === 'active').length
-  const concludedDeals = (deals || []).filter((d) => d.status === 'concluded').length
-  const cancelledDeals = (deals || []).filter((d) => d.status === 'cancelled').length
+  const getDateFilterDate = () => {
+    const now = new Date()
+    switch (dateFilter) {
+      case '30d':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      case '90d':
+        return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+      case '1y':
+        return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+      default:
+        return null
+    }
+  }
 
-  const weightedPipeline = (tracks || [])
+  const filterDate = getDateFilterDate()
+
+  const filteredDeals = (deals || []).filter((deal) => {
+    if (filterDate && new Date(deal.createdAt) < filterDate) return false
+    if (typeFilter !== 'all' && deal.operationType !== typeFilter) return false
+    return true
+  })
+
+  const filteredTracks = (tracks || []).filter((track) => {
+    const trackDeal = filteredDeals.find((d) => d.id === track.masterDealId)
+    if (!trackDeal) return false
+    if (teamFilter !== 'all' && !track.responsibles.includes(teamFilter)) return false
+    return true
+  })
+
+  const activeDeals = filteredDeals.filter((d) => d.status === 'active').length
+  const activeTracks = filteredTracks.filter((t) => t.status === 'active').length
+  const concludedDeals = filteredDeals.filter((d) => d.status === 'concluded').length
+  const cancelledDeals = filteredDeals.filter((d) => d.status === 'cancelled').length
+
+  const weightedPipeline = filteredTracks
     .filter((t) => t.status === 'active')
     .reduce((sum, t) => sum + t.trackVolume * (t.probability / 100), 0)
 
@@ -93,7 +130,7 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
   const teamWorkload = (users || [])
     .filter((u) => u.role === 'analyst' || u.role === 'admin')
     .map((user) => {
-      const userTracks = (tracks || []).filter(
+      const userTracks = filteredTracks.filter(
         (t) => t.status === 'active' && t.responsibles.includes(user.id)
       ).length
 
@@ -115,28 +152,47 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
       return
     }
 
-    const data = {
-      deals: deals || [],
-      tracks: tracks || [],
-      tasks: tasks || [],
-      stageHistory: stageHistory || [],
-      exportedAt: new Date().toISOString(),
-      exportedBy: currentUser.name,
-    }
+    const csvRows: string[][] = []
+    csvRows.push(['Tipo', 'ID', 'Nome', 'Status', 'Volume', 'Criado Em', 'Atualizado Em'])
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json',
+    filteredDeals.forEach((deal) => {
+      csvRows.push([
+        'Deal',
+        deal.id,
+        deal.clientName,
+        deal.status,
+        deal.volume.toString(),
+        deal.createdAt,
+        deal.updatedAt,
+      ])
+    })
+
+    filteredTracks.forEach((track) => {
+      csvRows.push([
+        'Player',
+        track.id,
+        track.playerName,
+        track.status,
+        track.trackVolume.toString(),
+        track.createdAt,
+        track.updatedAt,
+      ])
+    })
+
+    const csvContent = csvRows.map((row) => row.join(';')).join('\n')
+    const blob = new Blob(['\ufeff' + csvContent], {
+      type: 'text/csv;charset=utf-8;',
     })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `dealflow-export-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `dcm-analytics-${new Date().toISOString().split('T')[0]}.csv`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    toast.success('Dados exportados com sucesso')
+    toast.success('Dados exportados com sucesso (formato Excel/CSV)')
   }
 
   const getStageLabel = (stage: PlayerStage) => {
@@ -162,10 +218,72 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
         {canExport && (
           <Button onClick={handleExport} variant="outline">
             <Download className="mr-2" />
-            Exportar Dados
+            Exportar Excel
           </Button>
         )}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Funnel />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Período</Label>
+              <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as typeof dateFilter)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os períodos</SelectItem>
+                  <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                  <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                  <SelectItem value="1y">Último ano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de Operação</Label>
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="acquisition">Aquisição</SelectItem>
+                  <SelectItem value="merger">Fusão</SelectItem>
+                  <SelectItem value="investment">Investimento</SelectItem>
+                  <SelectItem value="divestment">Desinvestimento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Equipe</Label>
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as equipes</SelectItem>
+                  {(users || [])
+                    .filter((u) => u.role === 'analyst' || u.role === 'admin')
+                    .map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -363,7 +481,7 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(deals || []).length}</div>
+            <div className="text-2xl font-bold">{filteredDeals.length}</div>
           </CardContent>
         </Card>
       </div>

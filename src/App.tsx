@@ -40,7 +40,7 @@ import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 
-type Page = 'dashboard' | 'deals' | 'analytics' | 'matrix' | 'rbac'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -120,7 +120,7 @@ function App() {
         <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-6">
             <h1 className="text-xl font-bold text-primary tracking-tight">
-              DealFlow Manager
+              DCM - Koa Capital
             </h1>
             
             <nav className="hidden md:flex items-center gap-2">
@@ -141,12 +141,12 @@ function App() {
                 Negócios
               </Button>
               <Button
-                variant={currentPage === 'matrix' ? 'secondary' : 'ghost'}
+                variant={currentPage === 'kanban' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => setCurrentPage('matrix')}
+                onClick={() => setCurrentPage('kanban')}
               >
                 <GridFour className="mr-2" />
-                Matriz
+                Kanban
               </Button>
               {canViewAnalytics && (
                 <Button
@@ -251,7 +251,7 @@ function App() {
       <main className="flex-1">
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'deals' && <DealsView />}
-        {currentPage === 'matrix' && currentUser && <MasterMatrixView currentUser={currentUser} />}
+        {currentPage === 'kanban' && currentUser && <MasterMatrixView currentUser={currentUser} />}
         {currentPage === 'analytics' && currentUser && (
           <AnalyticsDashboard currentUser={currentUser} />
         )}

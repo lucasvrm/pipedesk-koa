@@ -12,7 +12,14 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
@@ -21,6 +28,7 @@ import CommentsPanel from './CommentsPanel'
 import ActivityHistory from './ActivityHistory'
 import DocumentManager from './DocumentManager'
 import AINextSteps from './AINextSteps'
+import { toast } from 'sonner'
 
 interface DealDetailDialogProps {
   deal: MasterDeal
@@ -30,10 +38,45 @@ interface DealDetailDialogProps {
 }
 
 export default function DealDetailDialog({ deal, open, onOpenChange, currentUser }: DealDetailDialogProps) {
-  const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
+  const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
+  const [masterDeals, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
 
   const dealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
+
+  const handleStatusChange = (newStatus: DealStatus) => {
+    if (newStatus === 'cancelled') {
+      const activeTracks = dealTracks.filter(t => t.status === 'active')
+      
+      setPlayerTracks((currentTracks) =>
+        (currentTracks || []).map(t =>
+          t.masterDealId === deal.id && t.status === 'active'
+            ? { ...t, status: 'cancelled', updatedAt: new Date().toISOString() }
+            : t
+        )
+      )
+
+      setMasterDeals((currentDeals) =>
+        (currentDeals || []).map(d =>
+          d.id === deal.id
+            ? { ...d, status: newStatus, updatedAt: new Date().toISOString() }
+            : d
+        )
+      )
+
+      toast.success(`Negócio cancelado! ${activeTracks.length} player(s) foram cancelados automaticamente.`)
+    } else {
+      setMasterDeals((currentDeals) =>
+        (currentDeals || []).map(d =>
+          d.id === deal.id
+            ? { ...d, status: newStatus, updatedAt: new Date().toISOString() }
+            : d
+        )
+      )
+
+      toast.success(`Status do negócio atualizado para ${STATUS_LABELS[newStatus]}`)
+    }
+  }
 
   return (
     <>
@@ -57,6 +100,18 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                     <span>{OPERATION_LABELS[deal.operationType]}</span>
                   </div>
                 </DialogDescription>
+              </div>
+              <div className="ml-4">
+                <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="concluded">Concluído</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </DialogHeader>

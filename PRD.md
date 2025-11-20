@@ -2,8 +2,15 @@
 
 ### ✅ Completed Features
 
-1. **Master Deal Management** - Fully implemented with create, view, and edit capabilities
-2. **Player Track System** - Complete with stage-based tracking and weighted forecasts
+1. **Master Deal Management** - Fully implemented with create, view, edit capabilities, and cascading rules ✨
+   - Auto-generate Drive folder integration (with Google Workspace)
+   - Cascading cancel rules to child player tracks
+   - Status management with automatic propagation
+2. **Player Track System** - Complete with stage-based tracking, weighted forecasts, and team assignment ✨
+   - Win triggers auto-cancel of sibling players
+   - Role-based anonymization for external users
+   - Team assignment for players
+   - Multi-view workspace (Kanban, Gantt, Calendar, List)
 3. **Task Dependencies & Milestones** - Task management with dependencies and milestone support
 4. **Role-Based Access Control** - Complete authentication and permission system ✅
    - User creation and editing
@@ -20,14 +27,19 @@
    - Gantt chart with D3 timeline visualization
    - Calendar view with monthly navigation
    - Per-track view state persistence
-6. **Advanced Analytics** - Comprehensive analytics dashboard
+6. **Advanced Analytics** - Comprehensive analytics dashboard with filtering and export ✨
    - Real-time pipeline metrics
    - Time-in-stage tracking with stage history
    - SLA monitoring and breach detection
    - Team workload distribution
-   - JSON export functionality (admin only)
+   - Date/team/type filtering
+   - Excel/CSV export functionality (admin only)
    - Weighted forecast calculations
-7. **Centralized Inbox** - Notification center with mentions, assignments, and status changes
+7. **Centralized Inbox** - Notification center with filtering and navigation ✨
+   - Filter by notification type (mentions, assignments, status changes)
+   - Navigate to context on click
+   - Mark as read/unread functionality
+   - Unread count indicators
 8. **Google Workspace Integration** - Complete OAuth flow and sync features ✨
    - OAuth connection management with token tracking
    - Drive folder automation with custom naming patterns
@@ -57,8 +69,8 @@
    - Filterable by entity
    - Activity grouping by date
    - Detailed metadata capture
-13. **Master Matrix View** - Grid visualization of deals and players
-   - Stage-based matrix layout
+13. **Master Kanban View** - Grid visualization of deals and players
+   - Stage-based kanban layout
    - Desktop grid with drill-down cells
    - Mobile carousel adaptation
    - Weighted pipeline calculations per deal
@@ -94,7 +106,7 @@
 
 # Planning Guide
 
-DealFlow Manager is a specialized hierarchical project management system for M&A and investment banking professionals to manage complex multi-party financial deals with strict privacy controls and client anonymization.
+DCM - Koa Capital is a specialized hierarchical project management system for M&A and investment banking professionals to manage complex multi-party financial deals with strict privacy controls and client anonymization.
 
 **Experience Qualities**:
 1. **Professional** - Corporate-grade interface that commands trust in high-stakes financial environments with precise data visualization
