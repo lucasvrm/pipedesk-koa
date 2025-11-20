@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Gear,
   ListChecks,
+  FolderOpen,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -39,12 +40,14 @@ import MagicLinkAuth from '@/components/MagicLinkAuth'
 import RBACDemo from '@/components/RBACDemo'
 import CustomFieldsManager from '@/components/CustomFieldsManager'
 import TaskManagementView from '@/components/TaskManagementView'
+import FolderManager from '@/components/FolderManager'
+import FolderBrowser from '@/components/FolderBrowser'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 
-type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -53,6 +56,7 @@ function App() {
   const [userManagementOpen, setUserManagementOpen] = useState(false)
   const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
   const [customFieldsOpen, setCustomFieldsOpen] = useState(false)
+  const [folderManagerOpen, setFolderManagerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   
@@ -153,6 +157,14 @@ function App() {
               >
                 <ListChecks className="mr-2" />
                 Tarefas
+              </Button>
+              <Button
+                variant={currentPage === 'folders' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentPage('folders')}
+              >
+                <FolderOpen className="mr-2" />
+                Pastas
               </Button>
               <Button
                 variant={currentPage === 'kanban' ? 'secondary' : 'ghost'}
@@ -258,6 +270,10 @@ function App() {
                     Campos Customizados
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
+                  <FolderOpen className="mr-2" />
+                  Gerenciar Pastas
+                </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
@@ -272,6 +288,7 @@ function App() {
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'deals' && <DealsView />}
         {currentPage === 'tasks' && currentUser && <TaskManagementView currentUser={currentUser} />}
+        {currentPage === 'folders' && currentUser && <FolderBrowser currentUser={currentUser} onManageFolders={() => setFolderManagerOpen(true)} />}
         {currentPage === 'kanban' && currentUser && <MasterMatrixView currentUser={currentUser} />}
         {currentPage === 'analytics' && currentUser && (
           <AnalyticsDashboard currentUser={currentUser} />
@@ -306,6 +323,11 @@ function App() {
             onOpenChange={setCustomFieldsOpen}
             currentUser={currentUser}
           />
+          <FolderManager
+            open={folderManagerOpen}
+            onOpenChange={setFolderManagerOpen}
+            currentUser={currentUser}
+          />
         </>
       )}
       
@@ -331,6 +353,15 @@ function App() {
           <span className="text-xs">Negócios</span>
         </Button>
         <Button
+          variant={currentPage === 'folders' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setCurrentPage('folders')}
+          className="flex-col h-auto py-2 px-3"
+        >
+          <FolderOpen className="mb-1" />
+          <span className="text-xs">Pastas</span>
+        </Button>
+        <Button
           variant={currentPage === 'tasks' ? 'secondary' : 'ghost'}
           size="sm"
           onClick={() => setCurrentPage('tasks')}
@@ -347,32 +378,6 @@ function App() {
           <Plus className="mb-1" />
           <span className="text-xs">Novo</span>
         </Button>
-        {canViewAnalytics ? (
-          <Button
-            variant={currentPage === 'analytics' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setCurrentPage('analytics')}
-            className="flex-col h-auto py-2 px-3"
-          >
-            <ChartBar className="mb-1" />
-            <span className="text-xs">Analytics</span>
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setInboxOpen(true)}
-            className="flex-col h-auto py-2 px-3 relative"
-          >
-            <Bell className="mb-1" />
-            <span className="text-xs">Inbox</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-accent text-accent-foreground text-[10px] flex items-center justify-center font-medium">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Button>
-        )}
       </div>
     </div>
   )

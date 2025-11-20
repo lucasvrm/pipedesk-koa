@@ -99,20 +99,31 @@
    - Comments integration
    - Quick complete/uncomplete actions
    - Mobile-responsive design
+17. **Cross-Tagging (Multi-Homing)** - Wrike-inspired organizational flexibility ✨
+   - Single entity appears in multiple folders simultaneously
+   - Primary folder designation with star indicator
+   - Hierarchical folder structure (Projects, Teams, Sprints, Categories)
+   - Folder browser with collapsible tree navigation
+   - Real-time cross-reference updates
+   - Visual folder organization with custom colors and icons
+   - Untagged items detection and management
+   - Supports deals, player tracks, and tasks
+   - Zero data duplication with single source of truth
+   - Tag management dialog with multi-select interface
 
 ### 🚧 Planned for Future Iterations
 
-17. **Custom Fields/Metadata** - Extensible data model for dynamic field definitions
-18. **Advanced Edge Case Handling**
+18. **Custom Fields/Metadata** - Extensible data model for dynamic field definitions
+19. **Advanced Edge Case Handling**
    - Orphaned task recovery with soft delete
    - Concurrent edit detection with conflict UI
    - Offline edit queue with sync on reconnect
    - Magic link expiry handling
-18. **Production OAuth Integration** - Replace mock OAuth with real Google API credentials
-19. **Email Digest** - Daily summary notifications for team members
-20. **Advanced Gantt Features** - Critical path highlighting and resource allocation
-21. **Real-time Collaboration** - WebSocket-based live updates across users
-22. **Mobile Apps** - Native iOS and Android applications
+19. **Production OAuth Integration** - Replace mock OAuth with real Google API credentials
+20. **Email Digest** - Daily summary notifications for team members
+21. **Advanced Gantt Features** - Critical path highlighting and resource allocation
+22. **Real-time Collaboration** - WebSocket-based live updates across users
+23. **Mobile Apps** - Native iOS and Android applications
 
 ---
 
@@ -192,6 +203,13 @@ DCM - Koa Capital is a specialized hierarchical project management system for M&
 - **Trigger**: Connect Google account in settings
 - **Progression**: OAuth flow → Auto-create Drive folders per deal → Sync calendar events → Email replies update cards
 - **Success criteria**: Folders follow naming convention (Master > Player), calendar invites all stakeholders
+
+### Cross-Tagging (Multi-Homing)
+- **Functionality**: Single task/deal/track can exist in multiple folders simultaneously without duplication
+- **Purpose**: Enable matrix organizations to view same entity from different perspectives (project view, team view, sprint view)
+- **Trigger**: Click tag icon on any entity or use folder browser
+- **Progression**: Open cross-tag dialog → Select multiple folders → Designate primary folder with star → Save → Entity appears in all selected locations → Any edit updates everywhere
+- **Success criteria**: Entity count badges accurate, primary folder indicator visible, updates propagate instantly, no data duplication
 
 ## Edge Case Handling
 

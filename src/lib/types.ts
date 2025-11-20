@@ -67,6 +67,8 @@ export interface Task {
   createdAt: string
   updatedAt: string
   position: number
+  status?: 'todo' | 'in_progress' | 'blocked' | 'completed'
+  priority?: 'low' | 'medium' | 'high' | 'urgent'
 }
 
 export interface Comment {
@@ -232,4 +234,27 @@ export interface CustomFieldValue {
   value: any
   updatedAt: string
   updatedBy: string
+}
+
+export interface Folder {
+  id: string
+  name: string
+  description?: string
+  color?: string
+  icon?: string
+  parentId?: string
+  createdAt: string
+  createdBy: string
+  type: 'project' | 'team' | 'sprint' | 'category' | 'custom'
+  position: number
+}
+
+export interface EntityLocation {
+  id: string
+  entityId: string
+  entityType: 'deal' | 'track' | 'task'
+  folderId: string
+  isPrimary: boolean
+  addedAt: string
+  addedBy: string
 }
