@@ -13,12 +13,25 @@ interface ConversionTrendChartProps {
   onDataPointClick?: (period: string) => void
 }
 
+interface ChartDataItem {
+  period: string
+  concluded: number
+  cancelled: number
+  conversionRate: number
+}
+
+interface ChartClickEvent {
+  activePayload?: Array<{
+    payload: ChartDataItem
+  }>
+}
+
 export default function ConversionTrendChart({ data, onDataPointClick }: ConversionTrendChartProps) {
   const [highlightedPeriod, setHighlightedPeriod] = useState<string | null>(null)
 
-  const handleClick = (data: any) => {
-    if (data && data.activePayload && data.activePayload[0]) {
-      const period = data.activePayload[0].payload.period
+  const handleClick = (event: ChartClickEvent) => {
+    if (event && event.activePayload && event.activePayload[0]) {
+      const period = event.activePayload[0].payload.period
       if (onDataPointClick) {
         onDataPointClick(period)
       }
@@ -51,7 +64,7 @@ export default function ConversionTrendChart({ data, onDataPointClick }: Convers
             <LineChart 
               data={data}
               onClick={handleClick}
-              onMouseMove={(e: any) => {
+              onMouseMove={(e: ChartClickEvent) => {
                 if (e && e.activePayload && e.activePayload[0]) {
                   setHighlightedPeriod(e.activePayload[0].payload.period)
                 }

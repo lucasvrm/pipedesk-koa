@@ -13,6 +13,12 @@ interface DealsByStageChartProps {
   onStageClick?: (stage: PlayerStage) => void
 }
 
+interface ChartDataItem {
+  stage: PlayerStage
+  label: string
+  count: number
+}
+
 const STAGE_COLORS: Record<PlayerStage, string> = {
   nda: 'hsl(var(--chart-1))',
   analysis: 'hsl(var(--chart-2))',
@@ -24,13 +30,13 @@ const STAGE_COLORS: Record<PlayerStage, string> = {
 export default function DealsByStageChart({ data, onStageClick }: DealsByStageChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
-  const handleBarClick = (entry: any, index: number) => {
+  const handleBarClick = (entry: ChartDataItem) => {
     if (onStageClick && entry.stage) {
       onStageClick(entry.stage)
     }
   }
 
-  const handleBarEnter = (_: any, index: number) => {
+  const handleBarEnter = (_data: ChartDataItem, index: number) => {
     setActiveIndex(index)
   }
 
