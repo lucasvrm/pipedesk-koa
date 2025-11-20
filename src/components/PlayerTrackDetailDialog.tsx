@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import {
   Dialog,
@@ -19,11 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS } from '@/lib/types'
+import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
-import { CheckCircle, ListChecks, Kanban as KanbanIcon } from '@phosphor-icons/react'
+import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank } from '@phosphor-icons/react'
 import TaskList from './TaskList'
 import PlayerKanban from './PlayerKanban'
+import PlayerGantt from './PlayerGantt'
+import PlayerCalendar from './PlayerCalendar'
 import { toast } from 'sonner'
 
 interface PlayerTrackDetailDialogProps {
@@ -34,7 +36,22 @@ interface PlayerTrackDetailDialogProps {
 
 export default function PlayerTrackDetailDialog({ track, open, onOpenChange }: PlayerTrackDetailDialogProps) {
   const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [currentView, setCurrentView] = useState<'tasks' | 'kanban'>('tasks')
+  const [trackViewPreferences, setTrackViewPreferences] = useKV<Record<string, ViewType>>('trackViewPreferences', {})
+  
+  const currentView = (trackViewPreferences || {})[track.id] || 'list'
+
+  const setCurrentView = (view: ViewType) => {
+    setTrackViewPreferences((prefs) => ({
+      ...(prefs || {}),
+      [track.id]: view,
+    }))
+  }
+
+  useEffect(() => {
+    if (open && !trackViewPreferences?.[track.id]) {
+      setCurrentView('list')
+    }
+  }, [open, track.id])
 
   const probability = STAGE_PROBABILITIES[track.currentStage]
   const weighted = calculateWeightedVolume(track.trackVolume, probability)
@@ -191,24 +208,40 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange }: P
 
         <Separator className="my-4" />
 
-        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as 'tasks' | 'kanban')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="tasks">
+        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="list">
               <ListChecks className="mr-2" />
-              Lista de Tarefas
+              Lista
             </TabsTrigger>
             <TabsTrigger value="kanban">
               <KanbanIcon className="mr-2" />
               Kanban
             </TabsTrigger>
+            <TabsTrigger value="gantt">
+              <ChartLine className="mr-2" />
+              Gantt
+            </TabsTrigger>
+            <TabsTrigger value="calendar">
+              <CalendarBlank className="mr-2" />
+              Calendário
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tasks" className="mt-4">
+          <TabsContent value="list" className="mt-4">
             <TaskList playerTrackId={track.id} />
           </TabsContent>
 
           <TabsContent value="kanban" className="mt-4">
             <PlayerKanban playerTrackId={track.id} />
+          </TabsContent>
+
+          <TabsContent value="gantt" className="mt-4">
+            <PlayerGantt playerTrackId={track.id} />
+          </TabsContent>
+
+          <TabsContent value="calendar" className="mt-4">
+            <PlayerCalendar playerTrackId={track.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
