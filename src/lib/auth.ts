@@ -5,6 +5,24 @@ import { MagicLink, UserRole } from './types'
 export type { MagicLink }
 
 /**
+ * SUPABASE AUTH MIGRATION COMPLETE
+ * 
+ * This application now uses Supabase Auth with Magic Link authentication.
+ * 
+ * Main authentication is handled by:
+ * - AuthProvider in src/contexts/AuthContext.tsx
+ * - useAuth() hook exported from AuthContext
+ * 
+ * Key functions:
+ * - signInWithMagicLink(email) - Send magic link to user's email
+ * - signOut() - Sign out current user
+ * - onAuthStateChange - Listen to auth state changes (used in AuthProvider)
+ * 
+ * The legacy token-based functions below are kept for backward compatibility
+ * but are no longer used in the main authentication flow.
+ */
+
+/**
  * Legacy magic link functions for backward compatibility
  * Note: These are deprecated and will be replaced by Supabase Auth
  */
