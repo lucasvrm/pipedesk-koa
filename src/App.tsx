@@ -17,6 +17,8 @@ import {
   FolderOpen,
   GitBranch,
   List,
+  Database,
+  ClockCounterClockwise,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -47,13 +49,15 @@ import TaskManagementView from '@/components/TaskManagementView'
 import FolderManager from '@/components/FolderManager'
 import FolderBrowser from '@/components/FolderBrowser'
 import PhaseValidationManager from '@/components/PhaseValidationManager'
+import DataRoomView from '@/components/DataRoomView'
+import AuditLogView from '@/components/AuditLogView'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePreferences } from '@/contexts/PreferencesContext'
 
-type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders' | 'dataroom' | 'audit'
 
 function App() {
   const { profile, loading, signOut: authSignOut, isAuthenticated } = useAuth()
@@ -288,6 +292,8 @@ function App() {
         {currentPage === 'rbac' && currentUser && (
           <RBACDemo currentUser={currentUser} />
         )}
+        {currentPage === 'dataroom' && <DataRoomView />}
+        {currentPage === 'audit' && <AuditLogView />}
       </main>
 
       <GlobalSearch
