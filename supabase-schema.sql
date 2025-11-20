@@ -235,6 +235,34 @@ CREATE TABLE phase_transition_rules (
 );
 
 -- ============================================================================
+-- Q&A MODULE
+-- ============================================================================
+
+CREATE TABLE questions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entity_id UUID NOT NULL,
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('deal', 'track')),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT,
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'answered', 'closed')),
+  asked_by UUID NOT NULL REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE answers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  question_id UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_internal BOOLEAN DEFAULT false,
+  answered_by UUID NOT NULL REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
 -- INDEXES for Performance
 -- ============================================================================
 
@@ -289,6 +317,13 @@ CREATE INDEX idx_stage_history_stage ON stage_history(stage);
 CREATE INDEX idx_activity_log_user_id ON activity_log(user_id);
 CREATE INDEX idx_activity_log_entity ON activity_log(entity_id, entity_type);
 CREATE INDEX idx_activity_log_created_at ON activity_log(created_at DESC);
+
+-- Q&A
+CREATE INDEX idx_questions_entity ON questions(entity_id, entity_type);
+CREATE INDEX idx_questions_asked_by ON questions(asked_by);
+CREATE INDEX idx_questions_status ON questions(status);
+CREATE INDEX idx_answers_question_id ON answers(question_id);
+CREATE INDEX idx_answers_answered_by ON answers(answered_by);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES

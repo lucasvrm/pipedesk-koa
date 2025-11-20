@@ -40,8 +40,8 @@ export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
-export function anonymizePlayerName(playerName: string, trackId: string, isClient: boolean): string {
-  if (!isClient) return playerName
+export function anonymizePlayerName(playerName: string, trackId: string, shouldAnonymize: boolean): string {
+  if (!shouldAnonymize) return playerName
   const trackNumber = trackId.split('-')[0].slice(-4)
   return `Player ${trackNumber}`
 }

@@ -21,14 +21,16 @@ import {
 } from '@/components/ui/select'
 import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
-import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle, Tag } from '@phosphor-icons/react'
+import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle, Tag, Question } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
 import CreatePlayerDialog from './CreatePlayerDialog'
 import CommentsPanel from './CommentsPanel'
 import ActivityHistory from './ActivityHistory'
 import DocumentManager from './DocumentManager'
+import DocumentGenerator from './DocumentGenerator'
 import AINextSteps from './AINextSteps'
 import CustomFieldsRenderer from './CustomFieldsRenderer'
+import QAPanel from './QAPanel'
 import { toast } from 'sonner'
 
 interface DealDetailDialogProps {
@@ -102,7 +104,8 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                   </div>
                 </DialogDescription>
               </div>
-              <div className="ml-4">
+              <div className="ml-4 flex gap-2">
+                <DocumentGenerator deal={deal} playerTracks={dealTracks} />
                 <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
@@ -173,7 +176,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
           <Separator className="my-4" />
 
           <Tabs defaultValue="players" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="players">
                 <Users className="mr-2" />
                 Players
@@ -185,6 +188,10 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
               <TabsTrigger value="ai">
                 <Sparkle className="mr-2" />
                 IA
+              </TabsTrigger>
+              <TabsTrigger value="qa">
+                <Question className="mr-2" />
+                Q&A
               </TabsTrigger>
               <TabsTrigger value="comments">
                 <ChatCircle className="mr-2" />
@@ -241,6 +248,16 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
             <TabsContent value="ai" className="space-y-4">
               {currentUser && (
                 <AINextSteps dealId={deal.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="qa" className="space-y-4">
+              {currentUser && (
+                <QAPanel
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                />
               )}
             </TabsContent>
 

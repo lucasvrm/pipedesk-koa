@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User, MasterDeal } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
-import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag } from '@phosphor-icons/react'
+import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Question } from '@phosphor-icons/react'
 import TaskList from './TaskList'
 import PlayerKanban from './PlayerKanban'
 import PlayerGantt from './PlayerGantt'
@@ -32,6 +32,7 @@ import DocumentManager from './DocumentManager'
 import ActivityHistory from './ActivityHistory'
 import CustomFieldsRenderer from './CustomFieldsRenderer'
 import PhaseValidationDialog from './PhaseValidationDialog'
+import QAPanel from './QAPanel'
 import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
 import { toast } from 'sonner'
 
@@ -242,7 +243,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
         <Separator className="my-4" />
 
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-9">
             <TabsTrigger value="list">
               <ListChecks className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Lista</span>
@@ -266,6 +267,10 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
             <TabsTrigger value="ai">
               <Sparkle className="mr-0 md:mr-2" />
               <span className="hidden md:inline">IA</span>
+            </TabsTrigger>
+            <TabsTrigger value="qa">
+              <Question className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Q&A</span>
             </TabsTrigger>
             <TabsTrigger value="comments">
               <ChatCircle className="mr-0 md:mr-2" />
@@ -306,6 +311,16 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
           <TabsContent value="ai" className="space-y-4">
             <AINextSteps trackId={track.id} currentStage={track.currentStage} />
+          </TabsContent>
+
+          <TabsContent value="qa" className="space-y-4">
+            {currentUser && (
+              <QAPanel
+                entityId={track.id}
+                entityType="track"
+                currentUser={currentUser}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="comments" className="space-y-4">
