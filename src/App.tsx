@@ -16,6 +16,7 @@ import {
   ListChecks,
   FolderOpen,
   GitBranch,
+  List,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -162,14 +163,6 @@ function App() {
                 Tarefas
               </Button>
               <Button
-                variant={currentPage === 'folders' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrentPage('folders')}
-              >
-                <FolderOpen className="mr-2" />
-                Pastas
-              </Button>
-              <Button
                 variant={currentPage === 'kanban' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentPage('kanban')}
@@ -185,16 +178,6 @@ function App() {
                 >
                   <ChartBar className="mr-2" />
                   Analytics
-                </Button>
-              )}
-              {canManageUsers && (
-                <Button
-                  variant={currentPage === 'rbac' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setCurrentPage('rbac')}
-                >
-                  <ShieldCheck className="mr-2" />
-                  RBAC
                 </Button>
               )}
             </nav>
@@ -235,26 +218,24 @@ function App() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {getInitials(currentUser?.name || 'U')}
-                    </AvatarFallback>
-                  </Avatar>
+                <Button variant="ghost" size="icon" title="Menu">
+                  <List weight="bold" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{currentUser?.name || 'Usuário'}</p>
-                    <p className="text-xs text-muted-foreground">{currentUser?.email || ''}</p>
-                  </div>
-                </DropdownMenuLabel>
+                <DropdownMenuLabel>Mais Opções</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <UserIcon className="mr-2" />
-                  Perfil
+                <DropdownMenuItem onClick={() => setCurrentPage('folders')}>
+                  <FolderOpen className="mr-2" />
+                  Pastas
                 </DropdownMenuItem>
+                {canManageUsers && (
+                  <DropdownMenuItem onClick={() => setCurrentPage('rbac')}>
+                    <ShieldCheck className="mr-2" />
+                    RBAC
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 {canManageUsers && (
                   <DropdownMenuItem onClick={() => setUserManagementOpen(true)}>
                     <Users className="mr-2" />
@@ -282,6 +263,31 @@ function App() {
                 <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {getInitials(currentUser?.name || 'U')}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{currentUser?.name || 'Usuário'}</p>
+                    <p className="text-xs text-muted-foreground">{currentUser?.email || ''}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <UserIcon className="mr-2" />
+                  Perfil
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
@@ -367,15 +373,6 @@ function App() {
           <span className="text-xs">Negócios</span>
         </Button>
         <Button
-          variant={currentPage === 'folders' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setCurrentPage('folders')}
-          className="flex-col h-auto py-2 px-3"
-        >
-          <FolderOpen className="mb-1" />
-          <span className="text-xs">Pastas</span>
-        </Button>
-        <Button
           variant={currentPage === 'tasks' ? 'secondary' : 'ghost'}
           size="sm"
           onClick={() => setCurrentPage('tasks')}
@@ -383,6 +380,15 @@ function App() {
         >
           <ListChecks className="mb-1" />
           <span className="text-xs">Tarefas</span>
+        </Button>
+        <Button
+          variant={currentPage === 'kanban' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setCurrentPage('kanban')}
+          className="flex-col h-auto py-2 px-3"
+        >
+          <GridFour className="mb-1" />
+          <span className="text-xs">Kanban</span>
         </Button>
         <Button
           size="sm"
