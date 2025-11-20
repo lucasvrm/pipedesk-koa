@@ -9,6 +9,8 @@ import {
   SignOut,
   Users,
   GoogleLogo,
+  MagnifyingGlass,
+  GridFour,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -28,11 +30,13 @@ import CreateDealDialog from '@/components/CreateDealDialog'
 import UserManagementDialog from '@/components/UserManagementDialog'
 import AnalyticsDashboard from '@/components/AnalyticsDashboard'
 import GoogleIntegrationDialog from '@/components/GoogleIntegrationDialog'
+import GlobalSearch from '@/components/GlobalSearch'
+import MasterMatrixView from '@/components/MasterMatrixView'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 
-type Page = 'dashboard' | 'deals' | 'analytics'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'matrix'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -40,6 +44,7 @@ function App() {
   const [createDealOpen, setCreateDealOpen] = useState(false)
   const [userManagementOpen, setUserManagementOpen] = useState(false)
   const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   
   const [currentUser] = useKV<User>('currentUser', {
     id: 'user-1',
@@ -103,6 +108,14 @@ function App() {
                 <Kanban className="mr-2" />
                 Negócios
               </Button>
+              <Button
+                variant={currentPage === 'matrix' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentPage('matrix')}
+              >
+                <GridFour className="mr-2" />
+                Matriz
+              </Button>
               {canViewAnalytics && (
                 <Button
                   variant={currentPage === 'analytics' ? 'secondary' : 'ghost'}
@@ -117,6 +130,15 @@ function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSearchOpen(true)}
+              title="Busca Global (Ctrl+K)"
+            >
+              <MagnifyingGlass />
+            </Button>
+
             <Button
               onClick={() => setCreateDealOpen(true)}
               size="sm"
@@ -187,11 +209,17 @@ function App() {
       <main className="flex-1">
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'deals' && <DealsView />}
+        {currentPage === 'matrix' && currentUser && <MasterMatrixView currentUser={currentUser} />}
         {currentPage === 'analytics' && currentUser && (
           <AnalyticsDashboard currentUser={currentUser} />
         )}
       </main>
 
+      <GlobalSearch
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        currentUser={currentUser!}
+      />
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
       

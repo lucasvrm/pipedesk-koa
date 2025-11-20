@@ -25,13 +25,57 @@
    - Calendar sync settings
    - Gmail thread sync (beta)
    - Mock implementation ready for production OAuth
+9. **Comments System with Mentions** - Full-featured commenting with @mentions
+   - Real-time mention detection and autocomplete
+   - User notifications for mentions
+   - Comment thread AI summarization
+   - Rich comment display with mention highlighting
+10. **AI-Powered Intelligence** - Advanced AI features implemented
+   - Comment thread summarization
+   - Next-step suggestions based on deal/track context
+   - Context-aware recommendations by stage
+   - Priority and category classification
+11. **Global Search** - Comprehensive search across all entities
+   - Search deals, players, tasks, and comments
+   - Grouped results by entity type
+   - Click-to-navigate to results
+   - Respects player anonymization rules
+12. **Activity History/Audit Log** - Complete audit trail
+   - All CRUD operations logged
+   - User attribution and timestamps
+   - Filterable by entity
+   - Activity grouping by date
+   - Detailed metadata capture
+13. **Master Matrix View** - Grid visualization of deals and players
+   - Stage-based matrix layout
+   - Desktop grid with drill-down cells
+   - Mobile carousel adaptation
+   - Weighted pipeline calculations per deal
+   - Click-through to player details
+14. **File Upload and Document Management** - Secure document handling
+   - Multi-file upload support
+   - File type detection and icons
+   - Document preview and download
+   - Activity logging for uploads
+   - Size validation (10MB limit)
+15. **Bulk Operations** - Efficient multi-entity management
+   - Bulk delete, status change, stage change
+   - Bulk assignment and task completion
+   - Confirmation dialogs
+   - Activity logging for all operations
+   - Smart entity selection
 
-### 🚧 In Progress / Future Features
+### 🚧 Planned for Future Iterations
 
-9. **AI-Powered Intelligence** - Planned for next iteration
-10. **Calendar View** - Planned enhancement to multi-view workspace
-11. **Gantt View** - Planned for complex timeline visualization
-12. **Email Digest** - Daily summary notifications
+16. **Custom Fields/Metadata** - Extensible data model
+17. **Advanced Edge Case Handling**
+   - Orphaned task recovery
+   - Concurrent edit detection with conflict UI
+   - Offline edit queue with sync
+   - Magic link expiry handling
+18. **Calendar View** - Timeline visualization for tasks and deadlines
+19. **Gantt View** - Complex timeline with dependencies
+20. **Email Digest** - Daily summary notifications
 
 ---
 

@@ -14,9 +14,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
-import { Plus, Users } from '@phosphor-icons/react'
+import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
 import CreatePlayerDialog from './CreatePlayerDialog'
+import CommentsPanel from './CommentsPanel'
+import ActivityHistory from './ActivityHistory'
+import DocumentManager from './DocumentManager'
+import AINextSteps from './AINextSteps'
 
 interface DealDetailDialogProps {
   deal: MasterDeal
@@ -102,12 +106,27 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
           <Separator className="my-4" />
 
           <Tabs defaultValue="players" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="players">
                 <Users className="mr-2" />
-                Players ({dealTracks.length})
+                Players
               </TabsTrigger>
-              <TabsTrigger value="activity">Atividade</TabsTrigger>
+              <TabsTrigger value="ai">
+                <Sparkle className="mr-2" />
+                IA
+              </TabsTrigger>
+              <TabsTrigger value="comments">
+                <ChatCircle className="mr-2" />
+                Comentários
+              </TabsTrigger>
+              <TabsTrigger value="documents">
+                <FileText className="mr-2" />
+                Docs
+              </TabsTrigger>
+              <TabsTrigger value="activity">
+                <ClockCounterClockwise className="mr-2" />
+                Atividade
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="players" className="space-y-4">
@@ -137,10 +156,39 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
               )}
             </TabsContent>
 
+            <TabsContent value="ai" className="space-y-4">
+              {currentUser && (
+                <AINextSteps dealId={deal.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="comments" className="space-y-4">
+              {currentUser && (
+                <CommentsPanel
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="documents" className="space-y-4">
+              {currentUser && (
+                <DocumentManager
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                  entityName={deal.clientName}
+                />
+              )}
+            </TabsContent>
+
             <TabsContent value="activity">
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Histórico de atividades em breve</p>
-              </div>
+              <ActivityHistory
+                entityId={deal.id}
+                entityType="deal"
+                limit={50}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>
