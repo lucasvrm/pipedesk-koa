@@ -117,7 +117,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
             </div>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -126,6 +126,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
               </CardHeader>
               <CardContent>
                 <p className="text-xl md:text-2xl font-bold break-words">{formatCurrency(deal.volume)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Fee (%)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xl md:text-2xl font-bold">{deal.feePercentage ? `${deal.feePercentage}%` : '—'}</p>
               </CardContent>
             </Card>
 

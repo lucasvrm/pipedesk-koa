@@ -32,6 +32,10 @@ export function calculateWeightedVolume(volume: number, probability: number): nu
   return volume * (probability / 100)
 }
 
+export function calculateFee(volume: number, feePercentage: number): number {
+  return volume * (feePercentage / 100)
+}
+
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }

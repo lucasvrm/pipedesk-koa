@@ -40,6 +40,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
   const [operationType, setOperationType] = useState<OperationType>('acquisition')
   const [deadline, setDeadline] = useState('')
   const [observations, setObservations] = useState('')
+  const [feePercentage, setFeePercentage] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +62,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: currentUser?.id || 'user-1',
+      feePercentage: feePercentage ? parseFloat(feePercentage) : undefined,
     }
 
     setMasterDeals((current) => [...(current || []), newDeal])
@@ -100,6 +102,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
     setOperationType('acquisition')
     setDeadline('')
     setObservations('')
+    setFeePercentage('')
     onOpenChange(false)
   }
 
@@ -161,20 +164,34 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="operation-type">Tipo de Operação *</Label>
-              <Select value={operationType} onValueChange={(v) => setOperationType(v as OperationType)}>
-                <SelectTrigger id="operation-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(OPERATION_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="fee-percentage">Fee (%)</Label>
+              <Input
+                id="fee-percentage"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={feePercentage}
+                onChange={(e) => setFeePercentage(e.target.value)}
+                placeholder="0.00"
+              />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="operation-type">Tipo de Operação *</Label>
+            <Select value={operationType} onValueChange={(v) => setOperationType(v as OperationType)}>
+              <SelectTrigger id="operation-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(OPERATION_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

@@ -242,10 +242,6 @@ function App() {
                   Perfil
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setCurrentPage('folders')}>
-                  <FolderOpen className="mr-2" />
-                  Pastas
-                </DropdownMenuItem>
                 {canManageUsers && (
                   <DropdownMenuItem onClick={() => setCurrentPage('rbac')}>
                     <ShieldCheck className="mr-2" />

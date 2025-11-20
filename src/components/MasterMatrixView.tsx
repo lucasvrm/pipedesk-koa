@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { MasterDeal, PlayerTrack, User, STAGE_LABELS, STAGE_PROBABILITIES } from '@/lib/types'
-import { formatCurrency, anonymizePlayerName, calculateWeightedVolume } from '@/lib/helpers'
+import { formatCurrency, anonymizePlayerName, calculateWeightedVolume, calculateFee } from '@/lib/helpers'
 import { canViewPlayerName } from '@/lib/permissions'
 import { CaretLeft, CaretRight, Eye } from '@phosphor-icons/react'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
@@ -73,9 +73,9 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">Matriz Master</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
           <p className="text-muted-foreground">
-            Visualização de grid de deals e players por estágio
+            Visualização de deals e players por estágio
           </p>
         </div>
       </div>
@@ -158,6 +158,10 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
                                   track.trackVolume,
                                   track.probability
                                 )
+                                const feeValue = calculateFee(
+                                  track.trackVolume,
+                                  currentDeal.feePercentage || 0
+                                )
 
                                 return (
                                   <Card key={track.id} className="hover:shadow-md transition-shadow">
@@ -174,7 +178,7 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
                                         {formatCurrency(track.trackVolume)}
                                       </div>
                                       <div className="text-xs text-accent font-medium mt-1">
-                                        Pond: {formatCurrency(weightedValue)}
+                                        Fee: {formatCurrency(feeValue)}
                                       </div>
                                     </CardContent>
                                   </Card>

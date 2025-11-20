@@ -38,6 +38,7 @@ export interface MasterDeal {
   updatedAt: string
   createdBy: string
   deletedAt?: string
+  feePercentage?: number
 }
 
 export interface PlayerTrack {
