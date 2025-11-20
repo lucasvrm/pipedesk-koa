@@ -266,3 +266,30 @@ export interface EntityLocation {
   addedAt: string
   addedBy: string
 }
+
+export type QuestionPriority = 'low' | 'medium' | 'high' | 'urgent'
+export type QuestionStatus = 'open' | 'answered' | 'closed'
+
+export interface Question {
+  id: string
+  entityId: string
+  entityType: 'deal' | 'track'
+  title: string
+  content: string
+  category?: string
+  priority: QuestionPriority
+  status: QuestionStatus
+  askedBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Answer {
+  id: string
+  questionId: string
+  content: string
+  isInternal: boolean
+  answeredBy: string
+  createdAt: string
+  updatedAt: string
+}

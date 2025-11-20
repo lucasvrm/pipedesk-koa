@@ -17,8 +17,8 @@ import {
   FolderOpen,
   GitBranch,
   List,
-  Database,
-  ClockCounterClockwise,
+  Eye,
+  EyeSlash,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -55,13 +55,13 @@ import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
-import { usePreferences } from '@/contexts/PreferencesContext'
+import { useImpersonation } from '@/contexts/ImpersonationContext'
 
 type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders' | 'dataroom' | 'audit'
 
 function App() {
   const { profile, loading, signOut: authSignOut, isAuthenticated } = useAuth()
-  const { compactMode, setCompactMode } = usePreferences()
+  const { isImpersonating, setIsImpersonating } = useImpersonation()
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
@@ -163,6 +163,24 @@ function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            {currentUser?.role === 'admin' && (
+              <div className="flex items-center gap-2 mr-2 px-3 py-1 rounded-md bg-muted">
+                {isImpersonating ? (
+                  <EyeSlash className="text-muted-foreground" size={16} />
+                ) : (
+                  <Eye className="text-muted-foreground" size={16} />
+                )}
+                <Label htmlFor="impersonation-mode" className="text-xs text-muted-foreground cursor-pointer">
+                  Modo Cliente
+                </Label>
+                <Switch
+                  id="impersonation-mode"
+                  checked={isImpersonating}
+                  onCheckedChange={setIsImpersonating}
+                />
+              </div>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
