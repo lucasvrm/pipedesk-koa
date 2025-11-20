@@ -40,7 +40,7 @@ export default function QAPanel({ entityId, entityType, currentUser }: QAPanelPr
   const { isImpersonating } = useImpersonation()
   const [questions, setQuestions] = useKV<Question[]>('questions', [])
   const [answers, setAnswers] = useKV<Answer[]>('answers', [])
-  const [users, setUsers] = useKV<User[]>('users', [])
+  const [users] = useKV<User[]>('users', [])
   const [askDialogOpen, setAskDialogOpen] = useState(false)
   const [answerDialogOpen, setAnswerDialogOpen] = useState(false)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
