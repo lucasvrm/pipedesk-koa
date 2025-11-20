@@ -1,33 +1,33 @@
 import { useState } from 'react'
-import {
+import { useKV } from '@github/spark/hooks'
 import {
   Folder as FolderIcon,
   Tag,
   Pencil,
-  Plus
-import { B
-import { 
+  Plus,
+  Trash,
+  Users,
+  Lightning,
+  Target,
+} from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
-  Dialo
-  DialogFooter,
-  DialogTitle,
-import {
-  SelectContent,
-  SelectTrigger,
-} from '
-import { 
+  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
-  { value: 'bri
+  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  { value
+  Select,
   SelectContent,
-  { value: '#
+  SelectItem,
   SelectTrigger,
-  { value: '#3
+  SelectValue,
 } from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Folder, User } from '@/lib/types'
@@ -35,43 +35,39 @@ import { toast } from 'sonner'
 
 const FOLDER_ICONS = [
   { value: 'folder', label: 'Pasta', icon: FolderIcon },
-  onOpenChange,
-}: FolderManagerProps) {
-  const [createDialogOpen, setCreateDialogOpen] =
-  
- 
+  { value: 'tag', label: 'Tag', icon: Tag },
+  { value: 'users', label: 'Equipe', icon: Users },
+  { value: 'lightning', label: 'Raio', icon: Lightning },
+  { value: 'target', label: 'Alvo', icon: Target },
+]
 
-    type: 'project' as 
+const FOLDER_COLORS = [
+  { value: '#3b82f6', label: 'Azul' },
+  { value: '#10b981', label: 'Verde' },
+  { value: '#f59e0b', label: 'Laranja' },
+  { value: '#ef4444', label: 'Vermelho' },
+  { value: '#8b5cf6', label: 'Roxo' },
+  { value: '#ec4899', label: 'Rosa' },
+]
 
-    setFormData({
-      description: '',
-      icon: 'folder',
-    })
-  }
-  const handleCreate = () => {
-      toast.error('Nome da pasta é obr
-    }
-    const newFolder: Folder = {
- 
-
-      type: formData.t
-      createdBy: currentUser.id,
+const FOLDER_TYPES = [
+  { value: 'project', label: 'Projeto' },
   { value: 'team', label: 'Equipe' },
   { value: 'sprint', label: 'Sprint' },
-    setFolders((current) => [...(current || 
+  { value: 'category', label: 'Categoria' },
   { value: 'custom', label: 'Personalizado' },
- 
+]
 
-      toast.error('Nome da pas
-    }
-    setFolders((current) =>
-        f.id === ed
- 
+interface FolderManagerProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  currentUser: User
+}
 
-              icon: formData.icon,
-       
-      )
-
+export default function FolderManager({
+  open,
+  onOpenChange,
+  currentUser,
 }: FolderManagerProps) {
   const [folders, setFolders] = useKV<Folder[]>('folders', [])
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -92,15 +88,15 @@ const FOLDER_ICONS = [
       color: '#3b82f6',
       icon: 'folder',
       type: 'project',
-  retu
+    })
     setEditingFolder(null)
-   
+  }
 
-            <DialogDescription
+  const handleCreate = () => {
     if (!formData.name.trim()) {
       toast.error('Nome da pasta é obrigatório')
       return
-     
+    }
 
     const newFolder: Folder = {
       id: `folder-${Date.now()}`,
@@ -108,8 +104,8 @@ const FOLDER_ICONS = [
       description: formData.description,
       color: formData.color,
       icon: formData.icon,
-          </div>
-          <ScrollArea className="h-[400px]
+      type: formData.type,
+      createdAt: new Date().toISOString(),
       createdBy: currentUser.id,
       position: (folders || []).length,
     }
@@ -117,19 +113,19 @@ const FOLDER_ICONS = [
     setFolders((current) => [...(current || []), newFolder])
     toast.success('Pasta criada com sucesso')
     setCreateDialogOpen(false)
-               
+    resetForm()
   }
 
   const handleUpdate = () => {
     if (!formData.name.trim()) {
       toast.error('Nome da pasta é obrigatório')
-            
+      return
     }
 
     setFolders((current) =>
-                          <p cla
+      (current || []).map((f) =>
         f.id === editingFolder?.id
-             
+          ? {
               ...f,
               name: formData.name,
               description: formData.description,
@@ -138,13 +134,13 @@ const FOLDER_ICONS = [
               type: formData.type,
             }
           : f
-       
+      )
     )
 
     toast.success('Pasta atualizada com sucesso')
-                        >
+    setCreateDialogOpen(false)
     resetForm()
-   
+  }
 
   const handleDelete = (folderId: string) => {
     setFolders((current) => (current || []).filter((f) => f.id !== folderId))
@@ -152,22 +148,22 @@ const FOLDER_ICONS = [
   }
 
   const handleEdit = (folder: Folder) => {
-          <DialogHeader>
     setFormData({
-            </DialogTitl
+      name: folder.name,
       description: folder.description || '',
-          <div className="space-y-4">
+      color: folder.color || '#3b82f6',
       icon: folder.icon || 'folder',
-              <Input
-      
+      type: folder.type,
+    })
+    setEditingFolder(folder)
     setCreateDialogOpen(true)
-   
+  }
 
-
+  return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl">
-                  setFor
+          <DialogHeader>
             <DialogTitle>Gerenciar Pastas</DialogTitle>
             <DialogDescription>
               Organize seus negócios, trilhas e tarefas em pastas personalizadas.
@@ -177,7 +173,7 @@ const FOLDER_ICONS = [
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
               {(folders || []).length} pasta(s) criada(s)
-                
+            </p>
             <Button
               onClick={() => {
                 resetForm()
@@ -186,7 +182,7 @@ const FOLDER_ICONS = [
             >
               <Plus className="mr-2" />
               Nova Pasta
-              <Label>
+            </Button>
           </div>
 
           <ScrollArea className="h-[400px] pr-4">
@@ -207,7 +203,7 @@ const FOLDER_ICONS = [
                     <div
                       key={folder.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                     
+                    >
                       <div className="flex items-center gap-3 flex-1">
                         <div
                           className="p-2 rounded"
@@ -226,7 +222,7 @@ const FOLDER_ICONS = [
                             {FOLDER_TYPES.find((t) => t.value === folder.type)?.label}
                           </p>
                         </div>
-                resetForm()
+                      </div>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
@@ -234,7 +230,7 @@ const FOLDER_ICONS = [
                           onClick={() => handleEdit(folder)}
                         >
                           <Pencil />
-
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -244,17 +240,17 @@ const FOLDER_ICONS = [
                         </Button>
                       </div>
                     </div>
-
+                  )
                 })}
               </div>
             )}
-
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
-
+          <DialogHeader>
             <DialogTitle>
               {editingFolder ? 'Editar Pasta' : 'Nova Pasta'}
             </DialogTitle>
@@ -262,7 +258,7 @@ const FOLDER_ICONS = [
 
           <div className="space-y-4">
             <div>
-
+              <Label>Nome</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
@@ -270,11 +266,11 @@ const FOLDER_ICONS = [
                 }
                 placeholder="Nome da pasta"
               />
-
+            </div>
 
             <div>
               <Label>Descrição</Label>
-
+              <Textarea
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -285,17 +281,17 @@ const FOLDER_ICONS = [
             </div>
 
             <div>
-
+              <Label>Tipo</Label>
               <Select
-
+                value={formData.type}
                 onValueChange={(value) =>
                   setFormData({ ...formData, type: value as Folder['type'] })
                 }
-
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
-
+                <SelectContent>
                   {FOLDER_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
@@ -303,73 +299,63 @@ const FOLDER_ICONS = [
                   ))}
                 </SelectContent>
               </Select>
+            </div>
 
-
-
+            <div>
               <Label>Cor</Label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {FOLDER_COLORS.map((color) => (
                   <button
                     key={color.value}
+                    type="button"
+                    className={`w-8 h-8 rounded border-2 ${
+                      formData.color === color.value
+                        ? 'border-foreground'
+                        : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: color.value }}
+                    onClick={() => setFormData({ ...formData, color: color.value })}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
 
+            <div>
+              <Label>Ícone</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {FOLDER_ICONS.map((icon) => {
+                  const IconComp = icon.icon
+                  return (
+                    <button
+                      key={icon.value}
+                      type="button"
+                      className={`p-2 rounded border-2 ${
+                        formData.icon === icon.value
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                      onClick={() => setFormData({ ...formData, icon: icon.value })}
+                      title={icon.label}
+                    >
+                      <IconComp size={24} />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={editingFolder ? handleUpdate : handleCreate}>
+              {editingFolder ? 'Atualizar' : 'Criar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
