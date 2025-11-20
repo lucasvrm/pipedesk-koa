@@ -40,6 +40,27 @@ function App() {
     role: 'admin',
   })
 
+  const [users] = useKV<User[]>('users', [
+    {
+      id: 'user-1',
+      name: 'João Silva',
+      email: 'joao.silva@empresa.com',
+      role: 'admin',
+    },
+    {
+      id: 'user-2',
+      name: 'Maria Santos',
+      email: 'maria.santos@empresa.com',
+      role: 'analyst',
+    },
+    {
+      id: 'user-3',
+      name: 'Pedro Costa',
+      email: 'pedro.costa@empresa.com',
+      role: 'analyst',
+    },
+  ])
+
   const [notifications] = useKV<any[]>('notifications', [])
 
   const unreadCount = (notifications || []).filter((n: any) => !n.read).length
