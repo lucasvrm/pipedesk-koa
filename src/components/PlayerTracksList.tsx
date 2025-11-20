@@ -3,7 +3,7 @@ import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, User } from '@/lib/type
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
-import { canViewPlayerName } from '@/lib/permissions'
+import { canViewPlayerName } from '@/features/rbac'
 import { cn } from '@/lib/utils'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
 

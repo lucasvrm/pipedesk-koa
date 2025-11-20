@@ -1,5 +1,5 @@
 import { User } from '@/lib/types'
-import { useSupabase } from './useSupabase'
+import { useSupabase } from '@/hooks/useSupabase'
 
 export function useUsers() {
   return useSupabase<User>('users', {

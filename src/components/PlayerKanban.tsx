@@ -8,7 +8,7 @@ import { Plus, Flag, Calendar, LinkSimple, Warning } from '@phosphor-icons/react
 import { formatDate } from '@/lib/helpers'
 import { toast } from 'sonner'
 import { useState, useRef } from 'react'
-import CreateTaskDialog from './CreateTaskDialog'
+import { CreateTaskDialog } from '@/features/tasks'
 
 interface PlayerKanbanProps {
   playerTrackId: string

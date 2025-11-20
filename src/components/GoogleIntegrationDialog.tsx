@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { GoogleIntegration, GoogleDriveFolder, CalendarEvent, User, MasterDeal, PlayerTrack, Task } from '@/lib/types'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission } from '@/features/rbac'
 import {
   Dialog,
   DialogContent,

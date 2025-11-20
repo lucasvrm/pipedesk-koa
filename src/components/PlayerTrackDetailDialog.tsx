@@ -22,7 +22,7 @@ import {
 import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User, MasterDeal } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
 import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag } from '@phosphor-icons/react'
-import TaskList from './TaskList'
+import { TaskList } from '@/features/tasks'
 import PlayerKanban from './PlayerKanban'
 import PlayerGantt from './PlayerGantt'
 import PlayerCalendar from './PlayerCalendar'

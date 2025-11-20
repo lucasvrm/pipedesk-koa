@@ -1,6 +1,6 @@
-import { supabase } from './supabaseClient'
-import { generateId } from './helpers'
-import { MagicLink, UserRole } from './types'
+import { supabase } from '@/lib/supabaseClient'
+import { generateId } from '@/lib/helpers'
+import { MagicLink, UserRole } from '@/lib/types'
 
 export type { MagicLink }
 

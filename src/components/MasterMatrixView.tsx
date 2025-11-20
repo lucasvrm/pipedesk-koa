@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { MasterDeal, PlayerTrack, User, STAGE_LABELS, STAGE_PROBABILITIES } from '@/lib/types'
 import { formatCurrency, anonymizePlayerName, calculateWeightedVolume, calculateFee } from '@/lib/helpers'
-import { canViewPlayerName } from '@/lib/permissions'
+import { canViewPlayerName } from '@/features/rbac'
 import { CaretLeft, CaretRight, Eye } from '@phosphor-icons/react'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
 

@@ -1,6 +1,6 @@
 import { useKV } from '@github/spark/hooks'
 import { User } from '@/lib/types'
-import { MagicLink, isMagicLinkExpired, isMagicLinkValid, getMagicLinkUrl } from '@/lib/auth'
+import { MagicLink, isMagicLinkExpired, isMagicLinkValid, getMagicLinkUrl } from '@/features/rbac'
 import { formatDateTime } from '@/lib/helpers'
 import {
   Dialog,

@@ -7,7 +7,7 @@ import { Plus, CaretLeft, CaretRight, Flag, LinkSimple, Check } from '@phosphor-
 import { useState } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import CreateTaskDialog from './CreateTaskDialog'
+import { CreateTaskDialog } from '@/features/tasks'
 import { formatDate } from '@/lib/helpers'
 
 interface PlayerCalendarProps {

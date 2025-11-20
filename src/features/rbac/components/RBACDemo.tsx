@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { User, UserRole } from '@/lib/types'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission } from '../lib/permissions'
 import { 
   ShieldCheck, 
   Eye, 

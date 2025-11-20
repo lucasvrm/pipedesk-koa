@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { MasterDeal, PlayerTrack, Task, User, Comment } from '@/lib/types'
 import { MagnifyingGlass, Briefcase, Users, ListChecks, ChatCircle } from '@phosphor-icons/react'
 import { formatCurrency, formatDate, anonymizePlayerName } from '@/lib/helpers'
-import { canViewPlayerName } from '@/lib/permissions'
+import { canViewPlayerName } from '@/features/rbac'
 
 interface GlobalSearchProps {
   open: boolean

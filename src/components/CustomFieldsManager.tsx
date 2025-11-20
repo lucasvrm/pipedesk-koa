@@ -35,7 +35,7 @@ import { CustomFieldDefinition, CustomFieldType, User } from '@/lib/types'
 import { Plus, DotsThree, Trash, PencilSimple, ArrowUp, ArrowDown, Tag } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { generateId } from '@/lib/helpers'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission } from '@/features/rbac'
 
 interface CustomFieldsManagerProps {
   open: boolean

@@ -9,7 +9,7 @@ import {
   PlayerStage,
   OperationType,
 } from '@/lib/types'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission } from '@/features/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'

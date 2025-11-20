@@ -1,5 +1,5 @@
 import { Notification } from '@/lib/types'
-import { useSupabase } from './useSupabase'
+import { useSupabase } from '@/hooks/useSupabase'
 import { supabase } from '@/lib/supabaseClient'
 import { useEffect, useState } from 'react'
 

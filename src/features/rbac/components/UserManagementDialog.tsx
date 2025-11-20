@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { User, UserRole } from '@/lib/types'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission } from '../lib/permissions'
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ import { Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon } from 
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from './InviteUserDialog'
-import MagicLinksDialog from './MagicLinksDialog'
+import MagicLinksDialog from '@/components/MagicLinksDialog'
 
 interface UserManagementDialogProps {
   open: boolean

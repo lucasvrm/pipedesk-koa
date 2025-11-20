@@ -1,4 +1,4 @@
-import { UserRole } from './types'
+import { UserRole } from '@/lib/types'
 
 export const PERMISSIONS = {
   VIEW_ALL_DEALS: ['admin', 'analyst'] as UserRole[],

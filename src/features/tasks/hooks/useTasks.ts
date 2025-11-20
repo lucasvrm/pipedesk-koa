@@ -1,5 +1,5 @@
 import { Task } from '@/lib/types'
-import { useSupabase } from './useSupabase'
+import { useSupabase } from '@/hooks/useSupabase'
 
 export function useTasks(playerTrackId?: string) {
   return useSupabase<Task>('tasks', {

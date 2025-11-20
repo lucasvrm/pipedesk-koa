@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { User, UserRole, ROLE_LABELS } from '@/lib/types'
-import { generateMagicLink, getMagicLinkUrl, getInvitationEmailBody, getInvitationEmailSubject, MagicLink } from '@/lib/auth'
+import { generateMagicLink, getMagicLinkUrl, getInvitationEmailBody, getInvitationEmailSubject, MagicLink } from '../lib/auth'
 import { generateId } from '@/lib/helpers'
 import {
   Dialog,
