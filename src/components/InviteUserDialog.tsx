@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { User, UserRole, ROLE_LABELS } from '@/lib/types'
+import { User, UserRole, ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/types'
 import { generateMagicLink, getMagicLinkUrl, getInvitationEmailBody, getInvitationEmailSubject, MagicLink } from '@/lib/auth'
 import { generateId } from '@/lib/helpers'
 import {
@@ -183,12 +183,11 @@ export default function InviteUserDialog({
                   <SelectItem value="client">Cliente Externo</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {formData.role === 'client' && 'Clientes externos veem nomes de players anonimizados'}
-                {formData.role === 'analyst' && 'Analistas podem criar e editar negócios'}
-                {formData.role === 'admin' && 'Administradores têm acesso total ao sistema'}
-                {formData.role === 'newbusiness' && 'Equipe de novos negócios vê todos os dados'}
-              </p>
+              <div className="rounded-md bg-muted/50 p-3 mt-2">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {ROLE_DESCRIPTIONS[formData.role]}
+                </p>
+              </div>
             </div>
 
             {formData.role === 'client' && (
