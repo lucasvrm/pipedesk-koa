@@ -1,8 +1,13 @@
+import { supabase } from './supabaseClient'
 import { generateId } from './helpers'
-import { MagicLink, ROLE_LABELS, UserRole } from './types'
+import { MagicLink, UserRole } from './types'
 
 export type { MagicLink }
 
+/**
+ * Legacy magic link functions for backward compatibility
+ * Note: These are deprecated and will be replaced by Supabase Auth
+ */
 export function generateMagicLink(userId: string, expirationHours = 72): MagicLink {
   const token = generateSecureToken()
   const now = new Date()
@@ -43,22 +48,148 @@ export function isMagicLinkValid(link: MagicLink): boolean {
   return !link.usedAt && !link.revokedAt && !isMagicLinkExpired(link)
 }
 
+/**
+ * Send a magic link to the user's email using Supabase Auth
+ */
+export async function sendMagicLink(email: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to send magic link',
+    }
+  }
+}
+
+/**
+ * Verify the OTP token from the magic link
+ */
+export async function verifyMagicLink(
+  email: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to verify magic link',
+    }
+  }
+}
+
+/**
+ * Get the current authenticated user
+ */
+export async function getCurrentUser() {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    return null
+  }
+
+  return user
+}
+
+/**
+ * Sign out the current user
+ */
+export async function signOut(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to sign out',
+    }
+  }
+}
+
+/**
+ * Get the current session
+ */
+export async function getSession() {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
+
+  if (error) {
+    return null
+  }
+
+  return session
+}
+
+/**
+ * Listen to auth state changes
+ */
+export function onAuthStateChange(
+  callback: (event: string, session: any) => void
+) {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(callback)
+
+  return subscription
+}
+
+/**
+ * Helper function to get invitation email body (for UI display)
+ */
 export function getInvitationEmailBody(
   recipientName: string,
   senderName: string,
   role: string,
-  magicLinkUrl: string,
-  expirationHours: number
+  magicLinkUrl?: string,
+  expirationHours = 72
 ): string {
+  const linkSection = magicLinkUrl 
+    ? `Para acessar a plataforma, clique no link abaixo:
+
+${magicLinkUrl}
+
+Este link é válido por ${expirationHours} horas e pode ser usado apenas uma vez.`
+    : `Você receberá um link mágico por email para acessar a plataforma.
+
+Este link é válido por ${expirationHours} horas e pode ser usado apenas uma vez.`
+
   return `Olá ${recipientName},
 
 ${senderName} convidou você para acessar o DealFlow Manager com a função de ${role}.
 
-Para acessar a plataforma, clique no link abaixo:
-
-${magicLinkUrl}
-
-Este link é válido por ${expirationHours} horas e pode ser usado apenas uma vez.
+${linkSection}
 
 Se você não solicitou este acesso, ignore este email.
 
@@ -66,6 +197,9 @@ Atenciosamente,
 Equipe DealFlow Manager`
 }
 
+/**
+ * Helper function to get invitation email subject
+ */
 export function getInvitationEmailSubject(senderName: string): string {
   return `${senderName} convidou você para o DealFlow Manager`
 }
