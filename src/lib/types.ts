@@ -98,6 +98,76 @@ export const STAGE_PROBABILITIES: Record<PlayerStage, number> = {
   closing: 90,
 }
 
+export interface StageHistory {
+  id: string
+  playerTrackId: string
+  stage: PlayerStage
+  enteredAt: string
+  exitedAt?: string
+  durationHours?: number
+}
+
+export interface SLAConfig {
+  id: string
+  stage: PlayerStage
+  maxHours: number
+  warningThresholdPercent: number
+}
+
+export interface AnalyticsMetrics {
+  totalDeals: number
+  activeDeals: number
+  concludedDeals: number
+  cancelledDeals: number
+  averageTimeToClose: number
+  conversionRate: number
+  weightedPipeline: number
+  slaBreach: {
+    total: number
+    byStage: Record<PlayerStage, number>
+  }
+  dealsByStage: Record<PlayerStage, number>
+  teamWorkload: {
+    userId: string
+    activeTracks: number
+    activeTasks: number
+  }[]
+}
+
+export interface GoogleIntegration {
+  id: string
+  userId: string
+  accessToken: string
+  refreshToken: string
+  expiresAt: string
+  scope: string[]
+  email: string
+  connectedAt: string
+}
+
+export interface GoogleDriveFolder {
+  id: string
+  entityId: string
+  entityType: 'deal' | 'track'
+  folderId: string
+  folderUrl: string
+  createdAt: string
+}
+
+export interface CalendarEvent {
+  id: string
+  googleEventId?: string
+  entityId: string
+  entityType: 'deal' | 'track' | 'task'
+  title: string
+  description: string
+  startTime: string
+  endTime: string
+  attendees: string[]
+  synced: boolean
+  createdAt: string
+}
+
 export const STAGE_LABELS: Record<PlayerStage, string> = {
   nda: 'NDA',
   analysis: 'Análise',

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { MasterDeal, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
+import { useKV } from '@github/spark/hooks'
+import { MasterDeal, User, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue, getDaysUntil } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,12 @@ interface DealsListProps {
 
 export default function DealsList({ deals, compact = false }: DealsListProps) {
   const [selectedDeal, setSelectedDeal] = useState<MasterDeal | null>(null)
+  const [currentUser] = useKV<User>('currentUser', {
+    id: 'user-1',
+    name: 'João Silva',
+    email: 'joao.silva@empresa.com',
+    role: 'admin',
+  })
 
   if (deals.length === 0) {
     return (
@@ -112,6 +119,7 @@ export default function DealsList({ deals, compact = false }: DealsListProps) {
           deal={selectedDeal}
           open={!!selectedDeal}
           onOpenChange={(open) => !open && setSelectedDeal(null)}
+          currentUser={currentUser}
         />
       )}
     </>

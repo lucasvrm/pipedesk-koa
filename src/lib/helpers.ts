@@ -59,3 +59,51 @@ export function getDaysUntil(date: string): number {
   const diff = new Date(date).getTime() - new Date().getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
+
+export function trackStageChange(
+  trackId: string,
+  newStage: string,
+  oldStage?: string
+): void {
+  if (!oldStage || oldStage === newStage) return
+
+  const stageHistoryKey = 'stageHistory'
+  
+  window.spark.kv.get<any[]>(stageHistoryKey).then((history) => {
+    const existingHistory = history || []
+    
+    const openRecord = existingHistory.find(
+      (h) => h.playerTrackId === trackId && h.stage === oldStage && !h.exitedAt
+    )
+
+    const now = new Date().toISOString()
+    const updatedHistory = [...existingHistory]
+
+    if (openRecord) {
+      const exitedAt = now
+      const enteredAt = new Date(openRecord.enteredAt)
+      const durationHours =
+        (new Date(exitedAt).getTime() - enteredAt.getTime()) / (1000 * 60 * 60)
+
+      const index = updatedHistory.findIndex((h) => h.id === openRecord.id)
+      if (index !== -1) {
+        updatedHistory[index] = {
+          ...openRecord,
+          exitedAt,
+          durationHours,
+        }
+      }
+    }
+
+    const newRecord = {
+      id: `stage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      playerTrackId: trackId,
+      stage: newStage,
+      enteredAt: now,
+    }
+
+    updatedHistory.push(newRecord)
+
+    window.spark.kv.set(stageHistoryKey, updatedHistory)
+  })
+}

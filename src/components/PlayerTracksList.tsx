@@ -1,24 +1,36 @@
 import { useState } from 'react'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES } from '@/lib/types'
+import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, User } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
+import { canViewPlayerName } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
 
 interface PlayerTracksListProps {
   tracks: PlayerTrack[]
+  currentUser?: User
 }
 
-export default function PlayerTracksList({ tracks }: PlayerTracksListProps) {
+export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksListProps) {
   const [selectedTrack, setSelectedTrack] = useState<PlayerTrack | null>(null)
+
+  const canViewRealNames = currentUser ? canViewPlayerName(currentUser.role) : true
+
+  const getDisplayName = (track: PlayerTrack, index: number) => {
+    if (canViewRealNames) {
+      return track.playerName
+    }
+    return `Player ${String.fromCharCode(65 + index)}`
+  }
 
   return (
     <>
       <div className="space-y-3">
-        {tracks.map((track) => {
+        {tracks.map((track, index) => {
           const probability = STAGE_PROBABILITIES[track.currentStage]
           const weighted = calculateWeightedVolume(track.trackVolume, probability)
+          const displayName = getDisplayName(track, index)
 
           return (
             <div
@@ -28,7 +40,7 @@ export default function PlayerTracksList({ tracks }: PlayerTracksListProps) {
             >
               <div className="flex items-start justify-between mb-3 gap-4">
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold mb-1 truncate">{track.playerName}</h4>
+                  <h4 className="font-semibold mb-1 truncate">{displayName}</h4>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                     <span className="break-words">{formatCurrency(track.trackVolume)}</span>
                     <span>•</span>

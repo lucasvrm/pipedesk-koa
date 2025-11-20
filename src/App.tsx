@@ -7,6 +7,8 @@ import {
   Plus,
   User as UserIcon,
   SignOut,
+  Users,
+  GoogleLogo,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -23,15 +25,21 @@ import Dashboard from '@/components/Dashboard'
 import DealsView from '@/components/DealsView'
 import InboxPanel from '@/components/InboxPanel'
 import CreateDealDialog from '@/components/CreateDealDialog'
+import UserManagementDialog from '@/components/UserManagementDialog'
+import AnalyticsDashboard from '@/components/AnalyticsDashboard'
+import GoogleIntegrationDialog from '@/components/GoogleIntegrationDialog'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
+import { hasPermission } from '@/lib/permissions'
 
-type Page = 'dashboard' | 'deals'
+type Page = 'dashboard' | 'deals' | 'analytics'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
+  const [userManagementOpen, setUserManagementOpen] = useState(false)
+  const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
   
   const [currentUser] = useKV<User>('currentUser', {
     id: 'user-1',
@@ -65,6 +73,10 @@ function App() {
 
   const unreadCount = (notifications || []).filter((n: any) => !n.read).length
 
+  const canManageUsers = hasPermission(currentUser?.role || 'client', 'MANAGE_USERS')
+  const canViewAnalytics = hasPermission(currentUser?.role || 'client', 'VIEW_ANALYTICS')
+  const canManageIntegrations = hasPermission(currentUser?.role || 'client', 'MANAGE_INTEGRATIONS')
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card sticky top-0 z-50">
@@ -91,6 +103,16 @@ function App() {
                 <Kanban className="mr-2" />
                 Negócios
               </Button>
+              {canViewAnalytics && (
+                <Button
+                  variant={currentPage === 'analytics' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentPage('analytics')}
+                >
+                  <ChartBar className="mr-2" />
+                  Analytics
+                </Button>
+              )}
             </nav>
           </div>
 
@@ -140,6 +162,18 @@ function App() {
                   <UserIcon className="mr-2" />
                   Perfil
                 </DropdownMenuItem>
+                {canManageUsers && (
+                  <DropdownMenuItem onClick={() => setUserManagementOpen(true)}>
+                    <Users className="mr-2" />
+                    Gerenciar Usuários
+                  </DropdownMenuItem>
+                )}
+                {canManageIntegrations && (
+                  <DropdownMenuItem onClick={() => setGoogleIntegrationOpen(true)}>
+                    <GoogleLogo className="mr-2" />
+                    Google Workspace
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="text-destructive">
                   <SignOut className="mr-2" />
                   Sair
@@ -153,10 +187,28 @@ function App() {
       <main className="flex-1">
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'deals' && <DealsView />}
+        {currentPage === 'analytics' && currentUser && (
+          <AnalyticsDashboard currentUser={currentUser} />
+        )}
       </main>
 
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
+      
+      {currentUser && (
+        <>
+          <UserManagementDialog
+            open={userManagementOpen}
+            onOpenChange={setUserManagementOpen}
+            currentUser={currentUser}
+          />
+          <GoogleIntegrationDialog
+            open={googleIntegrationOpen}
+            onOpenChange={setGoogleIntegrationOpen}
+            currentUser={currentUser}
+          />
+        </>
+      )}
       
       <Toaster position="top-right" />
 
@@ -187,20 +239,32 @@ function App() {
           <Plus className="mb-1" />
           <span className="text-xs">Novo</span>
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setInboxOpen(true)}
-          className="flex-col h-auto py-2 px-3 relative"
-        >
-          <Bell className="mb-1" />
-          <span className="text-xs">Inbox</span>
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-accent text-accent-foreground text-[10px] flex items-center justify-center font-medium">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
+        {canViewAnalytics ? (
+          <Button
+            variant={currentPage === 'analytics' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setCurrentPage('analytics')}
+            className="flex-col h-auto py-2 px-3"
+          >
+            <ChartBar className="mb-1" />
+            <span className="text-xs">Analytics</span>
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setInboxOpen(true)}
+            className="flex-col h-auto py-2 px-3 relative"
+          >
+            <Bell className="mb-1" />
+            <span className="text-xs">Inbox</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-accent text-accent-foreground text-[10px] flex items-center justify-center font-medium">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   )

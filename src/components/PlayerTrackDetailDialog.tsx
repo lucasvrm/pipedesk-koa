@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS } from '@/lib/types'
-import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
+import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
 import { CheckCircle, ListChecks, Kanban as KanbanIcon } from '@phosphor-icons/react'
 import TaskList from './TaskList'
 import PlayerKanban from './PlayerKanban'
@@ -40,6 +40,10 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange }: P
   const weighted = calculateWeightedVolume(track.trackVolume, probability)
 
   const handleStageChange = (newStage: PlayerStage) => {
+    const oldStage = track.currentStage
+    
+    trackStageChange(track.id, newStage, oldStage)
+    
     setPlayerTracks((currentTracks) =>
       (currentTracks || []).map(t =>
         t.id === track.id

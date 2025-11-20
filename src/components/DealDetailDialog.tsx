@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
+import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { Plus, Users } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
@@ -22,9 +22,10 @@ interface DealDetailDialogProps {
   deal: MasterDeal
   open: boolean
   onOpenChange: (open: boolean) => void
+  currentUser?: User
 }
 
-export default function DealDetailDialog({ deal, open, onOpenChange }: DealDetailDialogProps) {
+export default function DealDetailDialog({ deal, open, onOpenChange, currentUser }: DealDetailDialogProps) {
   const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
 
@@ -132,7 +133,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange }: DealDetai
                   </Button>
                 </div>
               ) : (
-                <PlayerTracksList tracks={dealTracks} />
+                <PlayerTracksList tracks={dealTracks} currentUser={currentUser} />
               )}
             </TabsContent>
 
