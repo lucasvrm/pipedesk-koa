@@ -14,9 +14,10 @@ import { MasterDeal, DealStatus, User } from '@/lib/types'
 import { MagnifyingGlass, FunnelSimple, CheckSquare, X } from '@phosphor-icons/react'
 import DealsList from './DealsList'
 import BulkOperations from './BulkOperations'
+import { useDeals } from '@/hooks/useDeals'
 
 export default function DealsView() {
-  const [masterDeals] = useKV<MasterDeal[]>('masterDeals', [])
+  const { data: masterDeals, loading } = useDeals()
   const [currentUser] = useKV<User>('currentUser', {
     id: 'user-1',
     name: 'João Silva',
@@ -27,14 +28,12 @@ export default function DealsView() {
   const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all')
   const [bulkMode, setBulkMode] = useState(false)
 
-  const filteredDeals = (masterDeals || [])
-    .filter(deal => !deal.deletedAt)
+  const filteredDeals = masterDeals
     .filter(deal => {
       const matchesSearch = deal.clientName.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesStatus = statusFilter === 'all' || deal.status === statusFilter
       return matchesSearch && matchesStatus
     })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
@@ -87,16 +86,24 @@ export default function DealsView() {
         </Select>
       </div>
 
-      {bulkMode && currentUser && (
-        <BulkOperations
-          entityType="deal"
-          entities={filteredDeals}
-          currentUser={currentUser}
-          onComplete={() => setBulkMode(false)}
-        />
-      )}
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>Carregando negócios...</p>
+        </div>
+      ) : (
+        <>
+          {bulkMode && currentUser && (
+            <BulkOperations
+              entityType="deal"
+              entities={filteredDeals}
+              currentUser={currentUser}
+              onComplete={() => setBulkMode(false)}
+            />
+          )}
 
-      <DealsList deals={filteredDeals} bulkMode={bulkMode} />
+          <DealsList deals={filteredDeals} bulkMode={bulkMode} />
+        </>
+      )}
     </div>
   )
 }
