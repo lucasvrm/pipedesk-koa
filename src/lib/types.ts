@@ -195,3 +195,13 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   client: 'Cliente',
   newbusiness: 'Novos Negócios',
 }
+
+export interface MagicLink {
+  id: string
+  userId: string
+  token: string
+  expiresAt: string
+  createdAt: string
+  usedAt?: string
+  revokedAt?: string
+}

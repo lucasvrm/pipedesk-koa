@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { 
   ChartBar, 
@@ -11,6 +11,7 @@ import {
   GoogleLogo,
   MagnifyingGlass,
   GridFour,
+  ShieldCheck,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -32,11 +33,14 @@ import AnalyticsDashboard from '@/components/AnalyticsDashboard'
 import GoogleIntegrationDialog from '@/components/GoogleIntegrationDialog'
 import GlobalSearch from '@/components/GlobalSearch'
 import MasterMatrixView from '@/components/MasterMatrixView'
+import MagicLinkAuth from '@/components/MagicLinkAuth'
+import RBACDemo from '@/components/RBACDemo'
 import { User } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
+import { toast } from 'sonner'
 
-type Page = 'dashboard' | 'deals' | 'analytics' | 'matrix'
+type Page = 'dashboard' | 'deals' | 'analytics' | 'matrix' | 'rbac'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -45,8 +49,9 @@ function App() {
   const [userManagementOpen, setUserManagementOpen] = useState(false)
   const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
   
-  const [currentUser] = useKV<User>('currentUser', {
+  const [currentUser, setCurrentUser] = useKV<User | null>('currentUser', {
     id: 'user-1',
     name: 'João Silva',
     email: 'joao.silva@empresa.com',
@@ -75,6 +80,33 @@ function App() {
   ])
 
   const [notifications] = useKV<any[]>('notifications', [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    
+    if (token) {
+      setShowAuth(true)
+    }
+  }, [])
+
+  const handleAuthSuccess = (user: User) => {
+    setShowAuth(false)
+    toast.success(`Bem-vindo, ${user.name}!`)
+  }
+
+  const handleSignOut = () => {
+    setCurrentUser(null)
+    toast.success('Você saiu do sistema')
+  }
+
+  if (showAuth) {
+    return <MagicLinkAuth onAuthSuccess={handleAuthSuccess} />
+  }
+
+  if (!currentUser) {
+    return <MagicLinkAuth onAuthSuccess={(user) => setCurrentUser(user)} />
+  }
 
   const unreadCount = (notifications || []).filter((n: any) => !n.read).length
 
@@ -124,6 +156,16 @@ function App() {
                 >
                   <ChartBar className="mr-2" />
                   Analytics
+                </Button>
+              )}
+              {canManageUsers && (
+                <Button
+                  variant={currentPage === 'rbac' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentPage('rbac')}
+                >
+                  <ShieldCheck className="mr-2" />
+                  RBAC
                 </Button>
               )}
             </nav>
@@ -196,7 +238,7 @@ function App() {
                     Google Workspace
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
                 </DropdownMenuItem>
@@ -212,6 +254,9 @@ function App() {
         {currentPage === 'matrix' && currentUser && <MasterMatrixView currentUser={currentUser} />}
         {currentPage === 'analytics' && currentUser && (
           <AnalyticsDashboard currentUser={currentUser} />
+        )}
+        {currentPage === 'rbac' && currentUser && (
+          <RBACDemo currentUser={currentUser} />
         )}
       </main>
 

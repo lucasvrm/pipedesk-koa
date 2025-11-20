@@ -29,9 +29,11 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Trash, UserPlus, PencilSimple } from '@phosphor-icons/react'
+import { Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
+import InviteUserDialog from './InviteUserDialog'
+import MagicLinksDialog from './MagicLinksDialog'
 
 interface UserManagementDialogProps {
   open: boolean
@@ -47,6 +49,8 @@ export default function UserManagementDialog({
   const [users, setUsers] = useKV<User[]>('users', [])
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [magicLinksDialogOpen, setMagicLinksDialogOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -250,10 +254,20 @@ export default function UserManagementDialog({
           </div>
         ) : (
           <>
-            <div className="flex justify-end mb-4">
-              <Button onClick={handleCreate} size="sm">
+            <div className="flex justify-between mb-4 gap-2">
+              <div className="flex gap-2">
+                <Button onClick={() => setInviteDialogOpen(true)} size="sm" variant="default">
+                  <EnvelopeSimple className="mr-2" />
+                  Enviar Convite
+                </Button>
+                <Button onClick={() => setMagicLinksDialogOpen(true)} size="sm" variant="outline">
+                  <LinkIcon className="mr-2" />
+                  Ver Links
+                </Button>
+              </div>
+              <Button onClick={handleCreate} size="sm" variant="secondary">
                 <UserPlus className="mr-2" />
-                Novo Usuário
+                Criar Manual
               </Button>
             </div>
 
@@ -316,6 +330,17 @@ export default function UserManagementDialog({
             </Table>
           </>
         )}
+
+        <InviteUserDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          currentUser={currentUser}
+        />
+
+        <MagicLinksDialog
+          open={magicLinksDialogOpen}
+          onOpenChange={setMagicLinksDialogOpen}
+        />
       </DialogContent>
     </Dialog>
   )
