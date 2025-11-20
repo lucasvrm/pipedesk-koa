@@ -100,10 +100,10 @@ export default function DataRoomView() {
       // Get signed URL for the file
       const { data: urlData, error: urlError } = await supabase.storage
         .from(BUCKET_NAME)
-        .createSignedUrl(filePath, 60) // 60 seconds validity
+        .createSignedUrl(filePath, 600) // 10 minutes validity for larger files
 
       if (urlError || !urlData) {
-        throw new Error('Failed to get download URL')
+        throw new Error(`Failed to get download URL: ${urlError?.message || 'Unknown error'}`)
       }
 
       // Download with watermark for PDFs

@@ -73,7 +73,7 @@ export async function downloadWithWatermark(
     // Fetch the file
     const response = await fetch(fileUrl)
     if (!response.ok) {
-      throw new Error('Failed to fetch file')
+      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
     }
     
     const blob = await response.blob()

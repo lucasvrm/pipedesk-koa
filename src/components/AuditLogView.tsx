@@ -362,7 +362,7 @@ export default function AuditLogView() {
           {/* Pagination */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Página {page} • {filteredLogs.length} registros
+              Página {page} • {filteredLogs.length} registros nesta página
             </p>
             <div className="flex gap-2">
               <Button
@@ -377,7 +377,7 @@ export default function AuditLogView() {
                 variant="outline"
                 size="sm"
                 onClick={() => setPage((p) => p + 1)}
-                disabled={filteredLogs.length < itemsPerPage}
+                disabled={logs.length < itemsPerPage}
               >
                 Próxima
               </Button>
