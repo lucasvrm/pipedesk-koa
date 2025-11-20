@@ -222,8 +222,25 @@ function App() {
                   <List weight="bold" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Mais Opções</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>
+                  <div className="flex items-center gap-3 py-1">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                        {getInitials(currentUser?.name || 'U')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium">{currentUser?.name || 'Usuário'}</p>
+                      <p className="text-xs text-muted-foreground">{currentUser?.email || ''}</p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <UserIcon className="mr-2" />
+                  Perfil
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setCurrentPage('folders')}>
                   <FolderOpen className="mr-2" />
@@ -264,31 +281,7 @@ function App() {
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {getInitials(currentUser?.name || 'U')}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{currentUser?.name || 'Usuário'}</p>
-                    <p className="text-xs text-muted-foreground">{currentUser?.email || ''}</p>
-                  </div>
-                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <UserIcon className="mr-2" />
-                  Perfil
-                </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
