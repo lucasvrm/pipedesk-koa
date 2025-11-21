@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from 'react'
+import { useNavigate } from 'react-router-dom'
 // TEMPORARY: Commented out to fix Supabase auth conflicts
 // import { useKV } from '@github/spark/hooks'
 import { 
@@ -45,7 +46,6 @@ import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
 import UserManagementDialog from '@/features/rbac/components/UserManagementDialog'
 import GoogleIntegrationDialog from '@/components/GoogleIntegrationDialog'
 import GlobalSearch from '@/components/GlobalSearch'
-import MagicLinkAuth from '@/features/rbac/components/MagicLinkAuth'
 import RBACDemo from '@/features/rbac/components/RBACDemo'
 import CustomFieldsManager from '@/components/CustomFieldsManager'
 import FolderManager from '@/components/FolderManager'
@@ -89,8 +89,9 @@ const PageLoader = () => (
 type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders' | 'dataroom' | 'audit'
 
 function App() {
-  const { profile, loading, signOut: authSignOut, isAuthenticated } = useAuth()
+  const { profile, signOut: authSignOut } = useAuth()
   const { isImpersonating, setIsImpersonating } = useImpersonation()
+  const navigate = useNavigate()
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
@@ -113,27 +114,14 @@ function App() {
     const success = await authSignOut()
     if (success) {
       toast.success('Você saiu do sistema')
+      navigate('/login')
     } else {
       toast.error('Erro ao sair do sistema')
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated || !profile) {
-    return <MagicLinkAuth />
-  }
-
-  const currentUser = profile
+  // Profile is guaranteed to exist here because of ProtectedRoute
+  const currentUser = profile!
 
   // TEMPORARY: Set to 0 until notifications are migrated to Supabase
   const unreadCount = 0 // (notifications || []).filter((n: any) => !n.read).length
@@ -275,7 +263,7 @@ function App() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
                   <UserIcon className="mr-2" />
                   Perfil
                 </DropdownMenuItem>
