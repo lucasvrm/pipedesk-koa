@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { 
   ChartBar, 
@@ -39,24 +39,17 @@ import { Toaster } from '@/components/ui/sonner'
 import { OnboardingTour } from '@/components/OnboardingTour'
 import { HelpCenter } from '@/components/HelpCenter'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
-import Dashboard from '@/features/analytics/components/Dashboard'
-import DealsView from '@/features/deals/components/DealsView'
 import InboxPanel from '@/features/inbox/components/InboxPanel'
 import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
 import UserManagementDialog from '@/features/rbac/components/UserManagementDialog'
-import AnalyticsDashboard from '@/features/analytics/components/AnalyticsDashboard'
 import GoogleIntegrationDialog from '@/components/GoogleIntegrationDialog'
 import GlobalSearch from '@/components/GlobalSearch'
-import MasterMatrixView from '@/features/deals/components/MasterMatrixView'
 import MagicLinkAuth from '@/features/rbac/components/MagicLinkAuth'
 import RBACDemo from '@/features/rbac/components/RBACDemo'
 import CustomFieldsManager from '@/components/CustomFieldsManager'
-import TaskManagementView from '@/features/tasks/components/TaskManagementView'
 import FolderManager from '@/components/FolderManager'
 import FolderBrowser from '@/components/FolderBrowser'
 import PhaseValidationManager from '@/components/PhaseValidationManager'
-import DataRoomView from '@/components/DataRoomView'
-import AuditLogView from '@/components/AuditLogView'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
 import { SLAMonitoringService } from '@/components/SLAMonitoringService'
 import { getInitials } from '@/lib/helpers'
@@ -64,6 +57,25 @@ import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
+
+// Lazy load heavy components for better code splitting
+const Dashboard = lazy(() => import('@/features/analytics/components/Dashboard'))
+const DealsView = lazy(() => import('@/features/deals/components/DealsView'))
+const AnalyticsDashboard = lazy(() => import('@/features/analytics/components/AnalyticsDashboard'))
+const MasterMatrixView = lazy(() => import('@/features/deals/components/MasterMatrixView'))
+const TaskManagementView = lazy(() => import('@/features/tasks/components/TaskManagementView'))
+const DataRoomView = lazy(() => import('@/components/DataRoomView'))
+const AuditLogView = lazy(() => import('@/components/AuditLogView'))
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <p className="text-sm text-muted-foreground">Carregando...</p>
+    </div>
+  </div>
+)
 
 type Page = 'dashboard' | 'deals' | 'analytics' | 'kanban' | 'rbac' | 'tasks' | 'folders' | 'dataroom' | 'audit'
 
@@ -333,19 +345,21 @@ function App() {
       </header>
 
       <main className="flex-1">
-        {currentPage === 'dashboard' && <Dashboard />}
-        {currentPage === 'deals' && <DealsView />}
-        {currentPage === 'tasks' && currentUser && <TaskManagementView currentUser={currentUser} />}
-        {currentPage === 'folders' && currentUser && <FolderBrowser currentUser={currentUser} onManageFolders={() => setFolderManagerOpen(true)} />}
-        {currentPage === 'kanban' && currentUser && <MasterMatrixView currentUser={currentUser} />}
-        {currentPage === 'analytics' && currentUser && (
-          <AnalyticsDashboard currentUser={currentUser} />
-        )}
-        {currentPage === 'rbac' && currentUser && (
-          <RBACDemo currentUser={currentUser} />
-        )}
-        {currentPage === 'dataroom' && <DataRoomView />}
-        {currentPage === 'audit' && <AuditLogView />}
+        <Suspense fallback={<PageLoader />}>
+          {currentPage === 'dashboard' && <Dashboard />}
+          {currentPage === 'deals' && <DealsView />}
+          {currentPage === 'tasks' && currentUser && <TaskManagementView currentUser={currentUser} />}
+          {currentPage === 'folders' && currentUser && <FolderBrowser currentUser={currentUser} onManageFolders={() => setFolderManagerOpen(true)} />}
+          {currentPage === 'kanban' && currentUser && <MasterMatrixView currentUser={currentUser} />}
+          {currentPage === 'analytics' && currentUser && (
+            <AnalyticsDashboard currentUser={currentUser} />
+          )}
+          {currentPage === 'rbac' && currentUser && (
+            <RBACDemo currentUser={currentUser} />
+          )}
+          {currentPage === 'dataroom' && <DataRoomView />}
+          {currentPage === 'audit' && <AuditLogView />}
+        </Suspense>
       </main>
 
       <GlobalSearch
