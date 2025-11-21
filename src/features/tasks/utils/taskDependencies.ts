@@ -16,7 +16,8 @@ export function detectCircularDependency(
   const queue = [depId]
 
   while (queue.length > 0) {
-    const current = queue.shift()!
+    const current = queue.shift()
+    if (!current) continue // Safety check for empty queue
     if (current === taskId) return true
     if (visited.has(current)) continue
     visited.add(current)

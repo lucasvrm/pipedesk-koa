@@ -69,9 +69,17 @@ const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 
 // Loading component for Suspense fallback
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
+  <div 
+    className="min-h-screen flex items-center justify-center bg-background"
+    role="status"
+    aria-live="polite"
+    aria-label="Loading page content"
+  >
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <div 
+        className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"
+        aria-hidden="true"
+      ></div>
       <p className="text-sm text-muted-foreground">Carregando...</p>
     </div>
   </div>

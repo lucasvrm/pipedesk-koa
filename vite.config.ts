@@ -38,6 +38,9 @@ export default defineConfig({
           'vendor-charts': ['d3', 'recharts'],
           
           // Feature chunks
+          // Note: These paths are relative to the project root and may need
+          // updating if files are moved. Consider using dynamic imports or
+          // pattern-based chunking if file structure changes frequently.
           'feature-analytics': [
             './src/features/analytics/components/AnalyticsDashboard.tsx',
             './src/features/analytics/components/Dashboard.tsx',
