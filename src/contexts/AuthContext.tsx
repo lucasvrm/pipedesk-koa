@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', userId)
         .single()
@@ -120,10 +120,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
       if (error) throw error
       
-      // Create profile in the profiles table
+      // Create profile in the users table
       if (data.user) {
         const { error: profileError } = await supabase
-          .from('profiles')
+          .from('users')
           .upsert({
             id: data.user.id,
             email: data.user.email,
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setError(null)
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/login`,
       })
       if (error) throw error
     } catch (err) {

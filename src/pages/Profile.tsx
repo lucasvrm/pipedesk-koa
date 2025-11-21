@@ -42,7 +42,7 @@ export default function Profile() {
     // Fetch additional profile data including created_at
     if (profile?.id) {
       supabase
-        .from('profiles')
+        .from('users')
         .select('created_at')
         .eq('id', profile.id)
         .single()
@@ -64,9 +64,9 @@ export default function Profile() {
 
     setIsSaving(true)
     try {
-      // Update profile in profiles table
+      // Update profile in users table
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from('users')
         .update({
           name,
           email,
