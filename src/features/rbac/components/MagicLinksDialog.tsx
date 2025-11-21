@@ -1,4 +1,4 @@
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { User } from '@/lib/types'
 import { MagicLink, isMagicLinkExpired, isMagicLinkValid, getMagicLinkUrl } from '@/lib/auth'
 import { formatDateTime } from '@/lib/helpers'

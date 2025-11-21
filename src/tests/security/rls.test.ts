@@ -156,7 +156,8 @@ describe('Input Sanitization', () => {
       expect(result).not.toContain('script');
       expect(result).toContain('Text');
       expect(result).toContain('More');
-      // Content inside script tags is also removed
+      // Note: Content inside script tags is NOT removed by our simple sanitizer
+      // For production, consider using DOMPurify for comprehensive XSS protection
       expect(result).toContain('malicious()');
     });
   });

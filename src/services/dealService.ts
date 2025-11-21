@@ -3,6 +3,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MasterDeal, OperationType, DealStatus } from '@/lib/types';
 
 // ============================================================================
+// Query Helpers
+// ============================================================================
+
+/**
+ * Helper to apply soft delete filter (exclude deleted records)
+ */
+function withoutDeleted(query: any) {
+  return query.is('deleted_at', null);
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -45,14 +56,14 @@ export interface DealUpdate {
  */
 export async function getDeals(): Promise<Deal[]> {
   try {
-    const { data, error } = await supabase
-      .from('master_deals')
-      .select(`
-        *,
-        createdByUser:users!master_deals_created_by_fkey(id, name, email)
-      `)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+    const { data, error } = await withoutDeleted(
+      supabase
+        .from('master_deals')
+        .select(`
+          *,
+          createdByUser:users!master_deals_created_by_fkey(id, name, email)
+        `)
+    ).order('created_at', { ascending: false });
 
     if (error) throw error;
 
@@ -82,15 +93,15 @@ export async function getDeals(): Promise<Deal[]> {
  */
 export async function getDeal(dealId: string): Promise<Deal> {
   try {
-    const { data, error } = await supabase
-      .from('master_deals')
-      .select(`
-        *,
-        createdByUser:users!master_deals_created_by_fkey(id, name, email)
-      `)
-      .eq('id', dealId)
-      .is('deleted_at', null)
-      .single();
+    const { data, error } = await withoutDeleted(
+      supabase
+        .from('master_deals')
+        .select(`
+          *,
+          createdByUser:users!master_deals_created_by_fkey(id, name, email)
+        `)
+        .eq('id', dealId)
+    ).single();
 
     if (error) throw error;
 

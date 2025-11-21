@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { MasterDeal, User, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue, getDaysUntil } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
