@@ -124,19 +124,22 @@ describe('Permission System', () => {
 
 describe('Input Sanitization', () => {
   describe('sanitizeInput', () => {
-    it('should remove HTML tags', () => {
+    it('should escape HTML tags instead of removing them', () => {
       const input = '<script>alert("XSS")</script>Hello';
       const result = sanitizeInput(input);
-      expect(result).not.toContain('<script>');
-      expect(result).not.toContain('</script>');
+      // Now escapes rather than removes
+      expect(result).toContain('&lt;');
+      expect(result).toContain('&gt;');
       expect(result).toContain('Hello');
+      expect(result).not.toContain('<script>');
     });
 
-    it('should escape special characters and remove tags', () => {
+    it('should escape all special characters', () => {
       const input = '<div>"Hello"</div>';
       const result = sanitizeInput(input);
-      // Tags are removed first, then special chars are escaped
-      expect(result).toContain('&quot;Hello&quot;');
+      expect(result).toContain('&lt;');
+      expect(result).toContain('&gt;');
+      expect(result).toContain('&quot;');
       expect(result).not.toContain('<div>');
     });
 
@@ -150,15 +153,16 @@ describe('Input Sanitization', () => {
       expect(sanitizeInput('')).toBe('');
     });
 
-    it('should remove script tags but preserve sanitized content', () => {
+    it('should escape all HTML including script tags', () => {
       const input = '<p>Text</p><script>malicious()</script><p>More</p>';
       const result = sanitizeInput(input);
-      expect(result).not.toContain('script');
-      expect(result).toContain('Text');
-      expect(result).toContain('More');
-      // Note: Content inside script tags is NOT removed by our simple sanitizer
-      // For production, consider using DOMPurify for comprehensive XSS protection
-      expect(result).toContain('malicious()');
+      // Everything is escaped
+      expect(result).toContain('&lt;');
+      expect(result).toContain('&gt;');
+      // After escape, the word 'script' might still appear but it's harmless
+      // The important thing is no actual <script> tag exists
+      expect(result).not.toContain('<script>');
+      expect(result).not.toContain('</script>');
     });
   });
 
@@ -319,9 +323,10 @@ describe('Security Regression Tests', () => {
   it('should not allow SQL injection in sanitization', () => {
     const maliciousInput = "'; DROP TABLE users; --";
     const sanitized = sanitizeInput(maliciousInput);
-    // Escapes the single quote but preserves the text content
+    // Escapes all special characters
     expect(sanitized).toContain('&#x27;'); // Escaped single quote
-    expect(sanitized).toContain('DROP TABLE'); // Text is preserved after tag removal
+    // Text content is preserved but safe
+    expect(sanitized).toContain('DROP TABLE'); // Text is escaped but present
   });
 
   it('should prevent XSS in various forms', () => {
@@ -334,11 +339,14 @@ describe('Security Regression Tests', () => {
 
     xssAttempts.forEach((attempt) => {
       const sanitized = sanitizeInput(attempt);
-      // Script tags are removed
+      // All HTML is escaped, preventing execution
       expect(sanitized).not.toContain('<script');
       expect(sanitized).not.toContain('<img');
       expect(sanitized).not.toContain('<svg');
       expect(sanitized).not.toContain('<iframe');
+      expect(sanitized).not.toContain('javascript:');
+      // Should have escape sequences
+      expect(sanitized).toContain('&lt;');
     });
   });
 });

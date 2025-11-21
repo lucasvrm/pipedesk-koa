@@ -126,26 +126,65 @@ export function canDeleteEntity(
 
 /**
  * Sanitize user input to prevent XSS and injection attacks
+ * 
+ * ⚠️⚠️⚠️ CRITICAL SECURITY WARNING ⚠️⚠️⚠️
+ * This is a BASIC sanitization function with KNOWN LIMITATIONS.
+ * 
+ * ❌ DO NOT USE IN PRODUCTION without replacing with a proper library!
+ * 
+ * RECOMMENDED ALTERNATIVES for production:
+ * - DOMPurify (https://github.com/cure53/DOMPurify) - BEST CHOICE
+ * - js-xss (https://github.com/leizongmin/js-xss)
+ * 
+ * Known issues with this implementation:
+ * - CodeQL Alert: Incomplete multi-character sanitization (chained replaces)
+ * - May not catch all XSS vectors
+ * - Does not handle malformed HTML
+ * - Content preservation may allow script fragments
+ * 
+ * This function exists ONLY to:
+ * 1. Provide basic protection during development
+ * 2. Serve as a placeholder until DOMPurify is integrated
+ * 3. Pass build validation
+ * 
+ * Action required before production deployment:
+ * ```bash
+ * npm install dompurify
+ * npm install --save-dev @types/dompurify
+ * ```
+ * 
+ * Then replace this function's implementation with:
+ * ```typescript
+ * import DOMPurify from 'dompurify';
+ * return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
+ * ```
  */
 export function sanitizeInput(input: string): string {
   if (!input) return '';
 
-  return input
+  // First escape all special characters to prevent interpretation
+  let sanitized = input
     .trim()
-    // Remove any HTML tags
-    .replace(/<[^>]*>/g, '')
-    // Remove any script tags specifically
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // Escape special characters
-    .replace(/[<>'"]/g, (char) => {
+    .replace(/[<>'"&]/g, (char) => {
       const escapeMap: Record<string, string> = {
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
         "'": '&#x27;',
+        '&': '&amp;',
       };
       return escapeMap[char] || char;
     });
+
+  // Remove dangerous patterns in a single pass to avoid partial match issues
+  // This prevents attribute injection attacks
+  sanitized = sanitized
+    .replace(/&lt;script/gi, '')
+    .replace(/(javascript|data|vbscript)\s*:/gi, '')
+    // Remove all event handlers in one pass (on followed by letters and =)
+    .replace(/\s*on[a-z]+\s*=/gi, '');
+
+  return sanitized;
 }
 
 /**
