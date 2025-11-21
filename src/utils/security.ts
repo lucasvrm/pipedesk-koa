@@ -100,8 +100,8 @@ export function canEditEntity(
     return true;
   }
 
-  // Others can only edit their own entities
-  return userId === entityOwnerId;
+  // Others cannot edit (even their own entities)
+  return false;
 }
 
 /**
