@@ -205,19 +205,19 @@ Este link é válido por ${expirationHours} horas e pode ser usado apenas uma ve
 
   return `Olá ${recipientName},
 
-${senderName} convidou você para acessar o DealFlow Manager com a função de ${role}.
+${senderName} convidou você para acessar o PipeDesk com a função de ${role}.
 
 ${linkSection}
 
 Se você não solicitou este acesso, ignore este email.
 
 Atenciosamente,
-Equipe DealFlow Manager`
+Equipe PipeDesk`
 }
 
 /**
  * Helper function to get invitation email subject
  */
 export function getInvitationEmailSubject(senderName: string): string {
-  return `${senderName} convidou você para o DealFlow Manager`
+  return `${senderName} convidou você para o PipeDesk`
 }

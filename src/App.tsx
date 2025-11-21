@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from 'react'
-import { useKV } from '@github/spark/hooks'
+// TEMPORARY: Commented out to fix Supabase auth conflicts
+// import { useKV } from '@github/spark/hooks'
 import { 
   ChartBar, 
   Kanban, 
@@ -104,7 +105,9 @@ function App() {
   const [pipelineSettingsOpen, setPipelineSettingsOpen] = useState(false)
   const [slaConfigOpen, setSlaConfigOpen] = useState(false)
 
-  const [notifications] = useKV<any[]>('notifications', [])
+  // TEMPORARY: Commented out to fix Supabase auth conflicts
+  // TODO: Migrate notifications to Supabase table
+  // const [notifications] = useKV<any[]>('notifications', [])
 
   const handleSignOut = async () => {
     const success = await authSignOut()
@@ -132,7 +135,8 @@ function App() {
 
   const currentUser = profile
 
-  const unreadCount = (notifications || []).filter((n: any) => !n.read).length
+  // TEMPORARY: Set to 0 until notifications are migrated to Supabase
+  const unreadCount = 0 // (notifications || []).filter((n: any) => !n.read).length
 
   const canManageUsers = hasPermission(currentUser?.role || 'client', 'MANAGE_USERS')
   const canViewAnalytics = hasPermission(currentUser?.role || 'client', 'VIEW_ANALYTICS')

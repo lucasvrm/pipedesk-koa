@@ -1,7 +1,7 @@
 # UX Improvements Implementation Guide
 
 ## Overview
-This document describes the three UX improvements implemented in the DealFlow Manager application.
+This document describes the three UX improvements implemented in the PipeDesk application.
 
 ---
 
