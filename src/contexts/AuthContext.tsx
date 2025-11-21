@@ -10,6 +10,9 @@ interface AuthContextType {
   loading: boolean
   error: Error | null
   signInWithMagicLink: (email: string) => Promise<boolean>
+  signIn: (email: string, password: string) => Promise<any>
+  signUp: (email: string, password: string, name?: string) => Promise<any>
+  resetPassword: (email: string) => Promise<void>
   signOut: () => Promise<boolean>
   isAuthenticated: boolean
 }
@@ -93,6 +96,62 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const signIn = async (email: string, password: string) => {
+    try {
+      setError(null)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to sign in'))
+      throw err
+    }
+  }
+
+  const signUp = async (email: string, password: string, name?: string) => {
+    try {
+      setError(null)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      if (error) throw error
+      
+      // Create profile in the profiles table
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: data.user.email,
+            name: name || email.split('@')[0],
+            role: 'client',
+          })
+        if (profileError) throw profileError
+      }
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to sign up'))
+      throw err
+    }
+  }
+
+  const resetPassword = async (email: string) => {
+    try {
+      setError(null)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (error) throw error
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to reset password'))
+      throw err
+    }
+  }
+
   const signOut = async (): Promise<boolean> => {
     try {
       setError(null)
@@ -115,6 +174,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     error,
     signInWithMagicLink,
+    signIn,
+    signUp,
+    resetPassword,
     signOut,
     isAuthenticated: !!user,
   }
