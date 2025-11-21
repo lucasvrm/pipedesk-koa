@@ -118,10 +118,11 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
           if (!a.dueDate) return 1
           if (!b.dueDate) return -1
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-        case 'priority':
+        case 'priority': {
           const priorityA = a.isMilestone ? 2 : (a.dueDate && new Date(a.dueDate) < today ? 1 : 0)
           const priorityB = b.isMilestone ? 2 : (b.dueDate && new Date(b.dueDate) < today ? 1 : 0)
           return priorityB - priorityA
+        }
         case 'created':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case 'updated':

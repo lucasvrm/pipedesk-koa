@@ -223,7 +223,7 @@ export default function CustomFieldsRenderer({
           </Select>
         )
 
-      case 'multiselect':
+      case 'multiselect': {
         const selectedValues = Array.isArray(value) ? value : []
         return (
           <div className="space-y-2">
@@ -246,6 +246,7 @@ export default function CustomFieldsRenderer({
             ))}
           </div>
         )
+      }
 
       case 'boolean':
         return (

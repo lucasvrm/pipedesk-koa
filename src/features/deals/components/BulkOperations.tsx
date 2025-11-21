@@ -171,7 +171,7 @@ export default function BulkOperations({
         }
         break
 
-      case 'assign':
+      case 'assign': {
         if (entityType === 'track') {
           setPlayerTracks(current =>
             (current || []).map(t =>
@@ -193,6 +193,7 @@ export default function BulkOperations({
         const assignedUser = (users || []).find(u => u.id === assigneeId)
         toast.success(`${count} ${getEntityTypeLabel(count)} atribuído(s) a ${assignedUser?.name}`)
         break
+      }
 
       case 'complete':
         if (entityType === 'task') {
