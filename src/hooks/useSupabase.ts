@@ -47,7 +47,7 @@ export function useSupabase<T extends { id: string }>(
 
       if (fetchError) throw fetchError
 
-      setData((fetchedData as T[]) || [])
+      setData((fetchedData as unknown as T[]) || [])
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'))
     } finally {
