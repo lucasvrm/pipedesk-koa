@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EmptyState } from '@/components/EmptyState'
 import { Notification } from '@/lib/types'
 import { formatDateTime } from '@/lib/helpers'
 import { 
@@ -112,10 +113,11 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
 
         <div className="mt-6 space-y-4">
           {(!filteredNotifications || filteredNotifications.length === 0) ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Bell className="mx-auto mb-3 h-12 w-12 opacity-50" />
-              <p>Nenhuma notificação</p>
-            </div>
+            <EmptyState
+              icon={<Bell size={48} weight="duotone" />}
+              title="Nenhuma notificação"
+              description="Você está em dia! Não há notificações no momento."
+            />
           ) : (
             filteredNotifications
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
