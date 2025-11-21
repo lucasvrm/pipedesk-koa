@@ -16,7 +16,10 @@ export default function ProtectedRoute({ children, requireRole }: ProtectedRoute
   useEffect(() => {
     // Save the attempted route for redirect after login
     if (!isAuthenticated && !loading) {
-      sessionStorage.setItem('redirectAfterLogin', location.pathname)
+      localStorage.setItem('redirectAfterLogin', location.pathname)
+    } else if (isAuthenticated) {
+      // Clear the redirect path after successful login
+      localStorage.removeItem('redirectAfterLogin')
     }
   }, [isAuthenticated, loading, location.pathname])
 
@@ -53,17 +56,8 @@ export default function ProtectedRoute({ children, requireRole }: ProtectedRoute
     // For simplicity, we'll check if the user has MANAGE_USERS permission
     // which is typically available to admins
     if (requireRole === 'admin' && !hasPermission(userRole, 'MANAGE_USERS')) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <div className="text-center max-w-md">
-            <h1 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h1>
-            <p className="text-muted-foreground mb-4">
-              Você não tem permissão para acessar esta página.
-            </p>
-            <Navigate to="/dashboard" replace />
-          </div>
-        </div>
-      )
+      // User doesn't have permission, redirect to dashboard
+      return <Navigate to="/dashboard" replace />
     }
   }
 

@@ -51,6 +51,9 @@ export default function Profile() {
             setCreatedAt(data.created_at)
           }
         })
+        .catch((err) => {
+          console.error('Error fetching profile creation date:', err)
+        })
     }
   }, [profile?.id])
 
@@ -75,11 +78,12 @@ export default function Profile() {
 
       if (updateError) throw updateError
 
+      // Update local state
+      setName(name)
+      setEmail(email)
+      
       toast.success('Perfil atualizado com sucesso!')
       setIsEditing(false)
-      
-      // Refresh the page to get updated data
-      window.location.reload()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao atualizar perfil'
       setError(message)
