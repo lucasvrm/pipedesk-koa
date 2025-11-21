@@ -22,11 +22,6 @@ import {
   TextRun,
   AlignmentType,
   HeadingLevel,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle,
 } from 'docx'
 
 interface DocumentGeneratorProps {

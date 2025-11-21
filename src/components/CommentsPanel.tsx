@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+
 import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
@@ -32,7 +32,7 @@ interface CommentsPanelProps {
 export default function CommentsPanel({ entityId, entityType, currentUser }: CommentsPanelProps) {
   const [comments, setComments] = useKV<Comment[]>('comments', [])
   const [users] = useKV<User[]>('users', [])
-  const [notifications, setNotifications] = useKV<Notification[]>('notifications', [])
+  const [, setNotifications] = useKV<Notification[]>('notifications', [])
   const [newComment, setNewComment] = useState('')
   const [showMentions, setShowMentions] = useState(false)
   const [mentionSearch, setMentionSearch] = useState('')

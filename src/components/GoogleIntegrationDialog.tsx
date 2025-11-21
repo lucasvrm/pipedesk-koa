@@ -79,21 +79,14 @@ export default function GoogleIntegrationDialog({
   const handleConnect = async () => {
     toast.info('Iniciando fluxo OAuth do Google...')
 
-    const clientId = 'YOUR_GOOGLE_CLIENT_ID'
-    const redirectUri = window.location.origin + '/oauth/google/callback'
-    const scope = [
-      'https://www.googleapis.com/auth/drive.file',
-      'https://www.googleapis.com/auth/calendar',
-      'https://www.googleapis.com/auth/gmail.readonly',
-    ].join(' ')
-
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_type=code&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `access_type=offline&` +
-      `prompt=consent`
+    // OAuth configuration (currently using mock implementation)
+    // const clientId = 'YOUR_GOOGLE_CLIENT_ID'
+    // const redirectUri = window.location.origin + '/oauth/google/callback'
+    // const scope = [
+    //   'https://www.googleapis.com/auth/drive.file',
+    //   'https://www.googleapis.com/auth/calendar',
+    //   'https://www.googleapis.com/auth/gmail.readonly',
+    // ].join(' ')
 
     setTimeout(() => {
       const mockIntegration: GoogleIntegration = {

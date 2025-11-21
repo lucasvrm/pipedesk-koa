@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -223,7 +223,7 @@ export default function CustomFieldsRenderer({
           </Select>
         )
 
-      case 'multiselect':
+      case 'multiselect': {
         const selectedValues = Array.isArray(value) ? value : []
         return (
           <div className="space-y-2">
@@ -246,6 +246,7 @@ export default function CustomFieldsRenderer({
             ))}
           </div>
         )
+      }
 
       case 'boolean':
         return (

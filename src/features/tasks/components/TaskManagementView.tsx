@@ -16,8 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
+
 import {
   Select,
   SelectContent,
@@ -25,11 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+
+
 import { Checkbox } from '@/components/ui/checkbox'
 import { Task, PlayerTrack, MasterDeal, User } from '@/lib/types'
-import { formatDate, formatCurrency } from '@/lib/helpers'
+import { formatDate } from '@/lib/helpers'
 import { toast } from 'sonner'
 import CreateTaskDialog from './CreateTaskDialog'
 import TaskDetailDialog from './TaskDetailDialog'
@@ -118,10 +118,11 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
           if (!a.dueDate) return 1
           if (!b.dueDate) return -1
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-        case 'priority':
+        case 'priority': {
           const priorityA = a.isMilestone ? 2 : (a.dueDate && new Date(a.dueDate) < today ? 1 : 0)
           const priorityB = b.isMilestone ? 2 : (b.dueDate && new Date(b.dueDate) < today ? 1 : 0)
           return priorityB - priorityA
+        }
         case 'created':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case 'updated':

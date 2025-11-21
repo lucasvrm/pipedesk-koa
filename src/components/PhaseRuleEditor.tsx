@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash, X } from '@phosphor-icons/react'
+import { Plus, Trash } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -31,7 +31,6 @@ import {
   OPERATOR_LABELS,
   getStageLabel,
   ValidationOperator,
-  FieldType,
 } from '@/lib/phaseValidation'
 
 interface PhaseRuleEditorProps {

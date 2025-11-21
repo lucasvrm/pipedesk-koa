@@ -32,11 +32,11 @@ interface CreatePlayerDialogProps {
 }
 
 export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: CreatePlayerDialogProps) {
-  const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
+  const [, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
   const [users] = useKV<User[]>('users', [])
   const [currentUser] = useKV<User>('currentUser', { id: 'user-1', name: 'João Silva', email: 'joao@email.com', role: 'admin' })
   const [integration] = useKV<GoogleIntegration | null>(`google-integration-${currentUser?.id}`, null)
-  const [folders, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
+  const [, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
   
   const [playerName, setPlayerName] = useState('')
   const [trackVolume, setTrackVolume] = useState(masterDeal.volume.toString())
@@ -90,7 +90,7 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
             <span>Player adicionado! Pasta do Drive criada automaticamente.</span>
           </div>
         )
-      } catch (error) {
+      } catch {
         toast.success('Player adicionado com sucesso!')
       }
     } else {

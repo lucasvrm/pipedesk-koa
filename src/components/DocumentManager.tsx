@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   DropdownMenu,
@@ -134,7 +134,7 @@ export default function DocumentManager({
       link.download = doc.fileName
       link.click()
       toast.success('Download iniciado')
-    } catch (error) {
+    } catch {
       toast.error('Erro ao baixar arquivo')
     }
   }

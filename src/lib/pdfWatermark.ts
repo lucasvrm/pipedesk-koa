@@ -39,7 +39,7 @@ export async function addPDFWatermark(
   
   // Add watermark to each page
   pages.forEach((page) => {
-    const { width, height } = page.getSize()
+    const { width } = page.getSize()
     const fontSize = 8
     const textWidth = font.widthOfTextAtSize(watermarkText, fontSize)
     
