@@ -15,6 +15,7 @@ CREATE TABLE users (
   role TEXT NOT NULL CHECK (role IN ('admin', 'analyst', 'client', 'newbusiness')),
   avatar TEXT,
   client_entity TEXT,
+  has_completed_onboarding BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -60,6 +61,18 @@ CREATE TABLE player_tracks (
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE pipeline_stages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  pipeline_id UUID REFERENCES master_deals(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  color TEXT DEFAULT '#6366f1',
+  stage_order INTEGER NOT NULL DEFAULT 0,
+  is_default BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(pipeline_id, stage_order)
 );
 
 CREATE TABLE tasks (

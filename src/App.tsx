@@ -19,6 +19,7 @@ import {
   List,
   Eye,
   EyeSlash,
+  Question,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -33,6 +34,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Toaster } from '@/components/ui/sonner'
+import { OnboardingTour } from '@/components/OnboardingTour'
+import { HelpCenter } from '@/components/HelpCenter'
 import Dashboard from '@/features/analytics/components/Dashboard'
 import DealsView from '@/features/deals/components/DealsView'
 import InboxPanel from '@/features/inbox/components/InboxPanel'
@@ -71,6 +74,8 @@ function App() {
   const [folderManagerOpen, setFolderManagerOpen] = useState(false)
   const [phaseValidationOpen, setPhaseValidationOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [compactMode, setCompactMode] = useState(false)
+  const [helpCenterOpen, setHelpCenterOpen] = useState(false)
 
   const [notifications] = useKV<any[]>('notifications', [])
 
@@ -121,6 +126,7 @@ function App() {
                 variant={currentPage === 'dashboard' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentPage('dashboard')}
+                data-tour="dashboard-nav"
               >
                 <ChartBar className="mr-2" />
                 Dashboard
@@ -129,6 +135,7 @@ function App() {
                 variant={currentPage === 'deals' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentPage('deals')}
+                data-tour="deals-nav"
               >
                 <Kanban className="mr-2" />
                 Negócios
@@ -145,6 +152,7 @@ function App() {
                 variant={currentPage === 'kanban' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentPage('kanban')}
+                data-tour="kanban-nav"
               >
                 <GridFour className="mr-2" />
                 Kanban
@@ -194,6 +202,7 @@ function App() {
               onClick={() => setCreateDealOpen(true)}
               size="sm"
               className="hidden md:flex"
+              data-tour="new-deal-button"
             >
               <Plus className="mr-2" />
               Novo Negócio
@@ -204,6 +213,7 @@ function App() {
               size="icon"
               className="relative"
               onClick={() => setInboxOpen(true)}
+              data-tour="notifications"
             >
               <Bell />
               {unreadCount > 0 && (
@@ -273,6 +283,11 @@ function App() {
                 <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setHelpCenterOpen(true)}>
+                  <Question className="mr-2" />
+                  Central de Ajuda
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-2">
@@ -349,9 +364,14 @@ function App() {
             onOpenChange={setPhaseValidationOpen}
             currentUser={currentUser}
           />
+          <HelpCenter
+            open={helpCenterOpen}
+            onOpenChange={setHelpCenterOpen}
+          />
         </>
       )}
       
+      <OnboardingTour />
       <Toaster position="top-right" />
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-4 z-50">

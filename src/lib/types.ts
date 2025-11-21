@@ -24,7 +24,20 @@ export interface User {
   role: UserRole
   avatar?: string
   clientEntity?: string
+  has_completed_onboarding?: boolean
 }
+
+export interface PipelineStage {
+  id: string
+  pipelineId: string
+  name: string
+  color: string
+  stageOrder: number
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 
 export interface MasterDeal {
   id: string
