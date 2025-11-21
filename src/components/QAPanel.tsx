@@ -55,8 +55,8 @@ export default function QAPanel({ entityId, entityType, currentUser }: QAPanelPr
 
   // Get effective role based on impersonation
   const effectiveRole = isImpersonating ? 'client' : currentUser.role
-  const canViewInternal = hasPermission(effectiveRole, 'VIEW_ALL_DATA')
-  const canAnswer = hasPermission(effectiveRole, 'MANAGE_DEALS')
+  const canViewInternal = hasPermission(effectiveRole, 'VIEW_ALL_DEALS')
+  const canAnswer = hasPermission(effectiveRole, 'EDIT_DEAL')
 
   // Filter questions for this entity
   const entityQuestions = (questions || []).filter(
@@ -70,7 +70,7 @@ export default function QAPanel({ entityId, entityType, currentUser }: QAPanelPr
 
   // Get user by ID
   const getUserById = (userId: string) => {
-    return users.find(u => u.id === userId)
+    return (users ?? []).find(u => u.id === userId)
   }
 
   const handleAskQuestion = () => {

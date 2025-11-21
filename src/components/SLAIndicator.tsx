@@ -23,7 +23,7 @@ export function SLAIndicator({ playerTrackId, currentStage, compact = false }: S
   const [stageHistory] = useKV<StageHistory[]>('stage_history', [])
 
   // Find the current stage entry for this player track
-  const currentStageEntry = stageHistory.find(
+  const currentStageEntry = (stageHistory ?? []).find(
     h => h.playerTrackId === playerTrackId && h.stage === currentStage && !h.exitedAt
   )
 
@@ -32,7 +32,7 @@ export function SLAIndicator({ playerTrackId, currentStage, compact = false }: S
   }
 
   // Get SLA config for current stage
-  const stageSLA = slaConfig.find(c => c.stage === currentStage)
+  const stageSLA = (slaConfig ?? []).find(c => c.stage === currentStage)
   if (!stageSLA) {
     return null
   }

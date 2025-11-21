@@ -209,7 +209,12 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
 
   // Prepare conversion trend data (last 6 months)
   const conversionTrendData = (() => {
-    const monthsData = []
+    const monthsData: Array<{
+      period: string
+      concluded: number
+      cancelled: number
+      conversionRate: number
+    }> = []
     const now = new Date()
     
     for (let i = 5; i >= 0; i--) {
