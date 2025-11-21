@@ -63,7 +63,7 @@ npm run dev
 ### 2.2 Problemas Encontrados na Configuração
 
 #### ⚠️ DEPENDÊNCIA: Conflito de Peer Dependencies
-- **Pacote:** react-joyride@2.9.3
+- **Package:** react-joyride@2.9.3
 - **Problema:** Requer React 15-18, mas projeto usa React 19
 - **Solução aplicada:** Instalação com `--legacy-peer-deps`
 - **Impacto:** Baixo - feature de onboarding pode ter problemas de compatibilidade
