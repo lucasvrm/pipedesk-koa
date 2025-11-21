@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { PlayerTrack, StageHistory, Notification, PlayerStage } from '../lib/types'
 import { differenceInHours, differenceInDays } from 'date-fns'
 import { toast } from 'sonner'

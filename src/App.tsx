@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 // TEMPORARY: Commented out to fix Supabase auth conflicts
-// import { useKV } from '@github/spark/hooks'
+// import { useKV } from '@/hooks/useKV'
 import { 
   ChartBar, 
   Kanban, 

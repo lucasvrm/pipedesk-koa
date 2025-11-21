@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import {
