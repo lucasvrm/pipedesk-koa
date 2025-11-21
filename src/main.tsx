@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import "@github/spark/spark"
 
-import App from './App.tsx'
+import Router from './Router.tsx'
 import ErrorFallback from './ErrorFallback.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ImpersonationProvider } from './contexts/ImpersonationContext.tsx'
@@ -33,5 +33,10 @@ createRoot(document.getElementById('root')!).render(
         </ImpersonationProvider>
       </AuthProvider>
     </QueryClientProvider>
+    <AuthProvider>
+      <ImpersonationProvider>
+        <Router />
+      </ImpersonationProvider>
+    </AuthProvider>
    </ErrorBoundary>
 )
