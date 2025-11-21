@@ -52,18 +52,18 @@ export function ActivitySummarizer({ entityId, entityType }: ActivitySummarizerP
     const { start, end } = getPeriodDates()
     
     // Collect relevant activities
-    const relevantComments = comments.filter(c => {
+    const relevantComments = (comments ?? []).filter(c => {
       if (c.entityId !== entityId) return false
       const createdAt = new Date(c.createdAt)
       return createdAt >= start && createdAt <= end
     })
 
-    const relevantTasks = tasks.filter(t => {
+    const relevantTasks = (tasks ?? []).filter(t => {
       if (entityType === 'track') {
         return t.playerTrackId === entityId
       } else {
         // For deals, get all tasks from related player tracks
-        const track = playerTracks.find(p => p.id === t.playerTrackId)
+        const track = (playerTracks ?? []).find(p => p.id === t.playerTrackId)
         return track?.masterDealId === entityId
       }
     }).filter(t => {
@@ -71,11 +71,11 @@ export function ActivitySummarizer({ entityId, entityType }: ActivitySummarizerP
       return createdAt >= start && createdAt <= end
     })
 
-    const relevantStageChanges = stageHistory.filter(h => {
+    const relevantStageChanges = (stageHistory ?? []).filter(h => {
       if (entityType === 'track') {
         return h.playerTrackId === entityId
       } else {
-        const track = playerTracks.find(p => p.id === h.playerTrackId)
+        const track = (playerTracks ?? []).find(p => p.id === h.playerTrackId)
         return track?.masterDealId === entityId
       }
     }).filter(h => {
@@ -161,7 +161,7 @@ ${activities.tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) 
         tokensUsed: Math.floor(activityText.length / 4), // Rough estimate
       }
 
-      setSummaries([...summaries, newSummary])
+      setSummaries([...(summaries ?? []), newSummary])
       setActiveSummary(newSummary)
       toast.success('Sumário gerado com sucesso!')
     } catch (error) {
@@ -189,7 +189,7 @@ ${activities.tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) 
   }
 
   // Load existing summaries for this entity
-  const existingSummaries = summaries
+  const existingSummaries = (summaries ?? [])
     .filter(s => s.entityId === entityId && s.entityType === entityType)
     .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
 

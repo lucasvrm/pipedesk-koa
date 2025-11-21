@@ -116,10 +116,14 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
 
             // Footer
             new Paragraph({
-              text: '\n\nDocumento gerado em ' + formatDate(new Date().toISOString()),
+              children: [
+                new TextRun({
+                  text: '\n\nDocumento gerado em ' + formatDate(new Date().toISOString()),
+                  italics: true,
+                }),
+              ],
               alignment: AlignmentType.CENTER,
               spacing: { before: 600 },
-              italics: true,
             }),
           ],
         },
@@ -283,17 +287,25 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
               spacing: { before: 600, after: 200 },
             }),
             new Paragraph({
-              text: 'This document contains confidential information intended only for the addressee. Unauthorized distribution or copying is strictly prohibited.',
-              italics: true,
+              children: [
+                new TextRun({
+                  text: 'This document contains confidential information intended only for the addressee. Unauthorized distribution or copying is strictly prohibited.',
+                  italics: true,
+                }),
+              ],
               spacing: { after: 200 },
             }),
 
             // Footer
             new Paragraph({
-              text: 'Document generated on ' + formatDate(new Date().toISOString()),
+              children: [
+                new TextRun({
+                  text: 'Document generated on ' + formatDate(new Date().toISOString()),
+                  italics: true,
+                }),
+              ],
               alignment: AlignmentType.CENTER,
               spacing: { before: 400 },
-              italics: true,
             }),
           ],
         },

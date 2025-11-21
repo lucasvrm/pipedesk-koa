@@ -77,7 +77,7 @@ export default function DataRoomView() {
         return
       }
 
-      setItems(data || [])
+      setItems((data || []) as unknown as StorageItem[])
     } catch (error) {
       console.error('Error loading files:', error)
       toast.error('Erro ao carregar arquivos')
