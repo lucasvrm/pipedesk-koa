@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, User } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { SLAStatusBadge } from '@/components/SLAIndicator'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
 import { canViewPlayerName } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
@@ -54,6 +55,12 @@ export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksLi
                     >
                       {STAGE_LABELS[track.currentStage]}
                     </Badge>
+                    {track.status === 'active' && (
+                      <SLAStatusBadge 
+                        playerTrackId={track.id} 
+                        currentStage={track.currentStage} 
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">

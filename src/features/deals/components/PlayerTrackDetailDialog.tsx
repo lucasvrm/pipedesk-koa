@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User, MasterDeal } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
-import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Question } from '@phosphor-icons/react'
+import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Question, Clock } from '@phosphor-icons/react'
 import TaskList from '@/features/tasks/components/TaskList'
 import PlayerKanban from './PlayerKanban'
 import PlayerGantt from './PlayerGantt'
@@ -33,6 +33,8 @@ import ActivityHistory from '@/components/ActivityHistory'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import PhaseValidationDialog from '@/components/PhaseValidationDialog'
 import QAPanel from '@/components/QAPanel'
+import { ActivitySummarizer } from '@/components/ActivitySummarizer'
+import { SLAIndicator } from '@/components/SLAIndicator'
 import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
 import { toast } from 'sonner'
 
@@ -243,7 +245,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
         <Separator className="my-4" />
 
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-9">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-11 overflow-x-auto">
             <TabsTrigger value="list">
               <ListChecks className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Lista</span>
@@ -267,6 +269,14 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
             <TabsTrigger value="ai">
               <Sparkle className="mr-0 md:mr-2" />
               <span className="hidden md:inline">IA</span>
+            </TabsTrigger>
+            <TabsTrigger value="sla">
+              <Clock className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">SLA</span>
+            </TabsTrigger>
+            <TabsTrigger value="summary">
+              <ClockCounterClockwise className="mr-0 md:mr-2" />
+              <span className="hidden md:inline">Sumário</span>
             </TabsTrigger>
             <TabsTrigger value="qa">
               <Question className="mr-0 md:mr-2" />
@@ -311,6 +321,28 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
           <TabsContent value="ai" className="space-y-4">
             <AINextSteps trackId={track.id} currentStage={track.currentStage} />
+          </TabsContent>
+
+          <TabsContent value="sla" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Monitoramento de SLA</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SLAIndicator 
+                  playerTrackId={track.id} 
+                  currentStage={track.currentStage}
+                  compact={false}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="summary" className="space-y-4">
+            <ActivitySummarizer 
+              entityId={track.id} 
+              entityType="track" 
+            />
           </TabsContent>
 
           <TabsContent value="qa" className="space-y-4">

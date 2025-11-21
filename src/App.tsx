@@ -21,6 +21,7 @@ import {
   EyeSlash,
   Question,
   FlowArrow,
+  Clock,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -56,6 +57,8 @@ import FolderBrowser from '@/components/FolderBrowser'
 import PhaseValidationManager from '@/components/PhaseValidationManager'
 import DataRoomView from '@/components/DataRoomView'
 import AuditLogView from '@/components/AuditLogView'
+import { SLAConfigManager } from '@/components/SLAConfigManager'
+import { SLAMonitoringService } from '@/components/SLAMonitoringService'
 import { getInitials } from '@/lib/helpers'
 import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
@@ -79,6 +82,7 @@ function App() {
   const [compactMode, setCompactMode] = useState(false)
   const [helpCenterOpen, setHelpCenterOpen] = useState(false)
   const [pipelineSettingsOpen, setPipelineSettingsOpen] = useState(false)
+  const [slaConfigOpen, setSlaConfigOpen] = useState(false)
 
   const [notifications] = useKV<any[]>('notifications', [])
 
@@ -289,6 +293,12 @@ function App() {
                     Configurar Pipeline
                   </DropdownMenuItem>
                 )}
+                {canManageSettings && (
+                  <DropdownMenuItem onClick={() => setSlaConfigOpen(true)}>
+                    <Clock className="mr-2" />
+                    Configurar SLA
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
@@ -384,6 +394,23 @@ function App() {
           />
         </>
       )}
+      
+      {/* SLA Configuration Dialog */}
+      {currentUser && canManageSettings && (
+        <div className={slaConfigOpen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6' : 'hidden'}>
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-6">
+              <Button variant="ghost" onClick={() => setSlaConfigOpen(false)}>
+                ← Voltar
+              </Button>
+            </div>
+            <SLAConfigManager />
+          </div>
+        </div>
+      )}
+      
+      {/* SLA Monitoring Service - runs in background */}
+      <SLAMonitoringService />
       
       <OnboardingTour />
       <Toaster position="top-right" />
