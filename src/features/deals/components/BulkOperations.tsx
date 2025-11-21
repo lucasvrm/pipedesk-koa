@@ -45,9 +45,9 @@ export default function BulkOperations({
   const [newStage, setNewStage] = useState<PlayerStage>('nda')
   const [assigneeId, setAssigneeId] = useState<string>('')
 
-  const [masterDeals, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
-  const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+  const [, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
+  const [, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
+  const [, setTasks] = useKV<Task[]>('tasks', [])
   const [users] = useKV<User[]>('users', [])
 
   const allSelected = selectedIds.length === entities.length && entities.length > 0

@@ -30,10 +30,10 @@ interface CreateDealDialogProps {
 }
 
 export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialogProps) {
-  const [masterDeals, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
+  const [, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
   const [currentUser] = useKV<{ id: string; name: string }>('currentUser', { id: 'user-1', name: 'João Silva' })
   const [integration] = useKV<GoogleIntegration | null>(`google-integration-${currentUser?.id}`, null)
-  const [folders, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
+  const [, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
   
   const [clientName, setClientName] = useState('')
   const [volume, setVolume] = useState('')
@@ -89,7 +89,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
             <span>Negócio criado! Pasta do Drive criada automaticamente.</span>
           </div>
         )
-      } catch (error) {
+      } catch {
         toast.success('Negócio criado com sucesso!')
         toast.warning('Erro ao criar pasta do Drive')
       }
@@ -119,7 +119,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
       const result = await window.spark.llm(prompt, 'gpt-4o-mini')
       setObservations(result.trim())
       toast.success('Descrição gerada com sucesso!')
-    } catch (error) {
+    } catch {
       toast.error('Erro ao gerar descrição')
     } finally {
       setIsGenerating(false)
