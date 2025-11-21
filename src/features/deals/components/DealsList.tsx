@@ -5,11 +5,13 @@ import { formatCurrency, formatDate, isOverdue, getDaysUntil } from '@/lib/helpe
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { EmptyState } from '@/components/EmptyState'
 import { 
   Eye, 
   PencilSimple, 
   Trash,
   WarningCircle,
+  Briefcase,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import DealDetailDialog from './DealDetailDialog'
@@ -37,9 +39,11 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
 
   if (deals.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>Nenhum negócio encontrado</p>
-      </div>
+      <EmptyState
+        icon={<Briefcase size={64} weight="duotone" />}
+        title="Nenhum negócio encontrado"
+        description="Não há negócios correspondentes aos seus critérios de busca. Tente ajustar os filtros ou crie um novo negócio."
+      />
     )
   }
 

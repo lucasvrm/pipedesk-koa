@@ -20,6 +20,7 @@ import {
   Eye,
   EyeSlash,
   Question,
+  FlowArrow,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -36,6 +37,7 @@ import {
 import { Toaster } from '@/components/ui/sonner'
 import { OnboardingTour } from '@/components/OnboardingTour'
 import { HelpCenter } from '@/components/HelpCenter'
+import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import Dashboard from '@/features/analytics/components/Dashboard'
 import DealsView from '@/features/deals/components/DealsView'
 import InboxPanel from '@/features/inbox/components/InboxPanel'
@@ -76,6 +78,7 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [compactMode, setCompactMode] = useState(false)
   const [helpCenterOpen, setHelpCenterOpen] = useState(false)
+  const [pipelineSettingsOpen, setPipelineSettingsOpen] = useState(false)
 
   const [notifications] = useKV<any[]>('notifications', [])
 
@@ -280,6 +283,12 @@ function App() {
                     Validação de Fases
                   </DropdownMenuItem>
                 )}
+                {canManageSettings && (
+                  <DropdownMenuItem onClick={() => setPipelineSettingsOpen(true)}>
+                    <FlowArrow className="mr-2" />
+                    Configurar Pipeline
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
@@ -363,6 +372,11 @@ function App() {
             open={phaseValidationOpen}
             onOpenChange={setPhaseValidationOpen}
             currentUser={currentUser}
+          />
+          <PipelineSettingsDialog
+            open={pipelineSettingsOpen}
+            onOpenChange={setPipelineSettingsOpen}
+            pipelineId="default"
           />
           <HelpCenter
             open={helpCenterOpen}
