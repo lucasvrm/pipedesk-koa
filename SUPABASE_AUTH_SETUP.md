@@ -1,6 +1,6 @@
 # Supabase Authentication Setup Guide
 
-This document explains how to set up and use Supabase Authentication with Magic Links in the DealFlow Manager application.
+This document explains how to set up and use Supabase Authentication with Magic Links in the PipeDesk application.
 
 ## Overview
 

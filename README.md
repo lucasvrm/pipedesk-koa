@@ -1,4 +1,4 @@
-# DealFlow Manager
+# PipeDesk
 
 A specialized hierarchical project management system for M&A and investment banking professionals to manage complex multi-party financial deals with strict privacy controls and client anonymization.
 
