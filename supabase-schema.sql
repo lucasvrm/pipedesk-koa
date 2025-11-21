@@ -72,7 +72,7 @@ CREATE TABLE pipeline_stages (
   is_default BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(pipeline_id, stage_order)
+  UNIQUE(COALESCE(pipeline_id, '00000000-0000-0000-0000-000000000000'::uuid), stage_order)
 );
 
 CREATE TABLE tasks (

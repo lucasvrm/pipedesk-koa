@@ -41,7 +41,7 @@ import { PipelineStage } from '@/lib/types'
 interface PipelineSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  pipelineId: string
+  pipelineId: string | null  // null for global default stages
 }
 
 const STAGE_COLORS = [
@@ -154,14 +154,21 @@ export function PipelineSettingsDialog({
   )
 
   useEffect(() => {
-    if (open && pipelineId) {
+    if (open) {
       loadStages()
     }
   }, [open, pipelineId])
 
   const loadStages = async () => {
-    // TODO: Load from Supabase
-    // For now, use default stages
+    // TODO: Implement Supabase integration when backend is ready
+    // Example implementation:
+    // const { data, error } = await supabase
+    //   .from('pipeline_stages')
+    //   .select('*')
+    //   .eq('pipeline_id', pipelineId)
+    //   .order('stage_order')
+    
+    // For MVP, use default stages as a working placeholder
     const defaultStages: PipelineStage[] = [
       {
         id: '1',
@@ -268,7 +275,8 @@ export function PipelineSettingsDialog({
   const handleSave = async () => {
     setLoading(true)
     try {
-      // TODO: Save to Supabase
+      // TODO: Implement Supabase integration when backend is ready
+      // Example implementation:
       // const { error } = await supabase
       //   .from('pipeline_stages')
       //   .upsert(stages.map(stage => ({
@@ -279,7 +287,10 @@ export function PipelineSettingsDialog({
       //     stage_order: stage.stageOrder,
       //     is_default: stage.isDefault,
       //   })))
+      // if (error) throw error
       
+      // For MVP: Simulate successful save
+      console.log('Pipeline stages to save:', stages)
       toast.success('Configurações salvas com sucesso!')
       onOpenChange(false)
     } catch (error) {

@@ -29,7 +29,7 @@ export interface User {
 
 export interface PipelineStage {
   id: string
-  pipelineId: string
+  pipelineId: string | null  // null for global/default stages
   name: string
   color: string
   stageOrder: number

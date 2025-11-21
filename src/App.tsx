@@ -376,7 +376,7 @@ function App() {
           <PipelineSettingsDialog
             open={pipelineSettingsOpen}
             onOpenChange={setPipelineSettingsOpen}
-            pipelineId="default"
+            pipelineId={null}  // null = global default stages
           />
           <HelpCenter
             open={helpCenterOpen}
