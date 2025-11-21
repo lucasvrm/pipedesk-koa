@@ -80,7 +80,7 @@ export default function GlobalSearch({
         }
       })
 
-    ;(playerTracks || []).forEach((track, index) => {
+    ;(playerTracks || []).forEach((track) => {
       const playerName = canSeePlayerNames 
         ? track.playerName 
         : anonymizePlayerName(track.playerName, track.id, true)

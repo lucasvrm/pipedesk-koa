@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { Plus, Trash, CheckCircle, Circle, Flag, LinkSimple, Calendar } from '@phosphor-icons/react'
+import { Plus, Trash, CheckCircle, Flag, LinkSimple, Calendar } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'

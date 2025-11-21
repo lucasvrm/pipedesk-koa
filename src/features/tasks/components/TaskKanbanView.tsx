@@ -22,7 +22,6 @@ export default function TaskKanbanView({
   onToggleComplete,
   onSelectTask,
   getTrackInfo,
-  getAssigneeNames,
   isTaskOverdue,
 }: TaskKanbanViewProps) {
   const getTaskStatus = (task: Task): TaskStatus => {
