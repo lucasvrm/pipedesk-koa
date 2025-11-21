@@ -2,23 +2,27 @@ import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/EmptyState'
 import { 
   TrendUp, 
   CurrencyCircleDollar, 
   CheckCircle,
   XCircle,
+  RocketLaunch,
 } from '@phosphor-icons/react'
 import { MasterDeal, PlayerTrack, PlayerStage } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
 import { STAGE_PROBABILITIES } from '@/lib/types'
 import DealsList from '@/features/deals/components/DealsList'
 import DealsByStageChart from '@/features/deals/components/DealsByStageChart'
+import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
 import { toast } from 'sonner'
 
 export default function Dashboard() {
   const [masterDeals] = useKV<MasterDeal[]>('masterDeals', [])
   const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
   const [stageFilter, setStageFilter] = useState<PlayerStage | null>(null)
+  const [createDealOpen, setCreateDealOpen] = useState(false)
 
   const activeDeals = (masterDeals || []).filter(d => d.status === 'active' && !d.deletedAt)
   const concludedDeals = (masterDeals || []).filter(d => d.status === 'concluded')
@@ -56,6 +60,24 @@ export default function Dashboard() {
     : activeTracks
 
   return (
+    <>
+      {/* Show EmptyState if user has no deals at all */}
+      {(masterDeals || []).length === 0 ? (
+        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <p className="text-muted-foreground">Visão geral dos seus negócios</p>
+          </div>
+          
+          <EmptyState
+            icon={<RocketLaunch size={64} weight="duotone" />}
+            title="Bem-vindo ao PipeDesk!"
+            description="Você ainda não tem nenhum negócio. Comece criando seu primeiro Master Deal para organizar e gerenciar suas oportunidades de negócio."
+            actionLabel="Criar Primeiro Negócio"
+            onAction={() => setCreateDealOpen(true)}
+          />
+        </div>
+      ) : (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
       <div className="space-y-1">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
@@ -181,5 +203,9 @@ export default function Dashboard() {
         </CardContent>
       </Card>
     </div>
+      )}
+      
+      <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
+    </>
   )
 }
