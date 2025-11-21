@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/EmptyState'
 import { 
   TrendUp, 
@@ -10,7 +9,6 @@ import {
   CheckCircle,
   XCircle,
   RocketLaunch,
-  Plus,
 } from '@phosphor-icons/react'
 import { MasterDeal, PlayerTrack, PlayerStage } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
@@ -61,29 +59,25 @@ export default function Dashboard() {
     ? activeTracks.filter(t => t.currentStage === stageFilter)
     : activeTracks
 
-  // Show EmptyState if user has no deals at all
-  if ((masterDeals || []).length === 0) {
-    return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">Visão geral dos seus negócios</p>
-        </div>
-        
-        <EmptyState
-          icon={<RocketLaunch size={64} weight="duotone" />}
-          title="Bem-vindo ao PipeDesk!"
-          description="Você ainda não tem nenhum negócio. Comece criando seu primeiro Master Deal para organizar e gerenciar suas oportunidades de negócio."
-          actionLabel="Criar Primeiro Negócio"
-          onAction={() => setCreateDealOpen(true)}
-        />
-        
-        <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-      </div>
-    )
-  }
-
   return (
+    <>
+      {/* Show EmptyState if user has no deals at all */}
+      {(masterDeals || []).length === 0 ? (
+        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <p className="text-muted-foreground">Visão geral dos seus negócios</p>
+          </div>
+          
+          <EmptyState
+            icon={<RocketLaunch size={64} weight="duotone" />}
+            title="Bem-vindo ao PipeDesk!"
+            description="Você ainda não tem nenhum negócio. Comece criando seu primeiro Master Deal para organizar e gerenciar suas oportunidades de negócio."
+            actionLabel="Criar Primeiro Negócio"
+            onAction={() => setCreateDealOpen(true)}
+          />
+        </div>
+      ) : (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
       <div className="space-y-1">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
@@ -208,8 +202,10 @@ export default function Dashboard() {
           <DealsList deals={(masterDeals || []).slice(0, 5)} compact />
         </CardContent>
       </Card>
+    </div>
+      )}
       
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-    </div>
+    </>
   )
 }

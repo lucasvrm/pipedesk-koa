@@ -14,7 +14,7 @@ import {
 import { MasterDeal, PlayerTrack, User, STAGE_LABELS, STAGE_PROBABILITIES } from '@/lib/types'
 import { formatCurrency, anonymizePlayerName, calculateWeightedVolume, calculateFee } from '@/lib/helpers'
 import { canViewPlayerName } from '@/lib/permissions'
-import { CaretLeft, CaretRight, Eye, Kanban, Plus } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight, Eye, Kanban } from '@phosphor-icons/react'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
 import CreateDealDialog from './CreateDealDialog'
 
@@ -58,32 +58,28 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
     setSelectedDealIndex(prev => Math.min(activeDeals.length - 1, prev + 1))
   }
 
-  if (activeDeals.length === 0) {
-    return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
-          <p className="text-muted-foreground">
-            Visualização de deals e players por estágio
-          </p>
-        </div>
-        
-        <EmptyState
-          icon={<Kanban size={64} weight="duotone" />}
-          title="Nenhum negócio ativo no Kanban"
-          description="Comece criando um Master Deal para visualizar e gerenciar seus players em cada estágio do pipeline de vendas."
-          actionLabel="Criar Negócio"
-          onAction={() => setCreateDealOpen(true)}
-        />
-        
-        <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-      </div>
-    )
-  }
-
-  const currentDeal = activeDeals[selectedDealIndex]
+  const currentDeal = activeDeals.length > 0 ? activeDeals[selectedDealIndex] : null
 
   return (
+    <>
+      {activeDeals.length === 0 ? (
+        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
+            <p className="text-muted-foreground">
+              Visualização de deals e players por estágio
+            </p>
+          </div>
+          
+          <EmptyState
+            icon={<Kanban size={64} weight="duotone" />}
+            title="Nenhum negócio ativo no Kanban"
+            description="Comece criando um Master Deal para visualizar e gerenciar seus players em cada estágio do pipeline de vendas."
+            actionLabel="Criar Negócio"
+            onAction={() => setCreateDealOpen(true)}
+          />
+        </div>
+      ) : currentDeal ? (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -341,8 +337,10 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
           onOpenChange={setDetailDialogOpen}
         />
       )}
+    </div>
+      ) : null}
       
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-    </div>
+    </>
   )
 }
