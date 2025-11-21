@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from 'react'
-import { useKV } from '@github/spark/hooks'
+// TEMPORARY: Commented out to fix Supabase auth conflicts
+// import { useKV } from '@github/spark/hooks'
 import { 
   ChartBar, 
   Kanban, 
