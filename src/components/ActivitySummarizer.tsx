@@ -16,7 +16,7 @@ interface ActivitySummary {
   id: string
   entityId: string
   entityType: 'deal' | 'track'
-  summaryType: 'daily' | 'weekly' | 'monthly'
+  summaryType: 'daily' | 'weekly' | 'monthly' | 'quarterly'
   periodStart: string
   periodEnd: string
   generatedAt: string
@@ -94,6 +94,13 @@ export function ActivitySummarizer({ entityId, entityType }: ActivitySummarizerP
     const { start, end } = getPeriodDates()
     const activities = collectActivities()
 
+    // Determine summary type based on period
+    const getSummaryType = (): 'daily' | 'weekly' | 'monthly' | 'quarterly' => {
+      if (selectedPeriod === '7d') return 'weekly'
+      if (selectedPeriod === '30d') return 'monthly'
+      return 'quarterly' // 90d
+    }
+
     // Build context for AI
     const context = {
       period: `${format(start, 'dd/MM/yyyy', { locale: ptBR })} até ${format(end, 'dd/MM/yyyy', { locale: ptBR })}`,
@@ -133,25 +140,25 @@ ${activities.tasks.filter(t => !t.completed).length > 0 ? `- Concluir ${activiti
 ${activities.tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) < new Date()).length > 0 ? `\n- ⚠️ ${activities.tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) < new Date()).length} tarefa(s) atrasada(s)` : ''}
 `
 
-    return activityText
+    return { activityText, summaryType: getSummaryType() }
   }
 
   const handleGenerateSummary = async () => {
     setIsGenerating(true)
     try {
-      const summaryContent = await generateSummaryText()
+      const { activityText, summaryType } = await generateSummaryText()
       const { start, end } = getPeriodDates()
 
       const newSummary: ActivitySummary = {
         id: crypto.randomUUID(),
         entityId,
         entityType,
-        summaryType: selectedPeriod === '7d' ? 'weekly' : selectedPeriod === '30d' ? 'monthly' : 'monthly',
+        summaryType,
         periodStart: start.toISOString(),
         periodEnd: end.toISOString(),
         generatedAt: new Date().toISOString(),
-        content: summaryContent,
-        tokensUsed: Math.floor(summaryContent.length / 4), // Rough estimate
+        content: activityText,
+        tokensUsed: Math.floor(activityText.length / 4), // Rough estimate
       }
 
       setSummaries([...summaries, newSummary])
@@ -311,7 +318,10 @@ ${activities.tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) 
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">
-                        {summary.summaryType === 'daily' ? 'Diário' : summary.summaryType === 'weekly' ? 'Semanal' : 'Mensal'}
+                        {summary.summaryType === 'daily' ? 'Diário' : 
+                         summary.summaryType === 'weekly' ? 'Semanal' : 
+                         summary.summaryType === 'monthly' ? 'Mensal' : 
+                         'Trimestral'}
                       </Badge>
                       {summary.tokensUsed && (
                         <Badge variant="outline">

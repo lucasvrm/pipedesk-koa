@@ -285,7 +285,17 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
 
   const getFilteredResults = () => {
     if (selectedTab === 'all') return searchResults
-    return searchResults.filter(r => r.type === selectedTab.slice(0, -1) || (selectedTab === 'tracks' && r.type === 'track'))
+    
+    // Explicit mapping of tab values to entity types
+    const tabToEntityType: Record<string, string> = {
+      'deals': 'deal',
+      'tracks': 'track',
+      'tasks': 'task',
+      'comments': 'comment',
+    }
+    
+    const entityType = tabToEntityType[selectedTab]
+    return entityType ? searchResults.filter(r => r.type === entityType) : searchResults
   }
 
   const getResultIcon = (type: string) => {

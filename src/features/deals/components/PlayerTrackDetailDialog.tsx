@@ -245,7 +245,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
         <Separator className="my-4" />
 
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-11 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-6 lg:grid-cols-11 overflow-x-auto">
             <TabsTrigger value="list">
               <ListChecks className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Lista</span>

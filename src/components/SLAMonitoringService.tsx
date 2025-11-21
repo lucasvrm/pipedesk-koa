@@ -105,6 +105,15 @@ export function useSLAMonitoring() {
 
       // Create notification for track responsibles
       track.responsibles.forEach(userId => {
+        // Find current stage entry
+        const currentStageEntry = stageHistory.find(
+          h => h.playerTrackId === track.id && h.stage === track.currentStage && !h.exitedAt
+        )
+        
+        if (!currentStageEntry) return
+        
+        const daysInStage = differenceInDays(now, new Date(currentStageEntry.enteredAt))
+        
         const newNotification: Notification = {
           id: crypto.randomUUID(),
           userId,
@@ -113,8 +122,8 @@ export function useSLAMonitoring() {
             ? `⚠️ SLA Vencido: ${track.playerName}`
             : `🔔 SLA em Risco: ${track.playerName}`,
           message: violation.status === 'overdue'
-            ? `${track.playerName} está ${differenceInDays(now, new Date(stageHistory.find(h => h.playerTrackId === track.id && h.stage === track.currentStage && !h.exitedAt)!.enteredAt))} dias em ${track.currentStage.toUpperCase()}, ultrapassando o limite de ${Math.round(violation.maxHours / 24)} dias.`
-            : `${track.playerName} está há ${differenceInDays(now, new Date(stageHistory.find(h => h.playerTrackId === track.id && h.stage === track.currentStage && !h.exitedAt)!.enteredAt))} dias em ${track.currentStage.toUpperCase()}, próximo ao limite de ${Math.round(violation.maxHours / 24)} dias (${Math.round(violation.percentage)}%).`,
+            ? `${track.playerName} está ${daysInStage} dias em ${track.currentStage.toUpperCase()}, ultrapassando o limite de ${Math.round(violation.maxHours / 24)} dias.`
+            : `${track.playerName} está há ${daysInStage} dias em ${track.currentStage.toUpperCase()}, próximo ao limite de ${Math.round(violation.maxHours / 24)} dias (${Math.round(violation.percentage)}%).`,
           link: `/deals/${track.masterDealId}?track=${track.id}`,
           read: false,
           createdAt: new Date().toISOString(),
