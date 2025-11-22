@@ -42,7 +42,7 @@ export default function Profile() {
     // Fetch additional profile data including created_at
     if (profile?.id) {
       supabase
-        .from('users')
+        .from('profiles')
         .select('created_at')
         .eq('id', profile.id)
         .single()

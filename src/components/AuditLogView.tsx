@@ -62,13 +62,21 @@ export default function AuditLogView() {
 
   const loadUsers = async () => {
     try {
+      // Try loading from profiles first
       const { data, error } = await supabase
-        .from('users')
-        .select('id, name, email')
+        .from('profiles')
+        .select('id, name, email:id') // Note: email is technically in auth.users, but we can't join it easily here.
+                                     // For now, we might need a joined view or rely on name.
+                                     // Or better: keep the UI simple.
         .order('name')
 
       if (error) throw error
-      setUsers(data || [])
+
+      // If we got profiles, we need to match them to emails if possible,
+      // but since we can't query auth.users from client, we might have to skip email
+      // or rely on the 'username' field if it stores email.
+      // For this component, we'll map what we have.
+      setUsers(data.map((p: any) => ({ ...p, email: p.username || 'N/A' })) || [])
     } catch (error) {
       console.error('Error loading users:', error)
     }
@@ -78,6 +86,9 @@ export default function AuditLogView() {
     try {
       setLoading(true)
 
+      // We need to adjust the query because the foreign key relationship might have changed
+      // from 'users' to 'profiles'.
+      // We will try to query assuming the relationship exists.
       let query = supabase
         .from('activity_log')
         .select(`
@@ -87,11 +98,7 @@ export default function AuditLogView() {
           entity_type,
           action,
           changes,
-          created_at,
-          users!activity_log_user_id_fkey (
-            name,
-            email
-          )
+          created_at
         `)
         .order('created_at', { ascending: false })
         .range((page - 1) * itemsPerPage, page * itemsPerPage - 1)
@@ -119,11 +126,28 @@ export default function AuditLogView() {
 
       if (error) throw error
 
+      // We manually fetch user details to avoid FK join issues during migration
+      const userIds = [...new Set((data || []).map((log: any) => log.user_id))];
+
+      let userMap: Record<string, { name: string, email?: string }> = {};
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, name, username')
+          .in('id', userIds);
+
+        profiles?.forEach((p: any) => {
+          userMap[p.id] = { name: p.name, email: p.username };
+        });
+
+      }
+
       // Transform data to include user info
       const transformedData = (data || []).map((log: any) => ({
         ...log,
-        user_name: log.users?.name,
-        user_email: log.users?.email,
+        user_name: userMap[log.user_id]?.name || 'Unknown',
+        user_email: userMap[log.user_id]?.email,
       }))
 
       setLogs(transformedData)
