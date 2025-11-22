@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
@@ -73,6 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) throw error
       setProfile(data)
     } catch (err) {
+      console.error('Error fetching profile:', err)
       setError(err instanceof Error ? err : new Error('Failed to fetch profile'))
     } finally {
       setLoading(false)
@@ -120,13 +121,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
       if (error) throw error
       
-      // Create profile in the users table
+      // Create profile in the profiles table
       if (data.user) {
+        const timestamp = Date.now().toString(36);
+        const username = `${email.split('@')[0]}_${timestamp}`;
+
         const { error: profileError } = await supabase
-          .from('users')
+          .from('profiles')
           .upsert({
             id: data.user.id,
-            email: data.user.email,
+            username: username,
             name: name || email.split('@')[0],
             role: 'client',
           })
