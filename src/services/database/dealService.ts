@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { MasterDeal, DealStatus } from '@/lib/types'
+import { MasterDeal } from '@/lib/types'
 
 export const dealService = {
   async getDeals() {

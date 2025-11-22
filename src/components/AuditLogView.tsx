@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,9 +58,9 @@ export default function AuditLogView() {
   useEffect(() => {
     loadUsers()
     loadLogs()
-  }, [selectedUser, selectedEventType, dateFrom, dateTo, page])
+  }, [loadUsers, loadLogs])
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       // Try loading from profiles first
       const { data, error } = await supabase
@@ -80,9 +80,9 @@ export default function AuditLogView() {
     } catch (error) {
       console.error('Error loading users:', error)
     }
-  }
+  }, [])
 
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true)
 
@@ -129,7 +129,7 @@ export default function AuditLogView() {
       // We manually fetch user details to avoid FK join issues during migration
       const userIds = [...new Set((data || []).map((log: any) => log.user_id))];
 
-      let userMap: Record<string, { name: string, email?: string }> = {};
+      const userMap: Record<string, { name: string, email?: string }> = {};
 
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -156,7 +156,7 @@ export default function AuditLogView() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, itemsPerPage, selectedUser, selectedEventType, dateFrom, dateTo])
 
   const getActionBadge = (action: string) => {
     if (action.toLowerCase().includes('create') || action.toLowerCase().includes('insert')) {
