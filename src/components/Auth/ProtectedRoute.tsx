@@ -1,65 +1,35 @@
-import { ReactNode, useEffect } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { UserRole } from '@/lib/types'
-import { hasPermission } from '@/lib/permissions'
+import { ReactNode } from 'react'
 
 interface ProtectedRouteProps {
-  children: ReactNode
-  requireRole?: UserRole
+  children?: ReactNode
+  requiredRole?: string[]
 }
 
-export default function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, profile } = useAuth()
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { user, profile, loading } = useAuth()
   const location = useLocation()
 
-  useEffect(() => {
-    // Save the attempted route for redirect after login
-    if (!isAuthenticated && !loading) {
-      localStorage.setItem('redirectAfterLogin', location.pathname)
-    } else if (isAuthenticated) {
-      // Clear the redirect path after successful login
-      localStorage.removeItem('redirectAfterLogin')
-    }
-  }, [isAuthenticated, loading, location.pathname])
-
-  // Show loading state while checking session
   if (loading) {
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center bg-background"
-        role="status"
-        aria-live="polite"
-        aria-label="Verificando autenticação"
-      >
-        <div className="text-center">
-          <div 
-            className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"
-            aria-hidden="true"
-          ></div>
-          <p className="text-sm text-muted-foreground">Verificando autenticação...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
+          <p className="text-muted-foreground animate-pulse">Carregando...</p>
         </div>
       </div>
     )
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated || !profile) {
-    return <Navigate to="/login" replace />
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Check role permissions if required
-  if (requireRole) {
-    const userRole = profile.role || 'client'
-    
-    // Check if user has the required role or higher permissions
-    // For simplicity, we'll check if the user has MANAGE_USERS permission
-    // which is typically available to admins
-    if (requireRole === 'admin' && !hasPermission(userRole, 'MANAGE_USERS')) {
-      // User doesn't have permission, redirect to dashboard
-      return <Navigate to="/dashboard" replace />
-    }
+  // If roles are required, check if user has permission
+  if (requiredRole && profile && !requiredRole.includes(profile.role)) {
+    return <Navigate to="/dashboard" replace />
   }
 
-  return <>{children}</>
+  return children ? <>{children}</> : <Outlet />
 }
