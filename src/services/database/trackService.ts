@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { PlayerTrack, DealStatus, PlayerStage } from '@/lib/types'
+import { PlayerTrack } from '@/lib/types'
 
 export const trackService = {
   async getTracksByDealId(dealId: string) {
