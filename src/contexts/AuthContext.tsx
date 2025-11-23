@@ -48,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      
+
       if (session?.user) {
         fetchProfile(session.user.id)
       } else {
@@ -70,10 +70,51 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .eq('id', userId)
         .single()
 
-      if (error) throw error
-      setProfile(data)
+      if (error) {
+        // If profile doesn't exist, create it
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating...')
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              name: user?.email?.split('@')[0] || 'User',
+              role: 'client', // Default role
+            })
+            .select()
+            .single()
+
+          if (createError) {
+            console.error('Error creating profile:', createError)
+            // Set a minimal profile to allow user to proceed
+            setProfile({
+              id: userId,
+              name: user?.email?.split('@')[0] || 'User',
+              email: user?.email || '',
+              role: 'client',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
+          } else {
+            setProfile(newProfile)
+          }
+        } else {
+          throw error
+        }
+      } else {
+        setProfile(data)
+      }
     } catch (err) {
       console.error('Error fetching profile:', err)
+      // Set minimal profile to allow user to proceed
+      setProfile({
+        id: userId,
+        name: user?.email?.split('@')[0] || 'User',
+        email: user?.email || '',
+        role: 'client',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
       setError(err instanceof Error ? err : new Error('Failed to fetch profile'))
     } finally {
       setLoading(false)
@@ -120,7 +161,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         password,
       })
       if (error) throw error
-      
+
       // Create profile in the profiles table
       if (data.user) {
         const timestamp = Date.now().toString(36);
