@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,7 @@ import { toast } from 'sonner'
 
 export default function MagicLinkAuth() {
   const { signInWithMagicLink, user } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [verifying, setVerifying] = useState(false)
@@ -19,13 +21,20 @@ export default function MagicLinkAuth() {
     if (hash && hash.includes('access_token')) {
       setVerifying(true)
       // Supabase will automatically handle the token verification
-      // The AuthProvider will detect the session change
+      // Wait a bit for the session to be established, then redirect
+      setTimeout(() => {
+        if (user) {
+          navigate('/dashboard', { replace: true })
+        } else {
+          setVerifying(false)
+        }
+      }, 2000)
     }
-  }, [])
+  }, [user, navigate])
 
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!email) {
       toast.error('Por favor, insira seu email')
       return
@@ -33,7 +42,7 @@ export default function MagicLinkAuth() {
 
     setStatus('sending')
     const success = await signInWithMagicLink(email)
-    
+
     if (success) {
       setStatus('sent')
       toast.success('Magic link enviado! Verifique seu email.')
@@ -84,9 +93,9 @@ export default function MagicLinkAuth() {
             <p className="text-sm text-muted-foreground">
               Clique no link do email para fazer login. O link expira em 1 hora.
             </p>
-            <Button 
-              onClick={() => setStatus('idle')} 
-              variant="outline" 
+            <Button
+              onClick={() => setStatus('idle')}
+              variant="outline"
               className="w-full"
             >
               Enviar para outro email
@@ -120,8 +129,8 @@ export default function MagicLinkAuth() {
                 required
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={status === 'sending'}
             >

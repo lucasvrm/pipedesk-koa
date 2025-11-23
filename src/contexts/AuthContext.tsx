@@ -127,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
+          emailRedirectTo: window.location.origin,
         },
       })
       if (error) throw error
