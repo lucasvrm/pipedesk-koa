@@ -103,14 +103,14 @@ CREATE TABLE player_tracks (
 
 CREATE TABLE pipeline_stages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  pipeline_id UUID REFERENCES master_deals(id) ON DELETE CASCADE,
+  pipeline_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid REFERENCES master_deals(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   color TEXT DEFAULT '#6366f1',
   stage_order INTEGER NOT NULL DEFAULT 0,
   is_default BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(COALESCE(pipeline_id, '00000000-0000-0000-0000-000000000000'::uuid), stage_order)
+  UNIQUE(pipeline_id, stage_order)
 );
 
 CREATE TABLE tasks (

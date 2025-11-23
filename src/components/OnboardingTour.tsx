@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
 
 const tourSteps: Step[] = [
+  // Existing steps ... (keep unchanged)
+
   {
     target: 'body',
     content: (
