@@ -8,9 +8,9 @@ const tourSteps: Step[] = [
   {
     target: 'body',
     content: (
-      <div>
-        <h2 className="text-lg font-bold mb-2">Bem-vindo ao PipeDesk! 🎉</h2>
-        <p className="text-sm">
+      <div className="space-y-3">
+        <h2 className="text-2xl font-bold">Bem-vindo ao PipeDesk! 🎉</h2>
+        <p className="text-base leading-relaxed">
           Vamos fazer um tour rápido pelas funcionalidades principais para você começar.
         </p>
       </div>
@@ -21,9 +21,9 @@ const tourSteps: Step[] = [
   {
     target: '[data-tour="new-deal-button"]',
     content: (
-      <div>
-        <h3 className="font-bold mb-2">Crie seu Primeiro Negócio</h3>
-        <p className="text-sm">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Crie seu Primeiro Negócio</h3>
+        <p className="text-sm leading-relaxed">
           Clique aqui para criar um novo negócio. Você pode adicionar informações como cliente, valor e prazo.
         </p>
       </div>
@@ -33,9 +33,9 @@ const tourSteps: Step[] = [
   {
     target: '[data-tour="deals-nav"]',
     content: (
-      <div>
-        <h3 className="font-bold mb-2">Visualize seus Negócios</h3>
-        <p className="text-sm">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Visualize seus Negócios</h3>
+        <p className="text-sm leading-relaxed">
           Acesse a área de negócios para ver todos os deals em andamento.
         </p>
       </div>
@@ -45,9 +45,9 @@ const tourSteps: Step[] = [
   {
     target: '[data-tour="kanban-nav"]',
     content: (
-      <div>
-        <h3 className="font-bold mb-2">Kanban Interativo</h3>
-        <p className="text-sm">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Kanban Interativo</h3>
+        <p className="text-sm leading-relaxed">
           Organize seus negócios visualmente em um quadro Kanban. Arraste e solte cards entre as colunas.
         </p>
       </div>
@@ -57,9 +57,9 @@ const tourSteps: Step[] = [
   {
     target: '[data-tour="dashboard-nav"]',
     content: (
-      <div>
-        <h3 className="font-bold mb-2">Dashboard Analítico</h3>
-        <p className="text-sm">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Dashboard Analítico</h3>
+        <p className="text-sm leading-relaxed">
           Acompanhe métricas importantes e visualize o desempenho dos seus negócios.
         </p>
       </div>
@@ -69,9 +69,9 @@ const tourSteps: Step[] = [
   {
     target: '[data-tour="notifications"]',
     content: (
-      <div>
-        <h3 className="font-bold mb-2">Central de Notificações</h3>
-        <p className="text-sm">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Central de Notificações</h3>
+        <p className="text-sm leading-relaxed">
           Fique por dentro de todas as atualizações importantes aqui.
         </p>
       </div>
@@ -106,7 +106,7 @@ export function OnboardingTour() {
     // Tour finished or skipped
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       setRun(false)
-      
+
       if (profile?.id) {
         try {
           const { error } = await supabase
@@ -115,7 +115,7 @@ export function OnboardingTour() {
             .eq('id', profile.id)
 
           if (error) throw error
-          
+
           if (status === STATUS.FINISHED) {
             toast.success('Tour concluído! Você está pronto para começar.')
           }
@@ -137,29 +137,48 @@ export function OnboardingTour() {
       callback={handleJoyrideCallback}
       styles={{
         options: {
-          primaryColor: 'hsl(var(--primary))',
-          textColor: 'hsl(var(--foreground))',
-          backgroundColor: 'hsl(var(--background))',
-          arrowColor: 'hsl(var(--background))',
-          overlayColor: 'rgba(0, 0, 0, 0.5)',
+          primaryColor: '#dc2626', // Red-600 for primary actions
+          textColor: '#1f2937', // Gray-800 for text
+          backgroundColor: '#ffffff', // White background
+          arrowColor: '#ffffff',
+          overlayColor: 'rgba(0, 0, 0, 0.6)',
           zIndex: 10000,
         },
         tooltip: {
-          borderRadius: 8,
-          padding: 20,
+          borderRadius: 12,
+          padding: 24,
+          fontSize: 15,
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        },
+        tooltipContent: {
+          padding: '8px 0',
         },
         buttonNext: {
-          backgroundColor: 'hsl(var(--primary))',
-          borderRadius: 6,
-          color: 'hsl(var(--primary-foreground))',
-          padding: '8px 16px',
+          backgroundColor: '#dc2626',
+          borderRadius: 8,
+          color: '#ffffff',
+          padding: '10px 20px',
+          fontSize: 14,
+          fontWeight: 600,
+          border: 'none',
+          outline: 'none',
         },
         buttonBack: {
-          color: 'hsl(var(--muted-foreground))',
-          marginRight: 10,
+          color: '#6b7280',
+          marginRight: 12,
+          fontSize: 14,
+          fontWeight: 500,
         },
         buttonSkip: {
-          color: 'hsl(var(--muted-foreground))',
+          color: '#6b7280',
+          fontSize: 14,
+          fontWeight: 500,
+        },
+        buttonClose: {
+          display: 'none',
+        },
+        spotlight: {
+          borderRadius: 8,
         },
       }}
       locale={{
