@@ -26,6 +26,7 @@ import {
   Question,
   FlowArrow,
   Clock,
+  ChartLineUp,
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -125,7 +126,7 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </Button>
               <Button
-                variant={isActive('/deals') ? 'secondary' : 'ghost'}
+                variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild
                 data-tour="deals-nav"
@@ -133,6 +134,17 @@ export function Layout({ children }: LayoutProps) {
                 <Link to="/deals">
                   <Kanban className="mr-2" />
                   Negócios
+                </Link>
+              </Button>
+              <Button
+                variant={isActive('/deals/comparison') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+                data-tour="comparison-nav"
+              >
+                <Link to="/deals/comparison">
+                  <ChartLineUp className="mr-2" />
+                  Comparação
                 </Link>
               </Button>
               <Button
@@ -405,7 +417,7 @@ export function Layout({ children }: LayoutProps) {
           </Link>
         </Button>
         <Button
-          variant={isActive('/deals') ? 'secondary' : 'ghost'}
+          variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
           className="flex-col h-auto py-2 px-3"
@@ -413,6 +425,17 @@ export function Layout({ children }: LayoutProps) {
           <Link to="/deals">
             <Kanban className="mb-1" />
             <span className="text-xs">Deals</span>
+          </Link>
+        </Button>
+        <Button
+          variant={isActive('/deals/comparison') ? 'secondary' : 'ghost'}
+          size="sm"
+          asChild
+          className="flex-col h-auto py-2 px-3"
+        >
+          <Link to="/deals/comparison">
+            <ChartLineUp className="mb-1" />
+            <span className="text-xs">Compare</span>
           </Link>
         </Button>
         <Button
