@@ -79,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             .insert({
               id: userId,
               name: user?.email?.split('@')[0] || 'User',
-              role: 'client', // Default role
+              role: 'admin', // First user gets admin role
             })
             .select()
             .single()
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               id: userId,
               name: user?.email?.split('@')[0] || 'User',
               email: user?.email || '',
-              role: 'client',
+              role: 'admin',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             })
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         id: userId,
         name: user?.email?.split('@')[0] || 'User',
         email: user?.email || '',
-        role: 'client',
+        role: 'admin',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
