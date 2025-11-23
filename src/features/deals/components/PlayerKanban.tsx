@@ -1,5 +1,6 @@
-import { useKV } from '@/hooks/useKV'
-import { Task, PlayerStage, STAGE_LABELS, PlayerTrack } from '@/lib/types'
+import { useTasks } from '@/services/taskService'
+import { useTracks } from '@/services/trackService'
+import { Task, PlayerStage, STAGE_LABELS } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,13 +26,13 @@ const DEFAULT_WIP_LIMITS: Record<PlayerStage, number> = {
 }
 
 export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
-  const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [wipLimits, setWipLimits] = useKV<Record<string, Record<PlayerStage, number>>>('kanbanWipLimits', {})
+  const { data: tasks } = useTasks()
+  const { data: playerTracks } = useTracks()
+  const [wipLimits, setWipLimits] = useState<Record<string, Record<PlayerStage, number>>>({})
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [editWipMode, setEditWipMode] = useState(false)
-  
+
   const currentTrack = (playerTracks || []).find(t => t.id === playerTrackId)
   const trackWipLimits = (wipLimits || {})[playerTrackId] || DEFAULT_WIP_LIMITS
 
@@ -62,7 +63,7 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
 
     const targetTasks = tasksByStage(targetStage)
     const wipLimit = trackWipLimits[targetStage]
-    
+
     if (targetTasks.length >= wipLimit && getTaskStage(draggedTask) !== targetStage) {
       toast.error(`Limite WIP atingido para ${STAGE_LABELS[targetStage]} (${wipLimit} tarefas)`)
       setDraggedTask(null)
@@ -121,8 +122,8 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
           const isNearLimit = stageTasks.length >= wipLimit * 0.8
 
           return (
-            <div 
-              key={stage} 
+            <div
+              key={stage}
               className="flex flex-col gap-3"
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(stage)}
@@ -139,7 +140,7 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
                       className="w-12 h-6 text-xs text-center p-1"
                     />
                   ) : (
-                    <Badge 
+                    <Badge
                       variant={isOverLimit ? 'destructive' : isNearLimit ? 'default' : 'secondary'}
                       className="text-xs"
                     >
@@ -149,13 +150,12 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
                 </div>
               </div>
 
-              <div className={`space-y-2 min-h-[200px] p-2 rounded-lg border ${
-                isOverLimit 
-                  ? 'bg-destructive/5 border-destructive' 
+              <div className={`space-y-2 min-h-[200px] p-2 rounded-lg border ${isOverLimit
+                  ? 'bg-destructive/5 border-destructive'
                   : draggedTask && stageTasks.length < wipLimit
-                  ? 'bg-primary/5 border-primary border-dashed' 
-                  : 'bg-muted/30 border-dashed'
-              }`}>
+                    ? 'bg-primary/5 border-primary border-dashed'
+                    : 'bg-muted/30 border-dashed'
+                }`}>
                 {stageTasks.length === 0 ? (
                   <div className="text-center py-8 text-xs text-muted-foreground">
                     Nenhuma tarefa
@@ -167,8 +167,8 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
                     )
 
                     return (
-                      <Card 
-                        key={task.id} 
+                      <Card
+                        key={task.id}
                         className="cursor-move hover:shadow-md transition-shadow"
                         draggable
                         onDragStart={() => handleDragStart(task)}
@@ -195,9 +195,8 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
                             {task.dependencies.length > 0 && (
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] px-1 py-0 h-5 gap-1 ${
-                                  hasBlockingDeps ? 'border-destructive text-destructive' : ''
-                                }`}
+                                className={`text-[10px] px-1 py-0 h-5 gap-1 ${hasBlockingDeps ? 'border-destructive text-destructive' : ''
+                                  }`}
                               >
                                 <LinkSimple className="h-2.5 w-2.5" />
                                 {task.dependencies.length}

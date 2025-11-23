@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useAuth } from '@/contexts/AuthContext'
+import { useUsers } from '@/services/userService'
+import { useCreateTrack } from '@/services/trackService'
 import {
   Dialog,
   DialogContent,
@@ -20,8 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, PlayerTrack, PlayerStage, STAGE_LABELS, User, GoogleIntegration, GoogleDriveFolder } from '@/lib/types'
-import { generateId } from '@/lib/helpers'
+import { MasterDeal, PlayerStage, STAGE_LABELS } from '@/lib/types'
 import { toast } from 'sonner'
 import { FolderOpen } from '@phosphor-icons/react'
 
@@ -32,12 +33,10 @@ interface CreatePlayerDialogProps {
 }
 
 export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: CreatePlayerDialogProps) {
-  const [, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [users] = useKV<User[]>('users', [])
-  const [currentUser] = useKV<User>('currentUser', { id: 'user-1', name: 'João Silva', email: 'joao@email.com', role: 'admin' })
-  const [integration] = useKV<GoogleIntegration | null>(`google-integration-${currentUser?.id}`, null)
-  const [, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
-  
+  const { profile: currentUser } = useAuth()
+  const { data: users } = useUsers()
+  const createTrack = useCreateTrack()
+
   const [playerName, setPlayerName] = useState('')
   const [trackVolume, setTrackVolume] = useState(masterDeal.volume.toString())
   const [currentStage, setCurrentStage] = useState<PlayerStage>('nda')
@@ -52,8 +51,7 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
       return
     }
 
-    const newTrack: PlayerTrack = {
-      id: generateId(),
+    createTrack.mutate({
       masterDealId: masterDeal.id,
       playerName,
       trackVolume: parseFloat(trackVolume),
@@ -61,48 +59,21 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
       probability: 0,
       responsibles: selectedTeam,
       status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       notes,
-    }
-
-    setPlayerTracks((current) => [...(current || []), newTrack])
-    
-    if (integration) {
-      try {
-        const folderId = `folder-${newTrack.id}-${Date.now()}`
-        const folderUrl = `https://drive.google.com/drive/folders/${folderId}`
-        
-        const newFolder: GoogleDriveFolder = {
-          id: generateId(),
-          entityId: newTrack.id,
-          entityType: 'track',
-          folderId,
-          folderUrl,
-          createdAt: new Date().toISOString(),
-        }
-        
-        setFolders((current) => [...(current || []), newFolder])
-        
-        toast.success(
-          <div className="flex items-center gap-2">
-            <FolderOpen />
-            <span>Player adicionado! Pasta do Drive criada automaticamente.</span>
-          </div>
-        )
-      } catch {
+    }, {
+      onSuccess: () => {
         toast.success('Player adicionado com sucesso!')
+        setPlayerName('')
+        setTrackVolume(masterDeal.volume.toString())
+        setCurrentStage('nda')
+        setNotes('')
+        setSelectedTeam([])
+        onOpenChange(false)
+      },
+      onError: () => {
+        toast.error('Erro ao adicionar player')
       }
-    } else {
-      toast.success('Player adicionado com sucesso!')
-    }
-    
-    setPlayerName('')
-    setTrackVolume(masterDeal.volume.toString())
-    setCurrentStage('nda')
-    setNotes('')
-    setSelectedTeam([])
-    onOpenChange(false)
+    })
   }
 
   const toggleTeamMember = (userId: string) => {
@@ -126,7 +97,7 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
             Adicione um novo player/investidor para {masterDeal.clientName}
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="player-name">Nome do Player *</Label>

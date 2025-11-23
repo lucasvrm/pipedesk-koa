@@ -24,14 +24,19 @@ function mapMagicLinkFromDB(item: MagicLinkDB): MagicLink {
 // ============================================================================
 
 /**
- * Fetch magic links for a user
+ * Fetch magic links for a user (or all if userId is null)
  */
-export async function getMagicLinks(userId: string): Promise<MagicLink[]> {
-    const { data, error } = await supabase
+export async function getMagicLinks(userId?: string | null): Promise<MagicLink[]> {
+    let query = supabase
         .from('magic_links')
         .select('*')
-        .eq('user_id', userId)
         .order('created_at', { ascending: false });
+
+    if (userId) {
+        query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -110,11 +115,11 @@ export async function useMagicLink(token: string): Promise<MagicLink | null> {
 // React Query Hooks
 // ============================================================================
 
-export function useMagicLinks(userId: string | null) {
+export function useMagicLinks(userId?: string | null) {
     return useQuery({
-        queryKey: ['magicLinks', userId],
-        queryFn: () => getMagicLinks(userId!),
-        enabled: !!userId,
+        queryKey: userId ? ['magicLinks', userId] : ['magicLinks'],
+        queryFn: () => getMagicLinks(userId),
+        enabled: true,
     });
 }
 

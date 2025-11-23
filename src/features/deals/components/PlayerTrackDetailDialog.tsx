@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useTracks, useUpdateTrack } from '@/services/trackService'
+import { useDeals } from '@/services/dealService'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User, MasterDeal } from '@/lib/types'
+import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
 import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Question, Clock } from '@phosphor-icons/react'
 import TaskList from '@/features/tasks/components/TaskList'
@@ -46,15 +47,16 @@ interface PlayerTrackDetailDialogProps {
 }
 
 export default function PlayerTrackDetailDialog({ track, open, onOpenChange, currentUser }: PlayerTrackDetailDialogProps) {
-  const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [trackViewPreferences, setTrackViewPreferences] = useKV<Record<string, ViewType>>('trackViewPreferences', {})
-  const [deals] = useKV<MasterDeal[]>('deals', [])
-  const [phaseRules] = useKV<PhaseTransitionRule[]>('phaseTransitionRules', [])
-  
+  const { data: playerTracks } = useTracks()
+  const updateTrack = useUpdateTrack()
+  const { data: deals } = useDeals()
+  const [trackViewPreferences, setTrackViewPreferences] = useState<Record<string, ViewType>>({})
+  const [phaseRules] = useState<PhaseTransitionRule[]>([])
+
   const [validationDialogOpen, setValidationDialogOpen] = useState(false)
   const [pendingStageChange, setPendingStageChange] = useState<PlayerStage | null>(null)
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
-  
+
   const currentView = (trackViewPreferences || {})[track.id] || 'list'
 
   const setCurrentView = (view: ViewType) => {
@@ -76,29 +78,26 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
   const performStageChange = (newStage: PlayerStage) => {
     const oldStage = track.currentStage
-    
+
     trackStageChange(track.id, newStage, oldStage)
-    
-    setPlayerTracks((currentTracks) =>
-      (currentTracks || []).map(t =>
-        t.id === track.id
-          ? {
-              ...t,
-              currentStage: newStage,
-              probability: STAGE_PROBABILITIES[newStage],
-              updatedAt: new Date().toISOString(),
-            }
-          : t
-      )
-    )
-    toast.success(`Estágio atualizado para ${STAGE_LABELS[newStage]}`)
+
+    updateTrack.mutate({
+      trackId: track.id,
+      updates: {
+        currentStage: newStage,
+        probability: STAGE_PROBABILITIES[newStage],
+      }
+    }, {
+      onSuccess: () => toast.success(`Estágio atualizado para ${STAGE_LABELS[newStage]}`),
+      onError: () => toast.error('Erro ao atualizar estágio')
+    })
   }
 
   const handleStageChange = (newStage: PlayerStage) => {
     if (newStage === track.currentStage) return
 
     const validation = validatePhaseTransition(track, masterDeal, newStage, phaseRules || [])
-    
+
     setValidationResult(validation)
     setPendingStageChange(newStage)
     setValidationDialogOpen(true)
@@ -118,28 +117,29 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
         t => t.masterDealId === track.masterDealId && t.id !== track.id && t.status === 'active'
       )
 
-      setPlayerTracks((currentTracks) =>
-        (currentTracks || []).map(t => {
-          if (t.id === track.id) {
-            return { ...t, status: newStatus, updatedAt: new Date().toISOString() }
-          }
-          if (siblingTracks.some(st => st.id === t.id)) {
-            return { ...t, status: 'cancelled', updatedAt: new Date().toISOString() }
-          }
-          return t
+      // Update current track
+      updateTrack.mutate({
+        trackId: track.id,
+        updates: { status: newStatus }
+      })
+
+      // Cancel sibling tracks
+      siblingTracks.forEach(sibling => {
+        updateTrack.mutate({
+          trackId: sibling.id,
+          updates: { status: 'cancelled' }
         })
-      )
+      })
 
       toast.success(`Player concluído! ${siblingTracks.length} players concorrentes foram cancelados.`)
     } else {
-      setPlayerTracks((currentTracks) =>
-        (currentTracks || []).map(t =>
-          t.id === track.id
-            ? { ...t, status: newStatus, updatedAt: new Date().toISOString() }
-            : t
-        )
-      )
-      toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`)
+      updateTrack.mutate({
+        trackId: track.id,
+        updates: { status: newStatus }
+      }, {
+        onSuccess: () => toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`),
+        onError: () => toast.error('Erro ao atualizar status')
+      })
     }
   }
 
@@ -155,8 +155,8 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
                   <Badge
                     className={
                       track.status === 'active' ? 'status-active' :
-                      track.status === 'cancelled' ? 'status-cancelled' :
-                      'status-concluded'
+                        track.status === 'cancelled' ? 'status-cancelled' :
+                          'status-concluded'
                     }
                   >
                     {STATUS_LABELS[track.status]}
@@ -329,8 +329,8 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
                 <CardTitle>Monitoramento de SLA</CardTitle>
               </CardHeader>
               <CardContent>
-                <SLAIndicator 
-                  playerTrackId={track.id} 
+                <SLAIndicator
+                  playerTrackId={track.id}
                   currentStage={track.currentStage}
                   compact={false}
                 />
@@ -339,9 +339,9 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
           </TabsContent>
 
           <TabsContent value="summary" className="space-y-4">
-            <ActivitySummarizer 
-              entityId={track.id} 
-              entityType="track" 
+            <ActivitySummarizer
+              entityId={track.id}
+              entityType="track"
             />
           </TabsContent>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useUsers } from '@/services/userService'
 import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import {
@@ -46,7 +46,7 @@ export default function UserManagementDialog({
   onOpenChange,
   currentUser,
 }: UserManagementDialogProps) {
-  const [users, setUsers] = useKV<User[]>('users', [])
+  const { data: users } = useUsers()
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -93,32 +93,9 @@ export default function UserManagementDialog({
       return
     }
 
-    if (editingUser) {
-      setUsers((current) =>
-        (current || []).map((u) =>
-          u.id === editingUser.id
-            ? {
-                ...u,
-                name: formData.name,
-                email: formData.email,
-                role: formData.role,
-                clientEntity: formData.clientEntity || undefined,
-              }
-            : u
-        )
-      )
-      toast.success('Usuário atualizado')
-    } else {
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        clientEntity: formData.clientEntity || undefined,
-      }
-      setUsers((current) => [...(current || []), newUser])
-      toast.success('Usuário criado')
-    }
+    // Note: This needs userService mutations to be implemented
+    // For now, showing toast that this feature needs backend implementation
+    toast.warning('Gerenciamento de usuários requer implementação no backend')
 
     setIsCreating(false)
     setEditingUser(null)
@@ -136,8 +113,8 @@ export default function UserManagementDialog({
       return
     }
 
-    setUsers((current) => (current || []).filter((u) => u.id !== userId))
-    toast.success('Usuário removido')
+    // Note: This needs userService mutations to be implemented
+    toast.warning('Gerenciamento de usuários requer implementação no backend')
   }
 
   const getRoleBadgeVariant = (role: UserRole) => {

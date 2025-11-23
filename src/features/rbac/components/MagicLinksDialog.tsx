@@ -1,6 +1,6 @@
-import { useKV } from '@/hooks/useKV'
-import { User } from '@/lib/types'
-import { MagicLink, isMagicLinkExpired, isMagicLinkValid, getMagicLinkUrl } from '@/lib/auth'
+import { useUsers } from '@/services/userService'
+import { useMagicLinks, useRevokeMagicLink } from '@/services/magicLinkService'
+import { getMagicLinkUrl } from '@/lib/auth'
 import { formatDateTime } from '@/lib/helpers'
 import {
   Dialog,
@@ -32,15 +32,16 @@ export default function MagicLinksDialog({
   open,
   onOpenChange,
 }: MagicLinksDialogProps) {
-  const [users] = useKV<User[]>('users', [])
-  const [magicLinks, setMagicLinks] = useKV<MagicLink[]>('magicLinks', [])
+  const { data: users } = useUsers()
+  const { data: magicLinks } = useMagicLinks(null) // Fetch all magic links
+  const revokeMagicLink = useRevokeMagicLink()
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const getUserById = (userId: string) => {
     return (users || []).find(u => u.id === userId)
   }
 
-  const handleCopyLink = async (link: MagicLink) => {
+  const handleCopyLink = async (link: any) => {
     const url = getMagicLinkUrl(link.token)
     try {
       await navigator.clipboard.writeText(url)
@@ -53,26 +54,22 @@ export default function MagicLinksDialog({
   }
 
   const handleRevokeLink = (linkId: string) => {
-    setMagicLinks((current) =>
-      (current || []).map((link) =>
-        link.id === linkId
-          ? { ...link, revokedAt: new Date().toISOString() }
-          : link
-      )
-    )
-    toast.success('Link revogado')
+    revokeMagicLink.mutate(linkId, {
+      onSuccess: () => toast.success('Link revogado'),
+      onError: () => toast.error('Erro ao revogar link')
+    })
   }
 
-  const getLinkStatus = (link: MagicLink) => {
+  const getLinkStatus = (link: any) => {
     if (link.revokedAt) return 'revoked'
     if (link.usedAt) return 'used'
-    if (isMagicLinkExpired(link)) return 'expired'
+    if (new Date(link.expiresAt) < new Date()) return 'expired'
     return 'valid'
   }
 
-  const getStatusBadge = (link: MagicLink) => {
+  const getStatusBadge = (link: any) => {
     const status = getLinkStatus(link)
-    
+
     switch (status) {
       case 'valid':
         return <Badge variant="default" className="bg-success text-success-foreground">Ativo</Badge>

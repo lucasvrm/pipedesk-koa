@@ -1,5 +1,7 @@
-import { useKV } from '@/hooks/useKV'
-import { Task, MasterDeal, PlayerTrack } from '@/lib/types'
+import { useTasks } from '@/services/taskService'
+import { useDeals } from '@/services/dealService'
+import { useTracks } from '@/services/trackService'
+import { Task } from '@/lib/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,9 +23,9 @@ interface CalendarDay {
 }
 
 export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
-  const [tasks] = useKV<Task[]>('tasks', [])
-  const [masterDeals] = useKV<MasterDeal[]>('masterDeals', [])
-  const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
+  const { data: tasks } = useTasks()
+  const { data: masterDeals } = useDeals()
+  const { data: playerTracks } = useTracks()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -43,7 +45,7 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
   }).map(date => ({
     date,
     isCurrentMonth: isSameMonth(date, currentDate),
-    tasks: trackTasks.filter(task => 
+    tasks: trackTasks.filter(task =>
       task.dueDate && isSameDay(new Date(task.dueDate), date)
     ),
   }))
@@ -53,10 +55,10 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
   const previousMonth = () => setCurrentDate(subMonths(currentDate, 1))
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1))
 
-  const selectedDayTasks = selectedDate 
-    ? trackTasks.filter(task => 
-        task.dueDate && isSameDay(new Date(task.dueDate), selectedDate)
-      )
+  const selectedDayTasks = selectedDate
+    ? trackTasks.filter(task =>
+      task.dueDate && isSameDay(new Date(task.dueDate), selectedDate)
+    )
     : []
 
   return (
@@ -79,9 +81,9 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
               <Button variant="outline" size="icon" onClick={previousMonth}>
                 <CaretLeft />
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentDate(new Date())}
               >
                 Hoje
@@ -142,11 +144,11 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
                           key={task.id}
                           className={`
                             text-[9px] leading-tight p-1 rounded truncate
-                            ${task.completed 
-                              ? 'bg-success/20 text-success line-through' 
+                            ${task.completed
+                              ? 'bg-success/20 text-success line-through'
                               : task.isMilestone
-                              ? 'bg-accent/20 text-accent font-medium'
-                              : 'bg-primary/20 text-primary'
+                                ? 'bg-accent/20 text-accent font-medium'
+                                : 'bg-primary/20 text-primary'
                             }
                           `}
                           title={task.title}
@@ -182,15 +184,15 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
               <h4 className="font-semibold">
                 Tarefas - {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
               </h4>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setSelectedDate(null)}
               >
                 Fechar
               </Button>
             </div>
-            
+
             {selectedDayTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 Nenhuma tarefa nesta data
@@ -218,7 +220,7 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
                           <Check weight="bold" className="h-4 w-4 text-success flex-shrink-0" />
                         )}
                       </div>
-                      
+
                       {task.description && (
                         <p className="text-xs text-muted-foreground mb-2">
                           {task.description}
@@ -235,9 +237,8 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
                         {task.dependencies.length > 0 && (
                           <Badge
                             variant="outline"
-                            className={`text-[10px] px-1.5 py-0 h-5 gap-1 ${
-                              hasBlockingDeps ? 'border-destructive text-destructive' : ''
-                            }`}
+                            className={`text-[10px] px-1.5 py-0 h-5 gap-1 ${hasBlockingDeps ? 'border-destructive text-destructive' : ''
+                              }`}
                           >
                             <LinkSimple className="h-2.5 w-2.5" />
                             {task.dependencies.length} {hasBlockingDeps ? 'bloqueada' : 'dep.'}
@@ -266,7 +267,7 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total de Tarefas:</span>
                 <span className="font-medium">
-                  {trackTasks.filter(t => 
+                  {trackTasks.filter(t =>
                     t.dueDate && isSameMonth(new Date(t.dueDate), currentDate)
                   ).length}
                 </span>
@@ -274,7 +275,7 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Concluídas:</span>
                 <span className="font-medium text-success">
-                  {trackTasks.filter(t => 
+                  {trackTasks.filter(t =>
                     t.dueDate && isSameMonth(new Date(t.dueDate), currentDate) && t.completed
                   ).length}
                 </span>
@@ -282,7 +283,7 @@ export default function PlayerCalendar({ playerTrackId }: PlayerCalendarProps) {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Marcos:</span>
                 <span className="font-medium text-accent">
-                  {trackTasks.filter(t => 
+                  {trackTasks.filter(t =>
                     t.dueDate && isSameMonth(new Date(t.dueDate), currentDate) && t.isMilestone
                   ).length}
                 </span>

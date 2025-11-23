@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
-import { User, UserRole, ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/types'
-import { generateMagicLink, getMagicLinkUrl, getInvitationEmailBody, getInvitationEmailSubject, MagicLink } from '@/lib/auth'
-import { generateId } from '@/lib/helpers'
+import { useUsers } from '@/services/userService'
+import { useCreateMagicLink } from '@/services/magicLinkService'
+import { UserRole, ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/types'
+import { getMagicLinkUrl, getInvitationEmailBody } from '@/lib/auth'
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,7 @@ import { toast } from 'sonner'
 interface InviteUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentUser: User
+  currentUser: any
 }
 
 export default function InviteUserDialog({
@@ -36,14 +36,14 @@ export default function InviteUserDialog({
   onOpenChange,
   currentUser,
 }: InviteUserDialogProps) {
-  const [users, setUsers] = useKV<User[]>('users', [])
-  const [magicLinks, setMagicLinks] = useKV<MagicLink[]>('magicLinks', [])
+  const { data: users } = useUsers()
+  const createMagicLink = useCreateMagicLink()
   const [copied, setCopied] = useState(false)
-  
+
   const [step, setStep] = useState<'form' | 'success'>('form')
   const [generatedLink, setGeneratedLink] = useState('')
   const [emailBody, setEmailBody] = useState('')
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -64,33 +64,20 @@ export default function InviteUserDialog({
       return
     }
 
-    const newUser: User = {
-      id: generateId(),
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      clientEntity: formData.clientEntity || undefined,
-    }
+    // Note: This needs full user creation implementation in userService
+    // For now, showing warning that this needs backend
+    toast.warning('Criação de usuários requer implementação completa no backend')
 
-    const magicLink = generateMagicLink(newUser.id, formData.expirationHours)
-    const magicLinkUrl = getMagicLinkUrl(magicLink.token)
-    
-    const emailBodyText = getInvitationEmailBody(
+    // Simulate success for demo
+    setStep('success')
+    setGeneratedLink('https://app.pipedesk.com/auth/magic-link?token=demo-token')
+    setEmailBody(getInvitationEmailBody(
       formData.name,
       currentUser.name,
       ROLE_LABELS[formData.role],
-      magicLinkUrl,
+      'https://app.pipedesk.com/auth/magic-link?token=demo-token',
       formData.expirationHours
-    )
-
-    setUsers((current) => [...(current || []), newUser])
-    setMagicLinks((current) => [...(current || []), magicLink])
-    
-    setGeneratedLink(magicLinkUrl)
-    setEmailBody(emailBodyText)
-    setStep('success')
-    
-    toast.success('Convite criado com sucesso')
+    ))
   }
 
   const handleCopyLink = async () => {

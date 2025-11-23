@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useAuth } from '@/contexts/AuthContext'
+import { useCreateDeal } from '@/services/dealService'
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, OperationType, OPERATION_LABELS, GoogleIntegration, GoogleDriveFolder } from '@/lib/types'
-import { generateId } from '@/lib/helpers'
+import { OperationType, OPERATION_LABELS } from '@/lib/types'
 import { toast } from 'sonner'
 import { Sparkle, FolderOpen } from '@phosphor-icons/react'
 
@@ -30,11 +30,9 @@ interface CreateDealDialogProps {
 }
 
 export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialogProps) {
-  const [, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
-  const [currentUser] = useKV<{ id: string; name: string }>('currentUser', { id: 'user-1', name: 'João Silva' })
-  const [integration] = useKV<GoogleIntegration | null>(`google-integration-${currentUser?.id}`, null)
-  const [, setFolders] = useKV<GoogleDriveFolder[]>('googleDriveFolders', [])
-  
+  const { profile: currentUser } = useAuth()
+  const createDeal = useCreateDeal()
+
   const [clientName, setClientName] = useState('')
   const [volume, setVolume] = useState('')
   const [operationType, setOperationType] = useState<OperationType>('acquisition')
@@ -51,59 +49,35 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
       return
     }
 
-    const newDeal: MasterDeal = {
-      id: generateId(),
+    if (!currentUser?.id) {
+      toast.error('Usuário não autenticado')
+      return
+    }
+
+    createDeal.mutate({
       clientName,
       volume: parseFloat(volume),
       operationType,
       deadline,
       observations,
       status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: currentUser?.id || 'user-1',
       feePercentage: feePercentage ? parseFloat(feePercentage) : undefined,
-    }
-
-    setMasterDeals((current) => [...(current || []), newDeal])
-    
-    if (integration) {
-      try {
-        const folderId = `folder-${newDeal.id}-${Date.now()}`
-        const folderUrl = `https://drive.google.com/drive/folders/${folderId}`
-        
-        const newFolder: GoogleDriveFolder = {
-          id: generateId(),
-          entityId: newDeal.id,
-          entityType: 'deal',
-          folderId,
-          folderUrl,
-          createdAt: new Date().toISOString(),
-        }
-        
-        setFolders((current) => [...(current || []), newFolder])
-        
-        toast.success(
-          <div className="flex items-center gap-2">
-            <FolderOpen />
-            <span>Negócio criado! Pasta do Drive criada automaticamente.</span>
-          </div>
-        )
-      } catch {
+      createdBy: currentUser.id,
+    }, {
+      onSuccess: () => {
         toast.success('Negócio criado com sucesso!')
-        toast.warning('Erro ao criar pasta do Drive')
+        setClientName('')
+        setVolume('')
+        setOperationType('acquisition')
+        setDeadline('')
+        setObservations('')
+        setFeePercentage('')
+        onOpenChange(false)
+      },
+      onError: () => {
+        toast.error('Erro ao criar negócio')
       }
-    } else {
-      toast.success('Negócio criado com sucesso!')
-    }
-    
-    setClientName('')
-    setVolume('')
-    setOperationType('acquisition')
-    setDeadline('')
-    setObservations('')
-    setFeePercentage('')
-    onOpenChange(false)
+    })
   }
 
   const handleGenerateDescription = async () => {
@@ -135,7 +109,7 @@ export default function CreateDealDialog({ open, onOpenChange }: CreateDealDialo
             Crie um novo Master Deal para gerenciar múltiplos players
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="client-name">Nome do Cliente *</Label>

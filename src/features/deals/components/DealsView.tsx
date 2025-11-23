@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, DealStatus, User } from '@/lib/types'
+import { DealStatus } from '@/lib/types'
 import { MagnifyingGlass, FunnelSimple, CheckSquare, X } from '@phosphor-icons/react'
 import DealsList from './DealsList'
 import BulkOperations from './BulkOperations'
@@ -18,12 +18,7 @@ import { useDeals } from '@/features/deals/hooks/useDeals'
 
 export default function DealsView() {
   const { data: masterDeals, loading } = useDeals()
-  const [currentUser] = useKV<User>('currentUser', {
-    id: 'user-1',
-    name: 'João Silva',
-    email: 'joao.silva@empresa.com',
-    role: 'admin',
-  })
+  const { profile: currentUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all')
   const [bulkMode, setBulkMode] = useState(false)
@@ -71,7 +66,7 @@ export default function DealsView() {
             className="pl-10"
           />
         </div>
-        
+
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
           <SelectTrigger className="w-full md:w-[200px]">
             <FunnelSimple className="mr-2" />
