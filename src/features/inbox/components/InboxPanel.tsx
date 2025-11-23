@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useNotifications, useMarkAsRead, useMarkAllAsRead } from '@/services/notificationService'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   Sheet,
   SheetContent,
@@ -14,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyState } from '@/components/EmptyState'
 import { Notification } from '@/lib/types'
 import { formatDateTime } from '@/lib/helpers'
-import { 
+import {
   Bell,
   CheckCircle,
   WarningCircle,
@@ -30,17 +31,20 @@ interface InboxPanelProps {
 }
 
 export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
-  const [notifications, setNotifications] = useKV<Notification[]>('notifications', [])
+  const { user } = useAuth()
+  const { data: notifications } = useNotifications(user?.id || null)
+  const markAsRead = useMarkAsRead()
+  const markAllAsRead = useMarkAllAsRead()
   const [filter, setFilter] = useState<'all' | Notification['type']>('all')
 
   const handleMarkAsRead = (id: string) => {
-    setNotifications((current) =>
-      (current || []).map((n) => (n.id === id ? { ...n, read: true } : n))
-    )
+    markAsRead.mutate(id)
   }
 
   const handleMarkAllAsRead = () => {
-    setNotifications((current) => (current || []).map((n) => ({ ...n, read: true })))
+    if (user?.id) {
+      markAllAsRead.mutate(user.id)
+    }
   }
 
   const handleNavigate = (notification: Notification) => {
@@ -50,7 +54,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
     }
   }
 
-  const filteredNotifications = (notifications || []).filter((n) => 
+  const filteredNotifications = (notifications || []).filter((n) =>
     filter === 'all' || n.type === filter
   )
 

@@ -2,17 +2,17 @@ export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
 
 export type DealStatus = 'active' | 'cancelled' | 'concluded'
 
-export type PlayerStage = 
-  | 'nda' 
-  | 'analysis' 
-  | 'proposal' 
-  | 'negotiation' 
+export type PlayerStage =
+  | 'nda'
+  | 'analysis'
+  | 'proposal'
+  | 'negotiation'
   | 'closing'
 
-export type OperationType = 
-  | 'acquisition' 
-  | 'merger' 
-  | 'investment' 
+export type OperationType =
+  | 'acquisition'
+  | 'merger'
+  | 'investment'
   | 'divestment'
 
 export type ViewType = 'kanban' | 'list' | 'gantt' | 'calendar'
@@ -25,6 +25,8 @@ export interface User {
   avatar?: string
   clientEntity?: string
   has_completed_onboarding?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface PipelineStage {
@@ -145,8 +147,15 @@ export interface AnalyticsMetrics {
   dealsByStage: Record<PlayerStage, number>
   teamWorkload: {
     userId: string
+    userName: string
     activeTracks: number
     activeTasks: number
+  }[]
+  conversionTrend: {
+    period: string
+    concluded: number
+    cancelled: number
+    conversionRate: number
   }[]
 }
 

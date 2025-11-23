@@ -55,19 +55,14 @@ export default function AuditLogView() {
   const [page, setPage] = useState(1)
   const itemsPerPage = 50
 
-  useEffect(() => {
-    loadUsers()
-    loadLogs()
-  }, [loadUsers, loadLogs])
-
   const loadUsers = useCallback(async () => {
     try {
       // Try loading from profiles first
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, email:id') // Note: email is technically in auth.users, but we can't join it easily here.
-                                     // For now, we might need a joined view or rely on name.
-                                     // Or better: keep the UI simple.
+        // For now, we might need a joined view or rely on name.
+        // Or better: keep the UI simple.
         .order('name')
 
       if (error) throw error
@@ -76,7 +71,7 @@ export default function AuditLogView() {
       // but since we can't query auth.users from client, we might have to skip email
       // or rely on the 'username' field if it stores email.
       // For this component, we'll map what we have.
-      setUsers(data.map((p: any) => ({ ...p, email: p.username || 'N/A' })) || [])
+      setUsers((data as any[]).map((p: any) => ({ ...p, email: p.username || 'N/A' })) || [])
     } catch (error) {
       console.error('Error loading users:', error)
     }
@@ -137,7 +132,7 @@ export default function AuditLogView() {
           .select('id, name, username')
           .in('id', userIds);
 
-        profiles?.forEach((p: any) => {
+        (profiles as any[])?.forEach((p: any) => {
           userMap[p.id] = { name: p.name, email: p.username };
         });
 
@@ -157,6 +152,11 @@ export default function AuditLogView() {
       setLoading(false)
     }
   }, [page, itemsPerPage, selectedUser, selectedEventType, dateFrom, dateTo])
+
+  useEffect(() => {
+    loadUsers()
+    loadLogs()
+  }, [loadUsers, loadLogs])
 
   const getActionBadge = (action: string) => {
     if (action.toLowerCase().includes('create') || action.toLowerCase().includes('insert')) {

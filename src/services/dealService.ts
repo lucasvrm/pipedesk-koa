@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MasterDeal, OperationType, DealStatus } from '@/lib/types';
+import { MasterDealDB } from '@/lib/databaseTypes';
 
 // ============================================================================
 // Query Helpers
@@ -48,6 +49,28 @@ export interface DealUpdate {
 }
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+function mapDealFromDB(item: MasterDealDB & { createdByUser?: any }): Deal {
+  return {
+    id: item.id,
+    clientName: item.client_name,
+    volume: item.volume || 0,
+    operationType: (item.operation_type as OperationType) || 'acquisition',
+    deadline: item.deadline || '',
+    observations: item.observations || '',
+    status: (item.status as DealStatus) || 'active',
+    feePercentage: item.fee_percentage || 0,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    createdBy: item.created_by,
+    deletedAt: item.deleted_at || undefined,
+    createdByUser: item.createdByUser,
+  };
+}
+
+// ============================================================================
 // Service Functions
 // ============================================================================
 
@@ -67,21 +90,7 @@ export async function getDeals(): Promise<Deal[]> {
 
     if (error) throw error;
 
-    return (data || []).map((item) => ({
-      id: item.id,
-      clientName: item.client_name,
-      volume: item.volume,
-      operationType: item.operation_type,
-      deadline: item.deadline,
-      observations: item.observations || '',
-      status: item.status,
-      feePercentage: item.fee_percentage,
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-      createdBy: item.created_by,
-      deletedAt: item.deleted_at,
-      createdByUser: item.createdByUser,
-    }));
+    return (data || []).map((item: any) => mapDealFromDB(item));
   } catch (error) {
     console.error('Error fetching deals:', error);
     throw error;
@@ -105,21 +114,7 @@ export async function getDeal(dealId: string): Promise<Deal> {
 
     if (error) throw error;
 
-    return {
-      id: data.id,
-      clientName: data.client_name,
-      volume: data.volume,
-      operationType: data.operation_type,
-      deadline: data.deadline,
-      observations: data.observations || '',
-      status: data.status,
-      feePercentage: data.fee_percentage,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      createdBy: data.created_by,
-      deletedAt: data.deleted_at,
-      createdByUser: data.createdByUser,
-    };
+    return mapDealFromDB(data);
   } catch (error) {
     console.error('Error fetching deal:', error);
     throw error;
@@ -151,21 +146,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
 
     if (error) throw error;
 
-    return {
-      id: data.id,
-      clientName: data.client_name,
-      volume: data.volume,
-      operationType: data.operation_type,
-      deadline: data.deadline,
-      observations: data.observations || '',
-      status: data.status,
-      feePercentage: data.fee_percentage,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      createdBy: data.created_by,
-      deletedAt: data.deleted_at,
-      createdByUser: data.createdByUser,
-    };
+    return mapDealFromDB(data);
   } catch (error) {
     console.error('Error creating deal:', error);
     throw error;
@@ -208,21 +189,7 @@ export async function updateDeal(
 
     if (error) throw error;
 
-    return {
-      id: data.id,
-      clientName: data.client_name,
-      volume: data.volume,
-      operationType: data.operation_type,
-      deadline: data.deadline,
-      observations: data.observations || '',
-      status: data.status,
-      feePercentage: data.fee_percentage,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      createdBy: data.created_by,
-      deletedAt: data.deleted_at,
-      createdByUser: data.createdByUser,
-    };
+    return mapDealFromDB(data);
   } catch (error) {
     console.error('Error updating deal:', error);
     throw error;

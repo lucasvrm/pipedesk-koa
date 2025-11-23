@@ -7,11 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  User as UserIcon, 
-  EnvelopeSimple, 
-  ShieldCheck, 
-  Calendar, 
+import {
+  User as UserIcon,
+  EnvelopeSimple,
+  ShieldCheck,
+  Calendar,
   SignOut,
   ArrowLeft,
   PencilSimple,
@@ -33,33 +33,37 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
-  
+
   // Form state
   const [name, setName] = useState(profile?.name || '')
   const [email, setEmail] = useState(profile?.email || '')
 
   useEffect(() => {
     // Fetch additional profile data including created_at
-    if (profile?.id) {
-      supabase
-        .from('profiles')
-        .select('created_at')
-        .eq('id', profile.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.created_at) {
-            setCreatedAt(data.created_at)
+    const fetchProfileData = async () => {
+      if (profile?.id) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('created_at')
+            .eq('id', profile.id)
+            .single()
+
+          if ((data as any)?.created_at) {
+            setCreatedAt((data as any).created_at)
           }
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error('Error fetching profile creation date:', err)
-        })
+        }
+      }
     }
+
+    fetchProfileData()
   }, [profile?.id])
 
   const handleSave = async () => {
     setError(null)
-    
+
     if (!name || !email) {
       setError('Nome e email são obrigatórios')
       return
@@ -81,7 +85,7 @@ export default function Profile() {
       // Update local state
       setName(name)
       setEmail(email)
-      
+
       toast.success('Perfil atualizado com sucesso!')
       setIsEditing(false)
     } catch (err) {
@@ -102,7 +106,7 @@ export default function Profile() {
 
   const handleResetPassword = async () => {
     if (!profile?.email) return
-    
+
     try {
       await resetPassword(profile.email)
       toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.')

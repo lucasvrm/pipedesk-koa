@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
-import { MasterDeal, User, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
+import { useAuth } from '@/contexts/AuthContext'
+import { MasterDeal, STATUS_LABELS, OPERATION_LABELS } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue, getDaysUntil } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/EmptyState'
-import { 
-  Eye, 
-  PencilSimple, 
+import {
+  Eye,
+  PencilSimple,
   Trash,
   WarningCircle,
   Briefcase,
@@ -23,13 +23,8 @@ interface DealsListProps {
 }
 
 export default function DealsList({ deals, compact = false, bulkMode = false }: DealsListProps) {
+  const { profile: currentUser } = useAuth()
   const [selectedDeal, setSelectedDeal] = useState<MasterDeal | null>(null)
-  const [currentUser] = useKV<User>('currentUser', {
-    id: 'user-1',
-    name: 'João Silva',
-    email: 'joao.silva@empresa.com',
-    role: 'admin',
-  })
 
   const handleDealClick = (deal: MasterDeal) => {
     if (!bulkMode) {
@@ -53,7 +48,7 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
         {deals.map((deal) => {
           const daysUntil = getDaysUntil(deal.deadline)
           const overdue = isOverdue(deal.deadline)
-          
+
           return (
             <div
               key={deal.id}
@@ -85,7 +80,7 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
                       {STATUS_LABELS[deal.status]}
                     </Badge>
                   </div>
-                  
+
                   <div className={cn(
                     "flex flex-wrap items-center gap-3 text-muted-foreground",
                     compact ? "text-xs" : "text-sm"
@@ -129,7 +124,7 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
         })}
       </div>
 
-      {selectedDeal && (
+      {selectedDeal && currentUser && (
         <DealDetailDialog
           deal={selectedDeal}
           open={!!selectedDeal}

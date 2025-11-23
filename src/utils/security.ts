@@ -195,9 +195,9 @@ export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
 
   for (const key in sanitized) {
     if (typeof sanitized[key] === 'string') {
-      sanitized[key] = sanitizeInput(sanitized[key]);
+      sanitized[key] = sanitizeInput(sanitized[key] as string) as any;
     } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-      sanitized[key] = sanitizeObject(sanitized[key]);
+      sanitized[key] = sanitizeObject(sanitized[key]) as any;
     }
   }
 
@@ -300,9 +300,9 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
 export function usePermission(permission: Permission): boolean {
   const { user } = useAuth();
 
-  if (!user) return false;
+  if (!user || !user.role) return false;
 
-  return checkPermission(user.role, permission);
+  return checkPermission(user.role as UserRole, permission);
 }
 
 /**
@@ -311,7 +311,7 @@ export function usePermission(permission: Permission): boolean {
 export function useEntityPermissions(entityOwnerId?: string) {
   const { user } = useAuth();
 
-  if (!user) {
+  if (!user || !user.role) {
     return {
       canView: false,
       canEdit: false,
@@ -320,9 +320,9 @@ export function useEntityPermissions(entityOwnerId?: string) {
   }
 
   return {
-    canView: canViewEntity(user.role, user.id, entityOwnerId),
-    canEdit: canEditEntity(user.role, user.id, entityOwnerId),
-    canDelete: canDeleteEntity(user.role, user.id, entityOwnerId),
+    canView: canViewEntity(user.role as UserRole, user.id, entityOwnerId),
+    canEdit: canEditEntity(user.role as UserRole, user.id, entityOwnerId),
+    canDelete: canDeleteEntity(user.role as UserRole, user.id, entityOwnerId),
   };
 }
 
@@ -332,7 +332,7 @@ export function useEntityPermissions(entityOwnerId?: string) {
 export function useUserPermissions() {
   const { user } = useAuth();
 
-  if (!user) {
+  if (!user || !user.role) {
     return {
       canViewAll: false,
       canEditAll: false,
@@ -345,7 +345,7 @@ export function useUserPermissions() {
     };
   }
 
-  return PERMISSIONS[user.role];
+  return PERMISSIONS[user.role as UserRole];
 }
 
 // ============================================================================

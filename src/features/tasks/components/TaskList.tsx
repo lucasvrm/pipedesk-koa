@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useTasks, useUpdateTask, useDeleteTask } from '@/services/taskService'
 import { Plus, Trash, CheckCircle, Flag, LinkSimple, Calendar } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -20,7 +20,9 @@ interface TaskListProps {
 }
 
 export default function TaskList({ playerTrackId }: TaskListProps) {
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+  const { data: tasks } = useTasks(playerTrackId)
+  const updateTask = useUpdateTask()
+  const deleteTask = useDeleteTask()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
 
@@ -38,31 +40,33 @@ export default function TaskList({ playerTrackId }: TaskListProps) {
       return
     }
 
-    setTasks((currentTasks) =>
-      (currentTasks || []).map(t =>
-        t.id === task.id
-          ? { ...t, completed: !t.completed, updatedAt: new Date().toISOString() }
-          : t
-      )
-    )
-
-    if (!task.completed && task.isMilestone) {
-      toast.success('🎉 Marco concluído!', {
-        description: task.title,
-      })
-    }
+    updateTask.mutate({
+      taskId: task.id,
+      updates: { completed: !task.completed }
+    }, {
+      onSuccess: () => {
+        if (!task.completed && task.isMilestone) {
+          toast.success('🎉 Marco concluído!', {
+            description: task.title,
+          })
+        }
+      },
+      onError: () => toast.error('Erro ao atualizar tarefa')
+    })
   }
 
   const handleDeleteTask = (taskId: string) => {
     const dependents = (tasks || []).filter(t => t.dependencies.includes(taskId))
-    
+
     if (dependents.length > 0) {
       toast.error('Não é possível excluir tarefa com dependentes')
       return
     }
 
-    setTasks((currentTasks) => (currentTasks || []).filter(t => t.id !== taskId))
-    toast.success('Tarefa excluída')
+    deleteTask.mutate(taskId, {
+      onSuccess: () => toast.success('Tarefa excluída'),
+      onError: () => toast.error('Erro ao excluir tarefa')
+    })
   }
 
   const handleEditTask = (task: Task) => {

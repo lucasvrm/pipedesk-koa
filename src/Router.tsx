@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/Auth/ProtectedRoute'
+import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import AuthForm from '@/components/Auth/AuthForm'
 import Profile from '@/pages/Profile'
 import App from '@/App'
@@ -25,21 +25,21 @@ export default function Router() {
         <Route path="/login" element={
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthForm />
         } />
-        
+
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <App />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/profile" element={
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        
+
         {/* Catch all - redirect to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

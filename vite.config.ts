@@ -36,7 +36,7 @@ export default defineConfig({
             '@radix-ui/react-tooltip',
           ],
           'vendor-charts': ['d3', 'recharts'],
-          
+
           // Feature chunks
           // Note: These paths are relative to the project root and may need
           // updating if files are moved. Consider using dynamic imports or
