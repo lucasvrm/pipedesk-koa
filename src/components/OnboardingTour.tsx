@@ -110,7 +110,7 @@ export function OnboardingTour() {
       if (profile?.id) {
         try {
           const { error } = await supabase
-            .from('users')
+            .from('profiles')
             .update({ has_completed_onboarding: true })
             .eq('id', profile.id)
 

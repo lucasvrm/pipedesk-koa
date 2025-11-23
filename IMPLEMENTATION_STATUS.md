@@ -291,7 +291,7 @@ See [ADVANCED_FEATURES_INTEGRATION.md](./ADVANCED_FEATURES_INTEGRATION.md) for c
 
 ## Branding Updates ✨
 
-- ✅ Application name changed from "DealFlow Manager" to "DCM - Koa Capital"
+- ✅ Application name changed from "DealFlow Manager" to "PipeDesk"
 - ✅ Page title updated in index.html
 - ✅ Header branding updated
 - ✅ "Matriz" renamed to "Kanban" throughout the application

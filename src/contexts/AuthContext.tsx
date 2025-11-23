@@ -10,6 +10,9 @@ interface AuthContextType {
   loading: boolean
   error: Error | null
   signInWithMagicLink: (email: string) => Promise<boolean>
+  signIn: (email: string, password: string) => Promise<any>
+  signUp: (email: string, password: string, name?: string) => Promise<any>
+  resetPassword: (email: string) => Promise<void>
   signOut: () => Promise<boolean>
   isAuthenticated: boolean
 }
@@ -62,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) throw error
       setProfile(data)
     } catch (err) {
+      console.error('Error fetching profile:', err)
       setError(err instanceof Error ? err : new Error('Failed to fetch profile'))
     } finally {
       setLoading(false)
@@ -90,6 +94,65 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to send magic link'))
       return false
+    }
+  }
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setError(null)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to sign in'))
+      throw err
+    }
+  }
+
+  const signUp = async (email: string, password: string, name?: string) => {
+    try {
+      setError(null)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      if (error) throw error
+      
+      // Create profile in the profiles table
+      if (data.user) {
+        const timestamp = Date.now().toString(36);
+        const username = `${email.split('@')[0]}_${timestamp}`;
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            username: username,
+            name: name || email.split('@')[0],
+            role: 'client',
+          })
+        if (profileError) throw profileError
+      }
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to sign up'))
+      throw err
+    }
+  }
+
+  const resetPassword = async (email: string) => {
+    try {
+      setError(null)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      })
+      if (error) throw error
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to reset password'))
+      throw err
     }
   }
 
@@ -115,6 +178,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     error,
     signInWithMagicLink,
+    signIn,
+    signUp,
+    resetPassword,
     signOut,
     isAuthenticated: !!user,
   }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
+import { useUsers } from '@/services/userService'
 import {
   Dialog,
   DialogContent,
@@ -45,10 +46,11 @@ export default function BulkOperations({
   const [newStage, setNewStage] = useState<PlayerStage>('nda')
   const [assigneeId, setAssigneeId] = useState<string>('')
 
+  // Note: Bulk operations need full service implementation with mutations
   const [, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
   const [, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
   const [, setTasks] = useKV<Task[]>('tasks', [])
-  const [users] = useKV<User[]>('users', [])
+  const { data: users } = useUsers()
 
   const allSelected = selectedIds.length === entities.length && entities.length > 0
   const someSelected = selectedIds.length > 0 && selectedIds.length < entities.length
@@ -99,7 +101,7 @@ export default function BulkOperations({
             (current || []).filter(t => !selectedIds.includes(t.id))
           )
         }
-        
+
         selectedIds.forEach(id => {
           const entity = entities.find(e => e.id === id)
           logActivity({

@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useEffect, useCallback } from 'react'
+import { useKV } from '@/hooks/useKV'
 import { PlayerTrack, StageHistory, Notification, PlayerStage } from '../lib/types'
 import { differenceInHours, differenceInDays } from 'date-fns'
 import { toast } from 'sonner'
@@ -26,37 +26,25 @@ export function useSLAMonitoring() {
   const [notifications, setNotifications] = useKV<Notification[]>('notifications', [])
   const [currentUser] = useKV<{ id: string } | null>('current_user', null)
 
-  useEffect(() => {
-    // Run SLA check every 5 minutes
-    const intervalId = setInterval(() => {
-      checkSLAViolations()
-    }, 5 * 60 * 1000) // 5 minutes
+  const checkSLAViolations = useCallback(() => {
+    if (!slaConfig || slaConfig.length === 0) return;
 
-    // Run immediately on mount
-    checkSLAViolations()
-
-    return () => clearInterval(intervalId)
-  }, [playerTracks, stageHistory, slaConfig])
-
-  const checkSLAViolations = () => {
-    if (slaConfig.length === 0) return
-
-    const violations: SLAViolation[] = []
-    const now = new Date()
+    const violations: SLAViolation[] = [];
+    const now = new Date();
 
     // Check each active player track
-    playerTracks
+    (playerTracks ?? [])
       .filter(track => track.status === 'active')
       .forEach(track => {
         // Find current stage entry
-        const currentStageEntry = stageHistory.find(
+        const currentStageEntry = (stageHistory ?? []).find(
           h => h.playerTrackId === track.id && h.stage === track.currentStage && !h.exitedAt
         )
 
         if (!currentStageEntry) return
 
         // Get SLA config for this stage
-        const stageSLA = slaConfig.find(c => c.stage === track.currentStage)
+        const stageSLA = (slaConfig ?? []).find(c => c.stage === track.currentStage)
         if (!stageSLA) return
 
         const enteredAt = new Date(currentStageEntry.enteredAt)
@@ -89,11 +77,11 @@ export function useSLAMonitoring() {
 
     // Create notifications for new violations
     violations.forEach(violation => {
-      const track = playerTracks.find(t => t.id === violation.playerTrackId)
+      const track = (playerTracks ?? []).find(t => t.id === violation.playerTrackId)
       if (!track) return
 
       // Check if we already sent a notification for this violation
-      const existingNotification = notifications.find(
+      const existingNotification = (notifications ?? []).find(
         n => 
           n.type === 'sla_breach' &&
           n.link === `/deals/${track.masterDealId}?track=${track.id}` &&
@@ -106,7 +94,7 @@ export function useSLAMonitoring() {
       // Create notification for track responsibles
       track.responsibles.forEach(userId => {
         // Find current stage entry
-        const currentStageEntry = stageHistory.find(
+        const currentStageEntry = (stageHistory ?? []).find(
           h => h.playerTrackId === track.id && h.stage === track.currentStage && !h.exitedAt
         )
         
@@ -129,7 +117,7 @@ export function useSLAMonitoring() {
           createdAt: new Date().toISOString(),
         }
 
-        setNotifications([...notifications, newNotification])
+        setNotifications([...(notifications ?? []), newNotification])
 
         // Show toast for current user
         if (currentUser && userId === currentUser.id) {
@@ -145,7 +133,19 @@ export function useSLAMonitoring() {
         }
       })
     })
-  }
+  }, [playerTracks, stageHistory, slaConfig, notifications, setNotifications, currentUser])
+
+  useEffect(() => {
+    // Run SLA check every 5 minutes
+    const intervalId = setInterval(() => {
+      checkSLAViolations()
+    }, 5 * 60 * 1000) // 5 minutes
+
+    // Run immediately on mount
+    checkSLAViolations()
+
+    return () => clearInterval(intervalId)
+  }, [checkSLAViolations])
 
   return {
     checkSLAViolations,

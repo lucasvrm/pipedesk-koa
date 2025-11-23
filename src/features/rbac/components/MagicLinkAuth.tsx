@@ -71,7 +71,7 @@ export default function MagicLinkAuth() {
               Magic Link Enviado
             </CardTitle>
             <CardDescription>
-              Verifique seu email para acessar o DealFlow Manager
+              Verifique seu email para acessar o PipeDesk
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -101,7 +101,7 @@ export default function MagicLinkAuth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Bem-vindo ao DealFlow Manager</CardTitle>
+          <CardTitle>Bem-vindo ao PipeDesk</CardTitle>
           <CardDescription>
             Insira seu email para receber um link de acesso
           </CardDescription>

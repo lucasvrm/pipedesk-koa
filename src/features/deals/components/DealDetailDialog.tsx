@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useTracks, useUpdateTrack } from '@/services/trackService'
+import { useUpdateDeal } from '@/services/dealService'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, PlayerTrack, User, STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
+import { MasterDeal, User, STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle, Tag, Question } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
@@ -41,8 +42,9 @@ interface DealDetailDialogProps {
 }
 
 export default function DealDetailDialog({ deal, open, onOpenChange, currentUser }: DealDetailDialogProps) {
-  const [playerTracks, setPlayerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [masterDeals, setMasterDeals] = useKV<MasterDeal[]>('masterDeals', [])
+  const { data: playerTracks } = useTracks()
+  const updateDeal = useUpdateDeal()
+  const updateTrack = useUpdateTrack()
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
 
   const dealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
@@ -50,34 +52,34 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
   const handleStatusChange = (newStatus: DealStatus) => {
     if (newStatus === 'cancelled') {
       const activeTracks = dealTracks.filter(t => t.status === 'active')
-      
-      setPlayerTracks((currentTracks) =>
-        (currentTracks || []).map(t =>
-          t.masterDealId === deal.id && t.status === 'active'
-            ? { ...t, status: 'cancelled', updatedAt: new Date().toISOString() }
-            : t
-        )
-      )
 
-      setMasterDeals((currentDeals) =>
-        (currentDeals || []).map(d =>
-          d.id === deal.id
-            ? { ...d, status: newStatus, updatedAt: new Date().toISOString() }
-            : d
-        )
-      )
+      // Update all active tracks to cancelled
+      activeTracks.forEach(track => {
+        updateTrack.mutate({
+          trackId: track.id,
+          updates: { status: 'cancelled' }
+        })
+      })
 
-      toast.success(`Negócio cancelado! ${activeTracks.length} player(s) foram cancelados automaticamente.`)
+      updateDeal.mutate({
+        dealId: deal.id,
+        updates: { status: newStatus }
+      }, {
+        onSuccess: () => {
+          toast.success(`Negócio cancelado! ${activeTracks.length} player(s) foram cancelados automaticamente.`)
+        },
+        onError: () => toast.error('Erro ao atualizar status')
+      })
     } else {
-      setMasterDeals((currentDeals) =>
-        (currentDeals || []).map(d =>
-          d.id === deal.id
-            ? { ...d, status: newStatus, updatedAt: new Date().toISOString() }
-            : d
-        )
-      )
-
-      toast.success(`Status do negócio atualizado para ${STATUS_LABELS[newStatus]}`)
+      updateDeal.mutate({
+        dealId: deal.id,
+        updates: { status: newStatus }
+      }, {
+        onSuccess: () => {
+          toast.success(`Status do negócio atualizado para ${STATUS_LABELS[newStatus]}`)
+        },
+        onError: () => toast.error('Erro ao atualizar status')
+      })
     }
   }
 
@@ -94,8 +96,8 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                     <Badge
                       className={
                         deal.status === 'active' ? 'status-active' :
-                        deal.status === 'cancelled' ? 'status-cancelled' :
-                        'status-concluded'
+                          deal.status === 'cancelled' ? 'status-cancelled' :
+                            'status-concluded'
                       }
                     >
                       {STATUS_LABELS[deal.status]}
@@ -220,9 +222,9 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="mx-auto mb-3 h-12 w-12 opacity-50" />
                   <p>Nenhum player adicionado ainda</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-4"
                     onClick={() => setCreatePlayerOpen(true)}
                   >

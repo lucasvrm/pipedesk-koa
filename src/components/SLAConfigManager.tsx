@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -25,7 +25,7 @@ const DEFAULT_SLA_CONFIG: SLAConfigItem[] = [
 
 export function SLAConfigManager() {
   const [slaConfig, setSlaConfig] = useKV<SLAConfigItem[]>('sla_config', DEFAULT_SLA_CONFIG)
-  const [editedConfig, setEditedConfig] = useState<SLAConfigItem[]>(slaConfig)
+  const [editedConfig, setEditedConfig] = useState<SLAConfigItem[]>(slaConfig ?? DEFAULT_SLA_CONFIG)
   const [hasChanges, setHasChanges] = useState(false)
 
   const handleConfigChange = (stage: PlayerStage, field: 'maxDays' | 'alertThresholdPercent', value: number) => {
@@ -43,7 +43,7 @@ export function SLAConfigManager() {
   }
 
   const handleReset = () => {
-    setEditedConfig(slaConfig)
+    setEditedConfig(slaConfig ?? DEFAULT_SLA_CONFIG)
     setHasChanges(false)
     toast.info('Alterações descartadas')
   }

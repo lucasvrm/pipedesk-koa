@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useTasks, useUpdateTask } from '@/services/taskService'
+import { useTracks } from '@/services/trackService'
+import { useDeals } from '@/services/dealService'
+import { useUsers } from '@/services/userService'
 import {
   ListChecks,
   Plus,
@@ -28,7 +31,7 @@ import {
 
 
 import { Checkbox } from '@/components/ui/checkbox'
-import { Task, PlayerTrack, MasterDeal, User } from '@/lib/types'
+import { Task, User } from '@/lib/types'
 import { formatDate } from '@/lib/helpers'
 import { toast } from 'sonner'
 import CreateTaskDialog from './CreateTaskDialog'
@@ -44,11 +47,12 @@ type TaskSort = 'due-date' | 'priority' | 'created' | 'updated' | 'alphabetical'
 type ViewMode = 'list' | 'kanban' | 'grouped'
 
 export default function TaskManagementView({ currentUser }: TaskManagementViewProps) {
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
-  const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [masterDeals] = useKV<MasterDeal[]>('masterDeals', [])
-  const [users] = useKV<User[]>('users', [])
-  
+  const { data: tasks } = useTasks()
+  const { data: playerTracks } = useTracks()
+  const { data: masterDeals } = useDeals()
+  const { data: users } = useUsers()
+  const updateTask = useUpdateTask()
+
   const [searchQuery, setSearchQuery] = useState('')
   const [filter, setFilter] = useState<TaskFilter>('all')
   const [sortBy, setSortBy] = useState<TaskSort>('due-date')
@@ -59,7 +63,7 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  
+
   const weekFromNow = new Date(today)
   weekFromNow.setDate(weekFromNow.getDate() + 7)
 
@@ -148,7 +152,7 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
       return dueDate.getTime() === today.getTime()
     })
     const completed = allTasks.filter(t => t.completed)
-    
+
     return {
       total: allTasks.length,
       myTasks: myTasks.length,
@@ -169,19 +173,21 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
       return
     }
 
-    setTasks((currentTasks) =>
-      (currentTasks || []).map(t =>
-        t.id === task.id
-          ? { ...t, completed: !t.completed, updatedAt: new Date().toISOString() }
-          : t
-      )
-    )
-
-    if (!task.completed && task.isMilestone) {
-      toast.success('🎉 Marco concluído!', {
-        description: task.title,
-      })
-    }
+    updateTask.mutate({
+      taskId: task.id,
+      updates: { completed: !task.completed }
+    }, {
+      onSuccess: () => {
+        if (!task.completed && task.isMilestone) {
+          toast.success('🎉 Marco concluído!', {
+            description: task.title,
+          })
+        }
+      },
+      onError: () => {
+        toast.error('Erro ao atualizar tarefa')
+      }
+    })
   }
 
   const getTrackInfo = (trackId: string) => {
@@ -397,9 +403,8 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
                   return (
                     <Card
                       key={task.id}
-                      className={`cursor-pointer transition-colors hover:bg-accent/5 ${
-                        task.completed ? 'opacity-60' : ''
-                      }`}
+                      className={`cursor-pointer transition-colors hover:bg-accent/5 ${task.completed ? 'opacity-60' : ''
+                        }`}
                       onClick={() => setSelectedTask(task)}
                     >
                       <CardContent className="p-4">
@@ -419,9 +424,8 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
                                     <Flag className="h-4 w-4 text-accent flex-shrink-0" />
                                   )}
                                   <h3
-                                    className={`font-medium ${
-                                      task.completed ? 'line-through' : ''
-                                    }`}
+                                    className={`font-medium ${task.completed ? 'line-through' : ''
+                                      }`}
                                   >
                                     {task.title}
                                   </h3>
@@ -438,8 +442,8 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
                                     isOverdue
                                       ? 'destructive'
                                       : task.completed
-                                      ? 'secondary'
-                                      : 'default'
+                                        ? 'secondary'
+                                        : 'default'
                                   }
                                   className="flex-shrink-0"
                                 >

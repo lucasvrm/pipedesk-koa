@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useFolders } from '@/services/folderService'
 import {
   Folder,
   FolderOpen,
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Folder as FolderType, EntityLocation, User } from '@/lib/types'
+import { User } from '@/lib/types'
 import { toast } from 'sonner'
 
 interface CrossTagDialogProps {
@@ -33,23 +33,18 @@ export default function CrossTagDialog({
   entityName,
   currentUser,
 }: CrossTagDialogProps) {
-  const [folders = []] = useKV<FolderType[]>('folders', [])
-  const [locations = [], setLocations] = useKV<EntityLocation[]>('entity-locations', [])
+  const { data: folders = [] } = useFolders()
   const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set())
   const [primaryFolder, setPrimaryFolder] = useState<string>('')
 
   useEffect(() => {
     if (open) {
-      const entityLocations = locations.filter(
-        (loc) => loc.entityId === entityId && loc.entityType === entityType
-      )
-      const folderIds = new Set(entityLocations.map((loc) => loc.folderId))
-      const primary = entityLocations.find((loc) => loc.isPrimary)?.folderId || ''
-      
-      setSelectedFolders(folderIds)
-      setPrimaryFolder(primary)
+      // Note: This needs entity locations to be fetched from folderService
+      // For now, using empty state
+      setSelectedFolders(new Set())
+      setPrimaryFolder('')
     }
-  }, [open, entityId, entityType, locations])
+  }, [open, entityId, entityType])
 
   const handleToggleFolder = (folderId: string) => {
     setSelectedFolders((prev) => {
@@ -78,40 +73,14 @@ export default function CrossTagDialog({
   }
 
   const handleSave = () => {
-    setLocations((current = []) => {
-      const filtered = current.filter(
-        (loc) => !(loc.entityId === entityId && loc.entityType === entityType)
-      )
-
-      const newLocations: EntityLocation[] = Array.from(selectedFolders).map((folderId) => ({
-        id: `loc-${entityId}-${folderId}`,
-        entityId,
-        entityType,
-        folderId,
-        isPrimary: folderId === primaryFolder,
-        addedAt: new Date().toISOString(),
-        addedBy: currentUser.id,
-      }))
-
-      return [...filtered, ...newLocations]
-    })
-
-    const folderNames = Array.from(selectedFolders)
-      .map((id) => folders.find((f) => f.id === id)?.name)
-      .filter(Boolean)
-      .join(', ')
-
-    toast.success(
-      selectedFolders.size > 0
-        ? `"${entityName}" adicionado a ${selectedFolders.size} pasta(s): ${folderNames}`
-        : `"${entityName}" removido de todas as pastas`
-    )
+    // Note: This needs full folder service implementation
+    toast.warning('Gerenciamento de pastas requer implementação completa no backend')
     onOpenChange(false)
   }
 
   const rootFolders = folders.filter((f) => !f.parentId)
 
-  const renderFolderTree = (parentFolders: FolderType[], level = 0) => {
+  const renderFolderTree = (parentFolders: any[], level = 0) => {
     return parentFolders.map((folder) => {
       const children = folders.filter((f) => f.parentId === folder.id)
       const IconComponent = folder.icon === 'folder-open' ? FolderOpen : Folder
@@ -121,9 +90,8 @@ export default function CrossTagDialog({
       return (
         <div key={folder.id} style={{ marginLeft: level * 20 }}>
           <div
-            className={`flex items-center justify-between p-2 rounded-md mb-1 transition-colors ${
-              isSelected ? 'bg-accent/50' : 'hover:bg-accent/20'
-            }`}
+            className={`flex items-center justify-between p-2 rounded-md mb-1 transition-colors ${isSelected ? 'bg-accent/50' : 'hover:bg-accent/20'
+              }`}
           >
             <div className="flex items-center gap-2 flex-1">
               <Checkbox

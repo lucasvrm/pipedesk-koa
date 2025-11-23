@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { Input } from './ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
@@ -40,18 +40,18 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
   // Enhanced search algorithm with fuzzy matching and relevance scoring
   const performSearch = (query: string) => {
     if (!query.trim()) {
-      setSearchResults([])
-      return
+      setSearchResults([]);
+      return;
     }
 
-    setIsSearching(true)
-    const normalizedQuery = query.toLowerCase().trim()
-    const queryTerms = normalizedQuery.split(/\s+/)
+    setIsSearching(true);
+    const normalizedQuery = query.toLowerCase().trim();
+    const queryTerms = normalizedQuery.split(/\s+/);
 
-    const results: SearchResult[] = []
+    const results: SearchResult[] = [];
 
     // Search in master deals
-    masterDeals
+    ;(masterDeals ?? [])
       .filter(d => !d.deletedAt)
       .forEach(deal => {
         let score = 0
@@ -102,7 +102,7 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
       })
 
     // Search in player tracks
-    playerTracks
+    ;(playerTracks ?? [])
       .filter(p => p.status !== 'cancelled')
       .forEach(track => {
         let score = 0
@@ -133,7 +133,7 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
         })
 
         if (score > 0) {
-          const deal = masterDeals.find(d => d.id === track.masterDealId)
+          const deal = (masterDeals ?? []).find(d => d.id === track.masterDealId)
           results.push({
             id: track.id,
             type: 'track',
@@ -151,7 +151,7 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
       })
 
     // Search in tasks
-    tasks.forEach(task => {
+    ;(tasks ?? []).forEach(task => {
       let score = 0
       const searchableText = `${task.title} ${task.description}`.toLowerCase()
       
@@ -180,7 +180,7 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
       })
 
       if (score > 0) {
-        const track = playerTracks.find(p => p.id === task.playerTrackId)
+        const track = (playerTracks ?? []).find(p => p.id === task.playerTrackId)
         results.push({
           id: task.id,
           type: 'task',
@@ -198,7 +198,7 @@ export function SemanticSearch({ onSelectResult, placeholder = 'Buscar negócios
     })
 
     // Search in comments
-    comments.forEach(comment => {
+    ;(comments ?? []).forEach(comment => {
       let score = 0
       const searchableText = comment.content.toLowerCase()
       

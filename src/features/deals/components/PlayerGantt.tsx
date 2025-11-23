@@ -1,4 +1,4 @@
-import { useKV } from '@github/spark/hooks'
+import { useTasks } from '@/services/taskService'
 import { Task } from '@/lib/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +25,7 @@ interface GanttTask {
 }
 
 export default function PlayerGantt({ playerTrackId }: PlayerGanttProps) {
-  const [tasks] = useKV<Task[]>('tasks', [])
+  const { data: tasks } = useTasks()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -35,7 +35,7 @@ export default function PlayerGantt({ playerTrackId }: PlayerGanttProps) {
   const ganttTasks: GanttTask[] = trackTasks.map(task => {
     const start = task.createdAt ? new Date(task.createdAt) : new Date()
     const end = task.dueDate ? new Date(task.dueDate) : new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
-    
+
     return {
       id: task.id,
       title: task.title,
@@ -68,7 +68,7 @@ export default function PlayerGantt({ playerTrackId }: PlayerGanttProps) {
     const allDates = ganttTasks.flatMap(t => [t.start, t.end])
     const minDate = d3.min(allDates) || new Date()
     const maxDate = d3.max(allDates) || new Date()
-    
+
     const timePadding = (maxDate.getTime() - minDate.getTime()) * 0.1
     const xScale = d3.scaleTime()
       .domain([new Date(minDate.getTime() - timePadding), new Date(maxDate.getTime() + timePadding)])
@@ -117,7 +117,7 @@ export default function PlayerGantt({ playerTrackId }: PlayerGanttProps) {
 
       if (task.isMilestone) {
         const milestoneX = xScale(task.end)
-        
+
         taskGroup.append('path')
           .attr('d', d3.symbol().type(d3.symbolDiamond).size(200))
           .attr('transform', `translate(${milestoneX},${y + rowHeight / 2})`)

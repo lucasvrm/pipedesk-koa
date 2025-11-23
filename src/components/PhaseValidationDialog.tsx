@@ -1,4 +1,4 @@
-import { Shield, Warning, CheckCircle, X } from '@phosphor-icons/react'
+import { Shield, Warning, CheckCircle } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,

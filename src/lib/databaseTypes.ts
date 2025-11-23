@@ -178,3 +178,137 @@ export interface MagicLinkDB {
   used_at: string | null
   revoked_at: string | null
 }
+
+export interface PipelineStageDB {
+  id: string
+  pipeline_id: string | null
+  name: string
+  color: string
+  stage_order: number
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      master_deals: {
+        Row: MasterDealDB
+        Insert: Partial<MasterDealDB>
+        Update: Partial<MasterDealDB>
+        Relationships: []
+      }
+      player_tracks: {
+        Row: PlayerTrackDB
+        Insert: Partial<PlayerTrackDB>
+        Update: Partial<PlayerTrackDB>
+        Relationships: []
+      }
+      tasks: {
+        Row: TaskDB
+        Insert: Partial<TaskDB>
+        Update: Partial<TaskDB>
+        Relationships: []
+      }
+      users: {
+        Row: UserDB
+        Insert: Partial<UserDB>
+        Update: Partial<UserDB>
+        Relationships: []
+      }
+      comments: {
+        Row: CommentDB
+        Insert: Partial<CommentDB>
+        Update: Partial<CommentDB>
+        Relationships: []
+      }
+      notifications: {
+        Row: NotificationDB
+        Insert: Partial<NotificationDB>
+        Update: Partial<NotificationDB>
+        Relationships: []
+      }
+      custom_field_definitions: {
+        Row: CustomFieldDefinitionDB
+        Insert: Partial<CustomFieldDefinitionDB>
+        Update: Partial<CustomFieldDefinitionDB>
+        Relationships: []
+      }
+      custom_field_values: {
+        Row: CustomFieldValueDB
+        Insert: Partial<CustomFieldValueDB>
+        Update: Partial<CustomFieldValueDB>
+        Relationships: []
+      }
+      folders: {
+        Row: FolderDB
+        Insert: Partial<FolderDB>
+        Update: Partial<FolderDB>
+        Relationships: []
+      }
+      entity_locations: {
+        Row: EntityLocationDB
+        Insert: Partial<EntityLocationDB>
+        Update: Partial<EntityLocationDB>
+        Relationships: []
+      }
+      stage_history: {
+        Row: StageHistoryDB
+        Insert: Partial<StageHistoryDB>
+        Update: Partial<StageHistoryDB>
+        Relationships: []
+      }
+      google_integrations: {
+        Row: GoogleIntegrationDB
+        Insert: Partial<GoogleIntegrationDB>
+        Update: Partial<GoogleIntegrationDB>
+        Relationships: []
+      }
+      google_drive_folders: {
+        Row: GoogleDriveFolderDB
+        Insert: Partial<GoogleDriveFolderDB>
+        Update: Partial<GoogleDriveFolderDB>
+        Relationships: []
+      }
+      calendar_events: {
+        Row: CalendarEventDB
+        Insert: Partial<CalendarEventDB>
+        Update: Partial<CalendarEventDB>
+        Relationships: []
+      }
+      magic_links: {
+        Row: MagicLinkDB
+        Insert: Partial<MagicLinkDB>
+        Update: Partial<MagicLinkDB>
+        Relationships: []
+      }
+      pipeline_stages: {
+        Row: PipelineStageDB
+        Insert: Partial<PipelineStageDB>
+        Update: Partial<PipelineStageDB>
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}

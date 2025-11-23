@@ -1,7 +1,7 @@
 # Role-Based Access Control (RBAC) System
 
 ## Overview
-The DealFlow Manager now includes a complete Role-Based Access Control system with magic link authentication, enabling secure external client access with data anonymization.
+PipeDesk now includes a complete Role-Based Access Control system with magic link authentication, enabling secure external client access with data anonymization.
 
 ## Features Implemented
 

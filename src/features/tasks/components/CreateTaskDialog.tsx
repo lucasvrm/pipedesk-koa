@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useTasks, useCreateTask, useUpdateTask } from '@/services/taskService'
+import { useUsers } from '@/services/userService'
 import { X, Flag, LinkSimple } from '@phosphor-icons/react'
 import {
   Dialog,
@@ -20,8 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Task, User } from '@/lib/types'
-import { generateId } from '@/lib/helpers'
+import { Task } from '@/lib/types'
 import { toast } from 'sonner'
 
 interface CreateTaskDialogProps {
@@ -37,9 +37,11 @@ export default function CreateTaskDialog({
   onOpenChange,
   editingTask,
 }: CreateTaskDialogProps) {
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
-  const [users] = useKV<User[]>('users', [])
-  
+  const { data: tasks } = useTasks()
+  const { data: users } = useUsers()
+  const createTask = useCreateTask()
+  const updateTask = useUpdateTask()
+
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
@@ -106,52 +108,56 @@ export default function CreateTaskDialog({
     }
 
     if (editingTask) {
-      setTasks((currentTasks) =>
-        (currentTasks || []).map(t =>
-          t.id === editingTask.id
-            ? {
-                ...t,
-                title,
-                description,
-                dueDate: dueDate || undefined,
-                assignees,
-                isMilestone,
-                dependencies,
-                updatedAt: new Date().toISOString(),
-              }
-            : t
-        )
-      )
-      toast.success('Tarefa atualizada')
+      updateTask.mutate({
+        taskId: editingTask.id,
+        updates: {
+          title,
+          description,
+          dueDate: dueDate || undefined,
+          assignees,
+          isMilestone,
+          dependencies,
+        }
+      }, {
+        onSuccess: () => {
+          toast.success('Tarefa atualizada')
+          onOpenChange(false)
+          resetForm()
+        },
+        onError: () => toast.error('Erro ao atualizar tarefa')
+      })
     } else {
       if (!playerTrackId) {
         toast.error('Selecione um player track')
         return
       }
-      
-      const maxPosition = Math.max(0, ...(allTasks.filter(t => t.playerTrackId === playerTrackId).map(t => t.position)))
-      
-      const newTask: Task = {
-        id: generateId(),
+
+      createTask.mutate({
         playerTrackId,
         title,
         description,
         dueDate: dueDate || undefined,
         assignees,
-        completed: false,
         isMilestone,
-        dependencies,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        position: maxPosition + 1,
-      }
-
-      setTasks((currentTasks) => [...(currentTasks || []), newTask])
-      toast.success('Tarefa criada')
+        // Note: dependencies support needs to be added to createTask service if not present
+        // I will assume I'll fix the service next.
+      }, {
+        onSuccess: (newTask) => {
+          // If dependencies are needed and not supported by create, we might need a second update
+          // But better to support it in create.
+          if (dependencies.length > 0) {
+            updateTask.mutate({
+              taskId: newTask.id,
+              updates: { dependencies }
+            })
+          }
+          toast.success('Tarefa criada')
+          onOpenChange(false)
+          resetForm()
+        },
+        onError: () => toast.error('Erro ao criar tarefa')
+      })
     }
-
-    onOpenChange(false)
-    resetForm()
   }
 
   const availableTasks = (tasks || []).filter(

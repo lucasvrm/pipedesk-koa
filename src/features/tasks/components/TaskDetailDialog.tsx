@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useTasks, useDeleteTask } from '@/services/taskService'
+import { useTracks } from '@/services/trackService'
+import { useDeals } from '@/services/dealService'
+import { useUsers } from '@/services/userService'
+import { useComments } from '@/services/commentService'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +25,7 @@ import {
   Trash,
   PencilSimple,
 } from '@phosphor-icons/react'
-import { Task, PlayerTrack, MasterDeal, User, Comment } from '@/lib/types'
+import { Task, User } from '@/lib/types'
 import { formatDate, formatDateTime } from '@/lib/helpers'
 import { toast } from 'sonner'
 import CreateTaskDialog from './CreateTaskDialog'
@@ -42,33 +46,32 @@ export default function TaskDetailDialog({
   onToggleComplete,
   currentUser,
 }: TaskDetailDialogProps) {
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
-  const [playerTracks] = useKV<PlayerTrack[]>('playerTracks', [])
-  const [masterDeals] = useKV<MasterDeal[]>('masterDeals', [])
-  const [users] = useKV<User[]>('users', [])
-  const [comments] = useKV<Comment[]>('comments', [])
-  
+  const { data: tasks } = useTasks()
+  const { data: playerTracks } = useTracks()
+  const { data: masterDeals } = useDeals()
+  const { data: users } = useUsers()
+  const { data: comments } = useComments(task.id, 'task')
+  const deleteTask = useDeleteTask()
+
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [showComments, setShowComments] = useState(false)
 
   const track = playerTracks?.find(t => t.id === task.playerTrackId)
   const deal = track ? masterDeals?.find(d => d.id === track.masterDealId) : undefined
-  
+
   const assignees = task.assignees
     .map(id => users?.find(u => u.id === id))
     .filter((u): u is User => !!u)
-  
+
   const dependencies = task.dependencies
     .map(id => tasks?.find(t => t.id === id))
     .filter((t): t is Task => !!t)
-  
+
   const dependents = (tasks || []).filter(t => t.dependencies.includes(task.id))
-  
+
   const blockedBy = dependencies.filter(t => !t.completed)
-  
-  const taskComments = (comments || []).filter(
-    c => c.entityType === 'task' && c.entityId === task.id
-  )
+
+  const taskComments = comments || []
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -81,9 +84,13 @@ export default function TaskDetailDialog({
     }
 
     if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
-      setTasks((currentTasks) => (currentTasks || []).filter(t => t.id !== task.id))
-      toast.success('Tarefa excluída')
-      onOpenChange(false)
+      deleteTask.mutate(task.id, {
+        onSuccess: () => {
+          toast.success('Tarefa excluída')
+          onOpenChange(false)
+        },
+        onError: () => toast.error('Erro ao excluir tarefa')
+      })
     }
   }
 
