@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { User } from '@/lib/types'
@@ -30,9 +30,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  
+  // Ref para rastrear o ID do perfil carregado sem causar re-renders ou sofrer com closures
+  const loadedProfileId = useRef<string | null>(null);
 
-  // Função isolada para buscar perfil com logs
   const fetchProfile = async (userId: string, currentUserEmail?: string) => {
+    // Evita buscar o mesmo perfil múltiplas vezes se já estivermos com ele em memória
+    if (loadedProfileId.current === userId) {
+        console.log('[Auth] Profile already loaded for:', userId);
+        return;
+    }
+
     console.log('[Auth] Fetching profile for:', userId);
     try {
       const { data, error } = await supabase
@@ -63,15 +71,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           if (createError) {
              console.error('[Auth] Error auto-creating profile:', createError);
-             // Fallback para não travar
-             setProfile({
-               ...newProfileData,
-               createdAt: new Date().toISOString(),
-               updatedAt: new Date().toISOString()
-             } as User);
           } else {
              console.log('[Auth] Profile created successfully');
              setProfile({ ...newProfile, avatar: newProfile.avatar_url });
+             loadedProfileId.current = userId;
           }
         } else {
           console.error('[Auth] Error fetching profile:', error);
@@ -79,6 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         console.log('[Auth] Profile found');
         setProfile({ ...data, avatar: data.avatar_url });
+        loadedProfileId.current = userId;
       }
     } catch (err) {
       console.error('[Auth] Unexpected error in fetchProfile:', err);
@@ -98,6 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('[Auth] Session found on init');
             setSession(initialSession);
             setUser(initialSession.user);
+            // No init, o loading é true por padrão, então esperamos o perfil
             await fetchProfile(initialSession.user.id, initialSession.user.email);
           } else {
             console.log('[Auth] No session on init');
@@ -125,18 +130,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(newUser);
 
       if (newUser) {
-        // Lógica crucial: Só mostra loading se for um login explícito (SIGNED_IN)
-        // Eventos como INITIAL_SESSION ou TOKEN_REFRESHED não devem bloquear a tela se já carregamos antes
-        if (event === 'SIGNED_IN') {
-            console.log('[Auth] Signed In - fetching profile');
-            setLoading(true);
+        // LÓGICA CORRIGIDA:
+        // Não ativamos setLoading(true) aqui para evitar piscar a tela ou travar em loop.
+        // Apenas buscamos o perfil em background se necessário.
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+            // Se o usuário mudou (login com outra conta), limpamos o cache
+            if (loadedProfileId.current !== newUser.id) {
+                loadedProfileId.current = null;
+                setProfile(null);
+                // Aqui sim podemos mostrar loading pois é uma troca de usuário real
+                if (event === 'SIGNED_IN') setLoading(true); 
+            }
+            
             await fetchProfile(newUser.id, newUser.email);
-            setLoading(false);
-        } else if (!profile && event !== 'INITIAL_SESSION') {
-            // Se por acaso temos usuário mas sem perfil (e não é o init que já trata isso)
-            await fetchProfile(newUser.id, newUser.email);
+            
+            if (event === 'SIGNED_IN') setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
+        loadedProfileId.current = null;
         setProfile(null);
         setLoading(false);
       }
@@ -148,7 +160,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // Métodos auxiliares mantidos iguais...
   const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
       setError(null);
@@ -223,6 +234,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setError(null);
       setLoading(true);
+      loadedProfileId.current = null; // Limpa cache
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
