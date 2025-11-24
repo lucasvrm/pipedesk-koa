@@ -93,8 +93,8 @@ export interface Comment {
   entityType: 'deal' | 'track' | 'task'
   authorId: string
   content: string
-  createdAt: string
   mentions: string[]
+  createdAt: string
 }
 
 export interface Notification {

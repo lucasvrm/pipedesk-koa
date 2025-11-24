@@ -74,12 +74,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // If profile doesn't exist, create it
         if (error.code === 'PGRST116') {
           console.log('Profile not found, creating...')
+          
+          const email = user?.email || '';
+          const timestamp = Math.floor(Date.now() / 1000);
+          // Gerar username seguro para passar na validação CHECK >= 3 chars
+          const username = `${email.split('@')[0]}_${timestamp}`;
+
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({
               id: userId,
+              username: username,
+              email: email, // Inclui o email no perfil
               name: user?.email?.split('@')[0] || 'User',
-              role: 'admin', // First user gets admin role
+              role: 'admin', // First user gets admin role logic
             })
             .select()
             .single()
@@ -96,13 +104,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
               updatedAt: new Date().toISOString(),
             })
           } else {
-            setProfile(newProfile)
+            setProfile({
+              ...newProfile,
+              // Map avatar_url to avatar if needed, though types.ts usually has avatar
+              avatar: newProfile.avatar_url 
+            })
           }
         } else {
           throw error
         }
       } else {
-        setProfile(data)
+        setProfile({
+          ...data,
+          avatar: data.avatar_url
+        })
       }
     } catch (err) {
       console.error('Error fetching profile:', err)
@@ -164,7 +179,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Create profile in the profiles table
       if (data.user) {
-        const timestamp = Date.now().toString(36);
+        const timestamp = Math.floor(Date.now() / 1000);
         const username = `${email.split('@')[0]}_${timestamp}`;
 
         const { error: profileError } = await supabase
@@ -172,6 +187,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           .upsert({
             id: data.user.id,
             username: username,
+            email: email,
             name: name || email.split('@')[0],
             role: 'client',
           })

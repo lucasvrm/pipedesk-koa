@@ -24,6 +24,7 @@ export interface Deal extends MasterDeal {
     id: string;
     name: string;
     email: string;
+    avatar?: string;
   };
 }
 
@@ -52,7 +53,10 @@ export interface DealUpdate {
 // Helpers
 // ============================================================================
 
-function mapDealFromDB(item: MasterDealDB & { createdByUser?: any }): Deal {
+function mapDealFromDB(item: any): Deal {
+  // Extrai o usuário da relação com profiles
+  const profile = item.createdByUser;
+
   return {
     id: item.id,
     clientName: item.client_name,
@@ -66,7 +70,13 @@ function mapDealFromDB(item: MasterDealDB & { createdByUser?: any }): Deal {
     updatedAt: item.updated_at,
     createdBy: item.created_by,
     deletedAt: item.deleted_at || undefined,
-    createdByUser: item.createdByUser,
+    // Mapeamento corrigido para usar a estrutura da tabela profiles
+    createdByUser: profile ? {
+      id: profile.id,
+      name: profile.name || 'Usuário',
+      email: profile.email || '', // Agora usamos o campo email que adicionamos
+      avatar: profile.avatar_url // Mapeia avatar_url (banco) para avatar (front)
+    } : undefined,
   };
 }
 
@@ -84,7 +94,7 @@ export async function getDeals(): Promise<Deal[]> {
         .from('master_deals')
         .select(`
           *,
-          createdByUser:users!master_deals_created_by_fkey(id, name, email)
+          createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url)
         `)
     ).order('created_at', { ascending: false });
 
@@ -107,7 +117,7 @@ export async function getDeal(dealId: string): Promise<Deal> {
         .from('master_deals')
         .select(`
           *,
-          createdByUser:users!master_deals_created_by_fkey(id, name, email)
+          createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url)
         `)
         .eq('id', dealId)
     ).single();
@@ -140,7 +150,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
       })
       .select(`
         *,
-        createdByUser:users!master_deals_created_by_fkey(id, name, email)
+        createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url)
       `)
       .single();
 
@@ -183,7 +193,7 @@ export async function updateDeal(
       .eq('id', dealId)
       .select(`
         *,
-        createdByUser:users!master_deals_created_by_fkey(id, name, email)
+        createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url)
       `)
       .single();
 
