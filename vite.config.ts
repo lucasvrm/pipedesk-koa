@@ -14,7 +14,6 @@ export default defineConfig({
     tailwindcss(),
     // DO NOT REMOVE
     createIconImportProxy() as PluginOption,
-    sparkPlugin() as PluginOption,
   ],
   server: {
     host: '0.0.0.0',
