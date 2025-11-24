@@ -83,7 +83,7 @@ function App() {
               path="/rbac"
               element={
                 <ProtectedRoute requiredRole={['admin']}>
-                  {profile ? <RBACDemo currentUser={profile} /> : null}
+                  {profile ? <RBACDemo currentUser={profile} /> : <div>Carregando perfil...</div>}
                 </ProtectedRoute>
               }
             />
