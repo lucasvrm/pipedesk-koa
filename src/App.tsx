@@ -17,6 +17,7 @@ const DataRoomView = lazy(() => import('@/components/DataRoomView'))
 const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
+const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
 
 // Loading component
 const PageLoader = () => (
@@ -57,6 +58,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/deals" element={<DealsView />} />
+            <Route path="/deals/comparison" element={<DealComparison />} />
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
             <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
             <Route path="/folders" element={profile ? <FolderBrowser currentUser={profile} onManageFolders={() => {}} /> : null} />
