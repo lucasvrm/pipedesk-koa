@@ -1,22 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './databaseTypes';
 
-// Função auxiliar para garantir que a URL tenha protocolo
+// Função auxiliar para garantir HTTPS
 const ensureProtocol = (url: string | undefined) => {
   if (!url) return '';
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    return `https://${url}`;
+  // Remove espaços acidentais
+  const cleanUrl = url.trim();
+  if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    return `https://${cleanUrl}`;
   }
-  return url;
+  return cleanUrl;
 };
 
-const supabaseUrl = ensureProtocol(import.meta.env.VITE_SUPABASE_URL);
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseUrl = ensureProtocol(rawUrl);
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Log de diagnóstico (mascarado para segurança)
+console.log('[Supabase] Client Init:', {
+  rawUrl: rawUrl ? 'Defined' : 'Missing',
+  processedUrl: supabaseUrl, // Verifique no console se começa com https://
+  hasKey: !!supabaseAnonKey
+});
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  // Em produção, não queremos lançar erro fatal que quebre a página inteira com tela branca,
-  // mas logar o erro é crucial.
-  console.error("FATAL: Supabase URL and Anon Key must be provided in environment variables.");
+  console.error("FATAL: Variáveis de ambiente do Supabase não encontradas.");
 }
 
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
@@ -24,5 +32,18 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
+  },
+  // Configuração de retentativa global
+  global: {
+    fetch: (url, options) => {
+      return fetch(url, {
+        ...options,
+        // Garante que requisições não fiquem pendentes para sempre
+        signal: AbortSignal.timeout(10000) // Timeout de 10 segundos
+      }).catch(err => {
+        console.error('[Supabase] Fetch Error:', err);
+        throw err;
+      });
+    }
   }
 });
