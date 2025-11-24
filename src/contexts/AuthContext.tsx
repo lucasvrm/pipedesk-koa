@@ -31,89 +31,115 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   
-  // Ref para rastrear o ID do perfil carregado sem causar re-renders ou sofrer com closures
   const loadedProfileId = useRef<string | null>(null);
 
-  const fetchProfile = async (userId: string, currentUserEmail?: string) => {
-    // Evita buscar o mesmo perfil múltiplas vezes se já estivermos com ele em memória
+  // Função segura com Timeout para evitar travamento infinito
+  const fetchProfileSafe = async (userId: string, userEmail?: string): Promise<boolean> => {
+    // Se já temos esse perfil carregado, ignora
     if (loadedProfileId.current === userId) {
-        console.log('[Auth] Profile already loaded for:', userId);
-        return;
+        console.log('[Auth] Profile already loaded (cache hit)');
+        return true;
     }
 
     console.log('[Auth] Fetching profile for:', userId);
+
     try {
-      const { data, error } = await supabase
+      // Cria uma promessa de fetch real
+      const fetchPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .single();
+
+      // Cria uma promessa de timeout (5 segundos)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      );
+
+      // Competição: quem terminar primeiro ganha
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       if (error) {
+        // Se não achou perfil, tenta criar (Lógica de auto-fix)
         if (error.code === 'PGRST116') {
-          console.log('[Auth] Profile not found, auto-creating...');
+          console.log('[Auth] Profile missing, auto-creating...');
           const timestamp = Math.floor(Date.now() / 1000);
-          const emailName = currentUserEmail?.split('@')[0] || 'User';
+          const emailName = userEmail?.split('@')[0] || 'User';
           
           const newProfileData = {
               id: userId,
               username: `${emailName}_${timestamp}`,
               name: emailName,
-              email: currentUserEmail,
+              email: userEmail,
               role: 'client'
           };
 
-          const { data: newProfile, error: createError } = await supabase
+          const { data: newProfile } = await supabase
             .from('profiles')
             .insert(newProfileData as any)
             .select()
-            .single()
+            .single();
 
-          if (createError) {
-             console.error('[Auth] Error auto-creating profile:', createError);
-          } else {
-             console.log('[Auth] Profile created successfully');
+          if (newProfile) {
              setProfile({ ...newProfile, avatar: newProfile.avatar_url });
              loadedProfileId.current = userId;
+             return true;
           }
-        } else {
-          console.error('[Auth] Error fetching profile:', error);
         }
-      } else {
-        console.log('[Auth] Profile found');
+        console.error('[Auth] Profile fetch error:', error);
+        return false;
+      } 
+      
+      // Sucesso
+      if (data) {
+        console.log('[Auth] Profile loaded successfully');
         setProfile({ ...data, avatar: data.avatar_url });
         loadedProfileId.current = userId;
+        return true;
       }
+      
+      return false;
+
     } catch (err) {
-      console.error('[Auth] Unexpected error in fetchProfile:', err);
+      console.error('[Auth] Critical error or timeout:', err);
+      return false;
     }
   }
 
   useEffect(() => {
     let mounted = true;
-    console.log('[Auth] Initializing...');
+    console.log('[Auth] Initializing App...');
 
     const initializeAuth = async () => {
       try {
+        // 1. Tenta pegar sessão existente
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (mounted) {
-          if (initialSession) {
-            console.log('[Auth] Session found on init');
-            setSession(initialSession);
-            setUser(initialSession.user);
-            // No init, o loading é true por padrão, então esperamos o perfil
-            await fetchProfile(initialSession.user.id, initialSession.user.email);
-          } else {
-            console.log('[Auth] No session on init');
+        if (mounted && initialSession?.user) {
+          console.log('[Auth] Found existing session. Verifying...');
+          setSession(initialSession);
+          setUser(initialSession.user);
+          
+          // 2. Tenta carregar perfil com o Timeout de segurança
+          const success = await fetchProfileSafe(initialSession.user.id, initialSession.user.email);
+          
+          // 3. SE FALHAR (Timeout ou Erro): A sessão é zumbi/inválida. Matamos ela.
+          if (!success) {
+            console.warn('[Auth] Session appears stale or invalid. Forcing cleanup.');
+            await supabase.auth.signOut(); // <--- O SEGREDO: Limpa o storage automaticamente
+            if (mounted) {
+              setSession(null);
+              setUser(null);
+              setProfile(null);
+            }
           }
         }
       } catch (err) {
-        console.error('[Auth] Init failed:', err);
-        if (mounted) setError(err instanceof Error ? err : new Error('Auth init failed'));
+        console.error('[Auth] Init crashed:', err);
       } finally {
         if (mounted) {
-          console.log('[Auth] Init done, setting loading=false');
+          // SEMPRE destrava a tela, não importa o que aconteça
+          console.log('[Auth] Init finished. Unlocking UI.');
           setLoading(false);
         }
       }
@@ -121,8 +147,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
 
+    // Listener para mudanças em tempo real
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('[Auth] Event:', event);
+      console.log('[Auth] State Change:', event);
       if (!mounted) return;
       
       setSession(newSession);
@@ -130,26 +157,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(newUser);
 
       if (newUser) {
-        // LÓGICA CORRIGIDA:
-        // Não ativamos setLoading(true) aqui para evitar piscar a tela ou travar em loop.
-        // Apenas buscamos o perfil em background se necessário.
-        
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-            // Se o usuário mudou (login com outra conta), limpamos o cache
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            // Se o usuário mudou, invalida cache
             if (loadedProfileId.current !== newUser.id) {
                 loadedProfileId.current = null;
-                setProfile(null);
-                // Aqui sim podemos mostrar loading pois é uma troca de usuário real
-                if (event === 'SIGNED_IN') setLoading(true); 
             }
-            
-            await fetchProfile(newUser.id, newUser.email);
-            
-            if (event === 'SIGNED_IN') setLoading(false);
+            // Background refresh (sem travar a tela se já estiver carregada)
+            await fetchProfileSafe(newUser.id, newUser.email);
         }
       } else if (event === 'SIGNED_OUT') {
         loadedProfileId.current = null;
         setProfile(null);
+        // Garante que loading fique false ao sair
         setLoading(false);
       }
     });
@@ -234,17 +253,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setError(null);
       setLoading(true);
-      loadedProfileId.current = null; // Limpa cache
+      loadedProfileId.current = null;
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      setUser(null);
-      setProfile(null);
-      setSession(null);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to sign out'));
       return false;
     } finally {
+      setUser(null);
+      setProfile(null);
+      setSession(null);
       setLoading(false);
     }
   }
