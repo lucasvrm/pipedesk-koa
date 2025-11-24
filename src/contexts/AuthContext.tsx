@@ -11,7 +11,7 @@ interface AuthContextType {
   error: Error | null
   signInWithMagicLink: (email: string) => Promise<boolean>
   signIn: (email: string, password: string) => Promise<any>
-  signInWithGoogle: () => Promise<void> // <--- NOVA FUNÇÃO
+  signInWithGoogle: () => Promise<void>
   signUp: (email: string, password: string, name?: string) => Promise<any>
   resetPassword: (email: string) => Promise<void>
   signOut: () => Promise<boolean>
@@ -31,45 +31,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    // Verificar se existe um hash de recuperação na URL antes de carregar
-    const handleInitialSession = async () => {
-      setLoading(true)
-      
-      // O Supabase processa o hash automaticamente aqui
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      setSession(session)
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      }
-      
-      setLoading(false)
-    }
-
-    handleInitialSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
-        setProfile(null)
-      }
-      setLoading(false)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  // ... (manter função fetchProfile igual à versão anterior corrigida) ...
-  const fetchProfile = async (userId: string) => {
+  // Função isolada para buscar perfil
+  const fetchProfile = async (userId: string, currentUserEmail?: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -79,35 +42,115 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // Lógica de criação de perfil simplificada para brevidade
-          // Use a lógica completa do passo anterior aqui se necessário
-           console.log('Profile not found, waiting for trigger or creating...')
+          console.log('Profile not found, creating default...')
+          // Fallback para criação segura
+          const timestamp = Math.floor(Date.now() / 1000);
+          const emailName = currentUserEmail?.split('@')[0] || 'User';
+          
+          const newProfileData = {
+              id: userId,
+              username: `${emailName}_${timestamp}`,
+              name: emailName,
+              email: currentUserEmail,
+              role: 'client' // Segurança: Default role
+          };
+
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert(newProfileData as any)
+            .select()
+            .single()
+
+          if (createError) {
+             console.error('Error auto-creating profile:', createError);
+             // Estado mínimo para não travar a UI
+             setProfile({
+               ...newProfileData,
+               role: 'client',
+               createdAt: new Date().toISOString(),
+               updatedAt: new Date().toISOString()
+             } as User);
+          } else {
+             setProfile({ ...newProfile, avatar: newProfile.avatar_url });
+          }
+        } else {
+          console.error('Error fetching profile:', error);
         }
       } else {
-        setProfile({ ...data, avatar: data.avatar_url })
+        setProfile({ ...data, avatar: data.avatar_url });
       }
     } catch (err) {
-      console.error('Error fetching profile:', err)
+      console.error('Unexpected error in fetchProfile:', err);
     }
   }
 
+  useEffect(() => {
+    let mounted = true;
+
+    // Função de inicialização robusta
+    const initializeAuth = async () => {
+      try {
+        // 1. Pega a sessão inicial
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
+          
+          if (initialSession?.user) {
+            await fetchProfile(initialSession.user.id, initialSession.user.email);
+          }
+        }
+      } catch (err) {
+        console.error('Auth initialization failed:', err);
+        if (mounted) setError(err instanceof Error ? err : new Error('Auth init failed'));
+      } finally {
+        if (mounted) setLoading(false); // GARANTE que o loading pare
+      }
+    };
+
+    initializeAuth();
+
+    // 2. Escuta mudanças (Login/Logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      if (!mounted) return;
+      
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+
+      if (newSession?.user) {
+        // Apenas busca o perfil se mudou o usuário ou se ainda não temos perfil
+        setLoading(true); // Breve loading durante troca de estado
+        await fetchProfile(newSession.user.id, newSession.user.email);
+        setLoading(false);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
-      setError(null)
+      setError(null);
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // IMPORTANTE: Redirecionar para a raiz ou dashboard, onde o AuthContext está montado
-          emailRedirectTo: `${window.location.origin}/dashboard`, 
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
-      })
-      if (error) throw error
-      return true
+      });
+      if (error) throw error;
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to send magic link'))
-      return false
+      setError(err instanceof Error ? err : new Error('Failed to send magic link'));
+      return false;
     }
-  }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -147,9 +190,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email,
         password,
         options: {
-            data: {
-                full_name: name // Passa o nome para o metadata do Supabase Auth
-            }
+            data: { full_name: name }
         }
       })
       if (error) throw error
@@ -160,7 +201,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  // ... (resetPassword e signOut iguais) ...
   const resetPassword = async (email: string) => {
     try {
       setError(null)
@@ -177,6 +217,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async (): Promise<boolean> => {
     try {
       setError(null)
+      setLoading(true) // Feedback visual imediato
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       setUser(null)
@@ -186,6 +227,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to sign out'))
       return false
+    } finally {
+      setLoading(false)
     }
   }
 
