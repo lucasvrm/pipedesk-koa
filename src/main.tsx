@@ -13,6 +13,19 @@ import "./main.css"
 import "./styles/theme.css"
 import "./index.css"
 
+// --- CORREÇÃO CRÍTICA: REMOVEDOR DE SERVICE WORKER ---
+// Remove quaisquer service workers antigos (do Spark ou versões anteriores)
+// que possam estar interceptando requisições e travando o app.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      console.log('Unregistering Service Worker:', registration);
+      registration.unregister();
+    }
+  });
+}
+// -----------------------------------------------------
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
