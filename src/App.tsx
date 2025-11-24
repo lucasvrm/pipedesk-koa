@@ -2,7 +2,8 @@ import { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
-import MagicLinkAuth from '@/features/rbac/components/MagicLinkAuth'
+// SUBSTIUIÇÃO: Usar o novo LoginView
+import LoginView from '@/features/rbac/components/LoginView' 
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import { useAuth } from '@/contexts/AuthContext'
 import Profile from '@/pages/Profile'
@@ -40,12 +41,15 @@ const PageLoader = () => (
 function App() {
   const { user, profile } = useAuth()
 
+  // Se o usuário já estiver logado (e houver um hash na URL que o Supabase acabou de processar),
+  // o AuthContext atualizará o 'user' e esta linha fará o redirecionamento.
   return (
     <>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={!user ? <MagicLinkAuth /> : <Navigate to="/dashboard" replace />} />
+          {/* SE O USUÁRIO EXISTIR, redireciona para dashboard. SE NÃO, mostra LoginView */}
+          <Route path="/login" element={!user ? <LoginView /> : <Navigate to="/dashboard" replace />} />
 
           {/* Protected Routes */}
           <Route element={

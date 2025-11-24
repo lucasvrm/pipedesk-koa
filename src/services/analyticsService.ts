@@ -120,8 +120,8 @@ export async function getAnalyticsSummary(
         });
 
         // Team Workload
-        // We need users first
-        const { data: users } = await supabase.from('users').select('id, name, role');
+        // CORREÇÃO CRÍTICA: Mudamos de 'users' para 'profiles'
+        const { data: users } = await supabase.from('profiles').select('id, name, role');
 
         const teamWorkload = (users || [])
             .filter(u => u.role === 'analyst' || u.role === 'admin')
