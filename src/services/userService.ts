@@ -7,14 +7,16 @@ import { UserDB } from '@/lib/databaseTypes';
 // Helpers
 // ============================================================================
 
-function mapUserFromDB(item: UserDB): User {
+function mapUserFromDB(item: any): User {
     return {
         id: item.id,
-        name: item.name,
-        email: item.email,
+        name: item.name || 'Usuário sem nome',
+        email: item.email || '', // Agora usamos a coluna email que adicionamos ao profile
         role: (item.role as any) || 'client',
-        avatar: item.avatar || undefined,
+        // O banco usa avatar_url, o front usa avatar
+        avatar: item.avatar_url || item.avatar || undefined, 
         clientEntity: item.client_entity || undefined,
+        has_completed_onboarding: item.has_completed_onboarding,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
     };
@@ -29,7 +31,7 @@ function mapUserFromDB(item: UserDB): User {
  */
 export async function getUsers(): Promise<User[]> {
     const { data, error } = await supabase
-        .from('users')
+        .from('profiles') // <--- CORRIGIDO: mudado de 'users' para 'profiles'
         .select('*')
         .order('name');
 
@@ -43,7 +45,7 @@ export async function getUsers(): Promise<User[]> {
  */
 export async function getUser(userId: string): Promise<User> {
     const { data, error } = await supabase
-        .from('users')
+        .from('profiles') // <--- CORRIGIDO: mudado de 'users' para 'profiles'
         .select('*')
         .eq('id', userId)
         .single();

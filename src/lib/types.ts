@@ -54,6 +54,13 @@ export interface MasterDeal {
   createdBy: string
   deletedAt?: string
   feePercentage?: number
+  // Campo expandido (join)
+  createdByUser?: {
+    id: string
+    name: string
+    email: string
+    avatar?: string
+  }
 }
 
 export interface PlayerTrack {
@@ -93,8 +100,8 @@ export interface Comment {
   entityType: 'deal' | 'track' | 'task'
   authorId: string
   content: string
-  mentions: string[]
   createdAt: string
+  mentions: string[]
 }
 
 export interface Notification {
