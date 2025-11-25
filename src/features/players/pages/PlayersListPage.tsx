@@ -4,11 +4,12 @@ import { usePlayers, deletePlayer } from '@/services/playerService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Plus, MagnifyingGlass, PencilSimple, Trash, Buildings } from '@phosphor-icons/react'
-import { PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS } from '@/lib/types'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player } from '@/lib/types'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
 
@@ -16,9 +17,14 @@ export default function PlayersListPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const { data: players, isLoading, refetch } = usePlayers()
+  
+  // Estados de Filtro e Paginação
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation() // Evita abrir o detalhe ao clicar em excluir
     if (!profile) return
     if (!confirm('Tem certeza que deseja excluir este player?')) return
 
@@ -31,17 +37,43 @@ export default function PlayersListPage() {
     }
   }
 
-  const filteredPlayers = players?.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.type.toLowerCase().includes(search.toLowerCase())
-  )
+  // 1. Helper para exibir produtos resumidos
+  const getProductSummary = (products: Player['products']) => {
+    if (!products) return '-'
+    const activeCategories = []
+    if (products.credit?.length > 0) activeCategories.push('Crédito')
+    if (products.equity?.length > 0) activeCategories.push('Equity')
+    if (products.barter?.length > 0) activeCategories.push('Permuta')
+    
+    if (activeCategories.length === 0) return <span className="text-muted-foreground">-</span>
+    
+    return activeCategories.join(', ')
+  }
 
   const getRelationshipBadgeVariant = (level: string) => {
     switch (level) {
-      case 'close': return 'default' // Próximo -> Verde/Destaque
+      case 'close': return 'default'
       case 'intermediate': return 'secondary'
       case 'basic': return 'outline'
       default: return 'outline'
+    }
+  }
+
+  // Lógica de Filtragem
+  const filteredPlayers = players?.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.type.toLowerCase().includes(search.toLowerCase())
+  ) || []
+
+  // Lógica de Paginação
+  const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentPlayers = filteredPlayers.slice(startIndex, endIndex)
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
     }
   }
 
@@ -61,80 +93,140 @@ export default function PlayersListPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="relative w-full md:w-96">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input 
               placeholder="Buscar por nome ou tipo..." 
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
               className="pl-10"
             />
           </div>
+          
+          {/* Seletor de Itens por Página */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Itens por página:</span>
+            <Select 
+              value={String(itemsPerPage)} 
+              onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
+        
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">Carregando...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Relacionamento</TableHead>
-                  <TableHead>Website</TableHead>
-                  <TableHead>Atualizado em</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPlayers?.map((player) => (
-                  <TableRow key={player.id}>
-                    <TableCell className="font-medium">
-                        <div className="flex flex-col">
-                            <span>{player.name}</span>
-                            {player.cnpj && <span className="text-xs text-muted-foreground">{player.cnpj}</span>}
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={getRelationshipBadgeVariant(player.relationshipLevel)}>
-                            {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {player.site ? (
-                        <a href={player.site} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
-                          Link
-                        </a>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {formatDate(player.updatedAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`/players/${player.id}`)}>
-                          <PencilSimple />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(player.id)}>
-                          <Trash className="text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredPlayers?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Nenhum player encontrado
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Produtos</TableHead> {/* Nova Coluna */}
+                      <TableHead>Relacionamento</TableHead>
+                      <TableHead>Website</TableHead>
+                      <TableHead>Atualizado em</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentPlayers.map((player) => (
+                      <TableRow 
+                        key={player.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => navigate(`/players/${player.id}`)} // Linha inteira clicável
+                      >
+                        <TableCell className="font-medium">
+                            <div className="flex flex-col">
+                                <span>{player.name}</span>
+                                {player.cnpj && <span className="text-xs text-muted-foreground">{player.cnpj}</span>}
+                            </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {getProductSummary(player.products)}
+                        </TableCell>
+                        <TableCell>
+                            <Badge variant={getRelationshipBadgeVariant(player.relationshipLevel)}>
+                                {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
+                            </Badge>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}> {/* Evita navegar ao clicar no link */}
+                          {player.site ? (
+                            <a href={player.site} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
+                              Link
+                            </a>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {formatDate(player.updatedAt)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => handleDelete(e, player.id)}
+                          >
+                            <Trash />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {currentPlayers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Nenhum player encontrado
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Controles de Paginação */}
+              {filteredPlayers.length > 0 && (
+                <div className="flex items-center justify-between space-x-2 py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredPlayers.length)} de {filteredPlayers.length} players
+                  </div>
+                  <div className="space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <CaretLeft className="mr-2 h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Próximo
+                      <CaretRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

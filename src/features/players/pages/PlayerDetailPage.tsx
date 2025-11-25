@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
+} from '@/components/ui/dialog'
 import { 
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash, 
   Phone, Envelope, Star 
@@ -39,19 +41,22 @@ export default function PlayerDetailPage() {
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
   
+  // Estado do Modal de Contato
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+
   // Estado do Player
   const [formData, setFormData] = useState<Partial<Player>>({
     name: '',
     cnpj: '',
     site: '',
-    type: 'bank', // Default
+    type: 'bank',
     relationshipLevel: 'none',
     gestoraTypes: [],
     products: { credit: [], equity: [], barter: [] },
     description: '',
   })
 
-  // Estado do Novo Contato (Mini form local)
+  // Estado do Novo Contato (Para o Modal)
   const [newContact, setNewContact] = useState({
     name: '',
     role: '',
@@ -70,11 +75,8 @@ export default function PlayerDetailPage() {
     }
   }, [player])
 
-  // Handlers de Produtos (Checkbox Logic)
-  const toggleProduct = (
-    category: 'credit' | 'equity' | 'barter',
-    subtype: string
-  ) => {
+  // Handlers de Produtos
+  const toggleProduct = (category: 'credit' | 'equity' | 'barter', subtype: string) => {
     setFormData(prev => {
       const currentList = prev.products?.[category] || []
       const newList = currentList.includes(subtype as any)
@@ -106,7 +108,6 @@ export default function PlayerDetailPage() {
       if (isNew) {
         const created = await createPlayer(formData, profile.id)
         toast.success('Player criado com sucesso')
-        // Redirecionar para edição para poder adicionar contatos
         navigate(`/players/${created.id}`, { replace: true })
       } else if (id) {
         await updatePlayer(id, formData, profile.id)
@@ -129,6 +130,7 @@ export default function PlayerDetailPage() {
       })
       toast.success('Contato adicionado')
       setNewContact({ name: '', role: '', email: '', phone: '', isPrimary: false })
+      setIsContactModalOpen(false) // Fecha o modal após salvar
     } catch (error) {
       toast.error('Erro ao adicionar contato')
     }
@@ -138,7 +140,7 @@ export default function PlayerDetailPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-5xl pb-24">
-      {/* Header */}
+      {/* Header e Botão Salvar (Topo) */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/players')}>
@@ -156,7 +158,7 @@ export default function PlayerDetailPage() {
         </div>
         <Button onClick={handleSavePlayer} size="lg">
           <FloppyDisk className="mr-2" />
-          Salvar Alterações
+          Salvar
         </Button>
       </div>
 
@@ -266,7 +268,6 @@ export default function PlayerDetailPage() {
               <CardDescription>Selecione os tipos de operações que este player analisa</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              
               {/* Crédito */}
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
@@ -285,9 +286,7 @@ export default function PlayerDetailPage() {
                   ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Equity */}
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
@@ -306,9 +305,7 @@ export default function PlayerDetailPage() {
                   ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Permuta */}
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
@@ -327,9 +324,16 @@ export default function PlayerDetailPage() {
                   ))}
                 </div>
               </div>
-
             </CardContent>
           </Card>
+
+          {/* 2º BOTÃO SALVAR (Rodapé da Coluna Esquerda) */}
+          <div className="flex justify-end">
+            <Button onClick={handleSavePlayer} size="lg" className="w-full md:w-auto">
+              <FloppyDisk className="mr-2" />
+              Salvar Alterações
+            </Button>
+          </div>
         </div>
 
         {/* COLUNA DIREITA: Contatos */}
@@ -349,12 +353,12 @@ export default function PlayerDetailPage() {
               ) : (
                 <>
                   {/* Lista de Contatos */}
-                  <div className="flex-1 space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-2">
+                  <div className="flex-1 space-y-3 mb-6 max-h-[500px] overflow-y-auto pr-2">
                     {player?.contacts?.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
                     )}
                     {player?.contacts?.map(contact => (
-                      <div key={contact.id} className="p-3 rounded-lg border bg-card text-sm relative group">
+                      <div key={contact.id} className="p-3 rounded-lg border bg-card text-sm relative group hover:shadow-sm transition-shadow">
                         <div className="flex justify-between items-start mb-1">
                           <span className="font-semibold flex items-center gap-2">
                             {contact.name}
@@ -374,12 +378,12 @@ export default function PlayerDetailPage() {
                         <div className="text-muted-foreground text-xs mb-2">{contact.role}</div>
                         <div className="space-y-1">
                           {contact.email && (
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Envelope className="h-3 w-3" /> {contact.email}
                             </div>
                           )}
                           {contact.phone && (
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Phone className="h-3 w-3" /> {contact.phone}
                             </div>
                           )}
@@ -390,45 +394,66 @@ export default function PlayerDetailPage() {
 
                   <Separator className="mb-4" />
 
-                  {/* Form de Adicionar Contato */}
-                  <div className="space-y-3 bg-muted/20 p-3 rounded-lg border border-dashed">
-                    <h4 className="text-sm font-medium">Novo Contato</h4>
-                    <Input 
-                      placeholder="Nome" 
-                      value={newContact.name}
-                      onChange={e => setNewContact({...newContact, name: e.target.value})}
-                      className="h-8 text-sm"
-                    />
-                    <Input 
-                      placeholder="Cargo" 
-                      value={newContact.role}
-                      onChange={e => setNewContact({...newContact, role: e.target.value})}
-                      className="h-8 text-sm"
-                    />
-                    <Input 
-                      placeholder="Email" 
-                      value={newContact.email}
-                      onChange={e => setNewContact({...newContact, email: e.target.value})}
-                      className="h-8 text-sm"
-                    />
-                    <Input 
-                      placeholder="Telefone" 
-                      value={newContact.phone}
-                      onChange={e => setNewContact({...newContact, phone: e.target.value})}
-                      className="h-8 text-sm"
-                    />
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="is-primary" 
-                        checked={newContact.isPrimary}
-                        onCheckedChange={(c) => setNewContact({...newContact, isPrimary: !!c})}
-                      />
-                      <Label htmlFor="is-primary" className="text-xs">Contato Principal</Label>
-                    </div>
-                    <Button size="sm" className="w-full" onClick={handleAddContact}>
-                      <Plus className="mr-2" /> Adicionar
-                    </Button>
-                  </div>
+                  {/* Botão e Modal de Novo Contato */}
+                  <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
+                    <DialogTrigger asChild>
+                        <Button size="sm" className="w-full">
+                            <Plus className="mr-2" /> Novo Contato
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Adicionar Contato</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Nome</Label>
+                                <Input 
+                                    placeholder="Nome completo" 
+                                    value={newContact.name}
+                                    onChange={e => setNewContact({...newContact, name: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Cargo</Label>
+                                <Input 
+                                    placeholder="Ex: Analista, Diretor" 
+                                    value={newContact.role}
+                                    onChange={e => setNewContact({...newContact, role: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Email</Label>
+                                <Input 
+                                    placeholder="email@empresa.com" 
+                                    value={newContact.email}
+                                    onChange={e => setNewContact({...newContact, email: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Telefone</Label>
+                                <Input 
+                                    placeholder="(00) 00000-0000" 
+                                    value={newContact.phone}
+                                    onChange={e => setNewContact({...newContact, phone: e.target.value})}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 mt-4">
+                                <Checkbox 
+                                    id="is-primary" 
+                                    checked={newContact.isPrimary}
+                                    onCheckedChange={(c) => setNewContact({...newContact, isPrimary: !!c})}
+                                />
+                                <Label htmlFor="is-primary" className="text-sm cursor-pointer">Definir como Contato Principal</Label>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsContactModalOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleAddContact}>Salvar Contato</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
                 </>
               )}
             </CardContent>
