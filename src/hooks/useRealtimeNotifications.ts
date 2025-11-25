@@ -7,44 +7,39 @@ export function useRealtimeNotifications(userId?: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!userId) {
-        console.log("🚫 [Realtime] Sem userId, ignorando conexão.");
-        return;
-    }
+    if (!userId) return;
 
-    console.log(`🔌 [Realtime] Tentando conectar para o user: ${userId}`);
+    console.log(`🔌 [Realtime] Iniciando modo DEBUG sem filtros...`);
 
     const channel = supabase
-      .channel('realtime-notifications')
+      .channel('global-debug-notifications') // Mudamos o nome do canal
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Escuta INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${userId}`,
+          // REMOVEMOS O FILTRO: filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          console.log('🔔 [Realtime] EVENTO RECEBIDO:', payload);
+          console.log('🔥 [Realtime] EVENTO CAPTURADO (SEM FILTRO):', payload);
           
-          // Tenta disparar o toast imediatamente para teste
-          toast.success("Notificação Recebida!", {
-            description: payload.new.message,
-            duration: 8000, // Duração longa para garantir que você veja
+          // Se capturou, vamos tentar mostrar o toast
+          // (Mesmo que a notificação não seja para você, só para teste)
+          toast.success("Evento Realtime Recebido!", {
+            description: `Tipo: ${payload.eventType}. Olhe o console!`,
+            duration: 5000,
           });
 
+          // Atualiza as listas
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
       )
-      .subscribe((status, err) => {
-        console.log(`📡 [Realtime] Status da Conexão: ${status}`);
-        if (err) {
-            console.error('❌ [Realtime] Erro de conexão:', err);
-        }
+      .subscribe((status) => {
+        console.log(`📡 [Realtime] Status: ${status}`);
       });
 
     return () => {
-      console.log("🔌 [Realtime] Desconectando...");
       supabase.removeChannel(channel);
     };
   }, [userId, queryClient]);
