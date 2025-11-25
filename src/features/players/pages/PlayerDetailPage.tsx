@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,16 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
 } from '@/components/ui/dialog'
-import { 
-  ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash, 
-  Phone, Envelope, Star 
+import {
+  ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
+  Phone, Envelope, Star, PencilSimple, X
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { 
-  Player, 
+import {
+  Player,
   PLAYER_TYPE_LABELS,
   ASSET_MANAGER_TYPE_LABELS,
   AssetManagerType,
@@ -34,17 +34,20 @@ import {
 export default function PlayerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { profile } = useAuth()
+
   const isNew = id === 'new'
-  
-  const { data: player, isLoading } = usePlayer(isNew ? undefined : id)
+  // Se for novo OU se vier da lista com instrução de editar, começa editando
+  const startEditing = isNew || location.state?.startEditing
+  const [isEditing, setIsEditing] = useState(!!startEditing)
+
+  const { data: player, isLoading, refetch } = usePlayer(isNew ? undefined : id)
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
-  
-  // Estado do Modal de Contato
+
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
 
-  // Estado do Player
   const [formData, setFormData] = useState<Partial<Player>>({
     name: '',
     cnpj: '',
@@ -56,7 +59,6 @@ export default function PlayerDetailPage() {
     description: '',
   })
 
-  // Estado do Novo Contato (Para o Modal)
   const [newContact, setNewContact] = useState({
     name: '',
     role: '',
@@ -75,14 +77,13 @@ export default function PlayerDetailPage() {
     }
   }, [player])
 
-  // Handlers de Produtos
   const toggleProduct = (category: 'credit' | 'equity' | 'barter', subtype: string) => {
+    if (!isEditing) return // Bloqueia toggle se não estiver editando
     setFormData(prev => {
       const currentList = prev.products?.[category] || []
       const newList = currentList.includes(subtype as any)
         ? currentList.filter(i => i !== subtype)
         : [...currentList, subtype as any]
-      
       return {
         ...prev,
         products: { ...prev.products, [category]: newList }
@@ -91,6 +92,7 @@ export default function PlayerDetailPage() {
   }
 
   const toggleGestoraType = (type: AssetManagerType) => {
+    if (!isEditing) return
     setFormData(prev => {
       const current = prev.gestoraTypes || []
       const newList = current.includes(type)
@@ -109,13 +111,32 @@ export default function PlayerDetailPage() {
         const created = await createPlayer(formData, profile.id)
         toast.success('Player criado com sucesso')
         navigate(`/players/${created.id}`, { replace: true })
+        setIsEditing(false)
       } else if (id) {
         await updatePlayer(id, formData, profile.id)
         toast.success('Player atualizado')
+        setIsEditing(false) // Sai do modo de edição
+        refetch()
       }
     } catch (error) {
       toast.error('Erro ao salvar')
       console.error(error)
+    }
+  }
+
+  const handleCancel = () => {
+    if (isNew) {
+      navigate('/players')
+    } else {
+      // Reverte as mudanças para o que estava no banco
+      if (player) {
+        setFormData({
+          ...player,
+          products: player.products || { credit: [], equity: [], barter: [] },
+          gestoraTypes: player.gestoraTypes || []
+        })
+      }
+      setIsEditing(false)
     }
   }
 
@@ -130,17 +151,38 @@ export default function PlayerDetailPage() {
       })
       toast.success('Contato adicionado')
       setNewContact({ name: '', role: '', email: '', phone: '', isPrimary: false })
-      setIsContactModalOpen(false) // Fecha o modal após salvar
+      setIsContactModalOpen(false)
     } catch (error) {
       toast.error('Erro ao adicionar contato')
     }
+  }
+
+  // Componente de Ações (Header e Footer)
+  const ActionButtons = () => {
+    if (isEditing) {
+      return (
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleCancel}>
+            <X className="mr-2" /> Cancelar
+          </Button>
+          <Button onClick={handleSavePlayer}>
+            <FloppyDisk className="mr-2" /> Salvar
+          </Button>
+        </div>
+      )
+    }
+    return (
+      <Button onClick={() => setIsEditing(true)}>
+        <PencilSimple className="mr-2" /> Editar
+      </Button>
+    )
   }
 
   if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 
   return (
     <div className="container mx-auto p-6 max-w-5xl pb-24">
-      {/* Header e Botão Salvar (Topo) */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/players')}>
@@ -149,22 +191,19 @@ export default function PlayerDetailPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Buildings className="text-primary" />
-              {isNew ? 'Novo Player' : formData.name}
+              {isNew ? 'Novo Player' : (player?.name || formData.name)}
             </h1>
             <p className="text-muted-foreground">
-              {isNew ? 'Adicione uma nova entidade à base' : `Gerenciando informações de ${formData.name}`}
+              {isNew ? 'Adicione uma nova entidade à base' : `Visualizando informações de ${player?.name}`}
             </p>
           </div>
         </div>
-        <Button onClick={handleSavePlayer} size="lg">
-          <FloppyDisk className="mr-2" />
-          Salvar
-        </Button>
+        <ActionButtons />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* COLUNA ESQUERDA: Dados Cadastrais */}
+
+        {/* COLUNA ESQUERDA: Dados */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -173,36 +212,40 @@ export default function PlayerDetailPage() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label>Nome da Entidade *</Label>
-                <Input 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})}
+                <Input
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  disabled={!isEditing}
                   placeholder="Ex: XP Investimentos"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>CNPJ</Label>
-                <Input 
-                  value={formData.cnpj} 
-                  onChange={e => setFormData({...formData, cnpj: e.target.value})}
+                <Input
+                  value={formData.cnpj}
+                  onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
+                  disabled={!isEditing}
                   placeholder="00.000.000/0000-00"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Site</Label>
-                <Input 
-                  value={formData.site} 
-                  onChange={e => setFormData({...formData, site: e.target.value})}
+                <Input
+                  value={formData.site}
+                  onChange={e => setFormData({ ...formData, site: e.target.value })}
+                  disabled={!isEditing}
                   placeholder="https://..."
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Tipo de Player</Label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={(v: PlayerType) => setFormData({...formData, type: v})}
+                <Select
+                  value={formData.type}
+                  onValueChange={(v: PlayerType) => setFormData({ ...formData, type: v })}
+                  disabled={!isEditing}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -215,9 +258,10 @@ export default function PlayerDetailPage() {
 
               <div className="space-y-2">
                 <Label>Nível de Relacionamento</Label>
-                <Select 
-                  value={formData.relationshipLevel} 
-                  onValueChange={(v: any) => setFormData({...formData, relationshipLevel: v})}
+                <Select
+                  value={formData.relationshipLevel}
+                  onValueChange={(v: any) => setFormData({ ...formData, relationshipLevel: v })}
+                  disabled={!isEditing}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -228,17 +272,17 @@ export default function PlayerDetailPage() {
                 </Select>
               </div>
 
-              {/* Área condicional para Gestoras */}
               {formData.type === 'asset_manager' && (
                 <div className="md:col-span-2 bg-muted/30 p-4 rounded-lg border">
                   <Label className="mb-3 block text-primary font-semibold">Tipos de Fundos sob Gestão</Label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {Object.entries(ASSET_MANAGER_TYPE_LABELS).map(([key, label]) => (
                       <div key={key} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`gestora-${key}`} 
+                        <Checkbox
+                          id={`gestora-${key}`}
                           checked={formData.gestoraTypes?.includes(key as any)}
                           onCheckedChange={() => toggleGestoraType(key as any)}
+                          disabled={!isEditing}
                         />
                         <Label htmlFor={`gestora-${key}`} className="text-sm font-normal cursor-pointer">
                           {label}
@@ -251,9 +295,10 @@ export default function PlayerDetailPage() {
 
               <div className="md:col-span-2 space-y-2">
                 <Label>Observações / Tese</Label>
-                <Textarea 
-                  value={formData.description} 
-                  onChange={e => setFormData({...formData, description: e.target.value})}
+                <Textarea
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  disabled={!isEditing}
                   className="h-24"
                   placeholder="Detalhes adicionais sobre o player..."
                 />
@@ -261,78 +306,52 @@ export default function PlayerDetailPage() {
             </CardContent>
           </Card>
 
-          {/* PRODUTOS E SUBTIPOS */}
+          {/* PRODUTOS */}
           <Card>
             <CardHeader>
               <CardTitle>Produtos & Teses</CardTitle>
-              <CardDescription>Selecione os tipos de operações que este player analisa</CardDescription>
+              <CardDescription>Tipos de operações que este player analisa</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Crédito */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Crédito
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {Object.entries(CREDIT_SUBTYPE_LABELS).map(([key, label]) => (
-                    <div key={key} className="flex items-center space-x-2 bg-slate-50 p-2 rounded border border-transparent hover:border-border">
-                      <Checkbox 
-                        id={`credit-${key}`}
-                        checked={formData.products?.credit?.includes(key as any)}
-                        onCheckedChange={() => toggleProduct('credit', key)}
-                      />
-                      <Label htmlFor={`credit-${key}`} className="text-xs cursor-pointer">{label}</Label>
+              {['credit', 'equity', 'barter'].map((category) => {
+                const labels = category === 'credit' ? CREDIT_SUBTYPE_LABELS
+                  : category === 'equity' ? EQUITY_SUBTYPE_LABELS
+                    : BARTER_SUBTYPE_LABELS
+                const color = category === 'credit' ? 'bg-blue-500'
+                  : category === 'equity' ? 'bg-green-500'
+                    : 'bg-purple-500'
+                const title = category === 'credit' ? 'Crédito'
+                  : category === 'equity' ? 'Equity'
+                    : 'Permuta'
+
+                return (
+                  <div key={category}>
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
+                      <div className={`w-2 h-2 rounded-full ${color}`} /> {title}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {Object.entries(labels).map(([key, label]) => (
+                        <div key={key} className={`flex items-center space-x-2 p-2 rounded border border-transparent ${isEditing ? 'bg-slate-50 hover:border-border' : 'opacity-80'}`}>
+                          <Checkbox
+                            id={`${category}-${key}`}
+                            checked={formData.products?.[category as any]?.includes(key as any)}
+                            onCheckedChange={() => toggleProduct(category as any, key)}
+                            disabled={!isEditing}
+                          />
+                          <Label htmlFor={`${category}-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-              <Separator />
-              {/* Equity */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
-                  <div className="w-2 h-2 rounded-full bg-green-500" /> Equity
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {Object.entries(EQUITY_SUBTYPE_LABELS).map(([key, label]) => (
-                    <div key={key} className="flex items-center space-x-2 bg-slate-50 p-2 rounded border border-transparent hover:border-border">
-                      <Checkbox 
-                        id={`equity-${key}`}
-                        checked={formData.products?.equity?.includes(key as any)}
-                        onCheckedChange={() => toggleProduct('equity', key)}
-                      />
-                      <Label htmlFor={`equity-${key}`} className="text-xs cursor-pointer">{label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <Separator />
-              {/* Permuta */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" /> Permuta
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {Object.entries(BARTER_SUBTYPE_LABELS).map(([key, label]) => (
-                    <div key={key} className="flex items-center space-x-2 bg-slate-50 p-2 rounded border border-transparent hover:border-border">
-                      <Checkbox 
-                        id={`barter-${key}`}
-                        checked={formData.products?.barter?.includes(key as any)}
-                        onCheckedChange={() => toggleProduct('barter', key)}
-                      />
-                      <Label htmlFor={`barter-${key}`} className="text-xs cursor-pointer">{label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    {category !== 'barter' && <Separator className="mt-6" />}
+                  </div>
+                )
+              })}
             </CardContent>
           </Card>
 
-          {/* 2º BOTÃO SALVAR (Rodapé da Coluna Esquerda) */}
+          {/* Ações Rodapé Coluna Esquerda */}
           <div className="flex justify-end">
-            <Button onClick={handleSavePlayer} size="lg" className="w-full md:w-auto">
-              <FloppyDisk className="mr-2" />
-              Salvar Alterações
-            </Button>
+            <ActionButtons />
           </div>
         </div>
 
@@ -348,109 +367,114 @@ export default function PlayerDetailPage() {
             <CardContent className="flex-1 flex flex-col">
               {isNew ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  Salve o player para adicionar contatos.
+                  Salve o player primeiro para gerenciar contatos.
                 </div>
               ) : (
                 <>
                   {/* Lista de Contatos */}
                   <div className="flex-1 space-y-3 mb-6 max-h-[500px] overflow-y-auto pr-2">
-                    {player?.contacts?.length === 0 && (
+                    {player?.contacts?.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
+                    ) : (
+                      player?.contacts?.map(contact => (
+                        <div key={contact.id} className="p-3 rounded-lg border bg-card text-sm relative group hover:shadow-sm transition-shadow">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-semibold flex items-center gap-2">
+                              {contact.name}
+                              {contact.isPrimary && <Star weight="fill" className="text-yellow-500 h-3 w-3" title="Principal" />}
+                            </span>
+                            {isEditing && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100"
+                                onClick={() => {
+                                  if (confirm('Excluir contato?')) deleteContactMutation.mutate(contact.id)
+                                }}
+                              >
+                                <Trash size={14} />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="text-muted-foreground text-xs mb-2">{contact.role}</div>
+                          <div className="space-y-1">
+                            {contact.email && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Envelope className="h-3 w-3" /> {contact.email}
+                              </div>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Phone className="h-3 w-3" /> {contact.phone}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
                     )}
-                    {player?.contacts?.map(contact => (
-                      <div key={contact.id} className="p-3 rounded-lg border bg-card text-sm relative group hover:shadow-sm transition-shadow">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="font-semibold flex items-center gap-2">
-                            {contact.name}
-                            {contact.isPrimary && <Star weight="fill" className="text-yellow-500 h-3 w-3" title="Principal" />}
-                          </span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
-                            onClick={() => {
-                              if(confirm('Excluir contato?')) deleteContactMutation.mutate(contact.id)
-                            }}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        </div>
-                        <div className="text-muted-foreground text-xs mb-2">{contact.role}</div>
-                        <div className="space-y-1">
-                          {contact.email && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Envelope className="h-3 w-3" /> {contact.email}
-                            </div>
-                          )}
-                          {contact.phone && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Phone className="h-3 w-3" /> {contact.phone}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
                   </div>
 
                   <Separator className="mb-4" />
 
-                  {/* Botão e Modal de Novo Contato */}
+                  {/* Botão Novo Contato (Abaixo da lista) */}
                   <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
                     <DialogTrigger asChild>
-                        <Button size="sm" className="w-full">
-                            <Plus className="mr-2" /> Novo Contato
-                        </Button>
+                      <Button size="sm" className="w-full" variant="outline">
+                        <Plus className="mr-2" /> Novo Contato
+                      </Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Adicionar Contato</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label>Nome</Label>
-                                <Input 
-                                    placeholder="Nome completo" 
-                                    value={newContact.name}
-                                    onChange={e => setNewContact({...newContact, name: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Cargo</Label>
-                                <Input 
-                                    placeholder="Ex: Analista, Diretor" 
-                                    value={newContact.role}
-                                    onChange={e => setNewContact({...newContact, role: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Email</Label>
-                                <Input 
-                                    placeholder="email@empresa.com" 
-                                    value={newContact.email}
-                                    onChange={e => setNewContact({...newContact, email: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Telefone</Label>
-                                <Input 
-                                    placeholder="(00) 00000-0000" 
-                                    value={newContact.phone}
-                                    onChange={e => setNewContact({...newContact, phone: e.target.value})}
-                                />
-                            </div>
-                            <div className="flex items-center gap-2 mt-4">
-                                <Checkbox 
-                                    id="is-primary" 
-                                    checked={newContact.isPrimary}
-                                    onCheckedChange={(c) => setNewContact({...newContact, isPrimary: !!c})}
-                                />
-                                <Label htmlFor="is-primary" className="text-sm cursor-pointer">Definir como Contato Principal</Label>
-                            </div>
+                      <DialogHeader>
+                        <DialogTitle>Adicionar Contato</DialogTitle>
+                        <DialogDescription>Preencha as informações do novo contato para este player.</DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label>Nome</Label>
+                          <Input
+                            placeholder="Nome completo"
+                            value={newContact.name}
+                            onChange={e => setNewContact({ ...newContact, name: e.target.value })}
+                          />
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsContactModalOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleAddContact}>Salvar Contato</Button>
-                        </DialogFooter>
+                        <div className="space-y-2">
+                          <Label>Cargo</Label>
+                          <Input
+                            placeholder="Ex: Analista, Diretor"
+                            value={newContact.role}
+                            onChange={e => setNewContact({ ...newContact, role: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email</Label>
+                          <Input
+                            placeholder="email@empresa.com"
+                            value={newContact.email}
+                            onChange={e => setNewContact({ ...newContact, email: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Telefone</Label>
+                          <Input
+                            placeholder="(00) 00000-0000"
+                            value={newContact.phone}
+                            onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 mt-4">
+                          <Checkbox
+                            id="is-primary"
+                            checked={newContact.isPrimary}
+                            onCheckedChange={(c) => setNewContact({ ...newContact, isPrimary: !!c })}
+                          />
+                          <Label htmlFor="is-primary" className="text-sm cursor-pointer">Definir como Contato Principal</Label>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsContactModalOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleAddContact}>Salvar Contato</Button>
+                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
 

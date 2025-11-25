@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, PencilSimple } from '@phosphor-icons/react'
 import { PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player } from '@/lib/types'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
@@ -24,7 +24,7 @@ export default function PlayersListPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation() // Evita abrir o detalhe ao clicar em excluir
+    e.stopPropagation()
     if (!profile) return
     if (!confirm('Tem certeza que deseja excluir este player?')) return
 
@@ -37,7 +37,7 @@ export default function PlayersListPage() {
     }
   }
 
-  // 1. Helper para exibir produtos resumidos
+  // Helper para exibir produtos resumidos
   const getProductSummary = (products: Player['products']) => {
     if (!products) return '-'
     const activeCategories = []
@@ -104,7 +104,6 @@ export default function PlayersListPage() {
             />
           </div>
           
-          {/* Seletor de Itens por Página */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Itens por página:</span>
             <Select 
@@ -134,7 +133,7 @@ export default function PlayersListPage() {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>Tipo</TableHead>
-                      <TableHead>Produtos</TableHead> {/* Nova Coluna */}
+                      <TableHead>Produtos</TableHead>
                       <TableHead>Relacionamento</TableHead>
                       <TableHead>Website</TableHead>
                       <TableHead>Atualizado em</TableHead>
@@ -146,7 +145,8 @@ export default function PlayersListPage() {
                       <TableRow 
                         key={player.id} 
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/players/${player.id}`)} // Linha inteira clicável
+                        // Clique na linha abre visualização (editMode: false é o padrão)
+                        onClick={() => navigate(`/players/${player.id}`)} 
                       >
                         <TableCell className="font-medium">
                             <div className="flex flex-col">
@@ -165,7 +165,7 @@ export default function PlayersListPage() {
                                 {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
                             </Badge>
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}> {/* Evita navegar ao clicar no link */}
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           {player.site ? (
                             <a href={player.site} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
                               Link
@@ -176,14 +176,29 @@ export default function PlayersListPage() {
                           {formatDate(player.updatedAt)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => handleDelete(e, player.id)}
-                          >
-                            <Trash />
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            {/* Botão de Edição Rápida (Lápis) */}
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Editar"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Navega passando estado para forçar modo de edição
+                                navigate(`/players/${player.id}`, { state: { startEditing: true } });
+                              }}
+                            >
+                              <PencilSimple />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => handleDelete(e, player.id)}
+                            >
+                              <Trash />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -198,7 +213,6 @@ export default function PlayersListPage() {
                 </Table>
               </div>
 
-              {/* Controles de Paginação */}
               {filteredPlayers.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
