@@ -2,12 +2,7 @@ import { useState } from 'react'
 import { X, MagnifyingGlass, Question } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+// REMOVIDO: Dialog imports, pois agora é uma página
 import { ScrollArea } from '@/components/ui/scroll-area'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -167,12 +162,10 @@ O PipeDesk mantém você informado sobre eventos importantes através da central
   },
 ]
 
-interface HelpCenterProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+// REMOVIDO: Interface de Props (não necessária para a versão página)
 
-export function HelpCenter({ open, onOpenChange }: HelpCenterProps) {
+// MUDANÇA: Export Default para corrigir o erro de build
+export default function HelpCenter() {
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -185,128 +178,132 @@ export function HelpCenter({ open, onOpenChange }: HelpCenterProps) {
   const categories = Array.from(new Set(helpArticles.map((a) => a.category)))
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] p-0">
-        <div className="flex h-full">
-          {/* Sidebar */}
-          <div className="w-80 border-r border-border bg-muted/30">
-            <DialogHeader className="p-6 pb-4 border-b border-border">
-              <DialogTitle className="flex items-center gap-2">
-                <Question size={24} weight="duotone" />
-                Central de Ajuda
-              </DialogTitle>
-            </DialogHeader>
+    // MUDANÇA: Substituído DialogContent por div normal com borda e altura ajustada
+    <div className="flex h-[calc(100vh-12rem)] w-full border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+      {/* Sidebar */}
+      <div className="w-80 border-r border-border bg-muted/30 flex flex-col">
+        <div className="p-6 pb-4 border-b border-border">
+          <h3 className="flex items-center gap-2 font-semibold text-lg">
+            <Question size={24} weight="duotone" className="text-primary" />
+            Tópicos
+          </h3>
+        </div>
 
-            <div className="p-4">
-              <div className="relative">
-                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input
-                  placeholder="Buscar artigos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+        <div className="p-4">
+          <div className="relative">
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <Input
+              placeholder="Buscar artigos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-background"
+            />
+          </div>
+        </div>
 
-            <ScrollArea className="h-[calc(80vh-140px)]">
-              <div className="px-4 pb-4">
-                {searchQuery === '' ? (
-                  // Group by category
-                  categories.map((category) => (
-                    <div key={category} className="mb-4">
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-                        {category}
-                      </h4>
-                      <div className="space-y-1">
-                        {helpArticles
-                          .filter((a) => a.category === category)
-                          .map((article) => (
-                            <Button
-                              key={article.id}
-                              variant={selectedArticle?.id === article.id ? 'secondary' : 'ghost'}
-                              className="w-full justify-start text-left h-auto py-2 px-3"
-                              onClick={() => setSelectedArticle(article)}
-                            >
-                              <span className="text-sm line-clamp-2">{article.title}</span>
-                            </Button>
-                          ))}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  // Search results
+        <ScrollArea className="flex-1">
+          <div className="px-4 pb-4">
+            {searchQuery === '' ? (
+              // Group by category
+              categories.map((category) => (
+                <div key={category} className="mb-4">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+                    {category}
+                  </h4>
                   <div className="space-y-1">
-                    {filteredArticles.length > 0 ? (
-                      filteredArticles.map((article) => (
+                    {helpArticles
+                      .filter((a) => a.category === category)
+                      .map((article) => (
                         <Button
                           key={article.id}
                           variant={selectedArticle?.id === article.id ? 'secondary' : 'ghost'}
                           className="w-full justify-start text-left h-auto py-2 px-3"
                           onClick={() => setSelectedArticle(article)}
                         >
-                          <div>
-                            <div className="text-sm font-medium line-clamp-2">{article.title}</div>
-                            <div className="text-xs text-muted-foreground">{article.category}</div>
-                          </div>
+                          <span className="text-sm line-clamp-2">{article.title}</span>
                         </Button>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        Nenhum artigo encontrado
-                      </p>
-                    )}
+                      ))}
                   </div>
+                </div>
+              ))
+            ) : (
+              // Search results
+              <div className="space-y-1">
+                {filteredArticles.length > 0 ? (
+                  filteredArticles.map((article) => (
+                    <Button
+                      key={article.id}
+                      variant={selectedArticle?.id === article.id ? 'secondary' : 'ghost'}
+                      className="w-full justify-start text-left h-auto py-2 px-3"
+                      onClick={() => setSelectedArticle(article)}
+                    >
+                      <div>
+                        <div className="text-sm font-medium line-clamp-2">{article.title}</div>
+                        <div className="text-xs text-muted-foreground">{article.category}</div>
+                      </div>
+                    </Button>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhum artigo encontrado
+                  </p>
                 )}
               </div>
-            </ScrollArea>
+            )}
           </div>
+        </ScrollArea>
+      </div>
 
-          {/* Content */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              {selectedArticle ? (
-                <>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">{selectedArticle.category}</div>
-                    <h2 className="text-lg font-semibold">{selectedArticle.title}</h2>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedArticle(null)}
-                  >
-                    <X />
-                  </Button>
-                </>
-              ) : (
-                <div className="text-muted-foreground">
-                  Selecione um artigo na barra lateral
-                </div>
-              )}
+      {/* Content */}
+      <div className="flex-1 flex flex-col bg-background">
+        <div className="p-6 border-b border-border flex items-center justify-between bg-card">
+          {selectedArticle ? (
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wider">
+                {selectedArticle.category}
+              </div>
+              <h2 className="text-xl font-bold text-foreground">{selectedArticle.title}</h2>
             </div>
-
-            <ScrollArea className="flex-1">
-              {selectedArticle ? (
-                <div className="p-6 prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {selectedArticle.content}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <Question size={64} weight="duotone" className="text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Bem-vindo à Central de Ajuda</h3>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    Escolha um tópico na barra lateral para começar ou use a busca para encontrar
-                    respostas específicas.
-                  </p>
-                </div>
-              )}
-            </ScrollArea>
-          </div>
+          ) : (
+            <div className="text-muted-foreground">
+              Selecione um artigo na barra lateral
+            </div>
+          )}
+          {selectedArticle && (
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedArticle(null)}
+                title="Fechar artigo"
+            >
+                <X />
+            </Button>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <ScrollArea className="flex-1">
+          {selectedArticle ? (
+            <div className="p-8 max-w-3xl mx-auto">
+              <article className="prose prose-slate dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {selectedArticle.content}
+                </ReactMarkdown>
+              </article>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <div className="bg-primary/10 p-4 rounded-full mb-4">
+                <Question size={48} weight="duotone" className="text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Bem-vindo à Central de Ajuda</h3>
+              <p className="text-muted-foreground max-w-md">
+                Escolha um tópico na barra lateral para começar ou use a busca para encontrar
+                respostas específicas sobre o PipeDesk.
+              </p>
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    </div>
   )
 }
