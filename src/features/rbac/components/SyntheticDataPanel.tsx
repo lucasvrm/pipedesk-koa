@@ -7,7 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { syntheticDataService } from '@/services/syntheticDataService';
-import { Trash, Database, Plus, RefreshCw, Users, Briefcase } from '@phosphor-icons/react';
+// CORREÇÃO: Trocado RefreshCw por ArrowsClockwise
+import { Trash, Database, Plus, ArrowsClockwise, Users, Briefcase } from '@phosphor-icons/react';
 
 export default function SyntheticDataPanel() {
   const [loading, setLoading] = useState(false);
@@ -186,7 +187,8 @@ export default function SyntheticDataPanel() {
             disabled={loading}
             size="sm"
         >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {/* CORREÇÃO APLICADA AQUI TAMBÉM NO ÍCONE */}
+            <ArrowsClockwise className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
         </Button>
 

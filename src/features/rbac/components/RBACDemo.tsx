@@ -12,12 +12,12 @@ import {
   FileText,
   Link as LinkIcon,
   UserPlus,
-  Database // Ícone necessário para o painel
+  Database // Novo ícone
 } from '@phosphor-icons/react'
-
-// --- IMPORTAÇÃO DO PAINEL ---
+// IMPORTS NOVOS NECESSÁRIOS
 import SyntheticDataPanel from './SyntheticDataPanel'
-// ----------------------------
+import UserManagementDialog from './UserManagementDialog' 
+import MagicLinksDialog from './MagicLinksDialog'
 
 interface RBACDemoProps {
   currentUser: User
@@ -56,9 +56,9 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
         </p>
       </div>
 
-      {/* --- SEÇÃO DE DADOS SINTÉTICOS (INTEGRADA) --- */}
+      {/* CARD DE DADOS SINTÉTICOS (NOVO) */}
       {currentUser.role === 'admin' && (
-        <div className="mt-8 mb-8 border rounded-lg p-4 bg-slate-50/50">
+        <div className="mt-8 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Database className="w-6 h-6 text-primary" />
             <h3 className="text-xl font-semibold">Ambiente de Testes</h3>
@@ -66,7 +66,6 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           <SyntheticDataPanel />
         </div>
       )}
-      {/* --------------------------------------------- */}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* SEU PERFIL */}
@@ -105,28 +104,24 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           </CardContent>
         </Card>
 
-        {/* INFO ADICIONAL PARA ADMINS */}
+        {/* FERRAMENTAS DE ADMINISTRAÇÃO */}
         {currentUser.role === 'admin' && (
           <Card>
             <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-              <CardDescription>Visão geral técnica</CardDescription>
+              <CardTitle>Ferramentas de Gestão</CardTitle>
+              <CardDescription>Ações rápidas administrativas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="flex items-center gap-2 mb-2 text-success">
-                  <ShieldCheck size={24} />
-                  <span className="font-medium">Sistema Operacional</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Todas as permissões e políticas RLS estão ativas.
-                </p>
+              <div className="grid grid-cols-1 gap-3">
+                <UserManagementDialog />
+                <MagicLinksDialog />
               </div>
             </CardContent>
           </Card>
         )}
       </div>
 
+      {/* PERMISSÕES (DETALHE TÉCNICO) */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Suas Permissões</CardTitle>
@@ -165,6 +160,32 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           </div>
         </CardContent>
       </Card>
+
+      {currentUser.role === 'client' && (
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <EyeSlash />
+              Proteção de Dados
+            </CardTitle>
+            <CardDescription className="text-blue-600/80 dark:text-blue-400/80">
+              Como cliente externo, informações sensíveis são anonimizadas
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-blue-800 dark:text-blue-200">
+              <p className="text-sm">
+                <strong>Nomes de Players:</strong> Você verá identificadores genéricos
+                (Player A, Player B, etc.) em vez de nomes reais para proteger informações
+                competitivas.
+              </p>
+              <p className="text-sm opacity-80">
+                Exemplo: "JPMorgan Chase" → "Player A"
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
