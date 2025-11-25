@@ -1,7 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
+import { useNavigate } from 'react-router-dom'
 import { 
   ShieldCheck, 
   Eye, 
@@ -12,18 +14,19 @@ import {
   FileText,
   Link as LinkIcon,
   UserPlus,
-  Database // Ícone necessário para o painel
+  Database // Necessário para o ícone do painel de dados
 } from '@phosphor-icons/react'
 
-// --- IMPORTAÇÃO DO PAINEL ---
+// IMPORTAÇÃO DO PAINEL DE DADOS SINTÉTICOS
 import SyntheticDataPanel from './SyntheticDataPanel'
-// ----------------------------
 
 interface RBACDemoProps {
   currentUser: User
 }
 
 export default function RBACDemo({ currentUser }: RBACDemoProps) {
+  const navigate = useNavigate()
+
   const permissions = [
     { key: 'VIEW_ALL_DEALS', label: 'Ver todos os negócios', icon: Eye },
     { key: 'CREATE_DEAL', label: 'Criar negócios', icon: UserPlus },
@@ -105,22 +108,27 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           </CardContent>
         </Card>
 
-        {/* INFO ADICIONAL PARA ADMINS */}
+        {/* FERRAMENTAS DE ADMINISTRAÇÃO - Atualizado para usar navegação */}
         {currentUser.role === 'admin' && (
           <Card>
             <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-              <CardDescription>Visão geral técnica</CardDescription>
+              <CardTitle>Ferramentas de Gestão</CardTitle>
+              <CardDescription>Ações rápidas administrativas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="flex items-center gap-2 mb-2 text-success">
-                  <ShieldCheck size={24} />
-                  <span className="font-medium">Sistema Operacional</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Todas as permissões e políticas RLS estão ativas.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button variant="outline" onClick={() => navigate('/admin/users')}>
+                  <Users className="mr-2" /> Gerenciar Usuários
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/admin/integrations/google')}>
+                  <LinkIcon className="mr-2" /> Google Workspace
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/settings/custom-fields')}>
+                  <FileText className="mr-2" /> Campos Customizados
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/settings/phase-validation')}>
+                  <ShieldCheck className="mr-2" /> Validação de Fases
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -165,6 +173,32 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           </div>
         </CardContent>
       </Card>
+
+      {currentUser.role === 'client' && (
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <EyeSlash />
+              Proteção de Dados
+            </CardTitle>
+            <CardDescription className="text-blue-600/80 dark:text-blue-400/80">
+              Como cliente externo, informações sensíveis são anonimizadas
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-blue-800 dark:text-blue-200">
+              <p className="text-sm">
+                <strong>Nomes de Players:</strong> Você verá identificadores genéricos
+                (Player A, Player B, etc.) em vez de nomes reais para proteger informações
+                competitivas.
+              </p>
+              <p className="text-sm opacity-80">
+                Exemplo: "JPMorgan Chase" → "Player A"
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
