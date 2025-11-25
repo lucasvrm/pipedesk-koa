@@ -37,6 +37,9 @@ export interface DealInput {
   status?: DealStatus;
   feePercentage?: number;
   createdBy: string;
+  // NOVOS CAMPOS PARA INTEGRAÇÃO COM PLAYER
+  playerId?: string;
+  initialStage?: string; 
 }
 
 export interface DealUpdate {
@@ -70,12 +73,12 @@ function mapDealFromDB(item: any): Deal {
     updatedAt: item.updated_at,
     createdBy: item.created_by,
     deletedAt: item.deleted_at || undefined,
-    // Mapeamento corrigido para usar a estrutura da tabela profiles
+    // Mapeamento para usar a estrutura da tabela profiles
     createdByUser: profile ? {
       id: profile.id,
       name: profile.name || 'Usuário',
-      email: profile.email || '', // Agora usamos o campo email que adicionamos
-      avatar: profile.avatar_url // Mapeia avatar_url (banco) para avatar (front)
+      email: profile.email || '', 
+      avatar: profile.avatar_url 
     } : undefined,
   };
 }
@@ -132,11 +135,12 @@ export async function getDeal(dealId: string): Promise<Deal> {
 }
 
 /**
- * Create a new deal
+ * Create a new deal (and optionally a Player Track)
  */
 export async function createDeal(deal: DealInput): Promise<Deal> {
   try {
-    const { data, error } = await supabase
+    // 1. Cria o Master Deal
+    const { data: masterDealData, error: dealError } = await supabase
       .from('master_deals')
       .insert({
         client_name: deal.clientName,
@@ -154,9 +158,37 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
       `)
       .single();
 
-    if (error) throw error;
+    if (dealError) throw dealError;
 
-    return mapDealFromDB(data);
+    // 2. LÓGICA NOVA: Se houver um Player selecionado, cria o Track
+    if (deal.playerId) {
+      try {
+        // Busca info do player para garantir integridade (nome)
+        const { data: player } = await supabase
+          .from("players")
+          .select("name")
+          .eq("id", deal.playerId)
+          .single();
+
+        if (player) {
+          await supabase.from("player_tracks").insert({
+            master_deal_id: masterDealData.id,
+            player_id: deal.playerId,
+            player_name: player.name, // Fallback legado
+            track_volume: deal.volume, // Assume mesmo volume inicial
+            current_stage: deal.initialStage || 'nda', // Usa a fase passada ou NDA
+            status: 'active',
+            probability: 10,
+            responsibles: [deal.createdBy]
+          });
+        }
+      } catch (trackError) {
+        console.error("Master Deal criado, mas erro ao criar Track:", trackError);
+        // Não lançamos erro aqui para não invalidar o Deal já criado
+      }
+    }
+
+    return mapDealFromDB(masterDealData);
   } catch (error) {
     console.error('Error creating deal:', error);
     throw error;
@@ -258,6 +290,8 @@ export function useCreateDeal() {
     mutationFn: createDeal,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
+      // Invalida também os tracks para atualizar listas que dependam disso
+      queryClient.invalidateQueries({ queryKey: ['player-tracks'] }); 
     },
   });
 }
