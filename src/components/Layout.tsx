@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
@@ -42,19 +42,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
-// Dialogs
+// Dialogs (Mantidos apenas para ações rápidas ou não migrados ainda)
 import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
-import UserManagementDialog from '@/features/rbac/components/UserManagementDialog'
-import GoogleIntegrationDialog from '@/components/GoogleIntegrationDialog'
-import CustomFieldsManager from '@/components/CustomFieldsManager'
-import FolderManager from '@/components/FolderManager'
-import PhaseValidationManager from '@/components/PhaseValidationManager'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
-import { HelpCenter } from '@/components/HelpCenter'
 import GlobalSearch from '@/components/GlobalSearch'
 import InboxPanel from '@/features/inbox/components/InboxPanel'
-import { useState } from 'react'
 import { SLAMonitoringService } from '@/components/SLAMonitoringService'
 import { OnboardingTour } from '@/components/OnboardingTour'
 
@@ -68,22 +61,16 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Dialog States
+  // Dialog States (Apenas para os que sobraram)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
-  const [userManagementOpen, setUserManagementOpen] = useState(false)
-  const [googleIntegrationOpen, setGoogleIntegrationOpen] = useState(false)
-  const [customFieldsOpen, setCustomFieldsOpen] = useState(false)
-  const [folderManagerOpen, setFolderManagerOpen] = useState(false)
-  const [phaseValidationOpen, setPhaseValidationOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [helpCenterOpen, setHelpCenterOpen] = useState(false)
   const [pipelineSettingsOpen, setPipelineSettingsOpen] = useState(false)
   const [slaConfigOpen, setSlaConfigOpen] = useState(false)
   const [compactMode, setCompactMode] = useState(false)
 
   const currentUser = profile
-  const unreadCount = 0 // Placeholder until notifications migration
+  const unreadCount = 0 
 
   const handleSignOut = async () => {
     const success = await authSignOut()
@@ -125,7 +112,8 @@ export function Layout({ children }: LayoutProps) {
                   Dashboard
                 </Link>
               </Button>
-              <Button
+              {/* ... Outros links de navegação mantidos ... */}
+               <Button
                 variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild
@@ -269,30 +257,34 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                
+                {/* --- NOVAS ROTAS DE ADMINISTRAÇÃO --- */}
                 {canManageUsers && (
-                  <DropdownMenuItem onClick={() => setUserManagementOpen(true)}>
+                  <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                     <Users className="mr-2" />
                     Gerenciar Usuários
                   </DropdownMenuItem>
                 )}
                 {canManageIntegrations && (
-                  <DropdownMenuItem onClick={() => setGoogleIntegrationOpen(true)}>
+                  <DropdownMenuItem onClick={() => navigate('/admin/integrations/google')}>
                     <GoogleLogo className="mr-2" />
                     Google Workspace
                   </DropdownMenuItem>
                 )}
                 {canManageSettings && (
-                  <DropdownMenuItem onClick={() => setCustomFieldsOpen(true)}>
+                  <DropdownMenuItem onClick={() => navigate('/settings/custom-fields')}>
                     <Gear className="mr-2" />
                     Campos Customizados
                   </DropdownMenuItem>
                 )}
                 {canManageSettings && (
-                  <DropdownMenuItem onClick={() => setPhaseValidationOpen(true)}>
+                  <DropdownMenuItem onClick={() => navigate('/settings/phase-validation')}>
                     <GitBranch className="mr-2" />
                     Validação de Fases
                   </DropdownMenuItem>
                 )}
+                
+                {/* Mantido como Modal por enquanto pois não foi migrado */}
                 {canManageSettings && (
                   <DropdownMenuItem onClick={() => setPipelineSettingsOpen(true)}>
                     <FlowArrow className="mr-2" />
@@ -305,15 +297,18 @@ export function Layout({ children }: LayoutProps) {
                     Configurar SLA
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setFolderManagerOpen(true)}>
+                
+                <DropdownMenuItem onClick={() => navigate('/folders/manage')}>
                   <FolderOpen className="mr-2" />
                   Gerenciar Pastas
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setHelpCenterOpen(true)}>
+                <DropdownMenuItem onClick={() => navigate('/help')}>
                   <Question className="mr-2" />
                   Central de Ajuda
                 </DropdownMenuItem>
+                {/* ------------------------------------ */}
+
                 <DropdownMenuSeparator />
                 <div className="px-2 py-2">
                   <div className="flex items-center justify-between gap-2">
@@ -351,42 +346,18 @@ export function Layout({ children }: LayoutProps) {
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
 
-      <UserManagementDialog
-        open={userManagementOpen}
-        onOpenChange={setUserManagementOpen}
-        currentUser={currentUser}
-      />
-      <GoogleIntegrationDialog
-        open={googleIntegrationOpen}
-        onOpenChange={setGoogleIntegrationOpen}
-        currentUser={currentUser}
-      />
-      <CustomFieldsManager
-        open={customFieldsOpen}
-        onOpenChange={setCustomFieldsOpen}
-        currentUser={currentUser}
-      />
-      <FolderManager
-        open={folderManagerOpen}
-        onOpenChange={setFolderManagerOpen}
-        currentUser={currentUser}
-      />
-      <PhaseValidationManager
-        open={phaseValidationOpen}
-        onOpenChange={setPhaseValidationOpen}
-        currentUser={currentUser}
-      />
+      {/* REMOVIDOS: UserManagementDialog, GoogleIntegrationDialog, CustomFieldsManager, 
+          FolderManager, PhaseValidationManager, HelpCenter 
+          MOTIVO: Migrados para rotas dedicadas
+      */}
+
       <PipelineSettingsDialog
         open={pipelineSettingsOpen}
         onOpenChange={setPipelineSettingsOpen}
         pipelineId={null}
       />
-      <HelpCenter
-        open={helpCenterOpen}
-        onOpenChange={setHelpCenterOpen}
-      />
 
-      {/* SLA Config Dialog */}
+      {/* SLA Config Dialog (Pode ser migrado depois) */}
       {canManageSettings && (
         <div className={slaConfigOpen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6' : 'hidden'}>
           <div className="max-w-5xl mx-auto">
@@ -405,7 +376,8 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Mobile Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-4 z-50">
-        <Button
+        {/* ... Mobile menu items mantidos ... */}
+         <Button
           variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
