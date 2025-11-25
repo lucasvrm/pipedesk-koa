@@ -11,8 +11,13 @@ import {
   Trash, 
   FileText,
   Link as LinkIcon,
-  UserPlus
+  UserPlus,
+  Database // Ícone necessário para o painel
 } from '@phosphor-icons/react'
+
+// --- IMPORTAÇÃO DO PAINEL ---
+import SyntheticDataPanel from './SyntheticDataPanel'
+// ----------------------------
 
 interface RBACDemoProps {
   currentUser: User
@@ -40,53 +45,89 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto pb-24 md:pb-6">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto pb-24 md:pb-6">
       <div className="space-y-1">
         <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
           <ShieldCheck className="text-primary" size={32} />
-          Sistema de Controle de Acesso
+          Painel Administrativo
         </h2>
         <p className="text-muted-foreground">
-          Demonstração do sistema RBAC (Role-Based Access Control)
+          Gerenciamento de sistema, usuários e dados de teste.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Seu Perfil</CardTitle>
-          <CardDescription>Informações do usuário atual</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Nome</p>
-              <p className="font-medium">{currentUser.name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Email</p>
-              <p className="font-medium">{currentUser.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Função</p>
-              <Badge variant={currentUser.role === 'admin' ? 'default' : 'secondary'}>
-                {currentUser.role.toUpperCase()}
-              </Badge>
-            </div>
-            {currentUser.clientEntity && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Empresa</p>
-                <p className="font-medium">{currentUser.clientEntity}</p>
-              </div>
-            )}
+      {/* --- SEÇÃO DE DADOS SINTÉTICOS (INTEGRADA) --- */}
+      {currentUser.role === 'admin' && (
+        <div className="mt-8 mb-8 border rounded-lg p-4 bg-slate-50/50">
+          <div className="flex items-center gap-2 mb-4">
+            <Database className="w-6 h-6 text-primary" />
+            <h3 className="text-xl font-semibold">Ambiente de Testes</h3>
           </div>
-          <div className="pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-2">Descrição da função:</p>
-            <p className="text-sm">{roleDescriptions[currentUser.role]}</p>
-          </div>
-        </CardContent>
-      </Card>
+          <SyntheticDataPanel />
+        </div>
+      )}
+      {/* --------------------------------------------- */}
 
-      <Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* SEU PERFIL */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Seu Perfil</CardTitle>
+            <CardDescription>Informações do usuário atual</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Nome</p>
+                <p className="font-medium">{currentUser.name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Email</p>
+                <p className="font-medium">{currentUser.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Função</p>
+                <Badge variant={currentUser.role === 'admin' ? 'default' : 'secondary'}>
+                  {currentUser.role.toUpperCase()}
+                </Badge>
+              </div>
+              {currentUser.clientEntity && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Empresa</p>
+                  <p className="font-medium">{currentUser.clientEntity}</p>
+                </div>
+              )}
+            </div>
+            <div className="pt-4 border-t">
+              <p className="text-sm text-muted-foreground mb-2">Descrição da função:</p>
+              <p className="text-sm">{roleDescriptions[currentUser.role]}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* INFO ADICIONAL PARA ADMINS */}
+        {currentUser.role === 'admin' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Status do Sistema</CardTitle>
+              <CardDescription>Visão geral técnica</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg border bg-card">
+                <div className="flex items-center gap-2 mb-2 text-success">
+                  <ShieldCheck size={24} />
+                  <span className="font-medium">Sistema Operacional</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Todas as permissões e políticas RLS estão ativas.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle>Suas Permissões</CardTitle>
           <CardDescription>
@@ -94,7 +135,7 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {permissions.map(({ key, label, icon: Icon }) => {
               const hasAccess = hasPermission(
                 currentUser.role,
@@ -105,18 +146,18 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
                   key={key}
                   className={`flex items-center gap-3 p-3 rounded-lg border ${
                     hasAccess
-                      ? 'bg-success/5 border-success/20'
+                      ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900'
                       : 'bg-muted/50 border-border opacity-50'
                   }`}
                 >
                   {hasAccess ? (
-                    <Eye className="text-success flex-shrink-0" size={20} />
+                    <Eye className="text-green-600 dark:text-green-400 flex-shrink-0" size={20} />
                   ) : (
                     <EyeSlash className="text-muted-foreground flex-shrink-0" size={20} />
                   )}
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Icon className="flex-shrink-0" size={18} />
-                    <span className="text-sm truncate">{label}</span>
+                    <span className="text-sm truncate" title={label}>{label}</span>
                   </div>
                 </div>
               )
@@ -124,66 +165,6 @@ export default function RBACDemo({ currentUser }: RBACDemoProps) {
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Autenticação Magic Link</CardTitle>
-          <CardDescription>
-            Sistema de convites seguro para clientes externos
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg border bg-card">
-              <LinkIcon className="mb-2 text-primary" size={24} />
-              <h4 className="font-medium mb-1">Geração de Token</h4>
-              <p className="text-sm text-muted-foreground">
-                Tokens seguros de 64 caracteres com expiração configurável
-              </p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card">
-              <Users className="mb-2 text-primary" size={24} />
-              <h4 className="font-medium mb-1">Convite por Email</h4>
-              <p className="text-sm text-muted-foreground">
-                Template de email automático com link de acesso único
-              </p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card">
-              <ShieldCheck className="mb-2 text-primary" size={24} />
-              <h4 className="font-medium mb-1">Gestão de Links</h4>
-              <p className="text-sm text-muted-foreground">
-                Dashboard completo com status e revogação de links
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {currentUser.role === 'client' && (
-        <Card className="border-accent/50 bg-accent/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <EyeSlash className="text-accent" />
-              Proteção de Dados
-            </CardTitle>
-            <CardDescription>
-              Como cliente externo, informações sensíveis são anonimizadas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm">
-                <strong>Nomes de Players:</strong> Você verá identificadores genéricos
-                (Player A, Player B, etc.) em vez de nomes reais para proteger informações
-                competitivas.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Exemplo: "JPMorgan Chase" → "Player A"
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
