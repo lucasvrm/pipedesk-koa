@@ -17,7 +17,8 @@ import { formatCurrency, anonymizePlayerName, calculateWeightedVolume, calculate
 import { canViewPlayerName } from '@/lib/permissions'
 import { CaretLeft, CaretRight, Eye, Kanban } from '@phosphor-icons/react'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
-import CreateDealDialog from './CreateDealDialog'
+// CORREÇÃO: Importação nomeada com { }
+import { CreateDealDialog } from './CreateDealDialog'
 
 interface MasterMatrixViewProps {
   currentUser: User
