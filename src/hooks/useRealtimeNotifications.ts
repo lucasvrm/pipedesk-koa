@@ -9,35 +9,29 @@ export function useRealtimeNotifications(userId?: string) {
   useEffect(() => {
     if (!userId) return;
 
-    console.log(`🔌 [Realtime] Iniciando modo DEBUG sem filtros...`);
-
+    // Canal único por usuário para evitar conflitos
     const channel = supabase
-      .channel('global-debug-notifications') // Mudamos o nome do canal
+      .channel(`notifications:${userId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // Escuta INSERT, UPDATE, DELETE
+          event: 'INSERT', // Escuta apenas novas notificações
           schema: 'public',
           table: 'notifications',
-          // REMOVEMOS O FILTRO: filter: `user_id=eq.${userId}`,
+          filter: `user_id=eq.${userId}`, // Filtro de Segurança: Só ouve o que é meu
         },
         (payload) => {
-          console.log('🔥 [Realtime] EVENTO CAPTURADO (SEM FILTRO):', payload);
+          // 1. Atualiza cache do React Query (para o sininho e listas)
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
-          // Se capturou, vamos tentar mostrar o toast
-          // (Mesmo que a notificação não seja para você, só para teste)
-          toast.success("Evento Realtime Recebido!", {
-            description: `Tipo: ${payload.eventType}. Olhe o console!`,
+          // 2. Exibe alerta visual flutuante
+          toast.info("Nova Notificação", {
+            description: payload.new.message || "Você tem uma nova mensagem.",
             duration: 5000,
           });
-
-          // Atualiza as listas
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
       )
-      .subscribe((status) => {
-        console.log(`📡 [Realtime] Status: ${status}`);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
