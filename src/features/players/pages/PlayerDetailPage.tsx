@@ -31,6 +31,9 @@ import {
   PlayerType
 } from '@/lib/types'
 
+// Classe utilitária para inputs desabilitados ficarem legíveis (texto preto, opacidade 100%)
+const INPUT_STYLES = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground font-medium"
+
 export default function PlayerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -38,7 +41,6 @@ export default function PlayerDetailPage() {
   const { profile } = useAuth()
 
   const isNew = id === 'new'
-  // Se for novo OU se vier da lista com instrução de editar, começa editando
   const startEditing = isNew || location.state?.startEditing
   const [isEditing, setIsEditing] = useState(!!startEditing)
 
@@ -78,7 +80,7 @@ export default function PlayerDetailPage() {
   }, [player])
 
   const toggleProduct = (category: 'credit' | 'equity' | 'barter', subtype: string) => {
-    if (!isEditing) return // Bloqueia toggle se não estiver editando
+    if (!isEditing) return
     setFormData(prev => {
       const currentList = prev.products?.[category] || []
       const newList = currentList.includes(subtype as any)
@@ -115,7 +117,7 @@ export default function PlayerDetailPage() {
       } else if (id) {
         await updatePlayer(id, formData, profile.id)
         toast.success('Player atualizado')
-        setIsEditing(false) // Sai do modo de edição
+        setIsEditing(false)
         refetch()
       }
     } catch (error) {
@@ -128,7 +130,6 @@ export default function PlayerDetailPage() {
     if (isNew) {
       navigate('/players')
     } else {
-      // Reverte as mudanças para o que estava no banco
       if (player) {
         setFormData({
           ...player,
@@ -157,7 +158,6 @@ export default function PlayerDetailPage() {
     }
   }
 
-  // Componente de Ações (Header e Footer)
   const ActionButtons = () => {
     if (isEditing) {
       return (
@@ -216,6 +216,7 @@ export default function PlayerDetailPage() {
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   disabled={!isEditing}
+                  className={INPUT_STYLES}
                   placeholder="Ex: XP Investimentos"
                 />
               </div>
@@ -226,6 +227,7 @@ export default function PlayerDetailPage() {
                   value={formData.cnpj}
                   onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
                   disabled={!isEditing}
+                  className={INPUT_STYLES}
                   placeholder="00.000.000/0000-00"
                 />
               </div>
@@ -236,6 +238,7 @@ export default function PlayerDetailPage() {
                   value={formData.site}
                   onChange={e => setFormData({ ...formData, site: e.target.value })}
                   disabled={!isEditing}
+                  className={INPUT_STYLES}
                   placeholder="https://..."
                 />
               </div>
@@ -247,7 +250,7 @@ export default function PlayerDetailPage() {
                   onValueChange={(v: PlayerType) => setFormData({ ...formData, type: v })}
                   disabled={!isEditing}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className={INPUT_STYLES}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
@@ -263,7 +266,7 @@ export default function PlayerDetailPage() {
                   onValueChange={(v: any) => setFormData({ ...formData, relationshipLevel: v })}
                   disabled={!isEditing}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className={INPUT_STYLES}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
@@ -283,8 +286,9 @@ export default function PlayerDetailPage() {
                           checked={formData.gestoraTypes?.includes(key as any)}
                           onCheckedChange={() => toggleGestoraType(key as any)}
                           disabled={!isEditing}
+                          className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                         />
-                        <Label htmlFor={`gestora-${key}`} className="text-sm font-normal cursor-pointer">
+                        <Label htmlFor={`gestora-${key}`} className="text-sm font-normal cursor-pointer disabled:cursor-default">
                           {label}
                         </Label>
                       </div>
@@ -299,7 +303,7 @@ export default function PlayerDetailPage() {
                   value={formData.description}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
                   disabled={!isEditing}
-                  className="h-24"
+                  className={`${INPUT_STYLES} h-24`}
                   placeholder="Detalhes adicionais sobre o player..."
                 />
               </div>
@@ -331,12 +335,13 @@ export default function PlayerDetailPage() {
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {Object.entries(labels).map(([key, label]) => (
-                        <div key={key} className={`flex items-center space-x-2 p-2 rounded border border-transparent ${isEditing ? 'bg-slate-50 hover:border-border' : 'opacity-80'}`}>
+                        <div key={key} className={`flex items-center space-x-2 p-2 rounded border border-transparent ${isEditing ? 'bg-slate-50 hover:border-border' : ''}`}>
                           <Checkbox
                             id={`${category}-${key}`}
                             checked={formData.products?.[category as any]?.includes(key as any)}
                             onCheckedChange={() => toggleProduct(category as any, key)}
                             disabled={!isEditing}
+                            className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                           />
                           <Label htmlFor={`${category}-${key}`} className="text-xs cursor-pointer">{label}</Label>
                         </div>
@@ -364,15 +369,16 @@ export default function PlayerDetailPage() {
                 Contatos
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
+            {/* Removido flex-1 do CardContent para os itens não se espalharem verticalmente */}
+            <CardContent className="flex flex-col gap-4">
               {isNew ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   Salve o player primeiro para gerenciar contatos.
                 </div>
               ) : (
                 <>
-                  {/* Lista de Contatos */}
-                  <div className="flex-1 space-y-3 mb-6 max-h-[500px] overflow-y-auto pr-2">
+                  {/* Lista de Contatos - Removido flex-1 para não empurrar o botão */}
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                     {player?.contacts?.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
                     ) : (
@@ -414,9 +420,7 @@ export default function PlayerDetailPage() {
                     )}
                   </div>
 
-                  <Separator className="mb-4" />
-
-                  {/* Botão Novo Contato (Abaixo da lista) */}
+                  {/* Botão Novo Contato - Agora flui naturalmente logo após a lista */}
                   <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" className="w-full" variant="outline">
