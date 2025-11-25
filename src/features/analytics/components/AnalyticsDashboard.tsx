@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Download, ChartLine, Clock, Target, Users, Funnel } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import ConversionTrendChart from './ConversionTrendChart'
+import { PlayersAnalytics } from './PlayersAnalytics' // Importando o novo componente
 
 interface AnalyticsDashboardProps {
   currentUser: User
@@ -24,7 +25,6 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
   const [typeFilter, setTypeFilter] = useState<OperationType | 'all'>('all')
 
   const { data: metrics, isLoading, error } = useAnalytics(dateFilter, teamFilter, typeFilter)
-  const [users] = useState<User[]>([]) // Placeholder if needed for dropdown, ideally fetch users separately
 
   const canView = hasPermission(currentUser.role, 'VIEW_ANALYTICS')
   const canExport = hasPermission(currentUser.role, 'EXPORT_DATA')
@@ -58,7 +58,6 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
       toast.error('Você não tem permissão para exportar dados')
       return
     }
-    // Export logic would need raw data, which we might need to fetch separately or add to the service
     toast.info('Exportação será implementada em breve com a nova API')
   }
 
@@ -142,7 +141,6 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as equipes</SelectItem>
-                  {/* Users dropdown would need a separate fetch or passed prop */}
                 </SelectContent>
               </Select>
             </div>
@@ -161,26 +159,6 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
             <div className="flex items-center justify-between">
               <div className="text-3xl font-bold">{metrics.activeDeals}</div>
               <ChartLine className="text-primary" size={32} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Players Ativos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              {/* Active tracks not directly in metrics top level, but we can infer or add it. 
-                  Actually metrics has teamWorkload which has activeTracks. 
-                  Let's assume we want total active tracks. 
-                  I should add activeTracks to AnalyticsMetrics.
-                  For now using weightedPipeline as a proxy or 0.
-              */}
-              <div className="text-3xl font-bold">-</div>
-              <Users className="text-success" size={32} />
             </div>
           </CardContent>
         </Card>
@@ -219,7 +197,25 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
             </div>
           </CardContent>
         </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total de Negócios
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+               <div className="text-3xl font-bold">{metrics.totalDeals}</div>
+               <Users className="text-muted-foreground" size={32} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* --- INSERÇÃO DO NOVO DASHBOARD DE PLAYERS --- */}
+      <PlayersAnalytics />
+      {/* --------------------------------------------- */}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -232,17 +228,12 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
           <CardContent>
             <div className="space-y-4">
               {(['nda', 'analysis', 'proposal', 'negotiation', 'closing'] as PlayerStage[]).map(
-                (stage) => {
-                  // Average time not implemented in service yet
-                  return (
-                    <div key={stage} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{getStageLabel(stage)}</span>
-                      <span className="text-sm text-muted-foreground">
-                        -
-                      </span>
-                    </div>
-                  )
-                }
+                (stage) => (
+                  <div key={stage} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{getStageLabel(stage)}</span>
+                    <span className="text-sm text-muted-foreground">-</span>
+                  </div>
+                )
               )}
             </div>
           </CardContent>
@@ -264,14 +255,9 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
                 <div className="space-y-2">
                   {Object.entries(metrics.slaBreach.byStage).map(([stage, count]) => (
                     count > 0 && (
-                      <div
-                        key={stage}
-                        className="flex items-center justify-between text-sm"
-                      >
+                      <div key={stage} className="flex items-center justify-between text-sm">
                         <span className="font-medium">{getStageLabel(stage as PlayerStage)}</span>
-                        <span className="text-destructive font-medium">
-                          {count}
-                        </span>
+                        <span className="text-destructive font-medium">{count}</span>
                       </div>
                     )
                   ))}
@@ -280,87 +266,17 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
             ) : (
               <div className="text-center py-8">
                 <div className="text-4xl mb-2">✓</div>
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma violação de SLA
-                </p>
+                <p className="text-sm text-muted-foreground">Nenhuma violação de SLA</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users />
-            Carga de Trabalho por Usuário
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {metrics.teamWorkload.map((workload) => (
-              <div
-                key={workload.userId}
-                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-              >
-                <span className="font-medium">{workload.userName}</span>
-                <div className="flex gap-6 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Players: </span>
-                    <span className="font-medium">{workload.activeTracks}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Tarefas: </span>
-                    <span className="font-medium">{workload.activeTasks}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       <ConversionTrendChart
         data={metrics.conversionTrend}
         onDataPointClick={handlePeriodClick}
       />
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Concluídos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{metrics.concludedDeals}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Cancelados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-muted-foreground">
-              {metrics.cancelledDeals}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Negócios
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalDeals}</div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   )
 }

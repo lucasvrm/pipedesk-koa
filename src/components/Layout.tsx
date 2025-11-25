@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
 import { hasPermission } from '@/lib/permissions'
 import { getInitials } from '@/lib/helpers'
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications' // NOVO IMPORT
 import {
   ChartBar,
   Kanban,
@@ -27,7 +28,7 @@ import {
   FlowArrow,
   Clock,
   ChartLineUp,
-  Buildings // Ícone de Players
+  Buildings 
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -43,7 +44,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
-// Dialogs Mantidos (Ações Rápidas)
+// Componentes e Dialogs
 import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
@@ -62,6 +63,11 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
+  // --- ATIVAÇÃO DAS NOTIFICAÇÕES REALTIME ---
+  // Passamos o ID do perfil para filtrar as mensagens do banco
+  useRealtimeNotifications(profile?.id);
+  // ------------------------------------------
+
   // Estados de Dialogs
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
@@ -71,7 +77,9 @@ export function Layout({ children }: LayoutProps) {
   const [compactMode, setCompactMode] = useState(false)
 
   const currentUser = profile
-  const unreadCount = 0 // Placeholder
+  // Nota: Idealmente, ligaríamos este contador a uma query real do React Query
+  // ex: const { data: unreadCount } = useUnreadNotificationsCount()
+  const unreadCount = 0 
 
   const handleSignOut = async () => {
     const success = await authSignOut()
@@ -90,16 +98,14 @@ export function Layout({ children }: LayoutProps) {
   const canManageIntegrations = hasPermission(currentUser.role, 'MANAGE_INTEGRATIONS')
   const canManageSettings = hasPermission(currentUser.role, 'MANAGE_SETTINGS')
 
-  // Verifica se a rota atual corresponde ou é filha do path
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* --- HEADER (Sticky) --- */}
+      {/* HEADER (Sticky) */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-6">
           
-          {/* Logo e Navegação Principal */}
           <div className="flex items-center gap-6">
             <h1 
               className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity" 
@@ -133,7 +139,6 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </Button>
 
-              {/* --- NOVO: ITEM DE MENU PLAYERS --- */}
               <Button
                 variant={isActive('/players') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -144,7 +149,6 @@ export function Layout({ children }: LayoutProps) {
                   Players
                 </Link>
               </Button>
-              {/* ---------------------------------- */}
 
               <Button
                 variant={isActive('/deals/comparison') ? 'secondary' : 'ghost'}
@@ -196,7 +200,6 @@ export function Layout({ children }: LayoutProps) {
             </nav>
           </div>
 
-          {/* Área de Ações e Perfil */}
           <div className="flex items-center gap-3">
             {currentUser.role === 'admin' && (
               <div className="flex items-center gap-2 mr-2 px-3 py-1 rounded-md bg-muted hidden lg:flex">
@@ -250,7 +253,6 @@ export function Layout({ children }: LayoutProps) {
               )}
             </Button>
 
-            {/* Dropdown do Usuário */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" title="Menu">
@@ -368,12 +370,12 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      {/* --- ÁREA PRINCIPAL --- */}
+      {/* ÁREA PRINCIPAL */}
       <main className="flex-1">
         {children}
       </main>
 
-      {/* --- COMPONENTES GLOBAIS --- */}
+      {/* COMPONENTES GLOBAIS */}
       <GlobalSearch
         open={searchOpen}
         onOpenChange={setSearchOpen}
@@ -405,7 +407,7 @@ export function Layout({ children }: LayoutProps) {
       <SLAMonitoringService />
       <OnboardingTour />
 
-      {/* --- NAVEGAÇÃO MOBILE (BOTTOM BAR) --- */}
+      {/* BOTTOM BAR (MOBILE) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
         <Button
           variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
@@ -439,7 +441,6 @@ export function Layout({ children }: LayoutProps) {
           <Plus className="h-6 w-6" />
         </Button>
 
-        {/* NOVO: Item Mobile Players */}
         <Button
           variant={isActive('/players') ? 'secondary' : 'ghost'}
           size="sm"
