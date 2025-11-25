@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -17,18 +16,22 @@ import BulkOperations from './BulkOperations'
 import { useDeals } from '@/features/deals/hooks/useDeals'
 
 export default function DealsView() {
-  const { data: masterDeals, loading } = useDeals()
+  const { data: masterDeals, isLoading } = useDeals()
   const { profile: currentUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all')
   const [bulkMode, setBulkMode] = useState(false)
 
-  const filteredDeals = masterDeals
-    .filter(deal => {
-      const matchesSearch = deal.clientName.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus = statusFilter === 'all' || deal.status === statusFilter
-      return matchesSearch && matchesStatus
-    })
+  // --- CORREÇÃO CRÍTICA ---
+  // Garante que safeDeals seja sempre um array, mesmo se masterDeals for undefined
+  const safeDeals = Array.isArray(masterDeals) ? masterDeals : []
+
+  const filteredDeals = safeDeals.filter(deal => {
+    if (!deal) return false // Proteção extra contra itens nulos
+    const matchesSearch = deal.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || deal.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
@@ -81,7 +84,7 @@ export default function DealsView() {
         </Select>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
           <p>Carregando negócios...</p>
         </div>
