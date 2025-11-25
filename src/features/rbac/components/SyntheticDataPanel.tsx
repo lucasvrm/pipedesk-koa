@@ -7,15 +7,29 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { syntheticDataService } from '@/services/syntheticDataService';
-// CORREÇÃO: Trocado RefreshCw por ArrowsClockwise
-import { Trash, Database, Plus, ArrowsClockwise, Users, Briefcase } from '@phosphor-icons/react';
+import { useAuth } from '@/contexts/AuthContext'; // Necessário para passar o ID do criador
+import { 
+  Trash, 
+  Database, 
+  Plus, 
+  ArrowsClockwise, 
+  Users, 
+  Briefcase, 
+  Buildings // Ícone para Players
+} from '@phosphor-icons/react';
 
 export default function SyntheticDataPanel() {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [counts, setCounts] = useState({ deals: 0, tracks: 0, tasks: 0, users: 0 });
+  
+  // Adicionado contador de players
+  const [counts, setCounts] = useState({ deals: 0, tracks: 0, tasks: 0, users: 0, players: 0 });
+  
+  // Adicionado config de players
   const [config, setConfig] = useState({
     userCount: 5,
     dealCount: 10,
+    playerCount: 20, // Padrão sugerido
     generateRelated: true
   });
 
@@ -51,6 +65,24 @@ export default function SyntheticDataPanel() {
     }
   };
 
+  // Handler para Players (NOVO)
+  const handleGeneratePlayers = async () => {
+    if (!profile?.id) return;
+    setLoading(true);
+    try {
+      const data = await syntheticDataService.generatePlayers(config.playerCount, profile.id);
+      toast.success(`${data?.length || 0} Players gerados!`, {
+        description: 'Incluindo contatos e dados ricos.'
+      });
+      await refreshCounts();
+    } catch (error) {
+      toast.error('Erro ao gerar players');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handler para Deals
   const handleGenerateDeals = async () => {
     setLoading(true);
@@ -66,11 +98,12 @@ export default function SyntheticDataPanel() {
   };
 
   const handleClear = async () => {
-    if (!confirm('ATENÇÃO: Isso apagará todos os dados marcados como sintéticos, incluindo perfis de usuários (mas os logins permanecerão no Auth). Continuar?')) return;
+    if (!profile?.id) return;
+    if (!confirm('ATENÇÃO: Isso apagará todos os dados marcados como sintéticos. Continuar?')) return;
     
     setLoading(true);
     try {
-      await syntheticDataService.clearAllSyntheticData();
+      await syntheticDataService.clearAllSyntheticData(profile.id);
       toast.success('Limpeza concluída');
       await refreshCounts();
     } catch (error) {
@@ -93,12 +126,19 @@ export default function SyntheticDataPanel() {
       </CardHeader>
       <CardContent className="space-y-6">
         
-        {/* Status Grid */}
-        <div className="grid grid-cols-4 gap-4">
+        {/* Status Grid - Atualizado com Players */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-100">
             <div className="text-2xl font-bold text-blue-700">{counts.users}</div>
             <div className="text-xs text-blue-600 uppercase tracking-wider font-semibold">Usuários</div>
           </div>
+          
+          {/* Card de Players */}
+          <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-100">
+            <div className="text-2xl font-bold text-purple-700">{counts.players}</div>
+            <div className="text-xs text-purple-600 uppercase tracking-wider font-semibold">Players</div>
+          </div>
+
           <div className="bg-muted/50 p-3 rounded-lg text-center">
             <div className="text-2xl font-bold">{counts.deals}</div>
             <div className="text-xs text-muted-foreground uppercase tracking-wider">Deals</div>
@@ -119,7 +159,7 @@ export default function SyntheticDataPanel() {
         <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
                 <Users className="w-5 h-5 text-muted-foreground" />
-                <h4 className="font-medium text-sm">Geração de Usuários (Auth + Profile)</h4>
+                <h4 className="font-medium text-sm">1. Usuários (Auth + Profile)</h4>
             </div>
             <div className="flex items-end gap-4 p-4 border rounded-md bg-slate-50">
                 <div className="grid w-full max-w-xs items-center gap-1.5">
@@ -138,16 +178,41 @@ export default function SyntheticDataPanel() {
                     Criar Usuários
                 </Button>
             </div>
+        </div>
+
+        {/* Seção 2: Players (NOVO) */}
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+                <Buildings className="w-5 h-5 text-purple-600" />
+                <h4 className="font-medium text-sm">2. Players & Investidores</h4>
+            </div>
+            <div className="flex items-end gap-4 p-4 border rounded-md bg-purple-50/30 border-purple-100">
+                <div className="grid w-full max-w-xs items-center gap-1.5">
+                    <Label htmlFor="playerCount">Quantidade de Players</Label>
+                    <Input 
+                        type="number" 
+                        id="playerCount" 
+                        min="1" 
+                        max="100"
+                        value={config.playerCount}
+                        onChange={(e) => setConfig({...config, playerCount: parseInt(e.target.value)})} 
+                    />
+                </div>
+                <Button onClick={handleGeneratePlayers} disabled={loading || !profile} className="bg-purple-600 hover:bg-purple-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Gerar Players Ricos
+                </Button>
+            </div>
             <p className="text-xs text-muted-foreground ml-1">
-                * Cria logins reais no Authentication. Senha padrão: <strong>password123</strong>
+                * Gera empresas com CNPJ, produtos (Crédito/Equity) e contatos vinculados.
             </p>
         </div>
 
-        {/* Seção 2: Negócios */}
+        {/* Seção 3: Negócios */}
         <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
                 <Briefcase className="w-5 h-5 text-muted-foreground" />
-                <h4 className="font-medium text-sm">Geração de Negócios (Deals Flow)</h4>
+                <h4 className="font-medium text-sm">3. Fluxo de Negócios (Deals)</h4>
             </div>
             <div className="space-y-4 p-4 border rounded-md bg-slate-50">
                 <div className="flex items-end gap-4">
@@ -174,7 +239,7 @@ export default function SyntheticDataPanel() {
                         checked={config.generateRelated}
                         onCheckedChange={(c) => setConfig({...config, generateRelated: c})}
                     />
-                    <Label htmlFor="related">Criar Tracks e Tarefas automaticamente para cada Deal</Label>
+                    <Label htmlFor="related">Criar Tracks e Tarefas automaticamente</Label>
                 </div>
             </div>
         </div>
@@ -187,7 +252,6 @@ export default function SyntheticDataPanel() {
             disabled={loading}
             size="sm"
         >
-            {/* CORREÇÃO APLICADA AQUI TAMBÉM NO ÍCONE */}
             <ArrowsClockwise className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
         </Button>
@@ -195,10 +259,10 @@ export default function SyntheticDataPanel() {
         <Button 
             variant="destructive" 
             onClick={handleClear} 
-            disabled={loading || (counts.deals === 0 && counts.users === 0)}
+            disabled={loading || (!counts.deals && !counts.users && !counts.players)}
         >
             <Trash className="w-4 h-4 mr-2" />
-            Limpar Tudo (Sintéticos)
+            Limpar Dados Sintéticos
         </Button>
       </CardFooter>
     </Card>

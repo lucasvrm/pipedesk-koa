@@ -388,6 +388,7 @@ export interface Player {
   
   contacts?: PlayerContact[]; // Join opcional
   creator?: { name: string };
+  primaryContact?: PlayerContact;
 }
 
 // --- LABELS (Para UI) ---

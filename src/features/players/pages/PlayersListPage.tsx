@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, PencilSimple } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, PencilSimple, User, Phone } from '@phosphor-icons/react'
 import { PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player } from '@/lib/types'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
@@ -18,7 +18,6 @@ export default function PlayersListPage() {
   const { profile } = useAuth()
   const { data: players, isLoading, refetch } = usePlayers()
   
-  // Estados de Filtro e Paginação
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -37,17 +36,38 @@ export default function PlayersListPage() {
     }
   }
 
-  // Helper para exibir produtos resumidos
-  const getProductSummary = (products: Player['products']) => {
-    if (!products) return '-'
-    const activeCategories = []
-    if (products.credit?.length > 0) activeCategories.push('Crédito')
-    if (products.equity?.length > 0) activeCategories.push('Equity')
-    if (products.barter?.length > 0) activeCategories.push('Permuta')
+  const renderProductTags = (products: Player['products']) => {
+    if (!products) return <span className="text-muted-foreground">-</span>;
     
-    if (activeCategories.length === 0) return <span className="text-muted-foreground">-</span>
+    const tags = [];
     
-    return activeCategories.join(', ')
+    if (products.credit?.length > 0) {
+      tags.push(
+        <Badge key="credit" variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 mr-1 mb-1 font-normal">
+          Crédito
+        </Badge>
+      );
+    }
+    
+    if (products.equity?.length > 0) {
+      tags.push(
+        <Badge key="equity" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mr-1 mb-1 font-normal">
+          Equity
+        </Badge>
+      );
+    }
+    
+    if (products.barter?.length > 0) {
+      tags.push(
+        <Badge key="barter" variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 mr-1 mb-1 font-normal">
+          Permuta
+        </Badge>
+      );
+    }
+
+    if (tags.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
+    
+    return <div className="flex flex-wrap">{tags}</div>;
   }
 
   const getRelationshipBadgeVariant = (level: string) => {
@@ -62,7 +82,8 @@ export default function PlayersListPage() {
   // Lógica de Filtragem
   const filteredPlayers = players?.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.type.toLowerCase().includes(search.toLowerCase())
+    p.type.toLowerCase().includes(search.toLowerCase()) ||
+    (p.primaryContact?.name || '').toLowerCase().includes(search.toLowerCase()) // Busca também pelo contato
   ) || []
 
   // Lógica de Paginação
@@ -97,7 +118,7 @@ export default function PlayersListPage() {
           <div className="relative w-full md:w-96">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por nome ou tipo..." 
+              placeholder="Buscar por nome, contato..." 
               value={search}
               onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
               className="pl-10"
@@ -131,12 +152,12 @@ export default function PlayersListPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
+                      <TableHead className="w-[250px]">Nome</TableHead>
+                      <TableHead>Contato Principal</TableHead> {/* Nova Coluna */}
                       <TableHead>Tipo</TableHead>
                       <TableHead>Produtos</TableHead>
                       <TableHead>Relacionamento</TableHead>
                       <TableHead>Website</TableHead>
-                      <TableHead>Atualizado em</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -145,7 +166,6 @@ export default function PlayersListPage() {
                       <TableRow 
                         key={player.id} 
                         className="cursor-pointer hover:bg-muted/50"
-                        // Clique na linha abre visualização (editMode: false é o padrão)
                         onClick={() => navigate(`/players/${player.id}`)} 
                       >
                         <TableCell className="font-medium">
@@ -154,12 +174,35 @@ export default function PlayersListPage() {
                                 {player.cnpj && <span className="text-xs text-muted-foreground">{player.cnpj}</span>}
                             </div>
                         </TableCell>
+                        
+                        {/* Coluna de Contato Principal */}
+                        <TableCell>
+                          {player.primaryContact ? (
+                            <div className="flex flex-col text-sm">
+                              <div className="flex items-center gap-1 font-medium">
+                                <User size={14} className="text-muted-foreground" />
+                                {player.primaryContact.name}
+                              </div>
+                              {player.primaryContact.phone && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                  <Phone size={12} />
+                                  {player.primaryContact.phone}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">Sem contato principal</span>
+                          )}
+                        </TableCell>
+
                         <TableCell>
                           <Badge variant="secondary">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {getProductSummary(player.products)}
+                        
+                        <TableCell>
+                          {renderProductTags(player.products)}
                         </TableCell>
+
                         <TableCell>
                             <Badge variant={getRelationshipBadgeVariant(player.relationshipLevel)}>
                                 {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
@@ -172,19 +215,14 @@ export default function PlayersListPage() {
                             </a>
                           ) : '-'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          {formatDate(player.updatedAt)}
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            {/* Botão de Edição Rápida (Lápis) */}
                             <Button 
                               variant="ghost" 
                               size="icon" 
                               title="Editar"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Navega passando estado para forçar modo de edição
                                 navigate(`/players/${player.id}`, { state: { startEditing: true } });
                               }}
                             >
@@ -204,7 +242,7 @@ export default function PlayersListPage() {
                     ))}
                     {currentPlayers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                           Nenhum player encontrado
                         </TableCell>
                       </TableRow>

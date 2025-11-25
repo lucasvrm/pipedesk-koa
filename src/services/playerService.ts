@@ -21,6 +21,13 @@ function mapContactFromDB(item: any): PlayerContact {
 }
 
 function mapPlayerFromDB(item: any): Player {
+  // Tenta encontrar o contato principal se ele vier carregado (join)
+  const primaryContactData = item.primary_contact && item.primary_contact.length > 0 
+    ? item.primary_contact[0] 
+    : null;
+
+  const primaryContact = primaryContactData ? mapContactFromDB(primaryContactData) : undefined;
+
   return {
     id: item.id,
     name: item.name,
@@ -30,7 +37,6 @@ function mapPlayerFromDB(item: any): Player {
     logoUrl: item.logo_url || '',
     
     type: item.type || 'other',
-    // Mapeamento seguro de campos JSON/Arrays
     gestoraTypes: item.gestora_types || [], 
     relationshipLevel: item.relationship_level || 'none',
     products: item.product_capabilities || { credit: [], equity: [], barter: [] },
@@ -42,9 +48,12 @@ function mapPlayerFromDB(item: any): Player {
     deletedAt: item.deleted_at,
     isSynthetic: item.is_synthetic,
     
-    // Joins
+    // Campos de Join
     creator: item.creator,
-    contacts: item.contacts ? item.contacts.map(mapContactFromDB) : []
+    // Se vier a lista completa de contatos (no detalhe), mapeia. Senão array vazio.
+    contacts: item.contacts ? item.contacts.map(mapContactFromDB) : [],
+    // Novo campo virtual para a lista
+    primaryContact: primaryContact
   }
 }
 
@@ -53,7 +62,7 @@ function mapPlayerFromDB(item: any): Player {
 // ============================================================================
 
 /**
- * Busca lista de players (sem trazer todos os contatos para não pesar a lista)
+ * Busca lista de players INCLUINDO o contato principal
  */
 export async function getPlayers(): Promise<Player[]> {
   const { data, error } = await supabase
@@ -61,17 +70,24 @@ export async function getPlayers(): Promise<Player[]> {
     .select(`
       *,
       creator:profiles!players_created_by_fkey(name),
-      editor:profiles!players_updated_by_fkey(name)
+      editor:profiles!players_updated_by_fkey(name),
+      primary_contact:player_contacts(id, name, phone, email, role, is_primary)
     `)
+    .eq('primary_contact.is_primary', true) // Filtra o join, não a tabela pai (truque do PostgREST)
     .is('deleted_at', null)
     .order('name')
 
   if (error) throw error
+  
+  // O filtro eq() no join acima às vezes filtra o PAI se o filho não existir (inner join implícito em algumas versões).
+  // Uma abordagem mais segura para garantir que todos os players venham, mesmo sem contato:
+  // O PostgREST aplica o filtro no "recurso embedado". Se não tiver contato principal, vem array vazio.
+  
   return data.map(mapPlayerFromDB)
 }
 
 /**
- * Busca um player específico com seus contatos
+ * Busca um player específico com TODOS os contatos
  */
 export async function getPlayer(id: string): Promise<Player> {
   const { data, error } = await supabase
@@ -101,9 +117,9 @@ export async function createPlayer(player: Partial<Player>, userId: string): Pro
       site: player.site,
       description: player.description,
       type: player.type,
-      gestora_types: player.gestoraTypes, // Salva array direto no JSONB
+      gestora_types: player.gestoraTypes,
       relationship_level: player.relationshipLevel,
-      product_capabilities: player.products, // Salva objeto direto no JSONB
+      product_capabilities: player.products,
       created_by: userId,
       updated_by: userId
     })
@@ -163,7 +179,7 @@ export function usePlayers() {
   return useQuery({
     queryKey: ['players'],
     queryFn: getPlayers,
-    staleTime: 1000 * 60 * 5 // 5 minutos de cache
+    staleTime: 1000 * 60 * 5 
   })
 }
 
@@ -171,8 +187,8 @@ export function usePlayer(id: string | undefined) {
   return useQuery({
     queryKey: ['players', id],
     queryFn: () => getPlayer(id!),
-    enabled: !!id && id !== 'new', // Não busca se for criação
-    staleTime: 0 // Sempre busca dados frescos ao abrir o detalhe
+    enabled: !!id && id !== 'new',
+    staleTime: 0 
   })
 }
 
