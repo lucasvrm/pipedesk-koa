@@ -35,7 +35,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Função segura com Timeout para evitar travamento infinito
   const fetchProfileSafe = async (userId: string, userEmail?: string): Promise<boolean> => {
-    // Se já temos esse perfil carregado, ignora
+    // Se já temos esse perfil carregado, ignora (Cache em memória)
     if (loadedProfileId.current === userId) {
         console.log('[Auth] Profile already loaded (cache hit)');
         return true;
@@ -51,16 +51,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .eq('id', userId)
         .single();
 
-      // Cria uma promessa de timeout (5 segundos)
+      // OTIMIZAÇÃO: Reduzido de 5000ms para 2000ms
+      // Se o banco não responder em 2s, assumimos falha para não travar a UI
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
       );
 
       // Competição: quem terminar primeiro ganha
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       if (error) {
-        // Se não achou perfil, tenta criar (Lógica de auto-fix)
+        // Se não achou perfil (PGRST116), tenta criar (Lógica de auto-fix)
         if (error.code === 'PGRST116') {
           console.log('[Auth] Profile missing, auto-creating...');
           const timestamp = Math.floor(Date.now() / 1000);
@@ -126,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // 3. SE FALHAR (Timeout ou Erro): A sessão é zumbi/inválida. Matamos ela.
           if (!success) {
             console.warn('[Auth] Session appears stale or invalid. Forcing cleanup.');
-            await supabase.auth.signOut(); // <--- O SEGREDO: Limpa o storage automaticamente
+            await supabase.auth.signOut(); // Limpa o storage automaticamente
             if (mounted) {
               setSession(null);
               setUser(null);
