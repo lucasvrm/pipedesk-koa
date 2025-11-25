@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
 import { hasPermission } from '@/lib/permissions'
 import { getInitials } from '@/lib/helpers'
-import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications' // NOVO IMPORT
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications' 
 import {
   ChartBar,
   Kanban,
@@ -45,7 +45,8 @@ import {
 import { toast } from 'sonner'
 
 // Componentes e Dialogs
-import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
+// CORREÇÃO: Adicionadas chaves { } para importação nomeada
+import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
 import GlobalSearch from '@/components/GlobalSearch'
@@ -63,10 +64,8 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // --- ATIVAÇÃO DAS NOTIFICAÇÕES REALTIME ---
-  // Passamos o ID do perfil para filtrar as mensagens do banco
+  // Ativação das Notificações Realtime
   useRealtimeNotifications(profile?.id);
-  // ------------------------------------------
 
   // Estados de Dialogs
   const [inboxOpen, setInboxOpen] = useState(false)
@@ -77,8 +76,6 @@ export function Layout({ children }: LayoutProps) {
   const [compactMode, setCompactMode] = useState(false)
 
   const currentUser = profile
-  // Nota: Idealmente, ligaríamos este contador a uma query real do React Query
-  // ex: const { data: unreadCount } = useUnreadNotificationsCount()
   const unreadCount = 0 
 
   const handleSignOut = async () => {
