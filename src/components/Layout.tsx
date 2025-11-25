@@ -64,6 +64,9 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
+  // Adicione este log para ver se o ID está chegando
+  console.log("👤 [Layout] Renderizou. Profile ID:", profile?.id);
+
   // Ativação das Notificações Realtime
   useRealtimeNotifications(profile?.id);
 

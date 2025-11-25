@@ -31,7 +31,7 @@ import {
   PlayerType
 } from '@/lib/types'
 
-// Classe utilitária para inputs desabilitados ficarem legíveis (texto preto, opacidade 100%)
+// Estilo para inputs desabilitados ficarem bem legíveis (texto preto)
 const INPUT_STYLES = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground font-medium"
 
 export default function PlayerDetailPage() {
@@ -69,15 +69,18 @@ export default function PlayerDetailPage() {
     isPrimary: false
   })
 
+  // Sincroniza dados do banco com o formulário
   useEffect(() => {
-    if (player) {
+    // Só atualiza o form se NÃO estiver editando (protege contra sobrescrita)
+    // OU se acabamos de carregar os dados pela primeira vez
+    if (player && !isEditing) {
       setFormData({
         ...player,
         products: player.products || { credit: [], equity: [], barter: [] },
         gestoraTypes: player.gestoraTypes || []
       })
     }
-  }, [player])
+  }, [player, isEditing])
 
   const toggleProduct = (category: 'credit' | 'equity' | 'barter', subtype: string) => {
     if (!isEditing) return
@@ -86,9 +89,14 @@ export default function PlayerDetailPage() {
       const newList = currentList.includes(subtype as any)
         ? currentList.filter(i => i !== subtype)
         : [...currentList, subtype as any]
+      
+      // Importante: Criar nova referência de objeto para products
       return {
         ...prev,
-        products: { ...prev.products, [category]: newList }
+        products: { 
+          ...prev.products, 
+          [category]: newList 
+        } as any
       }
     })
   }
@@ -130,11 +138,14 @@ export default function PlayerDetailPage() {
     if (isNew) {
       navigate('/players')
     } else {
+      // Reset PROFUNDO para garantir que checkboxes limpem
       if (player) {
+        // JSON parse/stringify cria uma cópia limpa sem referências de memória
+        const cleanPlayer = JSON.parse(JSON.stringify(player));
         setFormData({
-          ...player,
-          products: player.products || { credit: [], equity: [], barter: [] },
-          gestoraTypes: player.gestoraTypes || []
+          ...cleanPlayer,
+          products: cleanPlayer.products || { credit: [], equity: [], barter: [] },
+          gestoraTypes: cleanPlayer.gestoraTypes || []
         })
       }
       setIsEditing(false)
@@ -343,7 +354,7 @@ export default function PlayerDetailPage() {
                             disabled={!isEditing}
                             className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                           />
-                          <Label htmlFor={`${category}-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                          <Label htmlFor={`${category}-${key}`} className="text-xs cursor-pointer disabled:cursor-default">{label}</Label>
                         </div>
                       ))}
                     </div>
@@ -369,7 +380,6 @@ export default function PlayerDetailPage() {
                 Contatos
               </CardTitle>
             </CardHeader>
-            {/* Removido flex-1 do CardContent para os itens não se espalharem verticalmente */}
             <CardContent className="flex flex-col gap-4">
               {isNew ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
@@ -377,7 +387,7 @@ export default function PlayerDetailPage() {
                 </div>
               ) : (
                 <>
-                  {/* Lista de Contatos - Removido flex-1 para não empurrar o botão */}
+                  {/* Lista de Contatos */}
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                     {player?.contacts?.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
@@ -420,7 +430,7 @@ export default function PlayerDetailPage() {
                     )}
                   </div>
 
-                  {/* Botão Novo Contato - Agora flui naturalmente logo após a lista */}
+                  {/* Botão Novo Contato */}
                   <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" className="w-full" variant="outline">

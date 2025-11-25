@@ -7,42 +7,44 @@ export function useRealtimeNotifications(userId?: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Se não houver usuário logado, não faz nada
-    if (!userId) return;
+    if (!userId) {
+        console.log("🚫 [Realtime] Sem userId, ignorando conexão.");
+        return;
+    }
 
-    // Criação do canal de escuta
+    console.log(`🔌 [Realtime] Tentando conectar para o user: ${userId}`);
+
     const channel = supabase
       .channel('realtime-notifications')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT', // Escuta apenas novos registros
+          event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${userId}`, // Filtra para o usuário atual
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          console.log('🔔 Nova notificação recebida:', payload);
+          console.log('🔔 [Realtime] EVENTO RECEBIDO:', payload);
           
-          // 1. Invalida o cache do React Query para atualizar o contador no sininho
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          queryClient.invalidateQueries({ queryKey: ['inbox'] });
-          
-          // 2. Exibe o toast visual
-          toast.info("Nova Notificação", {
-            description: payload.new.message || "Você tem uma nova mensagem.",
-            duration: 5000,
+          // Tenta disparar o toast imediatamente para teste
+          toast.success("Notificação Recebida!", {
+            description: payload.new.message,
+            duration: 8000, // Duração longa para garantir que você veja
           });
+
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`✅ Conectado ao canal de notificações para o user ${userId}`);
+      .subscribe((status, err) => {
+        console.log(`📡 [Realtime] Status da Conexão: ${status}`);
+        if (err) {
+            console.error('❌ [Realtime] Erro de conexão:', err);
         }
       });
 
-    // Limpeza ao desmontar
     return () => {
+      console.log("🔌 [Realtime] Desconectando...");
       supabase.removeChannel(channel);
     };
   }, [userId, queryClient]);
