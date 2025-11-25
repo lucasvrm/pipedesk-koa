@@ -27,6 +27,7 @@ import {
   FlowArrow,
   Clock,
   ChartLineUp,
+  Buildings // Ícone de Players
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -42,7 +43,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
-// Dialogs (Mantidos apenas para ações rápidas ou não migrados ainda)
+// Dialogs Mantidos (Ações Rápidas)
 import CreateDealDialog from '@/features/deals/components/CreateDealDialog'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
@@ -61,7 +62,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Dialog States (Apenas para os que sobraram)
+  // Estados de Dialogs
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -70,7 +71,7 @@ export function Layout({ children }: LayoutProps) {
   const [compactMode, setCompactMode] = useState(false)
 
   const currentUser = profile
-  const unreadCount = 0 
+  const unreadCount = 0 // Placeholder
 
   const handleSignOut = async () => {
     const success = await authSignOut()
@@ -89,14 +90,21 @@ export function Layout({ children }: LayoutProps) {
   const canManageIntegrations = hasPermission(currentUser.role, 'MANAGE_INTEGRATIONS')
   const canManageSettings = hasPermission(currentUser.role, 'MANAGE_SETTINGS')
 
-  const isActive = (path: string) => location.pathname === path
+  // Verifica se a rota atual corresponde ou é filha do path
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* --- HEADER (Sticky) --- */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-6">
+          
+          {/* Logo e Navegação Principal */}
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold text-primary tracking-tight">
+            <h1 
+              className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity" 
+              onClick={() => navigate('/dashboard')}
+            >
               PipeDesk
             </h1>
 
@@ -112,8 +120,8 @@ export function Layout({ children }: LayoutProps) {
                   Dashboard
                 </Link>
               </Button>
-              {/* ... Outros links de navegação mantidos ... */}
-               <Button
+              
+              <Button
                 variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild
@@ -124,6 +132,20 @@ export function Layout({ children }: LayoutProps) {
                   Negócios
                 </Link>
               </Button>
+
+              {/* --- NOVO: ITEM DE MENU PLAYERS --- */}
+              <Button
+                variant={isActive('/players') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/players">
+                  <Buildings className="mr-2" />
+                  Players
+                </Link>
+              </Button>
+              {/* ---------------------------------- */}
+
               <Button
                 variant={isActive('/deals/comparison') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -135,6 +157,7 @@ export function Layout({ children }: LayoutProps) {
                   Comparação
                 </Link>
               </Button>
+
               <Button
                 variant={isActive('/tasks') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -145,6 +168,7 @@ export function Layout({ children }: LayoutProps) {
                   Tarefas
                 </Link>
               </Button>
+
               <Button
                 variant={isActive('/kanban') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -156,6 +180,7 @@ export function Layout({ children }: LayoutProps) {
                   Kanban
                 </Link>
               </Button>
+
               {canViewAnalytics && (
                 <Button
                   variant={isActive('/analytics') ? 'secondary' : 'ghost'}
@@ -171,9 +196,10 @@ export function Layout({ children }: LayoutProps) {
             </nav>
           </div>
 
+          {/* Área de Ações e Perfil */}
           <div className="flex items-center gap-3">
             {currentUser.role === 'admin' && (
-              <div className="flex items-center gap-2 mr-2 px-3 py-1 rounded-md bg-muted">
+              <div className="flex items-center gap-2 mr-2 px-3 py-1 rounded-md bg-muted hidden lg:flex">
                 {isImpersonating ? (
                   <EyeSlash className="text-muted-foreground" size={16} />
                 ) : (
@@ -224,6 +250,7 @@ export function Layout({ children }: LayoutProps) {
               )}
             </Button>
 
+            {/* Dropdown do Usuário */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" title="Menu">
@@ -240,76 +267,83 @@ export function Layout({ children }: LayoutProps) {
                     </Avatar>
                     <div className="flex flex-col">
                       <p className="text-sm font-medium">{currentUser.name || 'Usuário'}</p>
-                      <p className="text-xs text-muted-foreground">{currentUser.email || ''}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">{currentUser.email || ''}</p>
                     </div>
                   </div>
                 </DropdownMenuLabel>
+                
                 <DropdownMenuSeparator />
+                
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                   <UserIcon className="mr-2" />
                   Perfil
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                
                 {canManageUsers && (
                   <DropdownMenuItem onClick={() => navigate('/rbac')}>
                     <ShieldCheck className="mr-2" />
-                    RBAC
+                    Painel Admin
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
                 
-                {/* --- NOVAS ROTAS DE ADMINISTRAÇÃO --- */}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Gestão</DropdownMenuLabel>
+                
                 {canManageUsers && (
                   <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                     <Users className="mr-2" />
-                    Gerenciar Usuários
+                    Usuários
                   </DropdownMenuItem>
                 )}
+                
                 {canManageIntegrations && (
                   <DropdownMenuItem onClick={() => navigate('/admin/integrations/google')}>
                     <GoogleLogo className="mr-2" />
                     Google Workspace
                   </DropdownMenuItem>
                 )}
-                {canManageSettings && (
-                  <DropdownMenuItem onClick={() => navigate('/settings/custom-fields')}>
-                    <Gear className="mr-2" />
-                    Campos Customizados
-                  </DropdownMenuItem>
-                )}
-                {canManageSettings && (
-                  <DropdownMenuItem onClick={() => navigate('/settings/phase-validation')}>
-                    <GitBranch className="mr-2" />
-                    Validação de Fases
-                  </DropdownMenuItem>
-                )}
-                
-                {/* Mantido como Modal por enquanto pois não foi migrado */}
-                {canManageSettings && (
-                  <DropdownMenuItem onClick={() => setPipelineSettingsOpen(true)}>
-                    <FlowArrow className="mr-2" />
-                    Configurar Pipeline
-                  </DropdownMenuItem>
-                )}
-                {canManageSettings && (
-                  <DropdownMenuItem onClick={() => setSlaConfigOpen(true)}>
-                    <Clock className="mr-2" />
-                    Configurar SLA
-                  </DropdownMenuItem>
-                )}
                 
                 <DropdownMenuItem onClick={() => navigate('/folders/manage')}>
                   <FolderOpen className="mr-2" />
-                  Gerenciar Pastas
+                  Pastas
                 </DropdownMenuItem>
+
+                {canManageSettings && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Configurações</DropdownMenuLabel>
+                    
+                    <DropdownMenuItem onClick={() => navigate('/settings/custom-fields')}>
+                      <Gear className="mr-2" />
+                      Campos Customizados
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem onClick={() => navigate('/settings/phase-validation')}>
+                      <GitBranch className="mr-2" />
+                      Validação de Fases
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem onClick={() => setPipelineSettingsOpen(true)}>
+                      <FlowArrow className="mr-2" />
+                      Pipeline
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem onClick={() => setSlaConfigOpen(true)}>
+                      <Clock className="mr-2" />
+                      SLA
+                    </DropdownMenuItem>
+                  </>
+                )}
+                
                 <DropdownMenuSeparator />
+                
                 <DropdownMenuItem onClick={() => navigate('/help')}>
                   <Question className="mr-2" />
                   Central de Ajuda
                 </DropdownMenuItem>
-                {/* ------------------------------------ */}
-
+                
                 <DropdownMenuSeparator />
+                
                 <div className="px-2 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <Label htmlFor="compact-mode" className="text-sm font-normal cursor-pointer">
@@ -322,8 +356,9 @@ export function Layout({ children }: LayoutProps) {
                     />
                   </div>
                 </div>
+                
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
                 </DropdownMenuItem>
@@ -333,11 +368,12 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
+      {/* --- ÁREA PRINCIPAL --- */}
       <main className="flex-1">
         {children}
       </main>
 
-      {/* Global Components */}
+      {/* --- COMPONENTES GLOBAIS --- */}
       <GlobalSearch
         open={searchOpen}
         onOpenChange={setSearchOpen}
@@ -346,25 +382,20 @@ export function Layout({ children }: LayoutProps) {
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
 
-      {/* REMOVIDOS: UserManagementDialog, GoogleIntegrationDialog, CustomFieldsManager, 
-          FolderManager, PhaseValidationManager, HelpCenter 
-          MOTIVO: Migrados para rotas dedicadas
-      */}
-
       <PipelineSettingsDialog
         open={pipelineSettingsOpen}
         onOpenChange={setPipelineSettingsOpen}
         pipelineId={null}
       />
 
-      {/* SLA Config Dialog (Pode ser migrado depois) */}
       {canManageSettings && (
-        <div className={slaConfigOpen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6' : 'hidden'}>
+        <div className={slaConfigOpen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6 animate-in fade-in duration-200' : 'hidden'}>
           <div className="max-w-5xl mx-auto">
-            <div className="mb-6">
+            <div className="mb-6 flex items-center gap-4">
               <Button variant="ghost" onClick={() => setSlaConfigOpen(false)}>
                 ← Voltar
               </Button>
+              <h2 className="text-2xl font-bold">Configuração de SLA</h2>
             </div>
             <SLAConfigManager />
           </div>
@@ -374,71 +405,63 @@ export function Layout({ children }: LayoutProps) {
       <SLAMonitoringService />
       <OnboardingTour />
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-4 z-50">
-        {/* ... Mobile menu items mantidos ... */}
-         <Button
+      {/* --- NAVEGAÇÃO MOBILE (BOTTOM BAR) --- */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
+        <Button
           variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
-          className="flex-col h-auto py-2 px-3"
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
           <Link to="/dashboard">
-            <ChartBar className="mb-1" />
-            <span className="text-xs">Dash</span>
+            <ChartBar className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Dash</span>
           </Link>
         </Button>
+        
         <Button
-          variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
+          variant={isActive('/deals') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
-          className="flex-col h-auto py-2 px-3"
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
           <Link to="/deals">
-            <Kanban className="mb-1" />
-            <span className="text-xs">Deals</span>
+            <Kanban className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Deals</span>
           </Link>
         </Button>
+
         <Button
-          variant={isActive('/deals/comparison') ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setCreateDealOpen(true)}
+          className="flex-col h-12 w-12 rounded-full -mt-6 shadow-lg bg-primary text-primary-foreground border-4 border-background hover:bg-primary/90"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+
+        {/* NOVO: Item Mobile Players */}
+        <Button
+          variant={isActive('/players') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
-          className="flex-col h-auto py-2 px-3"
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
-          <Link to="/deals/comparison">
-            <ChartLineUp className="mb-1" />
-            <span className="text-xs">Compare</span>
+          <Link to="/players">
+            <Buildings className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Players</span>
           </Link>
         </Button>
+
         <Button
           variant={isActive('/tasks') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
-          className="flex-col h-auto py-2 px-3"
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
           <Link to="/tasks">
-            <ListChecks className="mb-1" />
-            <span className="text-xs">Tasks</span>
+            <ListChecks className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Tasks</span>
           </Link>
-        </Button>
-        <Button
-          variant={isActive('/kanban') ? 'secondary' : 'ghost'}
-          size="sm"
-          asChild
-          className="flex-col h-auto py-2 px-3"
-        >
-          <Link to="/kanban">
-            <GridFour className="mb-1" />
-            <span className="text-xs">Kanban</span>
-          </Link>
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => setCreateDealOpen(true)}
-          className="flex-col h-auto py-2 px-3"
-        >
-          <Plus className="mb-1" />
-          <span className="text-xs">Novo</span>
         </Button>
       </div>
     </div>

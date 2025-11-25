@@ -322,3 +322,127 @@ export interface Answer {
   createdAt: string
   updatedAt: string
 }
+
+// ... (manter tipos anteriores)
+
+// --- TIPOS DO PLAYER ---
+
+export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other';
+
+export type AssetManagerType = 
+  | 'fii_tijolo' | 'fii_papel' | 'fii_hibrido' 
+  | 'fidc' | 'fiagro' | 'multimercado' | 'fip';
+
+export type RelationshipLevel = 'none' | 'basic' | 'intermediate' | 'close';
+
+export type ProductType = 'credit' | 'equity' | 'barter';
+
+export type CreditSubtype = 
+  | 'ccb' | 'cri_terreno' | 'cri_obra' | 'cri_corporativo' 
+  | 'plano_empresario' | 'antecipacao' | 'kgiro' | 'bts';
+
+export type EquitySubtype = 
+  | 'equity_pref' | 'retrovenda' | 'slb' | 'compra_estoque';
+
+export type BarterSubtype = 
+  | 'financeira' | 'fisica' | 'hibrida';
+
+export interface PlayerProductCapabilities {
+  credit?: CreditSubtype[];
+  equity?: EquitySubtype[];
+  barter?: BarterSubtype[];
+}
+
+export interface PlayerContact {
+  id: string;
+  playerId: string;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  isPrimary: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  cnpj?: string;
+  site?: string;
+  description?: string;
+  logoUrl?: string;
+  
+  // Novos Campos
+  type: PlayerType;
+  gestoraTypes?: AssetManagerType[]; // Apenas se type === 'asset_manager'
+  relationshipLevel: RelationshipLevel;
+  products: PlayerProductCapabilities;
+  
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  deletedAt?: string;
+  isSynthetic: boolean;
+  
+  contacts?: PlayerContact[]; // Join opcional
+  creator?: { name: string };
+}
+
+// --- LABELS (Para UI) ---
+
+export const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
+  bank: 'Banco',
+  asset_manager: 'Gestora',
+  securitizer: 'Securitizadora',
+  family_office: 'Family Office',
+  other: 'Outro'
+};
+
+export const ASSET_MANAGER_TYPE_LABELS: Record<AssetManagerType, string> = {
+  fii_tijolo: 'FII Tijolo',
+  fii_papel: 'FII Papel',
+  fii_hibrido: 'FII Híbrido',
+  fidc: 'FIDC',
+  fiagro: 'FIAGRO',
+  multimercado: 'Multimercado',
+  fip: 'FIP'
+};
+
+export const RELATIONSHIP_LEVEL_LABELS: Record<RelationshipLevel, string> = {
+  none: 'Nenhum',
+  basic: 'Básico',
+  intermediate: 'Intermediário',
+  close: 'Próximo'
+};
+
+export const PRODUCT_LABELS: Record<ProductType, string> = {
+  credit: 'Crédito',
+  equity: 'Equity',
+  barter: 'Permuta'
+};
+
+export const CREDIT_SUBTYPE_LABELS: Record<CreditSubtype, string> = {
+  ccb: 'CCB Pura',
+  cri_terreno: 'CRI Terreno',
+  cri_obra: 'CRI Obra',
+  cri_corporativo: 'CRI Corporativo',
+  plano_empresario: 'Plano Empresário',
+  antecipacao: 'Antecipação de Recebíveis',
+  kgiro: 'KGiro',
+  bts: 'Built to Suit'
+};
+
+export const EQUITY_SUBTYPE_LABELS: Record<EquitySubtype, string> = {
+  equity_pref: 'Equity Preferencial',
+  retrovenda: 'Retrovenda',
+  slb: 'Sale and Lease Back',
+  compra_estoque: 'Compra de Estoque'
+};
+
+export const BARTER_SUBTYPE_LABELS: Record<BarterSubtype, string> = {
+  financeira: 'Financeira',
+  fisica: 'Física',
+  hibrida: 'Híbrida'
+};

@@ -7,9 +7,10 @@ import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import { useAuth } from '@/contexts/AuthContext'
 import Profile from '@/pages/Profile'
 
-// Lazy loads existentes
+// Lazy loads
 const Dashboard = lazy(() => import('@/features/analytics/components/Dashboard'))
 const DealsView = lazy(() => import('@/features/deals/components/DealsView'))
+const DealDetailPage = lazy(() => import('@/features/deals/pages/DealDetailPage'))
 const AnalyticsDashboard = lazy(() => import('@/features/analytics/components/AnalyticsDashboard'))
 const MasterMatrixView = lazy(() => import('@/features/deals/components/MasterMatrixView'))
 const TaskManagementView = lazy(() => import('@/features/tasks/components/TaskManagementView'))
@@ -19,8 +20,11 @@ const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
 const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
 
-// --- NOVAS PÁGINAS ---
-const DealDetailPage = lazy(() => import('@/features/deals/pages/DealDetailPage'))
+// NOVOS IMPORTS PARA PLAYERS
+const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
+const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetailPage'))
+
+// Pages de Admin/Settings
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
 const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
@@ -52,22 +56,25 @@ function App() {
             
             {/* Rotas de Negócios */}
             <Route path="/deals" element={<DealsView />} />
-            <Route path="/deals/:id" element={<DealDetailPage />} /> {/* NOVA ROTA */}
+            <Route path="/deals/:id" element={<DealDetailPage />} />
             <Route path="/deals/comparison" element={<DealComparison />} />
             
+            {/* ROTAS DE PLAYERS (NOVO) */}
+            <Route path="/players" element={<PlayersListPage />} />
+            <Route path="/players/:id" element={<PlayerDetailPage />} />
+
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
             <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
             
-            {/* Rotas de Pastas */}
             <Route path="/folders" element={profile ? <FolderBrowser currentUser={profile} onManageFolders={() => {}} /> : null} />
-            <Route path="/folders/manage" element={<FolderManagerPage />} /> {/* NOVA ROTA */}
+            <Route path="/folders/manage" element={<FolderManagerPage />} />
             
             <Route path="/dataroom" element={<DataRoomView />} />
             <Route path="/audit" element={<AuditLogView />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/help" element={<HelpCenterPage />} /> {/* NOVA ROTA */}
+            <Route path="/help" element={<HelpCenterPage />} />
 
-            {/* Rotas de Admin/Configurações */}
+            {/* Rotas de Admin */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
             <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
