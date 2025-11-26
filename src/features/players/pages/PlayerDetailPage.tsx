@@ -17,14 +17,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose
 } from '@/components/ui/dialog'
 import { 
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import {
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
-  Phone, Envelope, Star, PencilSimple, X, Funnel, CaretUp, CaretDown, CaretUpDown, Link as LinkIcon
+  Phone, Envelope, Star, PencilSimple, X, Funnel, CaretUp, CaretDown, CaretUpDown, Link as LinkIcon, SidebarSimple
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import {
@@ -42,6 +42,7 @@ import {
   STAGE_LABELS
 } from '@/lib/types'
 import { formatCurrency } from '@/lib/helpers'
+import { cn } from '@/lib/utils' // Certifique-se de importar o cn
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -73,7 +74,7 @@ export default function PlayerDetailPage() {
   const createTrackMutation = useCreateTrack()
   const deleteTrackMutation = useDeleteTrack()
   const createDealMutation = useCreateDeal()
-  const updateDealMutation = useUpdateDeal() // NOVO: Para atualizar o produto ao vincular
+  const updateDealMutation = useUpdateDeal()
   
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
@@ -81,9 +82,16 @@ export default function PlayerDetailPage() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [isLinkDealModalOpen, setIsLinkDealModalOpen] = useState(false)
   
+  // Estados para Modal de Confirmação de Desvínculo
+  const [isUnlinkDialogOpen, setIsUnlinkDialogOpen] = useState(false)
+  const [trackIdToUnlink, setTrackIdToUnlink] = useState<string | null>(null)
+
+  // Estado de Layout (Contatos Visíveis ou não)
+  const [showContacts, setShowContacts] = useState(true)
+  
   // Estado para vinculação existente
   const [selectedDealToLink, setSelectedDealToLink] = useState<string>('')
-  const [selectedDealProduct, setSelectedDealProduct] = useState<string>('') // NOVO
+  const [selectedDealProduct, setSelectedDealProduct] = useState<string>('')
 
   // Estado para criação rápida de deal
   const [newDealForm, setNewDealForm] = useState({
@@ -214,7 +222,6 @@ export default function PlayerDetailPage() {
     if (!selectedMasterDeal) return
 
     try {
-      // 1. Se o usuário alterou/definiu o produto, atualizamos o Master Deal
       if (selectedDealProduct && selectedDealProduct !== selectedMasterDeal.dealProduct) {
         await updateDealMutation.mutateAsync({
           dealId: selectedDealToLink,
@@ -222,7 +229,6 @@ export default function PlayerDetailPage() {
         })
       }
 
-      // 2. Criamos o Track (Vínculo)
       await createTrackMutation.mutateAsync({
         masterDealId: selectedDealToLink,
         playerName: player.name,
@@ -261,14 +267,20 @@ export default function PlayerDetailPage() {
     }
   }
 
-  const handleUnlinkDeal = async (trackId: string) => {
-    if (confirm('Tem certeza que deseja desvincular este deal? O histórico dessa interação será perdido.')) {
-      try {
-        await deleteTrackMutation.mutateAsync(trackId)
-        toast.success('Deal desvinculado')
-      } catch (error) {
-        toast.error('Erro ao desvincular deal')
-      }
+  const openUnlinkDialog = (trackId: string) => {
+    setTrackIdToUnlink(trackId)
+    setIsUnlinkDialogOpen(true)
+  }
+
+  const handleConfirmUnlink = async () => {
+    if (!trackIdToUnlink) return
+    try {
+      await deleteTrackMutation.mutateAsync(trackIdToUnlink)
+      toast.success('Deal desvinculado')
+      setIsUnlinkDialogOpen(false)
+      setTrackIdToUnlink(null)
+    } catch (error) {
+      toast.error('Erro ao desvincular deal')
     }
   }
 
@@ -377,7 +389,7 @@ export default function PlayerDetailPage() {
   if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl pb-24">
+    <div className="container mx-auto p-6 max-w-7xl pb-24">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/players')}>
@@ -393,12 +405,27 @@ export default function PlayerDetailPage() {
             </p>
           </div>
         </div>
-        <ActionButtons />
+        <div className="flex items-center gap-2">
+            {/* Botão de Toggle para mostrar/ocultar contatos */}
+            {!isNew && (
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setShowContacts(!showContacts)}
+                    title={showContacts ? "Expandir Área Principal" : "Mostrar Contatos"}
+                    className={!showContacts ? "bg-primary/10 text-primary" : ""}
+                >
+                    <SidebarSimple className="h-5 w-5" weight={showContacts ? "regular" : "fill"} />
+                </Button>
+            )}
+            <ActionButtons />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <div className="lg:col-span-2 space-y-6">
+        {/* COLUNA ESQUERDA: Layout dinâmico com cn() */}
+        <div className={cn("space-y-6 transition-all duration-300", showContacts ? "lg:col-span-2" : "lg:col-span-3")}>
           
           <Tabs defaultValue="info" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-4">
@@ -555,7 +582,8 @@ export default function PlayerDetailPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Deals Vinculados</CardTitle>
-                    <CardDescription>Oportunidades apresentadas para este player.</CardDescription>
+                    {/* Subtítulo alterado */}
+                    <CardDescription>Oportunidades apresentadas.</CardDescription>
                   </div>
                   
                   <div className="flex gap-2">
@@ -580,7 +608,6 @@ export default function PlayerDetailPage() {
                               <TabsTrigger value="new">Criar e Vincular</TabsTrigger>
                             </TabsList>
                             
-                            {/* ABA EXISTENTE - ATUALIZADA */}
                             <TabsContent value="existing" className="space-y-4 pt-4">
                               <div className="space-y-4">
                                 <div className="space-y-2">
@@ -599,13 +626,12 @@ export default function PlayerDetailPage() {
                                   </Select>
                                 </div>
 
-                                {/* Campo para atualizar/definir o Produto do deal existente */}
                                 <div className="space-y-2">
                                   <Label>Tipo de Produto</Label>
                                   <Select 
                                     value={selectedDealProduct} 
                                     onValueChange={setSelectedDealProduct}
-                                    disabled={!selectedDealToLink} // Só habilita se selecionou um deal
+                                    disabled={!selectedDealToLink} 
                                   >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Selecione o produto..." />
@@ -629,7 +655,6 @@ export default function PlayerDetailPage() {
                               </div>
                             </TabsContent>
 
-                            {/* ABA NOVO */}
                             <TabsContent value="new" className="space-y-4 pt-4">
                               <div className="space-y-3">
                                 <div className="space-y-2">
@@ -741,7 +766,11 @@ export default function PlayerDetailPage() {
                         </TableHeader>
                         <TableBody>
                           {processedDeals.length > 0 ? processedDeals.map((track) => (
-                            <TableRow key={track.id}>
+                            <TableRow 
+                                key={track.id} 
+                                className="cursor-pointer hover:bg-muted/50"
+                                onClick={() => navigate(`/deals/${track.masterDealId}`)} // Navegação ao clicar
+                            >
                               <TableCell className="font-medium">
                                 {(track as any).dealName || 'Deal Desconhecido'}
                               </TableCell>
@@ -763,7 +792,10 @@ export default function PlayerDetailPage() {
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-8 w-8 text-destructive hover:text-destructive/90"
-                                  onClick={() => handleUnlinkDeal(track.id)}
+                                  onClick={(e) => {
+                                      e.stopPropagation() // Impede a navegação ao clicar no lixo
+                                      openUnlinkDialog(track.id)
+                                  }}
                                   title="Desvincular Deal"
                                 >
                                   <Trash className="h-4 w-4" />
@@ -792,130 +824,150 @@ export default function PlayerDetailPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User size={20} />
-                Contatos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {isNew ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  Salve o player primeiro para gerenciar contatos.
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {player?.contacts?.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
-                    ) : (
-                      player?.contacts?.map(contact => (
-                        <div key={contact.id} className="p-3 rounded-lg border bg-card text-sm relative group hover:shadow-sm transition-shadow">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-semibold flex items-center gap-2">
-                              {contact.name}
-                              {contact.isPrimary && <Star weight="fill" className="text-yellow-500 h-3 w-3" title="Principal" />}
-                            </span>
-                            {isEditing && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100"
-                                onClick={() => {
-                                  if (confirm('Excluir contato?')) deleteContactMutation.mutate(contact.id)
-                                }}
-                              >
-                                <Trash size={14} />
-                              </Button>
-                            )}
-                          </div>
-                          <div className="text-muted-foreground text-xs mb-2">{contact.role}</div>
-                          <div className="space-y-1">
-                            {contact.email && (
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Envelope className="h-3 w-3" /> {contact.email}
-                              </div>
-                            )}
-                            {contact.phone && (
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Phone className="h-3 w-3" /> {contact.phone}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+        {/* COLUNA DIREITA: Contatos (Pode ser ocultada) */}
+        {showContacts && (
+            <div className="space-y-6">
+            <Card className="h-full flex flex-col">
+                <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <User size={20} />
+                    Contatos
+                </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                {isNew ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                    Salve o player primeiro para gerenciar contatos.
+                    </div>
+                ) : (
+                    <>
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                        {player?.contacts?.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
+                        ) : (
+                        player?.contacts?.map(contact => (
+                            <div key={contact.id} className="p-3 rounded-lg border bg-card text-sm relative group hover:shadow-sm transition-shadow">
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="font-semibold flex items-center gap-2">
+                                {contact.name}
+                                {contact.isPrimary && <Star weight="fill" className="text-yellow-500 h-3 w-3" title="Principal" />}
+                                </span>
+                                {isEditing && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100"
+                                    onClick={() => {
+                                    if (confirm('Excluir contato?')) deleteContactMutation.mutate(contact.id)
+                                    }}
+                                >
+                                    <Trash size={14} />
+                                </Button>
+                                )}
+                            </div>
+                            <div className="text-muted-foreground text-xs mb-2">{contact.role}</div>
+                            <div className="space-y-1">
+                                {contact.email && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Envelope className="h-3 w-3" /> {contact.email}
+                                </div>
+                                )}
+                                {contact.phone && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Phone className="h-3 w-3" /> {contact.phone}
+                                </div>
+                                )}
+                            </div>
+                            </div>
+                        ))
+                        )}
+                    </div>
 
-                  <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="w-full" variant="outline">
-                        <Plus className="mr-2" /> Novo Contato
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Adicionar Contato</DialogTitle>
-                        <DialogDescription>Preencha as informações do novo contato para este player.</DialogDescription>
-                      </DialogHeader>
+                    <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
+                        <DialogTrigger asChild>
+                        <Button size="sm" className="w-full" variant="outline">
+                            <Plus className="mr-2" /> Novo Contato
+                        </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Adicionar Contato</DialogTitle>
+                            <DialogDescription>Preencha as informações do novo contato para este player.</DialogDescription>
+                        </DialogHeader>
 
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label>Nome</Label>
-                          <Input
-                            placeholder="Nome completo"
-                            value={newContact.name}
-                            onChange={e => setNewContact({ ...newContact, name: e.target.value })}
-                          />
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                            <Label>Nome</Label>
+                            <Input
+                                placeholder="Nome completo"
+                                value={newContact.name}
+                                onChange={e => setNewContact({ ...newContact, name: e.target.value })}
+                            />
+                            </div>
+                            <div className="space-y-2">
+                            <Label>Cargo</Label>
+                            <Input
+                                placeholder="Ex: Analista, Diretor"
+                                value={newContact.role}
+                                onChange={e => setNewContact({ ...newContact, role: e.target.value })}
+                            />
+                            </div>
+                            <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input
+                                placeholder="email@empresa.com"
+                                value={newContact.email}
+                                onChange={e => setNewContact({ ...newContact, email: e.target.value })}
+                            />
+                            </div>
+                            <div className="space-y-2">
+                            <Label>Telefone</Label>
+                            <Input
+                                placeholder="(00) 00000-0000"
+                                value={newContact.phone}
+                                onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
+                            />
+                            </div>
+                            <div className="flex items-center gap-2 mt-4">
+                            <Checkbox
+                                id="is-primary"
+                                checked={newContact.isPrimary}
+                                onCheckedChange={(c) => setNewContact({ ...newContact, isPrimary: !!c })}
+                            />
+                            <Label htmlFor="is-primary" className="text-sm cursor-pointer">Definir como Contato Principal</Label>
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Cargo</Label>
-                          <Input
-                            placeholder="Ex: Analista, Diretor"
-                            value={newContact.role}
-                            onChange={e => setNewContact({ ...newContact, role: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Email</Label>
-                          <Input
-                            placeholder="email@empresa.com"
-                            value={newContact.email}
-                            onChange={e => setNewContact({ ...newContact, email: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Telefone</Label>
-                          <Input
-                            placeholder="(00) 00000-0000"
-                            value={newContact.phone}
-                            onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 mt-4">
-                          <Checkbox
-                            id="is-primary"
-                            checked={newContact.isPrimary}
-                            onCheckedChange={(c) => setNewContact({ ...newContact, isPrimary: !!c })}
-                          />
-                          <Label htmlFor="is-primary" className="text-sm cursor-pointer">Definir como Contato Principal</Label>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsContactModalOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleAddContact}>Salvar Contato</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsContactModalOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleAddContact}>Salvar Contato</Button>
+                        </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    </>
+                )}
+                </CardContent>
+            </Card>
+            </div>
+        )}
       </div>
+
+      {/* Dialog de Confirmação de Desvínculo */}
+      <Dialog open={isUnlinkDialogOpen} onOpenChange={setIsUnlinkDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Desvincular Deal</DialogTitle>
+                <DialogDescription>
+                    Tem certeza que deseja desvincular este deal deste player? Todo o histórico de interação deste player com o deal será perdido. O deal master não será excluído.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsUnlinkDialogOpen(false)}>Cancelar</Button>
+                <Button variant="destructive" onClick={handleConfirmUnlink}>Desvincular</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }
