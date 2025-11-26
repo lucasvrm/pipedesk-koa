@@ -17,12 +17,19 @@ import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, 
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { 
   Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, 
   PencilSimple, User, Phone, Funnel, X 
 } from '@phosphor-icons/react'
 import { 
-  PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel 
+  PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel,
+  CREDIT_SUBTYPE_LABELS, EQUITY_SUBTYPE_LABELS, BARTER_SUBTYPE_LABELS
 } from '@/lib/types'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
@@ -135,23 +142,84 @@ export default function PlayersListPage() {
     }
   }
 
-  // --- HELPERS VISUAIS ---
+  // --- HELPERS VISUAIS (COM TOOLTIP) ---
   const renderProductTags = (products: Player['products']) => {
     if (!products) return <span className="text-muted-foreground">-</span>;
-    const tags = [];
     
+    const groups = [];
+    
+    // Helper interno para gerar o Badge com Tooltip
+    const renderBadgeWithTooltip = (
+      key: string, 
+      label: string, 
+      subtypes: string[], 
+      labelsMap: Record<string, string>,
+      badgeClass: string
+    ) => {
+      const badge = (
+        <Badge variant="outline" className={`${badgeClass} font-normal mr-1 mb-1 cursor-help`}>
+          {label}
+          {subtypes.length > 0 && <span className="ml-1 text-[10px] opacity-70">({subtypes.length})</span>}
+        </Badge>
+      );
+
+      if (!subtypes || subtypes.length === 0) return badge;
+
+      return (
+        <TooltipProvider key={key}>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              {badge}
+            </TooltipTrigger>
+            <TooltipContent className="bg-popover text-popover-foreground border shadow-md p-2">
+              <p className="font-semibold text-xs mb-1 border-b pb-1">{label} - Detalhes:</p>
+              <ul className="list-disc list-inside text-xs space-y-0.5">
+                {subtypes.map(sub => (
+                  <li key={sub}>{labelsMap[sub] || sub}</li>
+                ))}
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    };
+
+    // Azul para Crédito
     if (products.credit?.length > 0) {
-      tags.push(<Badge key="credit" variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-normal mr-1 mb-1">Crédito</Badge>);
+      groups.push(renderBadgeWithTooltip(
+        'credit', 
+        'Crédito', 
+        products.credit, 
+        CREDIT_SUBTYPE_LABELS,
+        "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+      ));
     }
+    
+    // Verde para Equity
     if (products.equity?.length > 0) {
-      tags.push(<Badge key="equity" variant="outline" className="bg-green-50 text-green-700 border-green-200 font-normal mr-1 mb-1">Equity</Badge>);
+      groups.push(renderBadgeWithTooltip(
+        'equity', 
+        'Equity', 
+        products.equity, 
+        EQUITY_SUBTYPE_LABELS,
+        "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+      ));
     }
+    
+    // Roxo para Permuta
     if (products.barter?.length > 0) {
-      tags.push(<Badge key="barter" variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-normal mr-1 mb-1">Permuta</Badge>);
+      groups.push(renderBadgeWithTooltip(
+        'barter', 
+        'Permuta', 
+        products.barter, 
+        BARTER_SUBTYPE_LABELS,
+        "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+      ));
     }
 
-    if (tags.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
-    return <div className="flex flex-wrap">{tags}</div>;
+    if (groups.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
+    
+    return <div className="flex flex-wrap items-center">{groups}</div>;
   }
 
   const getRelationshipBadgeVariant = (level: string) => {

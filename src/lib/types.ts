@@ -323,8 +323,6 @@ export interface Answer {
   updatedAt: string
 }
 
-// ... (manter tipos anteriores)
-
 // --- TIPOS DO PLAYER ---
 
 export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other';
@@ -388,7 +386,7 @@ export interface Player {
   
   contacts?: PlayerContact[]; // Join opcional
   creator?: { name: string };
-  primaryContact?: PlayerContact;
+  primaryContact?: PlayerContact; // Contato principal para listagem
 }
 
 // --- LABELS (Para UI) ---
