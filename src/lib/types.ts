@@ -1,6 +1,7 @@
 export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
 
-export type DealStatus = 'active' | 'cancelled' | 'concluded'
+// ADICIONADO: 'on_hold'
+export type DealStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
 
 export type PlayerStage =
   | 'nda'
@@ -10,10 +11,22 @@ export type PlayerStage =
   | 'closing'
 
 export type OperationType =
-  | 'acquisition'
-  | 'merger'
-  | 'investment'
-  | 'divestment'
+  | 'ccb'
+  | 'cri_land'
+  | 'cri_construction'
+  | 'cri_corporate'
+  | 'debt_construction'
+  | 'receivables_advance'
+  | 'working_capital'
+  | 'built_to_suit'
+  | 'preferred_equity'
+  | 'repurchase'
+  | 'sale_and_lease_back'
+  | 'inventory_purchase'
+  | 'preferred_equity'
+  | 'financial_swap'
+  | 'physical_swap'
+  | 'hybrid_swap'
 
 export type ViewType = 'kanban' | 'list' | 'gantt' | 'calendar'
 
@@ -45,7 +58,6 @@ export interface MasterDeal {
   clientName: string
   volume: number
   operationType: OperationType
-  // CAMPO NOVO:
   dealProduct?: string; 
   deadline: string
   observations: string
@@ -56,7 +68,6 @@ export interface MasterDeal {
   deletedAt?: string
   feePercentage?: number
   
-  // Criador original (mantido para histórico ou owner principal)
   createdByUser?: {
     id: string
     name: string
@@ -64,11 +75,9 @@ export interface MasterDeal {
     avatar?: string
   }
 
-  // Vínculo com Empresa (Cliente)
   companyId?: string;
   company?: Company;
 
-  // NOVO: Lista de Responsáveis (Múltiplos)
   responsibles?: User[];
 }
 
@@ -217,10 +226,12 @@ export const STAGE_LABELS: Record<PlayerStage, string> = {
   closing: 'Fechamento',
 }
 
+// ATUALIZADO: Labels de status
 export const STATUS_LABELS: Record<DealStatus, string> = {
   active: 'Ativo',
   cancelled: 'Cancelado',
   concluded: 'Concluído',
+  on_hold: 'On Hold' // Ou "Em Espera"
 }
 
 export const OPERATION_LABELS: Record<OperationType, string> = {
@@ -332,8 +343,6 @@ export interface Answer {
   updatedAt: string
 }
 
-// --- TIPOS DO PLAYER ---
-
 export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other';
 
 export type AssetManagerType = 
@@ -380,9 +389,8 @@ export interface Player {
   description?: string;
   logoUrl?: string;
   
-  // Novos Campos
   type: PlayerType;
-  gestoraTypes?: AssetManagerType[]; // Apenas se type === 'asset_manager'
+  gestoraTypes?: AssetManagerType[]; 
   relationshipLevel: RelationshipLevel;
   products: PlayerProductCapabilities;
   
@@ -393,12 +401,10 @@ export interface Player {
   deletedAt?: string;
   isSynthetic: boolean;
   
-  contacts?: PlayerContact[]; // Join opcional
+  contacts?: PlayerContact[]; 
   creator?: { name: string };
-  primaryContact?: PlayerContact; // Contato principal para listagem
+  primaryContact?: PlayerContact; 
 }
-
-// --- LABELS (Para UI) ---
 
 export const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
   bank: 'Banco',
@@ -461,8 +467,6 @@ export const ALL_PRODUCT_LABELS: Record<string, string> = {
   ...BARTER_SUBTYPE_LABELS
 };
 
-// --- EMPRESAS (CLIENTES) ---
-
 export type CompanyType = 
   | 'incorporadora' 
   | 'construtora' 
@@ -485,11 +489,9 @@ export interface Company {
   createdBy: string;
   deletedAt?: string;
   
-  // Relações (Joins)
   deals?: MasterDeal[];
   contacts?: PlayerContact[]; 
   
-  // Campos auxiliares para listagem
   dealsCount?: number; 
   primaryContactName?: string;
 }
