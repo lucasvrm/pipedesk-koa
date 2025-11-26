@@ -55,10 +55,14 @@ function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProdu
 // Service Functions
 // ============================================================================
 
-export async function getTracks(): Promise<PlayerTrack[]> {
+/**
+ * Fetch all tracks (Atualizado para trazer dados do Deal)
+ */
+export async function getTracks(): Promise<(PlayerTrack & { dealName?: string; dealProduct?: string })[]> {
     const { data, error } = await supabase
         .from('player_tracks')
-        .select('*')
+        // JOIN ADICIONADO AQUI:
+        .select('*, master_deal:master_deals(client_name, deal_product)') 
         .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -69,7 +73,7 @@ export async function getTracks(): Promise<PlayerTrack[]> {
 export async function getTracksByDeal(dealId: string): Promise<PlayerTrack[]> {
     const { data, error } = await supabase
         .from('player_tracks')
-        .select('*')
+        .select('*, master_deal:master_deals(client_name, deal_product)')
         .eq('master_deal_id', dealId)
         .order('created_at', { ascending: false });
 
