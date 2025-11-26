@@ -87,10 +87,33 @@ export async function getTracksByDeal(dealId: string): Promise<PlayerTrack[]> {
 /**
  * NOVA FUNÇÃO: Fetch tracks by PLAYER ID (incluindo nome do Deal)
  */
-export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack & { dealName?: string })[]> {
+// ... (imports)
+
+// Atualize a tipagem do retorno para incluir dealProduct
+function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProduct?: string } {
+    return {
+        // ... (outros campos iguais)
+        id: item.id,
+        masterDealId: item.master_deal_id,
+        playerName: item.player_name,
+        trackVolume: item.track_volume || 0,
+        currentStage: (item.current_stage as PlayerStage) || 'nda',
+        probability: item.probability || 0,
+        responsibles: item.responsibles || [],
+        status: (item.status as any) || 'active',
+        notes: item.notes || '',
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        // JOIN: Mapeia nome e produto
+        dealName: item.master_deal?.client_name,
+        dealProduct: item.master_deal?.deal_product
+    };
+}
+
+export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack & { dealName?: string; dealProduct?: string })[]> {
     const { data, error } = await supabase
         .from('player_tracks')
-        .select('*, master_deal:master_deals(client_name)') // Join para pegar o nome
+        .select('*, master_deal:master_deals(client_name, deal_product)') // <--- Adicionado deal_product aqui
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
 
@@ -99,9 +122,6 @@ export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack 
     return (data || []).map(mapTrackFromDB);
 }
 
-/**
- * Get a single track
- */
 export async function getTrack(trackId: string): Promise<PlayerTrack> {
     const { data, error } = await supabase
         .from('player_tracks')

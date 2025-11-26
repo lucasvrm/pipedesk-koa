@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
-import { usePlayerTracks } from '@/services/trackService' // NOVO IMPORT
+import { usePlayerTracks } from '@/services/trackService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,14 +13,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table' // NOVOS IMPORTS
-import { Badge } from '@/components/ui/badge' // NOVO IMPORT
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
 } from '@/components/ui/dialog'
 import { 
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu" // NOVOS IMPORTS
+} from "@/components/ui/dropdown-menu"
 import {
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
   Phone, Envelope, Star, PencilSimple, X, Funnel, CaretUp, CaretDown, CaretUpDown
@@ -35,6 +35,7 @@ import {
   CREDIT_SUBTYPE_LABELS,
   EQUITY_SUBTYPE_LABELS,
   BARTER_SUBTYPE_LABELS,
+  ALL_PRODUCT_LABELS, // <--- ADICIONADO AQUI
   PlayerType,
   PlayerStage,
   STAGE_LABELS
@@ -48,7 +49,8 @@ const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disa
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
 
 // Tipagem para ordenação da tabela de Deals
-type DealSortKey = 'dealName' | 'trackVolume' | 'currentStage' | 'probability';
+// <--- ADICIONADO 'dealProduct' AQUI
+type DealSortKey = 'dealName' | 'dealProduct' | 'trackVolume' | 'currentStage' | 'probability';
 type SortDirection = 'asc' | 'desc';
 
 interface DealSortConfig {
@@ -68,7 +70,7 @@ export default function PlayerDetailPage() {
 
   // Hooks de dados
   const { data: player, isLoading, refetch } = usePlayer(isNew ? undefined : id)
-  const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id) // Busca deals do player
+  const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id) 
   
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
@@ -136,8 +138,15 @@ export default function PlayerDetailPage() {
 
         switch (dealSortConfig.key) {
           case 'dealName':
-            aValue = (a as any).dealName || ''; // Usando cast pois dealName vem do join
+            aValue = (a as any).dealName || ''; 
             bValue = (b as any).dealName || '';
+            break;
+          // <--- LÓGICA DE ORDENAÇÃO POR PRODUTO ADICIONADA
+          case 'dealProduct':
+            const prodA = (a as any).dealProduct;
+            const prodB = (b as any).dealProduct;
+            aValue = prodA ? ALL_PRODUCT_LABELS[prodA] || '' : '';
+            bValue = prodB ? ALL_PRODUCT_LABELS[prodB] || '' : '';
             break;
           case 'trackVolume':
             aValue = a.trackVolume || 0;
@@ -148,7 +157,6 @@ export default function PlayerDetailPage() {
             bValue = b.probability || 0;
             break;
           case 'currentStage':
-            // Ordem lógica aproximada dos estágios
             const stageOrder: Record<string, number> = { 'nda': 0, 'analysis': 1, 'proposal': 2, 'negotiation': 3, 'closing': 4 };
             aValue = stageOrder[a.currentStage] || -1;
             bValue = stageOrder[b.currentStage] || -1;
@@ -298,7 +306,7 @@ export default function PlayerDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* COLUNA ESQUERDA: ABAS (Informações / Produtos / Deals) */}
+        {/* COLUNA ESQUERDA: ABAS */}
         <div className="lg:col-span-2 space-y-6">
           
           <Tabs defaultValue="info" className="w-full">
@@ -311,7 +319,6 @@ export default function PlayerDetailPage() {
             {/* ABA 1: INFORMAÇÕES */}
             <TabsContent value="info" className="space-y-6">
               <Card>
-                {/* Item 6: Título "Informações" removido */}
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6"> 
                   <div className="space-y-2 md:col-span-2">
                     <Label>Nome do Player *</Label>
@@ -460,7 +467,7 @@ export default function PlayerDetailPage() {
               </Card>
             </TabsContent>
 
-            {/* ABA 3: DEALS (NOVO) */}
+            {/* ABA 3: DEALS */}
             <TabsContent value="deals">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -509,6 +516,13 @@ export default function PlayerDetailPage() {
                             >
                               <div className="flex items-center">Nome do Deal <SortIcon columnKey="dealName" /></div>
                             </TableHead>
+                            {/* COLUNA PRODUTO ADICIONADA */}
+                            <TableHead 
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => handleDealSort('dealProduct')}
+                            >
+                              <div className="flex items-center">Produto <SortIcon columnKey="dealProduct" /></div>
+                            </TableHead>
                             <TableHead 
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => handleDealSort('trackVolume')}
@@ -535,6 +549,12 @@ export default function PlayerDetailPage() {
                               <TableCell className="font-medium">
                                 {(track as any).dealName || 'Deal Desconhecido'}
                               </TableCell>
+                              {/* CÉLULA PRODUTO ADICIONADA */}
+                              <TableCell className="text-muted-foreground text-sm">
+                                {(track as any).dealProduct && ALL_PRODUCT_LABELS[(track as any).dealProduct] 
+                                  ? ALL_PRODUCT_LABELS[(track as any).dealProduct] 
+                                  : '-'}
+                              </TableCell>
                               <TableCell>
                                 {formatCurrency(track.trackVolume)}
                               </TableCell>
@@ -551,7 +571,7 @@ export default function PlayerDetailPage() {
                             </TableRow>
                           )) : (
                             <TableRow>
-                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                 Nenhum deal vinculado a este player.
                               </TableCell>
                             </TableRow>
@@ -572,7 +592,7 @@ export default function PlayerDetailPage() {
           </div>
         </div>
 
-        {/* COLUNA DIREITA: Contatos (Fixo/Visível em todas as abas) */}
+        {/* COLUNA DIREITA: Contatos (Mantida igual) */}
         <div className="space-y-6">
           <Card className="h-full flex flex-col">
             <CardHeader>
@@ -588,7 +608,6 @@ export default function PlayerDetailPage() {
                 </div>
               ) : (
                 <>
-                  {/* Lista de Contatos */}
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                     {player?.contacts?.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
@@ -631,7 +650,6 @@ export default function PlayerDetailPage() {
                     )}
                   </div>
 
-                  {/* Botão Novo Contato */}
                   <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" className="w-full" variant="outline">

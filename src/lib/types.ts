@@ -445,3 +445,32 @@ export const BARTER_SUBTYPE_LABELS: Record<BarterSubtype, string> = {
   fisica: 'Física',
   hibrida: 'Híbrida'
 };
+
+export const ALL_PRODUCT_LABELS: Record<string, string> = {
+  ...CREDIT_SUBTYPE_LABELS,
+  ...EQUITY_SUBTYPE_LABELS,
+  ...BARTER_SUBTYPE_LABELS
+};
+
+export interface MasterDeal {
+  id: string
+  clientName: string
+  volume: number
+  operationType: OperationType
+  // NOVO CAMPO:
+  dealProduct?: string; 
+  deadline: string
+  observations: string
+  status: DealStatus
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+  deletedAt?: string
+  feePercentage?: number
+  createdByUser?: {
+    id: string
+    name: string
+    email: string
+    avatar?: string
+  }
+}
