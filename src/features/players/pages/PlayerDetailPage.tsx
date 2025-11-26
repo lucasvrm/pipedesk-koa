@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
+import { usePlayerTracks } from '@/services/trackService' // NOVO IMPORT
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,12 +13,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table' // NOVOS IMPORTS
+import { Badge } from '@/components/ui/badge' // NOVO IMPORT
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
 } from '@/components/ui/dialog'
+import { 
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu" // NOVOS IMPORTS
 import {
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
-  Phone, Envelope, Star, PencilSimple, X
+  Phone, Envelope, Star, PencilSimple, X, Funnel, CaretUp, CaretDown, CaretUpDown
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import {
@@ -29,14 +35,26 @@ import {
   CREDIT_SUBTYPE_LABELS,
   EQUITY_SUBTYPE_LABELS,
   BARTER_SUBTYPE_LABELS,
-  PlayerType
+  PlayerType,
+  PlayerStage,
+  STAGE_LABELS
 } from '@/lib/types'
+import { formatCurrency } from '@/lib/helpers'
 
 // Estilo Padrão (Cinza/Muted) - Para campos secundários
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 
 // Estilo Destaque (Preto/Foreground) - Apenas para o Nome
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
+
+// Tipagem para ordenação da tabela de Deals
+type DealSortKey = 'dealName' | 'trackVolume' | 'currentStage' | 'probability';
+type SortDirection = 'asc' | 'desc';
+
+interface DealSortConfig {
+  key: DealSortKey;
+  direction: SortDirection;
+}
 
 export default function PlayerDetailPage() {
   const { id } = useParams()
@@ -48,11 +66,18 @@ export default function PlayerDetailPage() {
   const startEditing = isNew || location.state?.startEditing
   const [isEditing, setIsEditing] = useState(!!startEditing)
 
+  // Hooks de dados
   const { data: player, isLoading, refetch } = usePlayer(isNew ? undefined : id)
+  const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id) // Busca deals do player
+  
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
 
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+
+  // Estados da tabela de Deals
+  const [dealSortConfig, setDealSortConfig] = useState<DealSortConfig | null>(null)
+  const [dealStageFilters, setDealStageFilters] = useState<PlayerStage[]>([])
 
   const [formData, setFormData] = useState<Partial<Player>>({
     name: '',
@@ -82,6 +107,71 @@ export default function PlayerDetailPage() {
       })
     }
   }, [player])
+
+  // --- Lógica de Tabela de Deals (Ordenação e Filtro) ---
+  
+  const handleDealSort = (key: DealSortKey) => {
+    setDealSortConfig(current => {
+      if (current?.key === key) {
+        return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const processedDeals = useMemo(() => {
+    if (!playerTracks) return [];
+
+    // 1. Filtragem
+    let result = playerTracks.filter(track => {
+      if (dealStageFilters.length > 0 && !dealStageFilters.includes(track.currentStage)) return false;
+      return true;
+    });
+
+    // 2. Ordenação
+    if (dealSortConfig) {
+      result.sort((a, b) => {
+        let aValue: any = '';
+        let bValue: any = '';
+
+        switch (dealSortConfig.key) {
+          case 'dealName':
+            aValue = (a as any).dealName || ''; // Usando cast pois dealName vem do join
+            bValue = (b as any).dealName || '';
+            break;
+          case 'trackVolume':
+            aValue = a.trackVolume || 0;
+            bValue = b.trackVolume || 0;
+            break;
+          case 'probability':
+            aValue = a.probability || 0;
+            bValue = b.probability || 0;
+            break;
+          case 'currentStage':
+            // Ordem lógica aproximada dos estágios
+            const stageOrder: Record<string, number> = { 'nda': 0, 'analysis': 1, 'proposal': 2, 'negotiation': 3, 'closing': 4 };
+            aValue = stageOrder[a.currentStage] || -1;
+            bValue = stageOrder[b.currentStage] || -1;
+            break;
+        }
+
+        if (aValue < bValue) return dealSortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return dealSortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [playerTracks, dealStageFilters, dealSortConfig]);
+
+  const SortIcon = ({ columnKey }: { columnKey: DealSortKey }) => {
+    if (dealSortConfig?.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" weight="bold" />;
+    return dealSortConfig.direction === 'asc' 
+      ? <CaretUp className="ml-1 h-3 w-3 text-primary" weight="bold" />
+      : <CaretDown className="ml-1 h-3 w-3 text-primary" weight="bold" />;
+  };
+
+  // --- Fim Lógica de Tabela ---
 
   const toggleProduct = (category: 'credit' | 'equity' | 'barter', subtype: string) => {
     if (!isEditing) return
@@ -208,30 +298,28 @@ export default function PlayerDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* COLUNA ESQUERDA: ABAS (Informações / Produtos) */}
+        {/* COLUNA ESQUERDA: ABAS (Informações / Produtos / Deals) */}
         <div className="lg:col-span-2 space-y-6">
           
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="info">Informações</TabsTrigger>
               <TabsTrigger value="products">Produtos & Teses</TabsTrigger>
+              <TabsTrigger value="deals">Deals ({playerTracks?.length || 0})</TabsTrigger>
             </TabsList>
 
             {/* ABA 1: INFORMAÇÕES */}
             <TabsContent value="info" className="space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Informações</CardTitle> {/* Item 1: Título Alterado */}
-                </CardHeader>
-                {/* Item 5: Espaçamento aumentado para gap-6 */}
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+                {/* Item 6: Título "Informações" removido */}
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6"> 
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Nome do Player *</Label> {/* Item 2: Label Alterado */}
+                    <Label>Nome do Player *</Label>
                     <Input
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
                       disabled={!isEditing}
-                      className={INPUT_STYLE_PRIMARY} // Item 3: Cor Preta/Destaque
+                      className={INPUT_STYLE_PRIMARY}
                       placeholder="Ex: XP Investimentos"
                     />
                   </div>
@@ -242,7 +330,7 @@ export default function PlayerDetailPage() {
                       value={formData.cnpj}
                       onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
                       disabled={!isEditing}
-                      className={INPUT_STYLE_SECONDARY} // Item 3: Cor Cinza
+                      className={INPUT_STYLE_SECONDARY}
                       placeholder="00.000.000/0000-00"
                     />
                   </div>
@@ -371,6 +459,111 @@ export default function PlayerDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* ABA 3: DEALS (NOVO) */}
+            <TabsContent value="deals">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Deals Vinculados</CardTitle>
+                    <CardDescription>Oportunidades onde este player está envolvido.</CardDescription>
+                  </div>
+                  
+                  {/* Filtro de Estágio */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className={dealStageFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                        <Funnel className="mr-2 h-3 w-3" />
+                        Estágio {dealStageFilters.length > 0 && `(${dealStageFilters.length})`}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Filtrar por Estágio</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {Object.entries(STAGE_LABELS).map(([key, label]) => (
+                        <DropdownMenuCheckboxItem
+                          key={key}
+                          checked={dealStageFilters.includes(key as PlayerStage)}
+                          onCheckedChange={(checked) => {
+                            setDealStageFilters(prev => checked ? [...prev, key as PlayerStage] : prev.filter(k => k !== key))
+                          }}
+                        >
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                
+                <CardContent>
+                  {isLoadingTracks ? (
+                    <div className="text-center py-8 text-muted-foreground">Carregando deals...</div>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead 
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => handleDealSort('dealName')}
+                            >
+                              <div className="flex items-center">Nome do Deal <SortIcon columnKey="dealName" /></div>
+                            </TableHead>
+                            <TableHead 
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => handleDealSort('trackVolume')}
+                            >
+                              <div className="flex items-center">Volume <SortIcon columnKey="trackVolume" /></div>
+                            </TableHead>
+                            <TableHead 
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => handleDealSort('currentStage')}
+                            >
+                              <div className="flex items-center">Estágio <SortIcon columnKey="currentStage" /></div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer hover:bg-muted/50"
+                              onClick={() => handleDealSort('probability')}
+                            >
+                              <div className="flex items-center justify-end">Probabilidade <SortIcon columnKey="probability" /></div>
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {processedDeals.length > 0 ? processedDeals.map((track) => (
+                            <TableRow key={track.id}>
+                              <TableCell className="font-medium">
+                                {(track as any).dealName || 'Deal Desconhecido'}
+                              </TableCell>
+                              <TableCell>
+                                {formatCurrency(track.trackVolume)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {STAGE_LABELS[track.currentStage]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant={track.probability > 50 ? "default" : "secondary"}>
+                                  {track.probability}%
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          )) : (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                Nenhum deal vinculado a este player.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
           </Tabs>
 
           {/* Ações Rodapé Coluna Esquerda */}
@@ -379,7 +572,7 @@ export default function PlayerDetailPage() {
           </div>
         </div>
 
-        {/* COLUNA DIREITA: Contatos (Fixo/Visível em ambas as abas) */}
+        {/* COLUNA DIREITA: Contatos (Fixo/Visível em todas as abas) */}
         <div className="space-y-6">
           <Card className="h-full flex flex-col">
             <CardHeader>

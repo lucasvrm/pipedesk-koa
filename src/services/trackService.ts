@@ -33,7 +33,7 @@ export interface TrackUpdate {
 // Helpers
 // ============================================================================
 
-function mapTrackFromDB(item: PlayerTrackDB): PlayerTrack {
+function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string } {
     return {
         id: item.id,
         masterDealId: item.master_deal_id,
@@ -46,6 +46,8 @@ function mapTrackFromDB(item: PlayerTrackDB): PlayerTrack {
         notes: item.notes || '',
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        // Mapeia o nome do deal se vier do join
+        dealName: item.master_deal?.client_name
     };
 }
 
@@ -75,6 +77,21 @@ export async function getTracksByDeal(dealId: string): Promise<PlayerTrack[]> {
         .from('player_tracks')
         .select('*')
         .eq('master_deal_id', dealId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map(mapTrackFromDB);
+}
+
+/**
+ * NOVA FUNÇÃO: Fetch tracks by PLAYER ID (incluindo nome do Deal)
+ */
+export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack & { dealName?: string })[]> {
+    const { data, error } = await supabase
+        .from('player_tracks')
+        .select('*, master_deal:master_deals(client_name)') // Join para pegar o nome
+        .eq('player_id', playerId)
         .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -173,6 +190,15 @@ export function useTracks(dealId?: string) {
     });
 }
 
+// NOVO HOOK: Busca tracks pelo Player ID
+export function usePlayerTracks(playerId: string | undefined) {
+    return useQuery({
+        queryKey: ['player-tracks', playerId],
+        queryFn: () => getTracksByPlayer(playerId!),
+        enabled: !!playerId,
+    });
+}
+
 export function useTrack(trackId: string | null) {
     return useQuery({
         queryKey: ['tracks', 'detail', trackId],
@@ -189,6 +215,8 @@ export function useCreateTrack() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['tracks'] });
             queryClient.invalidateQueries({ queryKey: ['tracks', data.masterDealId] });
+            // Invalida também a lista de tracks do player
+            queryClient.invalidateQueries({ queryKey: ['player-tracks'] });
         },
     });
 }
@@ -203,6 +231,7 @@ export function useUpdateTrack() {
             queryClient.invalidateQueries({ queryKey: ['tracks'] });
             queryClient.invalidateQueries({ queryKey: ['tracks', data.masterDealId] });
             queryClient.invalidateQueries({ queryKey: ['tracks', 'detail', data.id] });
+            queryClient.invalidateQueries({ queryKey: ['player-tracks'] });
         },
     });
 }
@@ -214,6 +243,7 @@ export function useDeleteTrack() {
         mutationFn: deleteTrack,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tracks'] });
+            queryClient.invalidateQueries({ queryKey: ['player-tracks'] });
         },
     });
 }
