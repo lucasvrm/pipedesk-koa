@@ -9,6 +9,8 @@ import { PlayerTrack, PlayerStage } from '@/lib/types';
 export interface TrackInput {
     masterDealId: string;
     playerName: string;
+    // CORREÇÃO: Campo obrigatório para vincular ao player correto
+    playerId: string; 
     trackVolume?: number;
     currentStage: PlayerStage;
     probability?: number;
@@ -32,7 +34,6 @@ export interface TrackUpdate {
 // Helpers
 // ============================================================================
 
-// Função única e atualizada para mapear os dados do banco
 function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProduct?: string } {
     return {
         id: item.id,
@@ -46,7 +47,6 @@ function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProdu
         notes: item.notes || '',
         createdAt: item.created_at,
         updatedAt: item.updated_at,
-        // JOIN: Mapeia nome e produto (se disponíveis no select)
         dealName: item.master_deal?.client_name,
         dealProduct: item.master_deal?.deal_product
     };
@@ -56,9 +56,6 @@ function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProdu
 // Service Functions
 // ============================================================================
 
-/**
- * Fetch all tracks
- */
 export async function getTracks(): Promise<PlayerTrack[]> {
     const { data, error } = await supabase
         .from('player_tracks')
@@ -70,9 +67,6 @@ export async function getTracks(): Promise<PlayerTrack[]> {
     return (data || []).map(mapTrackFromDB);
 }
 
-/**
- * Fetch tracks by master deal ID
- */
 export async function getTracksByDeal(dealId: string): Promise<PlayerTrack[]> {
     const { data, error } = await supabase
         .from('player_tracks')
@@ -85,13 +79,9 @@ export async function getTracksByDeal(dealId: string): Promise<PlayerTrack[]> {
     return (data || []).map(mapTrackFromDB);
 }
 
-/**
- * Fetch tracks by PLAYER ID (incluindo nome do Deal e Produto)
- */
 export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack & { dealName?: string; dealProduct?: string })[]> {
     const { data, error } = await supabase
         .from('player_tracks')
-        // Join explícito para pegar client_name e deal_product da tabela master_deals
         .select('*, master_deal:master_deals(client_name, deal_product)') 
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
@@ -101,9 +91,6 @@ export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack 
     return (data || []).map(mapTrackFromDB);
 }
 
-/**
- * Get a single track
- */
 export async function getTrack(trackId: string): Promise<PlayerTrack> {
     const { data, error } = await supabase
         .from('player_tracks')
@@ -116,15 +103,14 @@ export async function getTrack(trackId: string): Promise<PlayerTrack> {
     return mapTrackFromDB(data);
 }
 
-/**
- * Create a new track
- */
 export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
     const { data, error } = await supabase
         .from('player_tracks')
         .insert({
             master_deal_id: track.masterDealId,
             player_name: track.playerName,
+            // CORREÇÃO: Inserindo o ID do player
+            player_id: track.playerId, 
             track_volume: track.trackVolume,
             current_stage: track.currentStage,
             probability: track.probability || 0,
@@ -140,9 +126,6 @@ export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
     return mapTrackFromDB(data);
 }
 
-/**
- * Update a track
- */
 export async function updateTrack(trackId: string, updates: TrackUpdate): Promise<PlayerTrack> {
     const updateData: any = {
         updated_at: new Date().toISOString(),
@@ -169,9 +152,6 @@ export async function updateTrack(trackId: string, updates: TrackUpdate): Promis
     return mapTrackFromDB(data);
 }
 
-/**
- * Delete a track
- */
 export async function deleteTrack(trackId: string): Promise<void> {
     const { error } = await supabase
         .from('player_tracks')
@@ -192,7 +172,6 @@ export function useTracks(dealId?: string) {
     });
 }
 
-// Hook para buscar tracks pelo Player ID
 export function usePlayerTracks(playerId: string | undefined) {
     return useQuery({
         queryKey: ['player-tracks', playerId],
@@ -217,7 +196,6 @@ export function useCreateTrack() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['tracks'] });
             queryClient.invalidateQueries({ queryKey: ['tracks', data.masterDealId] });
-            // Invalida também a lista de tracks do player
             queryClient.invalidateQueries({ queryKey: ['player-tracks'] });
         },
     });

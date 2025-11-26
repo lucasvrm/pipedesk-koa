@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
 import { usePlayerTracks, useCreateTrack, useDeleteTrack } from '@/services/trackService'
-import { useDeals } from '@/services/dealService'
+import { useDeals, useCreateDeal } from '@/services/dealService' // Importado useCreateDeal
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,7 +46,6 @@ import { formatCurrency } from '@/lib/helpers'
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
 
-// Removido 'probability', adicionado 'dealProduct'
 type DealSortKey = 'dealName' | 'dealProduct' | 'trackVolume' | 'currentStage';
 type SortDirection = 'asc' | 'desc';
 
@@ -69,10 +68,11 @@ export default function PlayerDetailPage() {
   const { data: player, isLoading, refetch } = usePlayer(isNew ? undefined : id)
   const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id)
   
-  // Hooks para vincular/desvincular deals
-  const { data: allDeals } = useDeals() // Para preencher o select de vinculação
+  // Hooks para vincular/desvincular e criar deals
+  const { data: allDeals } = useDeals() 
   const createTrackMutation = useCreateTrack()
   const deleteTrackMutation = useDeleteTrack()
+  const createDealMutation = useCreateDeal() // Mutation para criar novo deal
   
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
@@ -80,6 +80,13 @@ export default function PlayerDetailPage() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [isLinkDealModalOpen, setIsLinkDealModalOpen] = useState(false)
   const [selectedDealToLink, setSelectedDealToLink] = useState<string>('')
+
+  // Estado para criação rápida de deal
+  const [newDealForm, setNewDealForm] = useState({
+    clientName: '',
+    volume: '',
+    dealProduct: '',
+  })
 
   // Estados da tabela de Deals
   const [dealSortConfig, setDealSortConfig] = useState<DealSortConfig | null>(null)
@@ -128,13 +135,11 @@ export default function PlayerDetailPage() {
   const processedDeals = useMemo(() => {
     if (!playerTracks) return [];
 
-    // 1. Filtragem
     let result = playerTracks.filter(track => {
       if (dealStageFilters.length > 0 && !dealStageFilters.includes(track.currentStage)) return false;
       return true;
     });
 
-    // 2. Ordenação
     if (dealSortConfig) {
       result.sort((a, b) => {
         let aValue: any = '';
@@ -180,10 +185,9 @@ export default function PlayerDetailPage() {
 
   // --- Lógica de Vinculação (Link/Unlink) ---
 
-  const handleLinkDeal = async () => {
+  const handleLinkExistingDeal = async () => {
     if (!profile || !id || !selectedDealToLink || !player) return
     
-    // Verifica se já está vinculado
     const alreadyLinked = playerTracks?.some(t => t.masterDealId === selectedDealToLink)
     if (alreadyLinked) {
       toast.error('Este deal já está vinculado a este player.')
@@ -197,7 +201,8 @@ export default function PlayerDetailPage() {
       await createTrackMutation.mutateAsync({
         masterDealId: selectedDealToLink,
         playerName: player.name,
-        currentStage: 'nda', // Estágio inicial padrão
+        playerId: id, // CORREÇÃO: Passando o ID do player
+        currentStage: 'nda',
         trackVolume: selectedMasterDeal.volume,
         probability: 10,
         status: 'active'
@@ -207,6 +212,26 @@ export default function PlayerDetailPage() {
       setSelectedDealToLink('')
     } catch (error) {
       toast.error('Erro ao vincular deal')
+    }
+  }
+
+  const handleCreateAndLinkDeal = async () => {
+    if (!profile || !id || !newDealForm.clientName) return toast.error('Nome do deal é obrigatório');
+    
+    try {
+      await createDealMutation.mutateAsync({
+        clientName: newDealForm.clientName,
+        volume: Number(newDealForm.volume) || 0,
+        dealProduct: newDealForm.dealProduct,
+        createdBy: profile.id,
+        playerId: id, // Isso ativa a criação automática do track no backend (vide dealService)
+        initialStage: 'nda'
+      })
+      toast.success('Novo deal criado e vinculado!')
+      setIsLinkDealModalOpen(false)
+      setNewDealForm({ clientName: '', volume: '', dealProduct: '' })
+    } catch (error) {
+      toast.error('Erro ao criar e vincular deal')
     }
   }
 
@@ -327,7 +352,6 @@ export default function PlayerDetailPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-5xl pb-24">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/players')}>
@@ -348,7 +372,6 @@ export default function PlayerDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* COLUNA ESQUERDA: ABAS */}
         <div className="lg:col-span-2 space-y-6">
           
           <Tabs defaultValue="info" className="w-full">
@@ -358,7 +381,6 @@ export default function PlayerDetailPage() {
               <TabsTrigger value="deals">Deals ({playerTracks?.length || 0})</TabsTrigger>
             </TabsList>
 
-            {/* ABA 1: INFORMAÇÕES */}
             <TabsContent value="info" className="space-y-6">
               <Card>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6"> 
@@ -372,7 +394,6 @@ export default function PlayerDetailPage() {
                       placeholder="Ex: XP Investimentos"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label>CNPJ</Label>
                     <Input
@@ -383,7 +404,6 @@ export default function PlayerDetailPage() {
                       placeholder="00.000.000/0000-00"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label>Site</Label>
                     <Input
@@ -394,7 +414,6 @@ export default function PlayerDetailPage() {
                       placeholder="https://..."
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label>Tipo de Player</Label>
                     <Select
@@ -410,7 +429,6 @@ export default function PlayerDetailPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
                     <Label>Nível de Relacionamento</Label>
                     <Select
@@ -426,7 +444,6 @@ export default function PlayerDetailPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   {formData.type === 'asset_manager' && (
                     <div className="md:col-span-2 bg-muted/30 p-4 rounded-lg border">
                       <Label className="mb-3 block text-primary font-semibold">Tipos de Fundos sob Gestão</Label>
@@ -448,7 +465,6 @@ export default function PlayerDetailPage() {
                       </div>
                     </div>
                   )}
-
                   <div className="md:col-span-2 space-y-2">
                     <Label>Observações / Tese</Label>
                     <Textarea
@@ -463,7 +479,6 @@ export default function PlayerDetailPage() {
               </Card>
             </TabsContent>
 
-            {/* ABA 2: PRODUTOS */}
             <TabsContent value="products">
               <Card>
                 <CardHeader>
@@ -509,18 +524,15 @@ export default function PlayerDetailPage() {
               </Card>
             </TabsContent>
 
-            {/* ABA 3: DEALS */}
             <TabsContent value="deals">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Deals Vinculados</CardTitle>
-                    {/* Subtítulo alterado conforme solicitação */}
                     <CardDescription>Oportunidades apresentadas para este player.</CardDescription>
                   </div>
                   
                   <div className="flex gap-2">
-                    {/* Botão Vincular Deal */}
                     {!isNew && (
                       <Dialog open={isLinkDealModalOpen} onOpenChange={setIsLinkDealModalOpen}>
                         <DialogTrigger asChild>
@@ -530,37 +542,91 @@ export default function PlayerDetailPage() {
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Vincular Deal Existente</DialogTitle>
+                            <DialogTitle>Vincular Deal</DialogTitle>
                             <DialogDescription>
-                              Selecione um deal para apresentar a este player.
+                              Selecione um deal existente ou crie um novo para apresentar a este player.
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="py-4">
-                            <Label>Selecione o Deal</Label>
-                            <Select value={selectedDealToLink} onValueChange={setSelectedDealToLink}>
-                              <SelectTrigger className="mt-2">
-                                <SelectValue placeholder="Selecione..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {allDeals?.map(deal => (
-                                  <SelectItem key={deal.id} value={deal.id}>
-                                    {deal.clientName} ({formatCurrency(deal.volume)})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsLinkDealModalOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleLinkDeal} disabled={!selectedDealToLink}>
-                              Vincular
-                            </Button>
-                          </DialogFooter>
+                          
+                          <Tabs defaultValue="existing" className="w-full mt-4">
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="existing">Selecionar Existente</TabsTrigger>
+                              <TabsTrigger value="new">Criar e Vincular</TabsTrigger>
+                            </TabsList>
+                            
+                            {/* ABA EXISTENTE */}
+                            <TabsContent value="existing" className="space-y-4 pt-4">
+                              <div className="space-y-2">
+                                <Label>Selecione o Deal</Label>
+                                <Select value={selectedDealToLink} onValueChange={setSelectedDealToLink}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {allDeals?.map(deal => (
+                                      <SelectItem key={deal.id} value={deal.id}>
+                                        {deal.clientName} ({formatCurrency(deal.volume)})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex justify-end pt-4">
+                                <Button onClick={handleLinkExistingDeal} disabled={!selectedDealToLink}>
+                                  Vincular Selecionado
+                                </Button>
+                              </div>
+                            </TabsContent>
+
+                            {/* ABA NOVO */}
+                            <TabsContent value="new" className="space-y-4 pt-4">
+                              <div className="space-y-3">
+                                <div className="space-y-2">
+                                  <Label>Nome do Deal / Cliente</Label>
+                                  <Input 
+                                    placeholder="Ex: Expansão Grupo ABC" 
+                                    value={newDealForm.clientName}
+                                    onChange={e => setNewDealForm({...newDealForm, clientName: e.target.value})}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Produto</Label>
+                                  <Select 
+                                    value={newDealForm.dealProduct} 
+                                    onValueChange={v => setNewDealForm({...newDealForm, dealProduct: v})}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o produto..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(ALL_PRODUCT_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Volume Estimado (R$)</Label>
+                                  <Input 
+                                    type="number"
+                                    placeholder="0,00" 
+                                    value={newDealForm.volume}
+                                    onChange={e => setNewDealForm({...newDealForm, volume: e.target.value})}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end pt-4">
+                                <Button onClick={handleCreateAndLinkDeal} disabled={!newDealForm.clientName}>
+                                  Criar e Vincular
+                                </Button>
+                              </div>
+                            </TabsContent>
+                          </Tabs>
+
                         </DialogContent>
                       </Dialog>
                     )}
 
-                    {/* Filtro de Estágio */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className={dealStageFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
@@ -641,7 +707,6 @@ export default function PlayerDetailPage() {
                                   {STAGE_LABELS[track.currentStage]}
                                 </Badge>
                               </TableCell>
-                              {/* Botão de Desvincular (Lixeira) */}
                               <TableCell>
                                 <Button 
                                   variant="ghost" 
@@ -671,13 +736,11 @@ export default function PlayerDetailPage() {
 
           </Tabs>
 
-          {/* Ações Rodapé Coluna Esquerda */}
           <div className="flex justify-end">
             <ActionButtons />
           </div>
         </div>
 
-        {/* COLUNA DIREITA: Contatos (Mantida igual) */}
         <div className="space-y-6">
           <Card className="h-full flex flex-col">
             <CardHeader>
