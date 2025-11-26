@@ -1,5 +1,6 @@
 export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
 
+// Atualizado com status 'on_hold'
 export type DealStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
 
 export type PlayerStage =
@@ -9,7 +10,7 @@ export type PlayerStage =
   | 'negotiation'
   | 'closing'
 
-// 1. Definição dos Tipos (Codes)
+// 1. Definição dos Tipos de Operação (Novos)
 export type OperationType =
   | 'ccb'
   | 'cri_land'
@@ -56,7 +57,7 @@ export interface MasterDeal {
   id: string
   clientName: string
   volume: number
-  operationType: OperationType;
+  operationType: OperationType
   dealProduct?: string; 
   deadline: string
   observations: string
@@ -232,7 +233,7 @@ export const STATUS_LABELS: Record<DealStatus, string> = {
   on_hold: 'Em Espera'
 }
 
-// 2. Tradução dos Tipos (ESSENCIAL PARA O BADGE APARECER)
+// 2. Tradução dos Tipos de Operação (Novos)
 export const OPERATION_LABELS: Record<OperationType, string> = {
   ccb: 'CCB',
   cri_land: 'CRI Terreno',
@@ -469,4 +470,50 @@ export const EQUITY_SUBTYPE_LABELS: Record<EquitySubtype, string> = {
 
 export const BARTER_SUBTYPE_LABELS: Record<BarterSubtype, string> = {
   financeira: 'Permuta Financeira',
-  fisica
+  fisica: 'Permuta Física',
+  hibrida: 'Permuta Híbrida'
+};
+
+export const ALL_PRODUCT_LABELS: Record<string, string> = {
+  ...CREDIT_SUBTYPE_LABELS,
+  ...EQUITY_SUBTYPE_LABELS,
+  ...BARTER_SUBTYPE_LABELS
+};
+
+export type CompanyType = 
+  | 'incorporadora' 
+  | 'construtora' 
+  | 'assessor_juridico' 
+  | 'agente_fiduciario' 
+  | 'servicer' 
+  | 'outros';
+
+export interface Company {
+  id: string;
+  name: string;
+  cnpj?: string;
+  site?: string;
+  description?: string;
+  type: CompanyType;
+  relationshipLevel: RelationshipLevel;
+  
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  deletedAt?: string;
+  
+  deals?: MasterDeal[];
+  contacts?: PlayerContact[]; 
+  
+  dealsCount?: number; 
+  primaryContactName?: string;
+}
+
+export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  incorporadora: 'Incorporadora',
+  construtora: 'Construtora',
+  assessor_juridico: 'Assessor Jurídico',
+  agente_fiduciario: 'Agente Fiduciário',
+  servicer: 'Servicer',
+  outros: 'Outros'
+};
