@@ -440,10 +440,11 @@ export const EQUITY_SUBTYPE_LABELS: Record<EquitySubtype, string> = {
   compra_estoque: 'Compra de Estoque'
 };
 
+// ATUALIZADO AQUI
 export const BARTER_SUBTYPE_LABELS: Record<BarterSubtype, string> = {
-  financeira: 'Financeira',
-  fisica: 'Física',
-  hibrida: 'Híbrida'
+  financeira: 'Permuta Financeira',
+  fisica: 'Permuta Física',
+  hibrida: 'Permuta Híbrida'
 };
 
 export const ALL_PRODUCT_LABELS: Record<string, string> = {
@@ -451,3 +452,49 @@ export const ALL_PRODUCT_LABELS: Record<string, string> = {
   ...EQUITY_SUBTYPE_LABELS,
   ...BARTER_SUBTYPE_LABELS
 };
+
+// ... tipos existentes
+
+// --- EMPRESAS (CLIENTES) ---
+
+export type CompanyType = 
+  | 'incorporadora' 
+  | 'construtora' 
+  | 'assessor_juridico' 
+  | 'agente_fiduciario' 
+  | 'servicer' 
+  | 'outros';
+
+export interface Company {
+  id: string;
+  name: string;
+  cnpj?: string;
+  site?: string;
+  description?: string;
+  type: CompanyType;
+  
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  deletedAt?: string;
+  
+  // Relações (Joins)
+  deals?: MasterDeal[];
+  contacts?: PlayerContact[]; // Reutilizando a estrutura de contatos se for usar a mesma tabela ou criar uma nova
+}
+
+export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  incorporadora: 'Incorporadora',
+  construtora: 'Construtora',
+  assessor_juridico: 'Assessor Jurídico',
+  agente_fiduciario: 'Agente Fiduciário',
+  servicer: 'Servicer',
+  outros: 'Outros'
+};
+
+// Atualizar MasterDeal para incluir o vínculo
+export interface MasterDeal {
+  // ... campos existentes
+  companyId?: string;
+  company?: Company; // Para quando fizermos o join
+}

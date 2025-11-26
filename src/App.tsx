@@ -19,6 +19,8 @@ const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
 const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
+const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
+const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
 
 // NOVOS IMPORTS PARA PLAYERS
 const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
@@ -68,14 +70,16 @@ function App() {
             {/* Rotas de Funcionalidades */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
             <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
-            
             <Route path="/folders" element={profile ? <FolderBrowser currentUser={profile} onManageFolders={() => {}} /> : null} />
             <Route path="/folders/manage" element={<FolderManagerPage />} />
-            
             <Route path="/dataroom" element={<DataRoomView />} />
             <Route path="/audit" element={<AuditLogView />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/help" element={<HelpCenterPage />} />
+
+            {/* ROTAS DE EMPRESAS (NOVO) */}
+            <Route path="/companies" element={<CompaniesListPage />} />
+            <Route path="/companies/:id" element={<CompanyDetailPage />} />
 
             {/* Rotas de Admin */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />

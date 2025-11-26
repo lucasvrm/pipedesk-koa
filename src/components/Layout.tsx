@@ -28,7 +28,8 @@ import {
   FlowArrow,
   Clock,
   ChartLineUp,
-  Buildings 
+  Buildings,
+  Briefcase // Ícone adicionado para Empresas
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -45,7 +46,6 @@ import {
 import { toast } from 'sonner'
 
 // Componentes e Dialogs
-// CORREÇÃO: Adicionadas chaves { } para importação nomeada
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
@@ -147,6 +147,18 @@ export function Layout({ children }: LayoutProps) {
                 <Link to="/players">
                   <Buildings className="mr-2" />
                   Players
+                </Link>
+              </Button>
+
+              {/* NOVA ABA: EMPRESAS */}
+              <Button
+                variant={isActive('/companies') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/companies">
+                  <Briefcase className="mr-2" />
+                  Empresas
                 </Link>
               </Button>
 
@@ -450,6 +462,19 @@ export function Layout({ children }: LayoutProps) {
           <Link to="/players">
             <Buildings className="mb-1 h-5 w-5" />
             <span className="text-[10px]">Players</span>
+          </Link>
+        </Button>
+
+        {/* Adicionado Empresas no menu Mobile */}
+        <Button
+          variant={isActive('/companies') ? 'secondary' : 'ghost'}
+          size="sm"
+          asChild
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
+        >
+          <Link to="/companies">
+            <Briefcase className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Empresas</span>
           </Link>
         </Button>
 
