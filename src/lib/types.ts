@@ -56,7 +56,7 @@ export interface MasterDeal {
   id: string
   clientName: string
   volume: number
-  operationType: OperationType
+  operationType: OperationType;
   dealProduct?: string; 
   deadline: string
   observations: string

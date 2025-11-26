@@ -461,12 +461,10 @@ export default function DealsView() {
                         <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
                       </TableHead>
 
-                      {/* MUDANÇA: Coluna Responsável removida daqui */}
-
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort('operationType')}
-                      >
+    >
                         <div className="flex items-center">Tipo <SortIcon columnKey="operationType" /></div>
                       </TableHead>
 
@@ -501,6 +499,7 @@ export default function DealsView() {
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => navigate(`/deals/${deal.id}`)}
                         >
+                          {/* Checkbox de Seleção */}
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox 
                               checked={isSelected}
@@ -508,10 +507,12 @@ export default function DealsView() {
                             />
                           </TableCell>
                           
+                          {/* Coluna: Nome do Cliente/Negócio */}
                           <TableCell className="font-medium">
                             {deal.clientName}
                           </TableCell>
 
+                          {/* Coluna: Empresa (Company) */}
                           <TableCell>
                             {deal.company ? (
                               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -523,25 +524,27 @@ export default function DealsView() {
                             )}
                           </TableCell>
 
-                          {/* Responsável removido daqui */}
-
+                          {/* Coluna: Tipo de Operação (CORRIGIDA) */}
                           <TableCell>
-                            <Badge variant="outline" className="font-normal">
-                              {OPERATION_LABELS[deal.operationType]}
+                            <Badge variant="outline" className="font-normal whitespace-nowrap">
+                              {/* Tenta mostrar o label traduzido; se falhar, mostra o código cru; se vazio, mostra hífen */}
+                              {OPERATION_LABELS[deal.operationType] || deal.operationType || '-'}
                             </Badge>
                           </TableCell>
 
+                          {/* Coluna: Volume */}
                           <TableCell className="text-right font-medium">
                             {formatCurrency(deal.volume)}
                           </TableCell>
 
+                          {/* Coluna: Status */}
                           <TableCell className="text-center">
                             <Badge className={`${getStatusBadge(deal.status)} font-normal`}>
                               {STATUS_LABELS[deal.status]}
                             </Badge>
                           </TableCell>
 
-                          {/* MUDANÇA: Renderização do Responsável aqui */}
+                          {/* Coluna: Responsáveis */}
                           <TableCell>
                             <div className="flex -space-x-2 overflow-hidden justify-center">
                               {deal.responsibles && deal.responsibles.length > 0 ? (
@@ -564,6 +567,7 @@ export default function DealsView() {
                             </div>
                           </TableCell>
 
+                          {/* Coluna: Ações */}
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Button 
