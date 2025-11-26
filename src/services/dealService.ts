@@ -279,7 +279,11 @@ export async function deleteDeal(dealId: string): Promise<void> {
     console.error('Error deleting deal:', error);
     throw error;
   }
-  
+}
+
+/**
+ * Bulk soft delete deals
+ */
 export async function deleteDeals(ids: string[]): Promise<void> {
   try {
     const { error } = await supabase
@@ -293,12 +297,14 @@ export async function deleteDeals(ids: string[]): Promise<void> {
     throw error;
   }
 }
-}
 
 // ============================================================================
 // React Query Hooks
 // ============================================================================
 
+/**
+ * Hook to fetch all deals
+ */
 export function useDeals() {
   return useQuery({
     queryKey: ['deals'],
@@ -306,6 +312,9 @@ export function useDeals() {
   });
 }
 
+/**
+ * Hook to fetch a single deal
+ */
 export function useDeal(dealId: string | null) {
   return useQuery({
     queryKey: ['deals', dealId],
@@ -314,6 +323,9 @@ export function useDeal(dealId: string | null) {
   });
 }
 
+/**
+ * Hook to create a deal
+ */
 export function useCreateDeal() {
   const queryClient = useQueryClient();
 
@@ -329,6 +341,9 @@ export function useCreateDeal() {
   });
 }
 
+/**
+ * Hook to update a deal
+ */
 export function useUpdateDeal() {
   const queryClient = useQueryClient();
 
@@ -345,6 +360,9 @@ export function useUpdateDeal() {
   });
 }
 
+/**
+ * Hook to delete a deal
+ */
 export function useDeleteDeal() {
   const queryClient = useQueryClient();
 
@@ -356,6 +374,9 @@ export function useDeleteDeal() {
   });
 }
 
+/**
+ * Hook to delete multiple deals
+ */
 export function useDeleteDeals() {
   const queryClient = useQueryClient();
 
@@ -367,6 +388,10 @@ export function useDeleteDeals() {
   });
 }
 
+/**
+ * Hook to move a deal (update status)
+ * This is a convenience wrapper around useUpdateDeal for kanban-style moves
+ */
 export function useMoveDeal() {
   const queryClient = useQueryClient();
 
