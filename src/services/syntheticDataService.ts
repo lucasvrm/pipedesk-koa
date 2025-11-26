@@ -5,6 +5,7 @@ import {
   PlayerStage, 
   PlayerType, 
   AssetManagerType, 
+  OperationType, // ADICIONADO
   RELATIONSHIP_LEVEL_LABELS, 
   CREDIT_SUBTYPE_LABELS, 
   EQUITY_SUBTYPE_LABELS 
@@ -16,25 +17,46 @@ import {
 
 const PLAYER_TYPES: PlayerType[] = ['bank', 'asset_manager', 'family_office', 'securitizer', 'fund'];
 const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'fip', 'fiagro', 'multimercado'];
-const RELATIONSHIP_LEVELS = ['basic', 'intermediate', 'close']; // Excluímos 'none' para forçar relacionamento
+const RELATIONSHIP_LEVELS = ['basic', 'intermediate', 'close'];
 
 const CREDIT_KEYS = Object.keys(CREDIT_SUBTYPE_LABELS);
 const EQUITY_KEYS = Object.keys(EQUITY_SUBTYPE_LABELS);
+
+// ATUALIZADO: Novas Operações
+const OPERATIONS: OperationType[] = [
+  'ccb',
+  'cri_land',
+  'cri_construction',
+  'cri_corporate',
+  'debt_construction',
+  'receivables_advance',
+  'working_capital',
+  'built_to_suit',
+  'preferred_equity',
+  'repurchase',
+  'sale_and_lease_back',
+  'inventory_purchase',
+  'financial_swap',
+  'physical_swap',
+  'hybrid_swap'
+];
+
+// ATUALIZADO: Novos Status
+const STATUSES: DealStatus[] = ['active', 'concluded', 'cancelled', 'on_hold'];
 
 // Garante que SEMPRE retorna ao menos um produto
 const getRandomProducts = () => {
   let products = { credit: [], equity: [], barter: [] };
   let hasAny = false;
 
-  // Tenta gerar até conseguir algo preenchido
   while (!hasAny) {
-    const hasCredit = Math.random() > 0.3; // 70% de chance
-    const hasEquity = Math.random() > 0.5; // 50% de chance
-    const hasBarter = Math.random() > 0.8; // 20% de chance
+    const hasCredit = Math.random() > 0.3; 
+    const hasEquity = Math.random() > 0.5; 
+    const hasBarter = Math.random() > 0.8; 
 
     if (hasCredit) products.credit = faker.helpers.arrayElements(CREDIT_KEYS, { min: 1, max: 3 }) as any;
     if (hasEquity) products.equity = faker.helpers.arrayElements(EQUITY_KEYS, { min: 1, max: 2 }) as any;
-    if (hasBarter) products.barter = ['financeira'] as any; // Simplificando permuta
+    if (hasBarter) products.barter = ['financeira'] as any; 
 
     if (products.credit.length > 0 || products.equity.length > 0 || products.barter.length > 0) {
       hasAny = true;
@@ -43,7 +65,6 @@ const getRandomProducts = () => {
   return products;
 };
 
-// Garante variação real do tipo
 const getRandomPlayerType = (): PlayerType => {
   return faker.helpers.arrayElement(PLAYER_TYPES);
 };
@@ -69,7 +90,6 @@ export const syntheticDataService = {
   },
 
   async clearSyntheticUsers() {
-    // Remove perfis (o Auth deve ser limpo manualmente ou via função se necessário)
     await supabase.from('profiles').delete().eq('is_synthetic', true);
   },
 
@@ -91,11 +111,7 @@ export const syntheticDataService = {
         
         type: type,
         relationship_level: faker.helpers.arrayElement(RELATIONSHIP_LEVELS),
-        
-        // Garante tipos se for gestora, senão vazio
         gestora_types: isGestora ? faker.helpers.arrayElements(GESTORA_TYPES, { min: 1, max: 3 }) : [],
-        
-        // Garante produtos
         product_capabilities: getRandomProducts(),
         
         created_by: userId,
@@ -132,7 +148,6 @@ export const syntheticDataService = {
   },
 
   async clearSyntheticPlayers() {
-    // Deleta players (contatos vão via cascade se configurado, mas o delete limpa players sintéticos)
     await supabase.from('players').delete().eq('is_synthetic', true);
   },
 
@@ -142,17 +157,18 @@ export const syntheticDataService = {
     if (!users?.length) throw new Error("Sem usuários para atribuir deals.");
 
     const deals = [];
-    const operations = ['acquisition', 'merger', 'investment', 'divestment'];
-    const statuses: DealStatus[] = ['active', 'concluded', 'cancelled'];
 
     for (let i = 0; i < count; i++) {
       const creator = faker.helpers.arrayElement(users).id;
       deals.push({
         client_name: faker.company.name(),
         volume: parseFloat(faker.finance.amount({ min: 500000, max: 50000000 })),
-        operation_type: faker.helpers.arrayElement(operations),
+        
+        // ATUALIZADO: Usando as novas listas
+        operation_type: faker.helpers.arrayElement(OPERATIONS),
+        status: faker.helpers.arrayElement(STATUSES),
+        
         deadline: faker.date.future().toISOString(),
-        status: faker.helpers.arrayElement(statuses),
         created_by: creator,
         observations: `[SINTÉTICO] ${faker.lorem.sentence()}`,
         is_synthetic: true
@@ -172,7 +188,6 @@ export const syntheticDataService = {
     const tracks = [];
     const stages: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'];
     
-    // Tenta buscar players reais para vincular
     const { data: players } = await supabase.from('players').select('id, name').limit(50);
 
     for (const deal of deals) {
@@ -206,7 +221,7 @@ export const syntheticDataService = {
     if (createdTracks) {
       const tasks = [];
       for (const track of createdTracks) {
-        if (Math.random() > 0.5) { // 50% de chance de ter tarefa
+        if (Math.random() > 0.5) {
             tasks.push({
                 player_track_id: track.id,
                 title: "Análise preliminar",
@@ -242,7 +257,6 @@ export const syntheticDataService = {
       deals: deals.count || 0,
       players: players.count || 0,
       users: users.count || 0,
-      // Tracks e tasks são filhos, apenas ilustrativo se quiser buscar
       tracks: 0, 
       tasks: 0 
     };
