@@ -1,13 +1,29 @@
 import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useTracks } from '@/services/trackService'
-import { ALL_PRODUCT_LABELS, PlayerTrack } from '@/lib/types'
+import { ALL_PRODUCT_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/helpers'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Treemap, Legend, Cell 
+  Treemap, Cell 
 } from 'recharts'
 import { Trophy, Warning, Clock, ChartPieSlice } from '@phosphor-icons/react'
+
+// Paleta de cores para o Treemap
+const COLORS = [
+  '#3b82f6', // Azul
+  '#10b981', // Verde
+  '#f59e0b', // Amarelo
+  '#ef4444', // Vermelho
+  '#8b5cf6', // Roxo
+  '#ec4899', // Rosa
+  '#06b6d4', // Ciano
+  '#6366f1', // Índigo
+  '#84cc16', // Lima
+  '#14b8a6', // Teal
+  '#f97316', // Laranja
+  '#a855f7', // Roxo Claro
+]
 
 export default function PlayerIntelligenceDashboard() {
   const { data: tracks, isLoading } = useTracks()
@@ -17,7 +33,6 @@ export default function PlayerIntelligenceDashboard() {
   // --------------------------------------------------------------------------
 
   // A. Matriz de Apetite (Heatmap Data)
-  // Estrutura: { [PlayerName]: { [ProductKey]: count } }
   const appetiteMatrix = useMemo(() => {
     if (!tracks) return {}
     const matrix: Record<string, Record<string, number>> = {}
@@ -31,7 +46,6 @@ export default function PlayerIntelligenceDashboard() {
       matrix[player][product] = (matrix[player][product] || 0) + 1
     })
 
-    // Filtrar top 8 players com mais atividade para não quebrar o layout
     const topPlayers = Object.entries(matrix)
       .sort(([, a], [, b]) => {
         const sumA = Object.values(a).reduce((sum, val) => sum + val, 0)
@@ -63,7 +77,7 @@ export default function PlayerIntelligenceDashboard() {
         total,
         won
       }))
-      .filter(i => i.total >= 3) // Exibe apenas quem tem mínimo de histórico
+      .filter(i => i.total >= 3)
       .sort((a, b) => b.rate - a.rate)
       .slice(0, 10)
   }, [tracks])
@@ -84,8 +98,7 @@ export default function PlayerIntelligenceDashboard() {
       .slice(0, 12)
   }, [tracks])
 
-  // D. Gargalo (Tempo médio / Idade dos deals ativos)
-  // Como não temos histórico de etapas detalhado em massa, usamos "Idade do Deal"
+  // D. Gargalo (Tempo médio)
   const agingData = useMemo(() => {
     if (!tracks) return []
     const stats: Record<string, { totalDays: number, count: number }> = {}
@@ -115,9 +128,12 @@ export default function PlayerIntelligenceDashboard() {
   // HELPER COMPONENTS
   // --------------------------------------------------------------------------
 
-  // Custom Treemap Content
+  // Custom Treemap Content com Cores Dinâmicas
   const CustomTreemapContent = (props: any) => {
-    const { x, y, width, height, name, size } = props;
+    const { x, y, width, height, name, size, index } = props;
+    // Seleciona a cor baseada no índice (looping se passar do tamanho do array)
+    const color = COLORS[index % COLORS.length];
+
     return (
       <g>
         <rect
@@ -126,17 +142,17 @@ export default function PlayerIntelligenceDashboard() {
           width={width}
           height={height}
           style={{
-            fill: "#3b82f6",
+            fill: color,
             stroke: "#fff",
             strokeWidth: 2,
-            opacity: 0.8,
+            opacity: 0.9,
           }}
         />
         {width > 50 && height > 30 && (
             <foreignObject x={x} y={y} width={width} height={height}>
-                <div className="flex flex-col items-center justify-center h-full p-1 text-white text-xs text-center overflow-hidden">
-                    <span className="font-bold truncate w-full">{name}</span>
-                    <span className="opacity-80 text-[10px]">{formatCurrency(size)}</span>
+                <div className="flex flex-col items-center justify-center h-full p-1 text-white text-xs text-center overflow-hidden font-semibold drop-shadow-sm">
+                    <span className="truncate w-full px-1">{name}</span>
+                    <span className="opacity-90 text-[10px] font-normal">{formatCurrency(size)}</span>
                 </div>
             </foreignObject>
         )}
@@ -165,7 +181,7 @@ export default function PlayerIntelligenceDashboard() {
                 <thead>
                   <tr>
                     <th className="text-left p-2 text-muted-foreground font-medium">Player</th>
-                    {Object.keys(ALL_PRODUCT_LABELS).slice(0, 8).map(key => ( // Mostrando os primeiros 8 produtos para caber
+                    {Object.keys(ALL_PRODUCT_LABELS).slice(0, 8).map(key => (
                        <th key={key} className="p-2 text-xs font-normal text-muted-foreground rotate-45 h-24 align-bottom">
                          {ALL_PRODUCT_LABELS[key]}
                        </th>
@@ -178,7 +194,6 @@ export default function PlayerIntelligenceDashboard() {
                       <td className="p-2 font-medium">{player}</td>
                       {Object.keys(ALL_PRODUCT_LABELS).slice(0, 8).map(prodKey => {
                         const count = products[prodKey] || 0
-                        // Mapa de calor manual
                         const bgClass = count === 0 ? 'bg-transparent' 
                           : count < 2 ? 'bg-blue-100 text-blue-700'
                           : count < 5 ? 'bg-blue-300 text-blue-900'
@@ -228,7 +243,7 @@ export default function PlayerIntelligenceDashboard() {
           </CardContent>
         </Card>
 
-        {/* 3. EXPOSIÇÃO DE PIPELINE (TREEMAP) */}
+        {/* 3. EXPOSIÇÃO DE PIPELINE (TREEMAP COLORIDO) */}
         <Card>
             <CardHeader>
                 <div className="flex items-center gap-2">
@@ -244,7 +259,6 @@ export default function PlayerIntelligenceDashboard() {
                         dataKey="size"
                         aspectRatio={4 / 3}
                         stroke="#fff"
-                        fill="#3b82f6"
                         content={<CustomTreemapContent />}
                     />
                 </ResponsiveContainer>
