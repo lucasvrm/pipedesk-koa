@@ -4,7 +4,6 @@ import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -21,9 +20,8 @@ import {
   FileText, Sparkle, Tag, Question, ArrowLeft 
 } from '@phosphor-icons/react'
 
-// MUDANÇA: Importando o novo componente criado
+// Componentes
 import DealPlayersKanban from '../components/DealPlayersKanban' 
-
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
@@ -105,6 +103,7 @@ export default function DealDetailPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
+      {/* Cabeçalho */}
       <div className="mb-6">
         <Button variant="ghost" size="sm" onClick={() => navigate('/deals')} className="mb-4 pl-0">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -139,43 +138,48 @@ export default function DealDetailPage() {
         </div>
       </div>
 
+      {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Volume Total */}
         <Card className="bg-blue-50 border-blue-200 shadow-sm">
-          <CardHeader className="p-4 pb-1 space-y-0">
+          <CardHeader className="p-3 pb-0 space-y-0">
             <CardTitle className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Volume Total</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
+          <CardContent className="p-3 pt-1">
             <p className="text-xl font-bold text-blue-900 truncate" title={formatCurrency(deal.volume)}>
               {formatCurrency(deal.volume)}
             </p>
           </CardContent>
         </Card>
 
+        {/* Fee (%) */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 pb-1 space-y-0">
+          <CardHeader className="p-3 pb-0 space-y-0">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fee (%)</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
+          <CardContent className="p-3 pt-1">
             <p className="text-xl font-bold text-foreground">{deal.feePercentage ? `${deal.feePercentage}%` : '—'}</p>
           </CardContent>
         </Card>
 
+        {/* Prazo Final */}
         <Card className="bg-red-50 border-red-200 shadow-sm">
-          <CardHeader className="p-4 pb-1 space-y-0">
+          <CardHeader className="p-3 pb-0 space-y-0">
             <CardTitle className="text-xs font-semibold text-red-600 uppercase tracking-wider">Prazo Final</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
+          <CardContent className="p-3 pt-1">
             <p className="text-xl font-bold text-red-900 flex items-center gap-2">
               {formatDate(deal.deadline)}
             </p>
           </CardContent>
         </Card>
 
+        {/* Players Ativos */}
         <Card className="bg-amber-50 border-amber-200 shadow-sm">
-          <CardHeader className="p-4 pb-1 space-y-0">
+          <CardHeader className="p-3 pb-0 space-y-0">
             <CardTitle className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Players Ativos</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
+          <CardContent className="p-3 pt-1">
             <p className="text-xl font-bold text-amber-900">
               {dealTracks.filter(t => t.status === 'active').length}
             </p>
@@ -183,17 +187,22 @@ export default function DealDetailPage() {
         </Card>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="players" className="w-full space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/50">
           <TabsTrigger value="players" className="py-2"><Users className="mr-2" /> Players</TabsTrigger>
-          <TabsTrigger value="fields" className="py-2"><Tag className="mr-2" /> Campos</TabsTrigger>
-          <TabsTrigger value="ai" className="py-2"><Sparkle className="mr-2" /> IA</TabsTrigger>
-          <TabsTrigger value="qa" className="py-2"><Question className="mr-2" /> Q&A</TabsTrigger>
-          <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
           <TabsTrigger value="documents" className="py-2"><FileText className="mr-2" /> Docs</TabsTrigger>
+          <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
+          
+          {/* Abas Bloqueadas */}
+          <TabsTrigger value="qa" disabled className="py-2 opacity-50 cursor-not-allowed"><Question className="mr-2" /> Q&A</TabsTrigger>
+          <TabsTrigger value="ai" disabled className="py-2 opacity-50 cursor-not-allowed"><Sparkle className="mr-2" /> IA</TabsTrigger>
+          <TabsTrigger value="fields" disabled className="py-2 opacity-50 cursor-not-allowed"><Tag className="mr-2" /> Campos</TabsTrigger>
+          
           <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividade</TabsTrigger>
         </TabsList>
 
+        {/* Tab: Players */}
         <TabsContent value="players" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">Players em Negociação</h3>
@@ -211,41 +220,11 @@ export default function DealDetailPage() {
               </Button>
             </div>
           ) : (
-            // USA O NOVO COMPONENTE PARA EVITAR CONFLITO COM O KANBAN DE TAREFAS
             <DealPlayersKanban tracks={dealTracks} currentUser={currentUser} />
           )}
-
-          {deal.observations && (
-            <div className="mt-8 pt-6 border-t">
-              <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                Observações do Negócio
-              </h3>
-              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground leading-relaxed">
-                {deal.observations}
-              </div>
-            </div>
-          )}
         </TabsContent>
 
-        <TabsContent value="fields">
-          {currentUser && (
-            <CustomFieldsRenderer entityId={deal.id} entityType="deal" currentUser={currentUser} mode="edit" />
-          )}
-        </TabsContent>
-
-        <TabsContent value="ai">
-          {currentUser && <AINextSteps dealId={deal.id} />}
-        </TabsContent>
-
-        <TabsContent value="qa">
-          {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
-        </TabsContent>
-
-        <TabsContent value="comments">
-          {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
-        </TabsContent>
-
+        {/* Tab: Docs */}
         <TabsContent value="documents">
           {currentUser && (
             <DocumentManager 
@@ -257,6 +236,39 @@ export default function DealDetailPage() {
           )}
         </TabsContent>
 
+        {/* Tab: Comentários + Observações */}
+        <TabsContent value="comments" className="space-y-6">
+          {deal.observations && (
+            <div className="mb-6">
+              <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                Observações do Negócio
+              </h3>
+              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground leading-relaxed">
+                {deal.observations}
+              </div>
+            </div>
+          )}
+          
+          {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
+        </TabsContent>
+
+        {/* Tabs Bloqueadas (Conteúdo não será acessado, mas mantido no código caso habilite depois) */}
+        <TabsContent value="qa">
+          {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
+        </TabsContent>
+
+        <TabsContent value="ai">
+          {currentUser && <AINextSteps dealId={deal.id} />}
+        </TabsContent>
+
+        <TabsContent value="fields">
+          {currentUser && (
+            <CustomFieldsRenderer entityId={deal.id} entityType="deal" currentUser={currentUser} mode="edit" />
+          )}
+        </TabsContent>
+
+        {/* Tab: Atividade */}
         <TabsContent value="activity">
           <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
         </TabsContent>
