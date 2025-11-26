@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useCompanies, useDeleteCompany, useDeleteCompanies } from '@/services/companyService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   DropdownMenu, 
   DropdownMenuCheckboxItem, 
@@ -33,6 +34,8 @@ import {
   CaretUp, 
   CaretDown, 
   CaretUpDown, 
+  CaretLeft,
+  CaretRight,
   Funnel, 
   PencilSimple 
 } from '@phosphor-icons/react'
@@ -64,6 +67,8 @@ export default function CompaniesListPage() {
 
   // Estados de Controle
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' })
   
@@ -147,12 +152,22 @@ export default function CompaniesListPage() {
     return result;
   }, [companies, searchTerm, typeFilter, sortConfig]);
 
+  // --- Paginação ---
+  const totalPages = Math.ceil(processedCompanies.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentCompanies = processedCompanies.slice(startIndex, endIndex)
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage)
+  }
+
   // --- Handlers de Seleção ---
   const toggleSelectAll = () => {
-    if (selectedIds.length === processedCompanies.length) {
+    if (selectedIds.length === currentCompanies.length) {
       setSelectedIds([])
     } else {
-      setSelectedIds(processedCompanies.map(c => c.id))
+      setSelectedIds(currentCompanies.map(c => c.id))
     }
   }
 
@@ -170,7 +185,6 @@ export default function CompaniesListPage() {
         toast.success('Empresa excluída')
         setIsDeleteAlertOpen(false)
         setItemToDelete(null)
-        // Remove da seleção se estiver selecionado
         setSelectedIds(prev => prev.filter(id => id !== itemToDelete))
       } catch (error) {
         toast.error('Erro ao excluir empresa')
@@ -191,8 +205,8 @@ export default function CompaniesListPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
-      {/* Cabeçalho */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      {/* Cabeçalho da Página */}
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Buildings className="text-primary" />
@@ -201,66 +215,91 @@ export default function CompaniesListPage() {
           <p className="text-muted-foreground">Diretório de clientes e parceiros.</p>
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* Botão de Lixeira em Massa */}
-          <Button
-            variant="destructive"
-            size="icon"
-            disabled={selectedIds.length === 0}
-            onClick={() => setIsBulkDeleteAlertOpen(true)}
-            className="transition-opacity"
-            title="Excluir Selecionados"
-          >
-            <Trash size={18} />
-          </Button>
-
-          <Button onClick={() => navigate('/companies/new')}>
-            <Plus className="mr-2 h-4 w-4" /> Nova Empresa
-          </Button>
-        </div>
+        {/* Botão Nova Empresa */}
+        <Button onClick={() => navigate('/companies/new')}>
+          <Plus className="mr-2 h-4 w-4" /> Nova Empresa
+        </Button>
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="relative w-full md:w-96">
-              <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, CNPJ ou site..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+        <CardHeader className="pb-4 space-y-4">
+          
+          {/* Layout Unificado: Busca + Filtros + Ações (Igual Players) */}
+          <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
+            
+            {/* Grupo Esquerda: Busca e Filtros */}
+            <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
+              <div className="relative w-full md:w-80 lg:w-96">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, CNPJ ou site..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={typeFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                      <Funnel className="mr-2 h-4 w-4" />
+                      Tipo {typeFilter.length > 0 && `(${typeFilter.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={typeFilter.includes(key as CompanyType)}
+                        onCheckedChange={(checked) => {
+                          setTypeFilter(prev => 
+                            checked ? [...prev, key as CompanyType] : prev.filter(t => t !== key)
+                          )
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
-            {/* Filtros Avançados */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className={typeFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                    <Funnel className="mr-2 h-4 w-4" />
-                    Tipo {typeFilter.length > 0 && `(${typeFilter.length})`}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
-                    <DropdownMenuCheckboxItem
-                      key={key}
-                      checked={typeFilter.includes(key as CompanyType)}
-                      onCheckedChange={(checked) => {
-                        setTypeFilter(prev => 
-                          checked ? [...prev, key as CompanyType] : prev.filter(t => t !== key)
-                        )
-                      }}
-                    >
-                      {label}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            {/* Grupo Direita: Ações em Massa e Paginação */}
+            <div className="flex items-center gap-3 shrink-0">
+              
+              {/* Botão Excluir em Massa (Condicional) */}
+              {selectedIds.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="animate-in fade-in slide-in-from-right-5"
+                  onClick={() => setIsBulkDeleteAlertOpen(true)}
+                >
+                  <Trash className="mr-2" /> Excluir ({selectedIds.length})
+                </Button>
+              )}
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground hidden sm:inline">Linhas:</span>
+                <Select 
+                  value={String(itemsPerPage)} 
+                  onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
+                >
+                  <SelectTrigger className="w-[70px] h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
           </div>
         </CardHeader>
         
@@ -268,140 +307,176 @@ export default function CompaniesListPage() {
           {isLoading ? (
             <div className="text-center py-8">Carregando empresas...</div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox 
-                        checked={processedCompanies.length > 0 && selectedIds.length === processedCompanies.length}
-                        onCheckedChange={toggleSelectAll}
-                      />
-                    </TableHead>
-                    
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
-                      <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
-                    </TableHead>
-                    
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('primaryContact')}>
-                      <div className="flex items-center">Contato Principal <SortIcon columnKey="primaryContact" /></div>
-                    </TableHead>
-
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('type')}>
-                      <div className="flex items-center">Tipo <SortIcon columnKey="type" /></div>
-                    </TableHead>
-
-                    <TableHead className="cursor-pointer hover:bg-muted/50 text-center" onClick={() => handleSort('dealsCount')}>
-                      <div className="flex items-center justify-center">Deals <SortIcon columnKey="dealsCount" /></div>
-                    </TableHead>
-
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('relationshipLevel')}>
-                      <div className="flex items-center">Relacionamento <SortIcon columnKey="relationshipLevel" /></div>
-                    </TableHead>
-
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('site')}>
-                      <div className="flex items-center">Site <SortIcon columnKey="site" /></div>
-                    </TableHead>
-
-                    <TableHead className="w-[80px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {processedCompanies.length > 0 ? processedCompanies.map(company => (
-                    <TableRow key={company.id} className="group hover:bg-muted/50">
-                      <TableCell>
-                        <Checkbox 
-                          checked={selectedIds.includes(company.id)}
-                          onCheckedChange={() => toggleSelectOne(company.id)}
-                        />
-                      </TableCell>
-                      
-                      <TableCell className="font-medium cursor-pointer" onClick={() => navigate(`/companies/${company.id}`)}>
-                        {company.name}
-                      </TableCell>
-                      
-                      <TableCell className="text-sm text-muted-foreground">
-                        {company.primaryContactName || '-'}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge variant="outline">
-                          {COMPANY_TYPE_LABELS[company.type] || company.type}
-                        </Badge>
-                      </TableCell>
-                      
-                      <TableCell className="text-center">
-                        {company.dealsCount && company.dealsCount > 0 ? (
-                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-                            {company.dealsCount}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge variant="outline" className={
-                          company.relationshipLevel === 'close' ? 'bg-green-50 text-green-700 border-green-200' :
-                          company.relationshipLevel === 'intermediate' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          'text-muted-foreground border-border'
-                        }>
-                          {RELATIONSHIP_LEVEL_LABELS[company.relationshipLevel]}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-muted-foreground text-sm max-w-[150px] truncate">
-                        {company.site ? (
-                          <a 
-                            href={company.site.startsWith('http') ? company.site : `https://${company.site}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="hover:underline hover:text-primary"
-                            title={company.site}
-                          >
-                            {company.site.replace(/^https?:\/\//, '')}
-                          </a>
-                        ) : '-'}
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => navigate(`/companies/${company.id}`)}
-                          >
-                            <PencilSimple className="h-4 w-4" />
-                          </Button>
-                          
-                          {/* Ícone de Lixeira Bloqueado até Seleção */}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive/90 disabled:opacity-30 disabled:cursor-not-allowed"
-                            disabled={!selectedIds.includes(company.id)}
-                            onClick={() => {
-                              setItemToDelete(company.id)
-                              setIsDeleteAlertOpen(true)
-                            }}
-                            title={selectedIds.includes(company.id) ? "Excluir Empresa" : "Selecione para excluir"}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )) : (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        Nenhuma empresa encontrada com os filtros atuais.
-                      </TableCell>
+                      <TableHead className="w-[40px]">
+                        <Checkbox 
+                          checked={currentCompanies.length > 0 && selectedIds.length === currentCompanies.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      
+                      {/* Colunas Ordenáveis */}
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
+                        <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
+                      </TableHead>
+                      
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('primaryContact')}>
+                        <div className="flex items-center">Contato Principal <SortIcon columnKey="primaryContact" /></div>
+                      </TableHead>
+
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('type')}>
+                        <div className="flex items-center">Tipo <SortIcon columnKey="type" /></div>
+                      </TableHead>
+
+                      <TableHead className="cursor-pointer hover:bg-muted/50 text-center" onClick={() => handleSort('dealsCount')}>
+                        <div className="flex items-center justify-center">Deals <SortIcon columnKey="dealsCount" /></div>
+                      </TableHead>
+
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('relationshipLevel')}>
+                        <div className="flex items-center">Relacionamento <SortIcon columnKey="relationshipLevel" /></div>
+                      </TableHead>
+
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('site')}>
+                        <div className="flex items-center">Site <SortIcon columnKey="site" /></div>
+                      </TableHead>
+
+                      <TableHead className="w-[80px] text-right">Ações</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {currentCompanies.length > 0 ? currentCompanies.map(company => {
+                      const isSelected = selectedIds.includes(company.id);
+                      return (
+                        <TableRow key={company.id} className="group hover:bg-muted/50">
+                          <TableCell>
+                            <Checkbox 
+                              checked={isSelected}
+                              onCheckedChange={() => toggleSelectOne(company.id)}
+                            />
+                          </TableCell>
+                          
+                          <TableCell className="font-medium cursor-pointer" onClick={() => navigate(`/companies/${company.id}`)}>
+                            {company.name}
+                          </TableCell>
+                          
+                          <TableCell className="text-sm text-muted-foreground">
+                            {company.primaryContactName || '-'}
+                          </TableCell>
+
+                          <TableCell>
+                            <Badge variant="outline">
+                              {COMPANY_TYPE_LABELS[company.type] || company.type}
+                            </Badge>
+                          </TableCell>
+                          
+                          <TableCell className="text-center">
+                            {company.dealsCount && company.dealsCount > 0 ? (
+                              <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                {company.dealsCount}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+
+                          <TableCell>
+                            <Badge variant="outline" className={
+                              company.relationshipLevel === 'close' ? 'bg-green-50 text-green-700 border-green-200' :
+                              company.relationshipLevel === 'intermediate' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'text-muted-foreground border-border'
+                            }>
+                              {RELATIONSHIP_LEVEL_LABELS[company.relationshipLevel]}
+                            </Badge>
+                          </TableCell>
+
+                          <TableCell className="text-muted-foreground text-sm max-w-[150px] truncate">
+                            {company.site ? (
+                              <a 
+                                href={company.site.startsWith('http') ? company.site : `https://${company.site}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="hover:underline hover:text-primary"
+                                title={company.site}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {company.site.replace(/^https?:\/\//, '')}
+                              </a>
+                            ) : '-'}
+                          </TableCell>
+
+                          <TableCell>
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => navigate(`/companies/${company.id}`)}
+                              >
+                                <PencilSimple className="h-4 w-4" />
+                              </Button>
+                              
+                              {/* Ícone de Lixeira Bloqueado até Seleção */}
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive/90' : 'text-muted-foreground/30 cursor-not-allowed'}`}
+                                disabled={!isSelected}
+                                onClick={() => {
+                                  setItemToDelete(company.id)
+                                  setIsDeleteAlertOpen(true)
+                                }}
+                                title={isSelected ? "Excluir Empresa" : "Selecione para excluir"}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }) : (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          Nenhuma empresa encontrada com os filtros atuais.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Controles de Paginação */}
+              {processedCompanies.length > 0 && (
+                <div className="flex items-center justify-between space-x-2 py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, processedCompanies.length)} de {processedCompanies.length} empresas
+                  </div>
+                  <div className="space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <CaretLeft className="mr-2 h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Próximo
+                      <CaretRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
