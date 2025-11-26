@@ -18,9 +18,12 @@ import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
-  FileText, Sparkle, Tag, Question, ArrowLeft, WarningCircle
+  FileText, Sparkle, Tag, Question, ArrowLeft 
 } from '@phosphor-icons/react'
-import PlayerTracksList from '../components/PlayerTracksList'
+
+// MUDANÇA: Importando o novo componente criado
+import DealPlayersKanban from '../components/DealPlayersKanban' 
+
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
@@ -90,7 +93,6 @@ export default function DealDetailPage() {
     }
   }
 
-  // Helper para cores de status (usado no Badge e no Select)
   const getStatusColor = (status: DealStatus) => {
     switch (status) {
       case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
@@ -122,8 +124,6 @@ export default function DealDetailPage() {
           
           <div className="flex gap-2 items-center">
             <DocumentGenerator deal={deal} playerTracks={dealTracks} />
-            
-            {/* 3. Campo de Status Colorido */}
             <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
               <SelectTrigger className={`w-[180px] border h-10 font-medium transition-colors ${getStatusColor(deal.status)}`}>
                 <SelectValue />
@@ -139,10 +139,7 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      {/* 1. & 2. Cards de Métricas: Altura Reduzida e Cores Específicas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        
-        {/* Volume Total: Azul Claro */}
         <Card className="bg-blue-50 border-blue-200 shadow-sm">
           <CardHeader className="p-4 pb-1 space-y-0">
             <CardTitle className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Volume Total</CardTitle>
@@ -154,7 +151,6 @@ export default function DealDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Fee (%): Padrão (Neutro) com altura reduzida */}
         <Card className="shadow-sm">
           <CardHeader className="p-4 pb-1 space-y-0">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fee (%)</CardTitle>
@@ -164,7 +160,6 @@ export default function DealDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Prazo Final: Vermelho */}
         <Card className="bg-red-50 border-red-200 shadow-sm">
           <CardHeader className="p-4 pb-1 space-y-0">
             <CardTitle className="text-xs font-semibold text-red-600 uppercase tracking-wider">Prazo Final</CardTitle>
@@ -176,7 +171,6 @@ export default function DealDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Players Ativos: Amarelo */}
         <Card className="bg-amber-50 border-amber-200 shadow-sm">
           <CardHeader className="p-4 pb-1 space-y-0">
             <CardTitle className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Players Ativos</CardTitle>
@@ -188,8 +182,6 @@ export default function DealDetailPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* (Container de Observações foi removido daqui conforme pedido 4) */}
 
       <Tabs defaultValue="players" className="w-full space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/50">
@@ -219,10 +211,10 @@ export default function DealDetailPage() {
               </Button>
             </div>
           ) : (
-            <PlayerTracksList tracks={dealTracks} currentUser={currentUser} />
+            // USA O NOVO COMPONENTE PARA EVITAR CONFLITO COM O KANBAN DE TAREFAS
+            <DealPlayersKanban tracks={dealTracks} currentUser={currentUser} />
           )}
 
-          {/* 4. Observações movidas para baixo da lista de players */}
           {deal.observations && (
             <div className="mt-8 pt-6 border-t">
               <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
