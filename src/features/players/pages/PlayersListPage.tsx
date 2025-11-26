@@ -24,8 +24,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { 
-  Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, 
-  PencilSimple, User, Phone, Funnel, X 
+  Plus, MagnifyingGlass, Trash, Buildings, PencilSimple, User, Phone, Funnel, X,
+  CaretUp, CaretDown, CaretUpDown
 } from '@phosphor-icons/react'
 import { 
   PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel,
@@ -33,6 +33,15 @@ import {
 } from '@/lib/types'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
+
+// Tipagem para ordenação
+type SortKey = 'name' | 'primaryContact' | 'type' | 'relationshipLevel';
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  key: SortKey;
+  direction: SortDirection;
+}
 
 export default function PlayersListPage() {
   const navigate = useNavigate()
@@ -49,21 +58,34 @@ export default function PlayersListPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   
-  // Estado do Modal de Deleção (Dupla Confirmação)
+  // Estado de Ordenação
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
+  
+  // Estado do Modal
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
 
-  // Estados dos Filtros Avançados
+  // Filtros
   const [typeFilters, setTypeFilters] = useState<PlayerType[]>([])
   const [relFilters, setRelFilters] = useState<RelationshipLevel[]>([])
-  const [productFilters, setProductFilters] = useState<string[]>([]) // 'credit', 'equity', 'barter'
+  const [productFilters, setProductFilters] = useState<string[]>([])
 
-  // --- LÓGICA DE FILTRAGEM (POWER FILTER) ---
-  const filteredPlayers = useMemo(() => {
+  // --- ORDENAÇÃO ---
+  const handleSort = (key: SortKey) => {
+    setSortConfig(current => {
+      if (current?.key === key) {
+        return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  // --- FILTRAGEM E ORDENAÇÃO ---
+  const processedPlayers = useMemo(() => {
     if (!players) return []
 
-    return players.filter(p => {
-      // 1. Busca Textual (Nome, Tipo, Contato)
+    // 1. Filtragem
+    let result = players.filter(p => {
       const searchLower = search.toLowerCase()
       const matchesSearch = 
         p.name.toLowerCase().includes(searchLower) ||
@@ -71,14 +93,8 @@ export default function PlayersListPage() {
         (p.primaryContact?.name || '').toLowerCase().includes(searchLower)
 
       if (!matchesSearch) return false
-
-      // 2. Filtro de Tipo
       if (typeFilters.length > 0 && !typeFilters.includes(p.type)) return false
-
-      // 3. Filtro de Relacionamento
       if (relFilters.length > 0 && !relFilters.includes(p.relationshipLevel)) return false
-
-      // 4. Filtro de Produtos (Atuação)
       if (productFilters.length > 0) {
         const hasSelectedProduct = productFilters.some(prod => {
           if (prod === 'credit') return p.products.credit && p.products.credit.length > 0
@@ -88,18 +104,54 @@ export default function PlayersListPage() {
         })
         if (!hasSelectedProduct) return false
       }
-
       return true
     })
-  }, [players, search, typeFilters, relFilters, productFilters])
+
+    // 2. Ordenação
+    if (sortConfig) {
+      result.sort((a, b) => {
+        let aValue: any = '';
+        let bValue: any = '';
+
+        // Extração de valores para comparação
+        switch (sortConfig.key) {
+          case 'name':
+            aValue = a.name.toLowerCase();
+            bValue = b.name.toLowerCase();
+            break;
+          case 'primaryContact':
+            aValue = (a.primaryContact?.name || '').toLowerCase();
+            bValue = (b.primaryContact?.name || '').toLowerCase();
+            break;
+          case 'type':
+            // Ordena pelo Label (ex: "Banco" em vez de "bank")
+            aValue = (PLAYER_TYPE_LABELS[a.type] || a.type).toLowerCase();
+            bValue = (PLAYER_TYPE_LABELS[b.type] || b.type).toLowerCase();
+            break;
+          case 'relationshipLevel':
+            // Ordem lógica customizada
+            const relOrder: Record<string, number> = { 'none': 0, 'basic': 1, 'intermediate': 2, 'close': 3 };
+            aValue = relOrder[a.relationshipLevel] || -1;
+            bValue = relOrder[b.relationshipLevel] || -1;
+            break;
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [players, search, typeFilters, relFilters, productFilters, sortConfig])
 
   // --- PAGINAÇÃO ---
-  const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage)
+  const totalPages = Math.ceil(processedPlayers.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentPlayers = filteredPlayers.slice(startIndex, endIndex)
+  const currentPlayers = processedPlayers.slice(startIndex, endIndex)
 
-  // --- HANDLERS DE SELEÇÃO ---
+  // --- HANDLERS ---
   const toggleSelectAll = () => {
     if (selectedIds.length === currentPlayers.length) {
       setSelectedIds([])
@@ -116,7 +168,6 @@ export default function PlayersListPage() {
     }
   }
 
-  // --- HANDLERS DE DELEÇÃO ---
   const confirmDelete = (target: string | 'bulk') => {
     setItemToDelete(target)
     setDeleteDialogOpen(true)
@@ -124,7 +175,6 @@ export default function PlayersListPage() {
 
   const executeDelete = async () => {
     if (!profile || !itemToDelete) return
-
     try {
       if (itemToDelete === 'bulk') {
         await deleteBulkMutation.mutateAsync({ ids: selectedIds, userId: profile.id })
@@ -142,95 +192,6 @@ export default function PlayersListPage() {
     }
   }
 
-  // --- HELPERS VISUAIS (COM TOOLTIP) ---
-  const renderProductTags = (products: Player['products']) => {
-    if (!products) return <span className="text-muted-foreground">-</span>;
-    
-    const groups = [];
-    
-    // Helper interno para gerar o Badge com Tooltip
-    const renderBadgeWithTooltip = (
-      key: string, 
-      label: string, 
-      subtypes: string[], 
-      labelsMap: Record<string, string>,
-      badgeClass: string
-    ) => {
-      const badge = (
-        <Badge variant="outline" className={`${badgeClass} font-normal mr-1 mb-1 cursor-help`}>
-          {label}
-          {subtypes.length > 0 && <span className="ml-1 text-[10px] opacity-70">({subtypes.length})</span>}
-        </Badge>
-      );
-
-      if (!subtypes || subtypes.length === 0) return badge;
-
-      return (
-        <TooltipProvider key={key}>
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              {badge}
-            </TooltipTrigger>
-            <TooltipContent className="bg-popover text-popover-foreground border shadow-md p-2">
-              <p className="font-semibold text-xs mb-1 border-b pb-1">{label} - Detalhes:</p>
-              <ul className="list-disc list-inside text-xs space-y-0.5">
-                {subtypes.map(sub => (
-                  <li key={sub}>{labelsMap[sub] || sub}</li>
-                ))}
-              </ul>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    };
-
-    // Azul para Crédito
-    if (products.credit?.length > 0) {
-      groups.push(renderBadgeWithTooltip(
-        'credit', 
-        'Crédito', 
-        products.credit, 
-        CREDIT_SUBTYPE_LABELS,
-        "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-      ));
-    }
-    
-    // Verde para Equity
-    if (products.equity?.length > 0) {
-      groups.push(renderBadgeWithTooltip(
-        'equity', 
-        'Equity', 
-        products.equity, 
-        EQUITY_SUBTYPE_LABELS,
-        "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-      ));
-    }
-    
-    // Roxo para Permuta
-    if (products.barter?.length > 0) {
-      groups.push(renderBadgeWithTooltip(
-        'barter', 
-        'Permuta', 
-        products.barter, 
-        BARTER_SUBTYPE_LABELS,
-        "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
-      ));
-    }
-
-    if (groups.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
-    
-    return <div className="flex flex-wrap items-center">{groups}</div>;
-  }
-
-  const getRelationshipBadgeVariant = (level: string) => {
-    switch (level) {
-      case 'close': return 'default'
-      case 'intermediate': return 'secondary'
-      case 'basic': return 'outline'
-      default: return 'outline'
-    }
-  }
-
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage)
   }
@@ -243,6 +204,71 @@ export default function PlayersListPage() {
     setCurrentPage(1)
   }
 
+  // --- HELPERS VISUAIS ---
+  
+  // Cores do Relacionamento (Item 4)
+  const getRelationshipBadgeClass = (level: string) => {
+    switch (level) {
+      case 'close': // Próximo -> Verde
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+      case 'intermediate': // Intermediário -> Azul
+        return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
+      case 'basic': // Básico -> Cinza
+        return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+      default: // Nenhum -> Branco/Outline
+        return 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+    }
+  }
+
+  // Helper para renderizar ícone de ordenação
+  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+    if (sortConfig?.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" weight="bold" />;
+    return sortConfig.direction === 'asc' 
+      ? <CaretUp className="ml-1 h-3 w-3 text-primary" weight="bold" />
+      : <CaretDown className="ml-1 h-3 w-3 text-primary" weight="bold" />;
+  };
+
+  const renderProductTags = (products: Player['products']) => {
+    if (!products) return <span className="text-muted-foreground">-</span>;
+    
+    const groups = [];
+    const renderBadgeWithTooltip = (key: string, label: string, subtypes: string[], labelsMap: Record<string, string>, badgeClass: string) => {
+      const badge = (
+        <Badge variant="outline" className={`${badgeClass} font-normal mr-1 mb-1 cursor-help`}>
+          {label}
+          {subtypes.length > 0 && <span className="ml-1 text-[10px] opacity-70">({subtypes.length})</span>}
+        </Badge>
+      );
+      if (!subtypes || subtypes.length === 0) return badge;
+      return (
+        <TooltipProvider key={key}>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>{badge}</TooltipTrigger>
+            <TooltipContent className="bg-popover text-popover-foreground border shadow-md p-2">
+              <p className="font-semibold text-xs mb-1 border-b pb-1">{label} - Detalhes:</p>
+              <ul className="list-disc list-inside text-xs space-y-0.5">
+                {subtypes.map(sub => <li key={sub}>{labelsMap[sub] || sub}</li>)}
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    };
+
+    if (products.credit?.length > 0) {
+      groups.push(renderBadgeWithTooltip('credit', 'Crédito', products.credit, CREDIT_SUBTYPE_LABELS, "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"));
+    }
+    if (products.equity?.length > 0) {
+      groups.push(renderBadgeWithTooltip('equity', 'Equity', products.equity, EQUITY_SUBTYPE_LABELS, "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"));
+    }
+    if (products.barter?.length > 0) {
+      groups.push(renderBadgeWithTooltip('barter', 'Permuta', products.barter, BARTER_SUBTYPE_LABELS, "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"));
+    }
+
+    if (groups.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
+    return <div className="flex flex-wrap items-center">{groups}</div>;
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       
@@ -253,7 +279,8 @@ export default function PlayersListPage() {
             <Buildings className="text-primary" />
             Base de Players
           </h1>
-          <p className="text-muted-foreground">Diretório de fundos, empresas e investidores</p>
+          {/* Item 1: Texto alterado */}
+          <p className="text-muted-foreground">Diretório de Bancos, Gestoras, Family Offices, SECs</p>
         </div>
         <Button onClick={() => navigate('/players/new')}>
           <Plus className="mr-2" /> Novo Player
@@ -263,136 +290,133 @@ export default function PlayersListPage() {
       <Card>
         <CardHeader className="pb-4 space-y-4">
           
-          {/* Linha 1: Busca e Paginação */}
-          <div className="flex flex-col md:flex-row gap-4 justify-between">
-            <div className="relative w-full md:w-96">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por nome, contato..." 
-                value={search}
-                onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                className="pl-10"
-              />
+          {/* Item 2: Layout unificado (Busca + Filtros na mesma linha) */}
+          <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
+            
+            {/* Grupo de Busca e Filtros */}
+            <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
+              <div className="relative w-full md:w-80 lg:w-96">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar por nome, contato..." 
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Filtros Dropdown (Agora ao lado da busca) */}
+              <div className="flex flex-wrap items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={typeFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
+                      <Funnel className="mr-2 h-3 w-3" />
+                      Tipo {typeFilters.length > 0 && `(${typeFilters.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel>Tipos de Player</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={typeFilters.includes(key as PlayerType)}
+                        onCheckedChange={(checked) => {
+                          setTypeFilters(prev => checked ? [...prev, key as PlayerType] : prev.filter(k => k !== key))
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={productFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
+                      Atuação {productFilters.length > 0 && `(${productFilters.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel>Produtos</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {['credit', 'equity', 'barter'].map(key => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={productFilters.includes(key)}
+                        onCheckedChange={(checked) => {
+                          setProductFilters(prev => checked ? [...prev, key] : prev.filter(k => k !== key))
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {key === 'credit' ? 'Crédito' : key === 'equity' ? 'Equity' : 'Permuta'}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={relFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
+                      Relacionamento {relFilters.length > 0 && `(${relFilters.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={relFilters.includes(key as RelationshipLevel)}
+                        onCheckedChange={(checked) => {
+                          setRelFilters(prev => checked ? [...prev, key as RelationshipLevel] : prev.filter(k => k !== key))
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {(typeFilters.length > 0 || relFilters.length > 0 || productFilters.length > 0 || search) && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground h-8 px-2">
+                    <X className="mr-1 h-3 w-3" /> Limpar
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Itens por página:</span>
-              <Select 
-                value={String(itemsPerPage)} 
-                onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
-              >
-                <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Barra Lateral (Paginação + Ação em Massa) */}
+            <div className="flex items-center gap-3 shrink-0">
+              {selectedIds.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="animate-in fade-in slide-in-from-right-5"
+                  onClick={() => confirmDelete('bulk')}
+                >
+                  <Trash className="mr-2" /> Excluir ({selectedIds.length})
+                </Button>
+              )}
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground hidden sm:inline">Linhas:</span>
+                <Select 
+                  value={String(itemsPerPage)} 
+                  onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
+                >
+                  <SelectTrigger className="w-[70px] h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-
-          {/* Linha 2: Filtros Avançados */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mr-2">
-              <Funnel /> Filtros:
-            </div>
-
-            {/* Filtro de Tipo */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={typeFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                  Tipo {typeFilters.length > 0 && `(${typeFilters.length})`}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Tipos de Player</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={typeFilters.includes(key as PlayerType)}
-                    onCheckedChange={(checked) => {
-                      setTypeFilters(prev => checked ? [...prev, key as PlayerType] : prev.filter(k => k !== key))
-                      setCurrentPage(1)
-                    }}
-                  >
-                    {label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Filtro de Atuação/Produto */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={productFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                  Atuação {productFilters.length > 0 && `(${productFilters.length})`}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Produtos</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {['credit', 'equity', 'barter'].map(key => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={productFilters.includes(key)}
-                    onCheckedChange={(checked) => {
-                      setProductFilters(prev => checked ? [...prev, key] : prev.filter(k => k !== key))
-                      setCurrentPage(1)
-                    }}
-                  >
-                    {key === 'credit' ? 'Crédito' : key === 'equity' ? 'Equity' : 'Permuta'}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Filtro de Relacionamento */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={relFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                  Relacionamento {relFilters.length > 0 && `(${relFilters.length})`}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={relFilters.includes(key as RelationshipLevel)}
-                    onCheckedChange={(checked) => {
-                      setRelFilters(prev => checked ? [...prev, key as RelationshipLevel] : prev.filter(k => k !== key))
-                      setCurrentPage(1)
-                    }}
-                  >
-                    {label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {(typeFilters.length > 0 || relFilters.length > 0 || productFilters.length > 0 || search) && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-                <X className="mr-1" /> Limpar
-              </Button>
-            )}
-          </div>
-
-          {/* Barra de Ações em Massa */}
-          {selectedIds.length > 0 && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive p-2 rounded-md flex items-center justify-between animate-in fade-in slide-in-from-top-2">
-              <span className="text-sm font-medium ml-2">
-                {selectedIds.length} player(s) selecionado(s)
-              </span>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => confirmDelete('bulk')}
-              >
-                <Trash className="mr-2" /> Excluir Selecionados
-              </Button>
-            </div>
-          )}
 
         </CardHeader>
         
@@ -411,102 +435,137 @@ export default function PlayersListPage() {
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
-                      <TableHead className="w-[250px]">Nome</TableHead>
-                      <TableHead>Contato Principal</TableHead>
-                      <TableHead>Tipo</TableHead>
+                      
+                      {/* HEADERS CLICÁVEIS PARA ORDENAÇÃO (Item 5) */}
+                      <TableHead 
+                        className="w-[250px] cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('name')}
+                      >
+                        <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
+                      </TableHead>
+                      
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('primaryContact')}
+                      >
+                        <div className="flex items-center">Contato Principal <SortIcon columnKey="primaryContact" /></div>
+                      </TableHead>
+                      
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('type')}
+                      >
+                        <div className="flex items-center">Tipo <SortIcon columnKey="type" /></div>
+                      </TableHead>
+                      
                       <TableHead>Atuação</TableHead>
-                      <TableHead>Relacionamento</TableHead>
+                      
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('relationshipLevel')}
+                      >
+                        <div className="flex items-center">Relacionamento <SortIcon columnKey="relationshipLevel" /></div>
+                      </TableHead>
+                      
                       <TableHead>Website</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentPlayers.map((player) => (
-                      <TableRow 
-                        key={player.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/players/${player.id}`)} 
-                      >
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Checkbox 
-                            checked={selectedIds.includes(player.id)}
-                            onCheckedChange={() => toggleSelectOne(player.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                            <div className="flex flex-col">
-                                <span>{player.name}</span>
-                                {player.cnpj && <span className="text-xs text-muted-foreground">{player.cnpj}</span>}
-                            </div>
-                        </TableCell>
-                        
-                        <TableCell>
-                          {player.primaryContact ? (
-                            <div className="flex flex-col text-sm">
-                              <div className="flex items-center gap-1 font-medium">
-                                <User size={14} className="text-muted-foreground" />
-                                {player.primaryContact.name}
+                    {currentPlayers.map((player) => {
+                      const isSelected = selectedIds.includes(player.id);
+                      return (
+                        <TableRow 
+                          key={player.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => navigate(`/players/${player.id}`)} 
+                        >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox 
+                              checked={isSelected}
+                              onCheckedChange={() => toggleSelectOne(player.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                  <span>{player.name}</span>
+                                  {player.cnpj && <span className="text-xs text-muted-foreground">{player.cnpj}</span>}
                               </div>
-                              {player.primaryContact.phone && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                                  <Phone size={12} />
-                                  {player.primaryContact.phone}
+                          </TableCell>
+                          
+                          <TableCell>
+                            {player.primaryContact ? (
+                              <div className="flex flex-col text-sm">
+                                <div className="flex items-center gap-1 font-medium">
+                                  <User size={14} className="text-muted-foreground" />
+                                  {player.primaryContact.name}
                                 </div>
-                              )}
+                                {player.primaryContact.phone && (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                    <Phone size={12} />
+                                    {player.primaryContact.phone}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs italic">Sem contato principal</span>
+                            )}
+                          </TableCell>
+
+                          <TableCell>
+                            <Badge variant="secondary">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
+                          </TableCell>
+                          
+                          <TableCell>
+                            {renderProductTags(player.products)}
+                          </TableCell>
+
+                          <TableCell>
+                              {/* Item 4: Badge com cores customizadas */}
+                              <Badge className={`${getRelationshipBadgeClass(player.relationshipLevel)} font-normal`}>
+                                  {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
+                              </Badge>
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            {player.site ? (
+                              <a href={player.site} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
+                                Link
+                              </a>
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                title="Editar"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/players/${player.id}`, { state: { startEditing: true } });
+                                }}
+                              >
+                                <PencilSimple />
+                              </Button>
+                              {/* Item 3: Botão Deletar bloqueado se não selecionado */}
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                disabled={!isSelected} // Bloqueio solicitado
+                                className={`
+                                  ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30'}
+                                `}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  confirmDelete(player.id);
+                                }}
+                              >
+                                <Trash />
+                              </Button>
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs italic">Sem contato principal</span>
-                          )}
-                        </TableCell>
-
-                        <TableCell>
-                          <Badge variant="secondary">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
-                        </TableCell>
-                        
-                        <TableCell>
-                          {renderProductTags(player.products)}
-                        </TableCell>
-
-                        <TableCell>
-                            <Badge variant={getRelationshipBadgeVariant(player.relationshipLevel)}>
-                                {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
-                            </Badge>
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          {player.site ? (
-                            <a href={player.site} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
-                              Link
-                            </a>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              title="Editar"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/players/${player.id}`, { state: { startEditing: true } });
-                              }}
-                            >
-                              <PencilSimple />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                confirmDelete(player.id);
-                              }}
-                            >
-                              <Trash />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                     {currentPlayers.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
