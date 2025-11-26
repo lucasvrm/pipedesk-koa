@@ -1,6 +1,5 @@
 export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
 
-// ADICIONADO: 'on_hold'
 export type DealStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
 
 export type PlayerStage =
@@ -10,6 +9,7 @@ export type PlayerStage =
   | 'negotiation'
   | 'closing'
 
+// 1. Definição dos Tipos (Codes)
 export type OperationType =
   | 'ccb'
   | 'cri_land'
@@ -23,10 +23,9 @@ export type OperationType =
   | 'repurchase'
   | 'sale_and_lease_back'
   | 'inventory_purchase'
-  | 'preferred_equity'
   | 'financial_swap'
   | 'physical_swap'
-  | 'hybrid_swap'
+  | 'hybrid_swap';
 
 export type ViewType = 'kanban' | 'list' | 'gantt' | 'calendar'
 
@@ -226,19 +225,30 @@ export const STAGE_LABELS: Record<PlayerStage, string> = {
   closing: 'Fechamento',
 }
 
-// ATUALIZADO: Labels de status
 export const STATUS_LABELS: Record<DealStatus, string> = {
   active: 'Ativo',
   cancelled: 'Cancelado',
   concluded: 'Concluído',
-  on_hold: 'On Hold' // Ou "Em Espera"
+  on_hold: 'Em Espera'
 }
 
+// 2. Tradução dos Tipos (ESSENCIAL PARA O BADGE APARECER)
 export const OPERATION_LABELS: Record<OperationType, string> = {
-  acquisition: 'Aquisição',
-  merger: 'Fusão',
-  investment: 'Investimento',
-  divestment: 'Desinvestimento',
+  ccb: 'CCB',
+  cri_land: 'CRI Terreno',
+  cri_construction: 'CRI Construção',
+  cri_corporate: 'CRI Corporativo',
+  debt_construction: 'Plano Empresário',
+  receivables_advance: 'Antecipação de Recebíveis',
+  working_capital: 'Capital de Giro',
+  built_to_suit: 'Built to Suit',
+  preferred_equity: 'Equity Preferencial',
+  repurchase: 'Retrovenda',
+  sale_and_lease_back: 'Sale & Leaseback',
+  inventory_purchase: 'Compra de Estoque',
+  financial_swap: 'Permuta Financeira',
+  physical_swap: 'Permuta Física',
+  hybrid_swap: 'Permuta Híbrida'
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -343,6 +353,8 @@ export interface Answer {
   updatedAt: string
 }
 
+// --- TIPOS DO PLAYER ---
+
 export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other';
 
 export type AssetManagerType = 
@@ -401,7 +413,7 @@ export interface Player {
   deletedAt?: string;
   isSynthetic: boolean;
   
-  contacts?: PlayerContact[]; 
+  contacts?: PlayerContact[];
   creator?: { name: string };
   primaryContact?: PlayerContact; 
 }
@@ -457,50 +469,4 @@ export const EQUITY_SUBTYPE_LABELS: Record<EquitySubtype, string> = {
 
 export const BARTER_SUBTYPE_LABELS: Record<BarterSubtype, string> = {
   financeira: 'Permuta Financeira',
-  fisica: 'Permuta Física',
-  hibrida: 'Permuta Híbrida'
-};
-
-export const ALL_PRODUCT_LABELS: Record<string, string> = {
-  ...CREDIT_SUBTYPE_LABELS,
-  ...EQUITY_SUBTYPE_LABELS,
-  ...BARTER_SUBTYPE_LABELS
-};
-
-export type CompanyType = 
-  | 'incorporadora' 
-  | 'construtora' 
-  | 'assessor_juridico' 
-  | 'agente_fiduciario' 
-  | 'servicer' 
-  | 'outros';
-
-export interface Company {
-  id: string;
-  name: string;
-  cnpj?: string;
-  site?: string;
-  description?: string;
-  type: CompanyType;
-  relationshipLevel: RelationshipLevel;
-  
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  deletedAt?: string;
-  
-  deals?: MasterDeal[];
-  contacts?: PlayerContact[]; 
-  
-  dealsCount?: number; 
-  primaryContactName?: string;
-}
-
-export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
-  incorporadora: 'Incorporadora',
-  construtora: 'Construtora',
-  assessor_juridico: 'Assessor Jurídico',
-  agente_fiduciario: 'Agente Fiduciário',
-  servicer: 'Servicer',
-  outros: 'Outros'
-};
+  fisica
