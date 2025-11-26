@@ -279,15 +279,26 @@ export async function deleteDeal(dealId: string): Promise<void> {
     console.error('Error deleting deal:', error);
     throw error;
   }
+  
+export async function deleteDeals(ids: string[]): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('master_deals')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', ids);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting deals:', error);
+    throw error;
+  }
+}
 }
 
 // ============================================================================
 // React Query Hooks
 // ============================================================================
 
-/**
- * Hook to fetch all deals
- */
 export function useDeals() {
   return useQuery({
     queryKey: ['deals'],
@@ -295,9 +306,6 @@ export function useDeals() {
   });
 }
 
-/**
- * Hook to fetch a single deal
- */
 export function useDeal(dealId: string | null) {
   return useQuery({
     queryKey: ['deals', dealId],
@@ -306,9 +314,6 @@ export function useDeal(dealId: string | null) {
   });
 }
 
-/**
- * Hook to create a deal
- */
 export function useCreateDeal() {
   const queryClient = useQueryClient();
 
@@ -324,9 +329,6 @@ export function useCreateDeal() {
   });
 }
 
-/**
- * Hook to update a deal
- */
 export function useUpdateDeal() {
   const queryClient = useQueryClient();
 
@@ -343,9 +345,6 @@ export function useUpdateDeal() {
   });
 }
 
-/**
- * Hook to delete a deal
- */
 export function useDeleteDeal() {
   const queryClient = useQueryClient();
 
@@ -357,10 +356,17 @@ export function useDeleteDeal() {
   });
 }
 
-/**
- * Hook to move a deal (update status)
- * This is a convenience wrapper around useUpdateDeal for kanban-style moves
- */
+export function useDeleteDeals() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteDeals,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+    },
+  });
+}
+
 export function useMoveDeal() {
   const queryClient = useQueryClient();
 

@@ -22,14 +22,14 @@ import {
   FolderOpen,
   GitBranch,
   List,
-  Eye,
-  EyeSlash,
   Question,
   FlowArrow,
   Clock,
   ChartLineUp,
   Buildings,
-  Briefcase // Ícone adicionado para Empresas
+  Briefcase,
+  Eye,       // Ícone para o menu
+  EyeSlash   // Ícone para o menu
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -64,13 +64,10 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Adicione este log para ver se o ID está chegando
   console.log("👤 [Layout] Renderizou. Profile ID:", profile?.id);
 
-  // Ativação das Notificações Realtime
   useRealtimeNotifications(profile?.id);
 
-  // Estados de Dialogs
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -150,7 +147,6 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </Button>
 
-              {/* NOVA ABA: EMPRESAS */}
               <Button
                 variant={isActive('/companies') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -213,23 +209,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {currentUser.role === 'admin' && (
-              <div className="flex items-center gap-2 mr-2 px-3 py-1 rounded-md bg-muted hidden lg:flex">
-                {isImpersonating ? (
-                  <EyeSlash className="text-muted-foreground" size={16} />
-                ) : (
-                  <Eye className="text-muted-foreground" size={16} />
-                )}
-                <Label htmlFor="impersonation-mode" className="text-xs text-muted-foreground cursor-pointer">
-                  Modo Cliente
-                </Label>
-                <Switch
-                  id="impersonation-mode"
-                  checked={isImpersonating}
-                  onCheckedChange={setIsImpersonating}
-                />
-              </div>
-            )}
+            {/* REMOVIDO O SWITCH DAQUI */}
 
             <Button
               variant="ghost"
@@ -358,6 +338,27 @@ export function Layout({ children }: LayoutProps) {
                 
                 <DropdownMenuSeparator />
                 
+                {/* SWITCH MODO CLIENTE MOVIDO PARA CÁ */}
+                {currentUser.role === 'admin' && (
+                  <div className="px-2 py-2 flex items-center justify-between hover:bg-accent rounded-sm transition-colors">
+                    <div className="flex items-center gap-2">
+                        {isImpersonating ? (
+                            <EyeSlash className="text-muted-foreground" size={16} />
+                        ) : (
+                            <Eye className="text-muted-foreground" size={16} />
+                        )}
+                        <Label htmlFor="impersonation-mode" className="text-sm font-normal cursor-pointer">
+                            Modo Cliente
+                        </Label>
+                    </div>
+                    <Switch
+                        id="impersonation-mode"
+                        checked={isImpersonating}
+                        onCheckedChange={setIsImpersonating}
+                    />
+                  </div>
+                )}
+
                 <div className="px-2 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <Label htmlFor="compact-mode" className="text-sm font-normal cursor-pointer">
@@ -387,6 +388,7 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
 
+      {/* ... RESTO DO CÓDIGO MANTIDO IGUAL ... */}
       {/* COMPONENTES GLOBAIS */}
       <GlobalSearch
         open={searchOpen}
@@ -421,6 +423,7 @@ export function Layout({ children }: LayoutProps) {
 
       {/* BOTTOM BAR (MOBILE) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
+        {/* ... Botões Mobile ... */}
         <Button
           variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
           size="sm"
@@ -465,7 +468,6 @@ export function Layout({ children }: LayoutProps) {
           </Link>
         </Button>
 
-        {/* Adicionado Empresas no menu Mobile */}
         <Button
           variant={isActive('/companies') ? 'secondary' : 'ghost'}
           size="sm"
