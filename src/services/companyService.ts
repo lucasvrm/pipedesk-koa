@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Company, CompanyType, PlayerContact } from '@/lib/types'
+import { Company, CompanyType, PlayerContact, RelationshipLevel } from '@/lib/types'
 
-// --- Tipos ---
+// ============================================================================
+// Types
+// ============================================================================
 
 export interface CompanyInput {
   name: string
@@ -10,34 +12,19 @@ export interface CompanyInput {
   site?: string
   description?: string
   type: CompanyType
+  relationshipLevel: RelationshipLevel
 }
 
 export interface CompanyUpdate extends Partial<CompanyInput> {}
 
-// --- Helpers ---
-
-function mapCompanyFromDB(item: any): Company {
-  return {
-    id: item.id,
-    name: item.name,
-    cnpj: item.cnpj || '',
-    site: item.site || '',
-    description: item.description || '',
-    type: item.type as CompanyType,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-    createdBy: item.created_by,
-    // Se vier do join
-    contacts: item.company_contacts ? item.company_contacts.map(mapContactFromDB) : [],
-    deals: item.master_deals || [] // Mapear se necessário
-  }
-}
+// ============================================================================
+// Helpers
+// ============================================================================
 
 function mapContactFromDB(item: any): PlayerContact {
-  // Reutilizando a interface PlayerContact para simplificar, já que os campos são iguais
   return {
     id: item.id,
-    playerId: item.company_id, // Hack: usando playerId para guardar o companyId no frontend
+    playerId: item.company_id, // Usamos 'playerId' na interface genérica para guardar o ID do pai (empresa)
     name: item.name,
     role: item.role || '',
     email: item.email || '',
@@ -48,12 +35,41 @@ function mapContactFromDB(item: any): PlayerContact {
   }
 }
 
-// --- API Functions (Companies) ---
+function mapCompanyFromDB(item: any): Company {
+  // Processa os contatos para encontrar o principal
+  const contacts = item.company_contacts ? item.company_contacts.map(mapContactFromDB) : [];
+  const primaryContact = contacts.find((c: PlayerContact) => c.isPrimary) || contacts[0];
+
+  return {
+    id: item.id,
+    name: item.name,
+    cnpj: item.cnpj || '',
+    site: item.site || '',
+    description: item.description || '',
+    type: item.type as CompanyType,
+    relationshipLevel: (item.relationship_level as RelationshipLevel) || 'none',
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    createdBy: item.created_by,
+    
+    // Relacionamentos
+    contacts: contacts,
+    deals: item.master_deals || [],
+
+    // Campos calculados para a listagem
+    dealsCount: item.master_deals ? item.master_deals[0]?.count : 0,
+    primaryContactName: primaryContact ? primaryContact.name : undefined
+  }
+}
+
+// ============================================================================
+// API Functions (Companies)
+// ============================================================================
 
 export async function getCompanies(): Promise<Company[]> {
   const { data, error } = await supabase
     .from('companies')
-    .select('*, master_deals(count)') // Traz a contagem de deals
+    .select('*, master_deals(count), company_contacts(*)') // Traz contagem de deals e todos os contatos
     .is('deleted_at', null)
     .order('name')
 
@@ -75,7 +91,15 @@ export async function getCompany(id: string): Promise<Company> {
 export async function createCompany(company: CompanyInput, userId: string) {
   const { data, error } = await supabase
     .from('companies')
-    .insert({ ...company, created_by: userId })
+    .insert({ 
+      name: company.name,
+      cnpj: company.cnpj,
+      site: company.site,
+      description: company.description,
+      type: company.type,
+      relationship_level: company.relationshipLevel,
+      created_by: userId 
+    })
     .select()
     .single()
 
@@ -84,9 +108,20 @@ export async function createCompany(company: CompanyInput, userId: string) {
 }
 
 export async function updateCompany(id: string, updates: CompanyUpdate) {
+  const updateData: any = {
+    updated_at: new Date().toISOString()
+  }
+
+  if (updates.name !== undefined) updateData.name = updates.name
+  if (updates.cnpj !== undefined) updateData.cnpj = updates.cnpj
+  if (updates.site !== undefined) updateData.site = updates.site
+  if (updates.description !== undefined) updateData.description = updates.description
+  if (updates.type !== undefined) updateData.type = updates.type
+  if (updates.relationshipLevel !== undefined) updateData.relationship_level = updates.relationshipLevel
+
   const { data, error } = await supabase
     .from('companies')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq('id', id)
     .select()
     .single()
@@ -95,14 +130,40 @@ export async function updateCompany(id: string, updates: CompanyUpdate) {
   return mapCompanyFromDB(data)
 }
 
-// --- API Functions (Company Contacts) ---
+export async function deleteCompany(id: string) {
+  // Soft Delete
+  const { error } = await supabase
+    .from('companies')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function deleteCompanies(ids: string[]) {
+  // Bulk Soft Delete
+  const { error } = await supabase
+    .from('companies')
+    .update({ deleted_at: new Date().toISOString() })
+    .in('id', ids)
+
+  if (error) throw error
+}
+
+// ============================================================================
+// API Functions (Company Contacts)
+// ============================================================================
 
 export async function createCompanyContact(contact: Partial<PlayerContact>, userId: string) {
-  // Hack: O frontend manda 'playerId', mas no banco é 'company_id'
+  // O frontend envia 'playerId', mas para empresas o campo no banco é 'company_id'
   const companyId = contact.playerId; 
 
+  // Se for primário, remove o flag dos outros contatos desta empresa
   if (contact.isPrimary && companyId) {
-    await supabase.from('company_contacts').update({ is_primary: false }).eq('company_id', companyId)
+    await supabase
+      .from('company_contacts')
+      .update({ is_primary: false })
+      .eq('company_id', companyId)
   }
 
   const { data, error } = await supabase
@@ -125,14 +186,23 @@ export async function createCompanyContact(contact: Partial<PlayerContact>, user
 }
 
 export async function deleteCompanyContact(id: string) {
-  const { error } = await supabase.from('company_contacts').delete().eq('id', id)
+  const { error } = await supabase
+    .from('company_contacts')
+    .delete()
+    .eq('id', id)
+
   if (error) throw error
 }
 
-// --- Hooks ---
+// ============================================================================
+// React Query Hooks
+// ============================================================================
 
 export function useCompanies() {
-  return useQuery({ queryKey: ['companies'], queryFn: getCompanies })
+  return useQuery({ 
+    queryKey: ['companies'], 
+    queryFn: getCompanies 
+  })
 }
 
 export function useCompany(id?: string) {
@@ -147,7 +217,9 @@ export function useCreateCompany() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ data, userId }: { data: CompanyInput, userId: string }) => createCompany(data, userId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['companies'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+    }
   })
 }
 
@@ -162,12 +234,37 @@ export function useUpdateCompany() {
   })
 }
 
+export function useDeleteCompany() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteCompany,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+    }
+  })
+}
+
+export function useDeleteCompanies() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteCompanies,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+    }
+  })
+}
+
 export function useCreateCompanyContact() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ contact, userId }: { contact: Partial<PlayerContact>, userId: string }) => 
       createCompanyContact(contact, userId),
-    onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: ['companies', vars.contact.playerId] })
+    onSuccess: (_, vars) => {
+      // Invalida a query da empresa específica para atualizar a lista de contatos
+      queryClient.invalidateQueries({ queryKey: ['companies', vars.contact.playerId] })
+      // Invalida a lista geral também, pois o contato principal pode ter mudado
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+    }
   })
 }
 
@@ -175,6 +272,8 @@ export function useDeleteCompanyContact() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteCompanyContact,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['companies'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+    }
   })
 }

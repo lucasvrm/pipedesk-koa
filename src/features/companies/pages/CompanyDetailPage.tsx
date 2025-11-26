@@ -38,11 +38,11 @@ export default function CompanyDetailPage() {
   // Dados da Empresa
   const { data: company, isLoading, refetch } = useCompany(isNew ? undefined : id)
   
-  // Dados de Deals (Filtragem no frontend por enquanto, idealmente seria query backend)
+  // Dados de Deals
   const { data: allDeals } = useDeals()
   const companyDeals = allDeals?.filter(d => d.companyId === id || (d as any).company_id === id) || []
 
-  // Mutações de Contacto
+  // Mutações de Contato
   const createContactMutation = useCreateCompanyContact()
   const deleteContactMutation = useDeleteCompanyContact()
 
@@ -84,7 +84,7 @@ export default function CompanyDetailPage() {
       }
     } catch (error) {
       console.error(error)
-      toast.error('Erro ao guardar')
+      toast.error('Erro ao salvar')
     }
   }
 
@@ -97,11 +97,11 @@ export default function CompanyDetailPage() {
         contact: { ...newContact, playerId: id }, // playerId aqui representa companyId no service
         userId: profile.id
       })
-      toast.success('Contacto adicionado')
+      toast.success('Contato adicionado')
       setNewContact({ name: '', role: '', email: '', phone: '', isPrimary: false })
       setIsContactModalOpen(false)
     } catch (error) {
-      toast.error('Erro ao adicionar contacto')
+      toast.error('Erro ao adicionar contato')
     }
   }
 
@@ -137,7 +137,7 @@ export default function CompanyDetailPage() {
           {isEditing ? (
             <>
               <Button variant="outline" onClick={handleCancel}><X className="mr-2"/> Cancelar</Button>
-              <Button onClick={handleSave}><FloppyDisk className="mr-2"/> Guardar</Button>
+              <Button onClick={handleSave}><FloppyDisk className="mr-2"/> Salvar</Button>
             </>
           ) : (
             <Button onClick={() => setIsEditing(true)}><PencilSimple className="mr-2"/> Editar</Button>
@@ -260,15 +260,15 @@ export default function CompanyDetailPage() {
           </Tabs>
         </div>
 
-        {/* Coluna Contactos (Lateral) */}
+        {/* Coluna Contatos (Lateral) */}
         <div className="space-y-6">
           <Card className="h-full flex flex-col">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><User size={20}/> Contactos</CardTitle>
+              <CardTitle className="flex items-center gap-2"><User size={20}/> Contatos</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {isNew ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">Guarde para adicionar contactos.</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">Salve para adicionar contatos.</div>
               ) : (
                 <>
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
@@ -294,15 +294,15 @@ export default function CompanyDetailPage() {
                       </div>
                     ))}
                     {(!company?.contacts || company.contacts.length === 0) && (
-                      <p className="text-center text-muted-foreground text-sm py-4">Nenhum contacto.</p>
+                      <p className="text-center text-muted-foreground text-sm py-4">Nenhum contato.</p>
                     )}
                   </div>
                   <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="w-full"><Plus className="mr-2"/> Novo Contacto</Button>
+                      <Button size="sm" variant="outline" className="w-full"><Plus className="mr-2"/> Novo Contato</Button>
                     </DialogTrigger>
                     <DialogContent>
-                      <DialogHeader><DialogTitle>Adicionar Contacto</DialogTitle></DialogHeader>
+                      <DialogHeader><DialogTitle>Adicionar Contato</DialogTitle></DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2"><Label>Nome</Label><Input value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})}/></div>
                         <div className="space-y-2"><Label>Cargo</Label><Input value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})}/></div>
@@ -312,7 +312,7 @@ export default function CompanyDetailPage() {
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsContactModalOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleAddContact}>Guardar</Button>
+                        <Button onClick={handleAddContact}>Salvar</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>

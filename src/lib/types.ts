@@ -472,6 +472,7 @@ export interface Company {
   site?: string;
   description?: string;
   type: CompanyType;
+  relationshipLevel: RelationshipLevel;
   
   createdAt: string;
   updatedAt: string;
@@ -481,6 +482,9 @@ export interface Company {
   // Relações (Joins)
   deals?: MasterDeal[];
   contacts?: PlayerContact[]; // Reutilizando a estrutura de contatos se for usar a mesma tabela ou criar uma nova
+  // Campos auxiliares para listagem
+  dealsCount?: number; 
+  primaryContactName?: string; // Vamos popular isso no service
 }
 
 export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
