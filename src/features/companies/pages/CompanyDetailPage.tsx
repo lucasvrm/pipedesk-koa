@@ -116,7 +116,8 @@ export default function CompanyDetailPage() {
   if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl pb-24">
+    // CORREÇÃO AQUI: max-w-7xl para alinhar com o resto do sistema
+    <div className="container mx-auto p-6 max-w-7xl pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
