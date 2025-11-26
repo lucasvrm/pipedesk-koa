@@ -55,12 +55,21 @@ export interface MasterDeal {
   createdBy: string
   deletedAt?: string
   feePercentage?: number
+  
+  // Criador original (mantido para histórico ou owner principal)
   createdByUser?: {
     id: string
     name: string
     email: string
     avatar?: string
   }
+
+  // Vínculo com Empresa (Cliente)
+  companyId?: string;
+  company?: Company;
+
+  // NOVO: Lista de Responsáveis (Múltiplos)
+  responsibles?: User[];
 }
 
 export interface PlayerTrack {
@@ -440,7 +449,6 @@ export const EQUITY_SUBTYPE_LABELS: Record<EquitySubtype, string> = {
   compra_estoque: 'Compra de Estoque'
 };
 
-// ATUALIZADO AQUI
 export const BARTER_SUBTYPE_LABELS: Record<BarterSubtype, string> = {
   financeira: 'Permuta Financeira',
   fisica: 'Permuta Física',
@@ -452,8 +460,6 @@ export const ALL_PRODUCT_LABELS: Record<string, string> = {
   ...EQUITY_SUBTYPE_LABELS,
   ...BARTER_SUBTYPE_LABELS
 };
-
-// ... tipos existentes
 
 // --- EMPRESAS (CLIENTES) ---
 
@@ -481,10 +487,11 @@ export interface Company {
   
   // Relações (Joins)
   deals?: MasterDeal[];
-  contacts?: PlayerContact[]; // Reutilizando a estrutura de contatos se for usar a mesma tabela ou criar uma nova
+  contacts?: PlayerContact[]; 
+  
   // Campos auxiliares para listagem
   dealsCount?: number; 
-  primaryContactName?: string; // Vamos popular isso no service
+  primaryContactName?: string;
 }
 
 export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
@@ -495,10 +502,3 @@ export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
   servicer: 'Servicer',
   outros: 'Outros'
 };
-
-// Atualizar MasterDeal para incluir o vínculo
-export interface MasterDeal {
-  // ... campos existentes
-  companyId?: string;
-  company?: Company; // Para quando fizermos o join
-}

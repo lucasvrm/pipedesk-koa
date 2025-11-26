@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeals, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
+import { useUsers } from '@/services/userService'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
   Select, 
   SelectContent, 
@@ -14,6 +16,11 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,14 +42,16 @@ import {
   CaretRight,
   Funnel,
   PencilSimple,
-  Buildings
+  Buildings,
+  User as UserIcon,
+  X
 } from '@phosphor-icons/react'
-import { DealStatus, STATUS_LABELS, OPERATION_LABELS, Deal } from '@/lib/types'
-import { formatCurrency, formatDate } from '@/lib/helpers'
+import { DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { formatCurrency, getInitials } from '@/lib/helpers'
 import { toast } from 'sonner'
 
-// Ordenação
-type SortKey = 'clientName' | 'volume' | 'status' | 'createdAt' | 'operationType' | 'companyName';
+// Configuração de Ordenação
+type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -53,32 +62,62 @@ interface SortConfig {
 export default function DealsView() {
   const navigate = useNavigate()
   const { data: masterDeals, isLoading } = useDeals()
+  const { data: users } = useUsers()
   
   const deleteSingleMutation = useDeleteDeal()
   const deleteBulkMutation = useDeleteDeals()
 
-  // Estados
+  // Estados de Controle
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'createdAt', direction: 'desc' })
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'clientName', direction: 'asc' })
+
+  // Estados dos Filtros
+  const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<OperationType | 'all'>('all')
+  const [responsibleFilter, setResponsibleFilter] = useState<string>('all')
+  const [volumeRange, setVolumeRange] = useState<{ min: string, max: string }>({ min: '', max: '' })
 
   // Modais
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
 
-  // --- Processamento ---
+  // --- Processamento de Dados ---
   const processedDeals = useMemo(() => {
     if (!masterDeals) return []
 
     // 1. Filtragem
     let result = masterDeals.filter(deal => {
-      const matchesSearch = deal.clientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            (deal.company?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus = statusFilter === 'all' || deal.status === statusFilter
-      return matchesSearch && matchesStatus
+      // REGRA 3b: Lógica de Busca: Somente pelo nome da empresa (Company)
+      if (searchQuery) {
+        const companyName = deal.company?.name?.toLowerCase() || ''
+        // Se não tem empresa ou o nome não bate, remove
+        if (!companyName.includes(searchQuery.toLowerCase())) return false
+      }
+
+      // Filtro de Status
+      if (statusFilter !== 'all' && deal.status !== statusFilter) return false
+
+      // Filtro de Tipo
+      if (typeFilter !== 'all' && deal.operationType !== typeFilter) return false
+
+      // REGRA 5: Filtro de Responsável (Verifica se o ID está na lista de responsibles)
+      if (responsibleFilter !== 'all') {
+        const isResponsible = deal.responsibles?.some(u => u.id === responsibleFilter)
+        if (!isResponsible) return false
+      }
+
+      // REGRA 5: Filtro de Volume
+      const dealVolume = deal.volume || 0
+      const minVol = volumeRange.min ? parseFloat(volumeRange.min) : 0
+      const maxVol = volumeRange.max ? parseFloat(volumeRange.max) : Infinity
+      
+      if (dealVolume < minVol) return false
+      if (volumeRange.max && dealVolume > maxVol) return false
+
+      return true
     })
 
     // 2. Ordenação
@@ -87,7 +126,7 @@ export default function DealsView() {
       let bValue: any = '';
 
       switch (sortConfig.key) {
-        case 'clientName':
+        case 'clientName': // REGRA 1: Coluna Negócio (era Título)
           aValue = a.clientName.toLowerCase();
           bValue = b.clientName.toLowerCase();
           break;
@@ -107,10 +146,6 @@ export default function DealsView() {
           aValue = OPERATION_LABELS[a.operationType];
           bValue = OPERATION_LABELS[b.operationType];
           break;
-        case 'createdAt':
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
-          break;
       }
 
       if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -119,7 +154,7 @@ export default function DealsView() {
     });
 
     return result;
-  }, [masterDeals, searchQuery, statusFilter, sortConfig]);
+  }, [masterDeals, searchQuery, statusFilter, typeFilter, responsibleFilter, volumeRange, sortConfig]);
 
   // --- Paginação ---
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
@@ -174,6 +209,15 @@ export default function DealsView() {
     }
   }
 
+  const clearFilters = () => {
+    setSearchQuery('')
+    setStatusFilter('all')
+    setTypeFilter('all')
+    setResponsibleFilter('all')
+    setVolumeRange({ min: '', max: '' })
+    setCurrentPage(1)
+  }
+
   // --- UI Helpers ---
   const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
     if (sortConfig.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" />
@@ -199,9 +243,10 @@ export default function DealsView() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Kanban className="text-primary" />
-            Negócios
+            Diretório de Master Deals
           </h1>
-          <p className="text-muted-foreground">Gerencie todos os seus Master Deals</p>
+          {/* REGRA 6: Subtítulo alterado */}
+          <p className="text-muted-foreground">Diretório de Master Deals</p>
         </div>
       </div>
 
@@ -211,34 +256,110 @@ export default function DealsView() {
           {/* Barra de Ferramentas */}
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
             
-            {/* Busca e Filtro */}
+            {/* Grupo Esquerda: Busca e Filtros */}
             <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
-              <div className="relative w-full md:w-80 lg:w-96">
+              
+              {/* Busca */}
+              <div className="relative w-full md:w-72">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                {/* REGRA 3a: Máscara "Buscar por cliente" */}
                 <Input
-                  placeholder="Buscar por cliente ou empresa..."
+                  placeholder="Buscar por cliente..."
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="pl-10"
                 />
               </div>
 
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as DealStatus | 'all'); setCurrentPage(1); }}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <Funnel className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filtrar Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Status</SelectItem>
-                  <SelectItem value="active">Ativos</SelectItem>
-                  <SelectItem value="concluded">Concluídos</SelectItem>
-                  <SelectItem value="cancelled">Cancelados</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Filtros */}
+              <div className="flex flex-wrap items-center gap-2">
+                
+                <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as DealStatus | 'all'); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[130px] h-9">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Status: Todos</SelectItem>
+                    <SelectItem value="active">Ativos</SelectItem>
+                    <SelectItem value="concluded">Concluídos</SelectItem>
+                    <SelectItem value="cancelled">Cancelados</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as OperationType | 'all'); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[130px] h-9">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tipo: Todos</SelectItem>
+                    {Object.entries(OPERATION_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* REGRA 5: Filtro por Responsável */}
+                <Select value={responsibleFilter} onValueChange={(v) => { setResponsibleFilter(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[150px] h-9">
+                    <UserIcon className="mr-2 h-3 w-3 text-muted-foreground" />
+                    <SelectValue placeholder="Responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Resp: Todos</SelectItem>
+                    {(users || []).map(user => (
+                      <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* REGRA 5: Filtro de Volume */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
+                      <Funnel className="mr-2 h-3 w-3" />
+                      Volume
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium leading-none">Faixa de Volume</h4>
+                      <p className="text-sm text-muted-foreground">Filtrar por valor estimado.</p>
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <div className="space-y-1">
+                          <span className="text-xs">Mínimo</span>
+                          <Input 
+                            type="number" 
+                            placeholder="0" 
+                            value={volumeRange.min}
+                            onChange={e => setVolumeRange({...volumeRange, min: e.target.value})}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs">Máximo</span>
+                          <Input 
+                            type="number" 
+                            placeholder="∞" 
+                            value={volumeRange.max}
+                            onChange={e => setVolumeRange({...volumeRange, max: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Botão Limpar Filtros */}
+                {(statusFilter !== 'all' || typeFilter !== 'all' || responsibleFilter !== 'all' || searchQuery || volumeRange.min || volumeRange.max) && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground">
+                    <X className="mr-1 h-3 w-3" /> Limpar
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {/* Ações em Massa e Paginação */}
+            {/* Grupo Direita: Ações em Massa e Paginação */}
             <div className="flex items-center gap-3 shrink-0">
+              {/* REGRA 1: Botão de Excluir em Massa (Igual /players) */}
               {selectedIds.length > 0 && (
                 <Button 
                   variant="destructive" 
@@ -284,11 +405,12 @@ export default function DealsView() {
                         />
                       </TableHead>
                       
+                      {/* REGRA 1: Título -> Negócio */}
                       <TableHead 
-                        className="cursor-pointer hover:bg-muted/50 w-[30%]" 
+                        className="cursor-pointer hover:bg-muted/50 w-[25%]" 
                         onClick={() => handleSort('clientName')}
                       >
-                        <div className="flex items-center">Título <SortIcon columnKey="clientName" /></div>
+                        <div className="flex items-center">Negócio <SortIcon columnKey="clientName" /></div>
                       </TableHead>
 
                       <TableHead 
@@ -296,6 +418,11 @@ export default function DealsView() {
                         onClick={() => handleSort('companyName')}
                       >
                         <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
+                      </TableHead>
+
+                      {/* REGRA 4: Coluna Responsável */}
+                      <TableHead className="cursor-pointer hover:bg-muted/50">
+                        <div className="flex items-center">Responsável</div>
                       </TableHead>
 
                       <TableHead 
@@ -319,14 +446,9 @@ export default function DealsView() {
                         <div className="flex items-center justify-center">Status <SortIcon columnKey="status" /></div>
                       </TableHead>
 
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50" 
-                        onClick={() => handleSort('createdAt')}
-                      >
-                        <div className="flex items-center">Data <SortIcon columnKey="createdAt" /></div>
-                      </TableHead>
+                      {/* REGRA 2: Coluna Data removida */}
 
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-right w-[80px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -360,8 +482,33 @@ export default function DealsView() {
                             )}
                           </TableCell>
 
+                          {/* Coluna Responsável (Avatar Group se múltiplos, mas aqui mostramos o principal e +X) */}
                           <TableCell>
-                            <span className="text-sm text-muted-foreground">{OPERATION_LABELS[deal.operationType]}</span>
+                            <div className="flex -space-x-2 overflow-hidden">
+                              {deal.responsibles && deal.responsibles.length > 0 ? (
+                                deal.responsibles.slice(0, 3).map((user, i) => (
+                                  <Avatar key={i} className="inline-block h-6 w-6 ring-2 ring-background" title={user.name}>
+                                    <AvatarImage src={user.avatar} />
+                                    <AvatarFallback className="text-[9px] bg-primary/20 text-primary font-bold">
+                                      {getInitials(user.name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                ))
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                              {(deal.responsibles?.length || 0) > 3 && (
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-background bg-muted text-[9px] font-medium">
+                                  +{(deal.responsibles?.length || 0) - 3}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+
+                          <TableCell>
+                            <Badge variant="outline" className="font-normal">
+                              {OPERATION_LABELS[deal.operationType]}
+                            </Badge>
                           </TableCell>
 
                           <TableCell className="text-right font-medium">
@@ -374,36 +521,34 @@ export default function DealsView() {
                             </Badge>
                           </TableCell>
 
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(deal.createdAt)}
-                          </TableCell>
-
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
                                 title="Editar"
+                                className="h-8 w-8"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/deals/${deal.id}`);
                                 }}
                               >
-                                <PencilSimple />
+                                <PencilSimple className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
                                 disabled={!isSelected} 
                                 className={`
-                                  ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30'}
+                                  h-8 w-8 
+                                  ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}
                                 `}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   confirmDelete(deal.id);
                                 }}
                               >
-                                <Trash />
+                                <Trash className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -459,7 +604,7 @@ export default function DealsView() {
         </CardContent>
       </Card>
 
-      {/* MODAL DE CONFIRMAÇÃO */}
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -470,8 +615,8 @@ export default function DealsView() {
                 ? ` Você está prestes a excluir permanentemente ${selectedIds.length} negócios selecionados.`
                 : " Você está prestes a excluir este negócio permanentemente."
               }
-              <br />
-              O histórico de interações com players vinculado a este deal também será perdido.
+              <br /><br />
+              O histórico de interações com players vinculado a este deal também será perdido (Soft Delete).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

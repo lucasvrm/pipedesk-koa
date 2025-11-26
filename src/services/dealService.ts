@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MasterDeal, OperationType, DealStatus, Company } from '@/lib/types';
+import { MasterDeal, OperationType, DealStatus, Company, User } from '@/lib/types';
 
 // ============================================================================
 // Query Helpers
@@ -27,6 +27,8 @@ export interface Deal extends MasterDeal {
   };
   // Join com a Empresa (Cliente)
   company?: Company;
+  // Join com Responsáveis (Múltiplos)
+  responsibles?: User[];
 }
 
 export interface DealInput {
@@ -62,9 +64,29 @@ export interface DealUpdate {
 // ============================================================================
 
 function mapDealFromDB(item: any): Deal {
-  // Extrai o usuário da relação com profiles
+  // Extrai o usuário criador
   const profile = item.createdByUser;
   const company = item.company;
+
+  // Mapeia os responsáveis vindos da tabela join deal_members
+  const responsibles: User[] = item.deal_members?.map((dm: any) => ({
+    id: dm.user?.id,
+    name: dm.user?.name || 'Usuário',
+    email: dm.user?.email,
+    avatar: dm.user?.avatar_url,
+    role: dm.user?.role || 'analyst'
+  })) || [];
+
+  // Fallback: Se não houver responsáveis na tabela nova (dados antigos), usa o criador
+  if (responsibles.length === 0 && profile) {
+    responsibles.push({
+      id: profile.id,
+      name: profile.name || 'Usuário',
+      email: profile.email || '',
+      avatar: profile.avatar_url,
+      role: 'analyst'
+    } as User);
+  }
 
   return {
     id: item.id,
@@ -99,6 +121,9 @@ function mapDealFromDB(item: any): Deal {
       email: profile.email || '', 
       avatar: profile.avatar_url 
     } : undefined,
+
+    // Lista de Responsáveis
+    responsibles: responsibles
   };
 }
 
@@ -117,7 +142,10 @@ export async function getDeals(): Promise<Deal[]> {
         .select(`
           *,
           createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-          company:companies(id, name, type, site)
+          company:companies(id, name, type, site),
+          deal_members(
+            user:profiles(*)
+          )
         `)
     ).order('created_at', { ascending: false });
 
@@ -141,7 +169,10 @@ export async function getDeal(dealId: string): Promise<Deal> {
         .select(`
           *,
           createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-          company:companies(id, name, type, site)
+          company:companies(id, name, type, site),
+          deal_members(
+            user:profiles(*)
+          )
         `)
         .eq('id', dealId)
     ).single();
@@ -183,7 +214,19 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
 
     if (dealError) throw dealError;
 
-    // 2. LÓGICA NOVA: Se houver um Player selecionado, cria o Track
+    // 2. Adiciona o criador como primeiro responsável (Owner)
+    if (deal.createdBy) {
+      const { error: memberError } = await supabase
+        .from('deal_members')
+        .insert({
+          deal_id: masterDealData.id,
+          user_id: deal.createdBy
+        });
+      
+      if (memberError) console.error("Error adding creator to deal_members:", memberError);
+    }
+
+    // 3. Se houver um Player selecionado, cria o Track
     if (deal.playerId) {
       try {
         // Busca info do player para garantir integridade (nome)
@@ -211,7 +254,9 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
       }
     }
 
-    return mapDealFromDB(masterDealData);
+    // Recarrega o deal para trazer os members mapeados
+    // (Otimização: poderíamos construir o objeto manualmente, mas o get garante consistência)
+    return getDeal(masterDealData.id);
   } catch (error) {
     console.error('Error creating deal:', error);
     throw error;
@@ -248,16 +293,12 @@ export async function updateDeal(
       .from('master_deals')
       .update(updateData)
       .eq('id', dealId)
-      .select(`
-        *,
-        createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-        company:companies(id, name, type, site)
-      `)
+      .select()
       .single();
 
     if (error) throw error;
 
-    return mapDealFromDB(data);
+    return getDeal(dealId);
   } catch (error) {
     console.error('Error updating deal:', error);
     throw error;
