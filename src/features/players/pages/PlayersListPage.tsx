@@ -46,7 +46,7 @@ interface SortConfig {
 export default function PlayersListPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const { data: players, isLoading } = usePlayers()
+  const { data: players, isLoading, refetch } = usePlayers()
   
   // Mutations
   const deleteSingleMutation = useDeletePlayer()
@@ -180,9 +180,11 @@ export default function PlayersListPage() {
         await deleteBulkMutation.mutateAsync({ ids: selectedIds, userId: profile.id })
         toast.success(`${selectedIds.length} players excluídos`)
         setSelectedIds([])
+        refetch()
       } else {
         await deleteSingleMutation.mutateAsync({ id: itemToDelete, userId: profile.id })
         toast.success('Player excluído')
+        refetch()
       }
     } catch (error) {
       toast.error('Erro ao excluir')
@@ -206,16 +208,16 @@ export default function PlayersListPage() {
 
   // --- HELPERS VISUAIS ---
   
-  // Cores do Relacionamento (Item 4)
+  // Cores do Relacionamento
   const getRelationshipBadgeClass = (level: string) => {
     switch (level) {
-      case 'close': // Próximo -> Verde
+      case 'close': 
         return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-      case 'intermediate': // Intermediário -> Azul
+      case 'intermediate': 
         return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-      case 'basic': // Básico -> Cinza
+      case 'basic': 
         return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
-      default: // Nenhum -> Branco/Outline
+      default: 
         return 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
     }
   }
@@ -279,7 +281,6 @@ export default function PlayersListPage() {
             <Buildings className="text-primary" />
             Base de Players
           </h1>
-          {/* Item 1: Texto alterado */}
           <p className="text-muted-foreground">Diretório de Bancos, Gestoras, Family Offices, SECs</p>
         </div>
         <Button onClick={() => navigate('/players/new')}>
@@ -290,7 +291,7 @@ export default function PlayersListPage() {
       <Card>
         <CardHeader className="pb-4 space-y-4">
           
-          {/* Item 2: Layout unificado (Busca + Filtros na mesma linha) */}
+          {/* Layout Unificado: Busca + Filtros + Ações */}
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
             
             {/* Grupo de Busca e Filtros */}
@@ -305,7 +306,7 @@ export default function PlayersListPage() {
                 />
               </div>
 
-              {/* Filtros Dropdown (Agora ao lado da busca) */}
+              {/* Filtros Dropdown */}
               <div className="flex flex-wrap items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -436,7 +437,6 @@ export default function PlayersListPage() {
                         />
                       </TableHead>
                       
-                      {/* HEADERS CLICÁVEIS PARA ORDENAÇÃO (Item 5) */}
                       <TableHead 
                         className="w-[250px] cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => handleSort('name')}
@@ -472,6 +472,7 @@ export default function PlayersListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* CORREÇÃO: Aqui usamos processedPlayers, que é a lista já filtrada e ordenada */}
                     {currentPlayers.map((player) => {
                       const isSelected = selectedIds.includes(player.id);
                       return (
@@ -521,7 +522,6 @@ export default function PlayersListPage() {
                           </TableCell>
 
                           <TableCell>
-                              {/* Item 4: Badge com cores customizadas */}
                               <Badge className={`${getRelationshipBadgeClass(player.relationshipLevel)} font-normal`}>
                                   {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
                               </Badge>
@@ -546,11 +546,10 @@ export default function PlayersListPage() {
                               >
                                 <PencilSimple />
                               </Button>
-                              {/* Item 3: Botão Deletar bloqueado se não selecionado */}
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                disabled={!isSelected} // Bloqueio solicitado
+                                disabled={!isSelected} // BLOQUEIO SOLICITADO
                                 className={`
                                   ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30'}
                                 `}
@@ -578,10 +577,10 @@ export default function PlayersListPage() {
               </div>
 
               {/* Paginação */}
-              {filteredPlayers.length > 0 && (
+              {processedPlayers.length > 0 && ( // CORREÇÃO APLICADA AQUI
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredPlayers.length)} de {filteredPlayers.length} players
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, processedPlayers.length)} de {processedPlayers.length} players
                   </div>
                   <div className="space-x-2">
                     <Button
