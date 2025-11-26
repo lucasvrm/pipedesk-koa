@@ -1,37 +1,41 @@
 import { supabase } from '@/lib/supabaseClient';
 import { fakerPT_BR as faker } from '@faker-js/faker';
-import { 
-  DealStatus, 
-  PlayerStage, 
-  PlayerType, 
-  AssetManagerType, 
-  RELATIONSHIP_LEVEL_LABELS, 
-  CREDIT_SUBTYPE_LABELS, 
-  EQUITY_SUBTYPE_LABELS 
-} from '@/lib/types';
+import { DealStatus, PlayerStage, PlayerType, AssetManagerType } from '@/lib/types';
 
 // ============================================================================
-// Helpers Locais para Geração de Dados Específicos
+// Listas Fixas para Geração (Evita erros de importação)
 // ============================================================================
 
-const getRandomPlayerType = (): PlayerType => {
-  const types: PlayerType[] = ['bank', 'asset_manager', 'family_office', 'securitizer', 'fund'];
-  return faker.helpers.arrayElement(types);
-};
+const PLAYER_TYPES: PlayerType[] = ['bank', 'asset_manager', 'family_office', 'securitizer', 'fund'];
 
-const getRandomGestoraTypes = (): AssetManagerType[] => {
-  const types: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'fip', 'fiagro', 'multimercado'];
-  return faker.helpers.arrayElements(types, { min: 1, max: 3 });
-};
+const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'fip', 'fiagro', 'multimercado'];
+
+const RELATIONSHIP_LEVELS = ['basic', 'intermediate', 'close']; // Removi 'none' para garantir que tenham algum nível
+
+const CREDIT_PRODUCTS = ['ccb', 'cri_terreno', 'cri_obra', 'cri_corporativo', 'plano_empresario', 'antecipacao', 'kgiro', 'bts'];
+const EQUITY_PRODUCTS = ['equity_pref', 'retrovenda', 'slb', 'compra_estoque'];
+const BARTER_PRODUCTS = ['financeira', 'fisica', 'hibrida'];
+
+// ============================================================================
+// Helpers Locais
+// ============================================================================
+
+const getRandomPlayerType = () => faker.helpers.arrayElement(PLAYER_TYPES);
+
+const getRandomGestoraTypes = () => faker.helpers.arrayElements(GESTORA_TYPES, { min: 1, max: 3 });
 
 const getRandomProducts = () => {
-  const creditKeys = Object.keys(CREDIT_SUBTYPE_LABELS);
-  const equityKeys = Object.keys(EQUITY_SUBTYPE_LABELS);
-  
+  // Força que 80% dos players tenham produtos de Crédito
+  const hasCredit = Math.random() > 0.2; 
+  // Força que 40% tenham Equity
+  const hasEquity = Math.random() > 0.6;
+  // 20% tenham Permuta
+  const hasBarter = Math.random() > 0.8;
+
   return {
-    credit: faker.datatype.boolean() ? faker.helpers.arrayElements(creditKeys, { min: 1, max: 3 }) : [],
-    equity: faker.datatype.boolean() ? faker.helpers.arrayElements(equityKeys, { min: 1, max: 2 }) : [],
-    barter: [] 
+    credit: hasCredit ? faker.helpers.arrayElements(CREDIT_PRODUCTS, { min: 1, max: 3 }) : [],
+    equity: hasEquity ? faker.helpers.arrayElements(EQUITY_PRODUCTS, { min: 1, max: 2 }) : [],
+    barter: hasBarter ? faker.helpers.arrayElements(BARTER_PRODUCTS, { min: 1, max: 1 }) : []
   };
 };
 
@@ -62,7 +66,6 @@ export const syntheticDataService = {
    * Gera Master Deals (Negócios)
    */
   async generateDeals(count: number, createRelated: boolean = true) {
-    // Busca usuários para serem os donos dos deals
     const { data: users } = await supabase.from('profiles').select('id');
     
     if (!users || users.length === 0) {
@@ -101,24 +104,21 @@ export const syntheticDataService = {
   },
 
   /**
-   * Gera Tracks (Interesses de Players) para os Deals
+   * Gera Tracks (Interesses de Players)
    */
   async generateTracksForDeals(deals: any[], userIds: string[]) {
     const tracks = [];
     const stages: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'];
 
-    // Busca players reais existentes para vincular (se houver)
     const { data: players } = await supabase.from('players').select('id, name').limit(50);
     
     for (const deal of deals) {
-      // Cria de 1 a 5 tracks por deal
       const numTracks = faker.number.int({ min: 1, max: 5 });
 
       for (let k = 0; k < numTracks; k++) {
         let playerId = null;
         let playerName = faker.company.name();
 
-        // Se tivermos players no banco, usamos um deles aleatoriamente
         if (players && players.length > 0 && Math.random() > 0.3) {
            const p = faker.helpers.arrayElement(players);
            playerId = p.id;
@@ -133,7 +133,7 @@ export const syntheticDataService = {
           current_stage: faker.helpers.arrayElement(stages),
           probability: faker.number.int({ min: 0, max: 100 }),
           status: 'active',
-          responsibles: [faker.helpers.arrayElement(userIds)], // Atribui a um usuário aleatório
+          responsibles: [faker.helpers.arrayElement(userIds)], 
           notes: faker.lorem.sentence(),
           is_synthetic: true
         });
@@ -150,13 +150,12 @@ export const syntheticDataService = {
   },
 
   /**
-   * Gera Tarefas para os Tracks
+   * Gera Tarefas
    */
   async generateTasksForTracks(tracks: any[], userIds: string[]) {
     const tasks = [];
 
     for (const track of tracks) {
-      // Cria de 0 a 6 tarefas por track
       const numTasks = faker.number.int({ min: 0, max: 6 });
 
       for (let i = 0; i < numTasks; i++) {
@@ -180,7 +179,7 @@ export const syntheticDataService = {
   },
 
   /**
-   * Gera Players (Investidores) com dados ricos
+   * Gera Players (Investidores) com dados ricos GARANTIDOS
    */
   async generatePlayers(count: number, userId: string) {
     console.log(`🎲 Gerando ${count} players sintéticos...`);
@@ -191,6 +190,11 @@ export const syntheticDataService = {
       const type = getRandomPlayerType();
       const isGestora = type === 'asset_manager';
       const companyName = faker.company.name();
+      
+      // Garante que os dados ricos não sejam undefined
+      const relationshipLevel = faker.helpers.arrayElement(RELATIONSHIP_LEVELS);
+      const products = getRandomProducts();
+      const gestoraTypes = isGestora ? getRandomGestoraTypes() : [];
 
       players.push({
         name: companyName,
@@ -199,27 +203,30 @@ export const syntheticDataService = {
         description: faker.lorem.paragraph(),
         logo_url: faker.image.urlLoremFlickr({ category: 'business' }),
         type: type,
-        relationship_level: faker.helpers.arrayElement(Object.keys(RELATIONSHIP_LEVEL_LABELS)),
-        // Se for gestora, gera tipos de fundos, senão array vazio
-        gestora_types: isGestora ? getRandomGestoraTypes() : [],
-        // Gera produtos aleatórios (JSONB)
-        product_capabilities: getRandomProducts(),
+        relationship_level: relationshipLevel,
+        gestora_types: gestoraTypes,
+        product_capabilities: products,
         created_by: userId,
         updated_by: userId,
         is_synthetic: true
       });
     }
 
+    // Log para debug antes de inserir
+    console.log("Amostra de player a ser inserido:", players[0]);
+
     const { data, error } = await supabase
       .from('players')
       .insert(players)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao inserir players no Supabase:", error);
+      throw error;
+    }
     
     console.log(`✅ ${data.length} players criados.`);
     
-    // Gera contatos para esses players novos
     if (data) {
       await this.generateContactsForPlayers(data, userId);
     }
@@ -228,13 +235,12 @@ export const syntheticDataService = {
   },
 
   /**
-   * Gera Contatos para uma lista de Players
+   * Gera Contatos para Players
    */
   async generateContactsForPlayers(players: any[], userId: string) {
     const contacts = [];
     
     for (const player of players) {
-      // Gera 1 a 4 contatos por player
       const contactCount = faker.number.int({ min: 1, max: 4 });
       
       for (let k = 0; k < contactCount; k++) {
@@ -244,7 +250,7 @@ export const syntheticDataService = {
           role: faker.person.jobTitle(),
           email: faker.internet.email(),
           phone: faker.phone.number({ style: 'national' }),
-          is_primary: k === 0, // O primeiro é o principal
+          is_primary: k === 0, 
           created_by: userId,
           updated_by: userId
         });
@@ -259,29 +265,23 @@ export const syntheticDataService = {
   },
 
   /**
-   * Limpa TODOS os dados sintéticos do sistema
+   * Limpeza
    */
   async clearAllSyntheticData(userId: string) {
     console.log("🧹 Limpando dados sintéticos...");
     
-    // Limpa na ordem correta (filhos primeiro) para evitar erros de FK
     await supabase.from('tasks').delete().eq('is_synthetic', true);
     await supabase.from('player_tracks').delete().eq('is_synthetic', true);
     await supabase.from('master_deals').delete().eq('is_synthetic', true);
-    
-    // Limpa Players e Contatos (contatos caem via cascade se configurado, mas garantimos aqui)
-    // Nota: player_contacts não tem is_synthetic, mas podemos limpar via join ou assumir cascade.
-    // Como criamos a tabela players com is_synthetic, deletamos eles.
     await supabase.from('players').delete().eq('is_synthetic', true);
-    
-    // Opcional: Limpar perfis sintéticos (não remove login do auth, apenas o perfil público)
+    // Limpar perfis se necessário
     await supabase.from('profiles').delete().eq('is_synthetic', true);
     
     console.log("✅ Limpeza concluída.");
   },
 
   /**
-   * Retorna contagem de dados sintéticos
+   * Contagem
    */
   async getSyntheticCounts() {
     const deals = await supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
