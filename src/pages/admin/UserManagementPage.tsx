@@ -82,7 +82,7 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" onClick={() => navigate('/rbac')}>
           <ArrowLeft className="h-5 w-5" />
