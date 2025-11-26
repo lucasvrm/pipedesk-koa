@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
-import { usePlayerTracks } from '@/services/trackService'
+import { usePlayerTracks, useCreateTrack, useDeleteTrack } from '@/services/trackService'
+import { useDeals } from '@/services/dealService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
-  Phone, Envelope, Star, PencilSimple, X, Funnel, CaretUp, CaretDown, CaretUpDown
+  Phone, Envelope, Star, PencilSimple, X, Funnel, CaretUp, CaretDown, CaretUpDown, Link as LinkIcon
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import {
@@ -35,22 +36,18 @@ import {
   CREDIT_SUBTYPE_LABELS,
   EQUITY_SUBTYPE_LABELS,
   BARTER_SUBTYPE_LABELS,
-  ALL_PRODUCT_LABELS, // <--- ADICIONADO AQUI
+  ALL_PRODUCT_LABELS,
   PlayerType,
   PlayerStage,
   STAGE_LABELS
 } from '@/lib/types'
 import { formatCurrency } from '@/lib/helpers'
 
-// Estilo Padrão (Cinza/Muted) - Para campos secundários
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
-
-// Estilo Destaque (Preto/Foreground) - Apenas para o Nome
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
 
-// Tipagem para ordenação da tabela de Deals
-// <--- ADICIONADO 'dealProduct' AQUI
-type DealSortKey = 'dealName' | 'dealProduct' | 'trackVolume' | 'currentStage' | 'probability';
+// Removido 'probability', adicionado 'dealProduct'
+type DealSortKey = 'dealName' | 'dealProduct' | 'trackVolume' | 'currentStage';
 type SortDirection = 'asc' | 'desc';
 
 interface DealSortConfig {
@@ -70,12 +67,19 @@ export default function PlayerDetailPage() {
 
   // Hooks de dados
   const { data: player, isLoading, refetch } = usePlayer(isNew ? undefined : id)
-  const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id) 
+  const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id)
+  
+  // Hooks para vincular/desvincular deals
+  const { data: allDeals } = useDeals() // Para preencher o select de vinculação
+  const createTrackMutation = useCreateTrack()
+  const deleteTrackMutation = useDeleteTrack()
   
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
 
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+  const [isLinkDealModalOpen, setIsLinkDealModalOpen] = useState(false)
+  const [selectedDealToLink, setSelectedDealToLink] = useState<string>('')
 
   // Estados da tabela de Deals
   const [dealSortConfig, setDealSortConfig] = useState<DealSortConfig | null>(null)
@@ -141,7 +145,6 @@ export default function PlayerDetailPage() {
             aValue = (a as any).dealName || ''; 
             bValue = (b as any).dealName || '';
             break;
-          // <--- LÓGICA DE ORDENAÇÃO POR PRODUTO ADICIONADA
           case 'dealProduct':
             const prodA = (a as any).dealProduct;
             const prodB = (b as any).dealProduct;
@@ -151,10 +154,6 @@ export default function PlayerDetailPage() {
           case 'trackVolume':
             aValue = a.trackVolume || 0;
             bValue = b.trackVolume || 0;
-            break;
-          case 'probability':
-            aValue = a.probability || 0;
-            bValue = b.probability || 0;
             break;
           case 'currentStage':
             const stageOrder: Record<string, number> = { 'nda': 0, 'analysis': 1, 'proposal': 2, 'negotiation': 3, 'closing': 4 };
@@ -178,6 +177,49 @@ export default function PlayerDetailPage() {
       ? <CaretUp className="ml-1 h-3 w-3 text-primary" weight="bold" />
       : <CaretDown className="ml-1 h-3 w-3 text-primary" weight="bold" />;
   };
+
+  // --- Lógica de Vinculação (Link/Unlink) ---
+
+  const handleLinkDeal = async () => {
+    if (!profile || !id || !selectedDealToLink || !player) return
+    
+    // Verifica se já está vinculado
+    const alreadyLinked = playerTracks?.some(t => t.masterDealId === selectedDealToLink)
+    if (alreadyLinked) {
+      toast.error('Este deal já está vinculado a este player.')
+      return
+    }
+
+    const selectedMasterDeal = allDeals?.find(d => d.id === selectedDealToLink)
+    if (!selectedMasterDeal) return
+
+    try {
+      await createTrackMutation.mutateAsync({
+        masterDealId: selectedDealToLink,
+        playerName: player.name,
+        currentStage: 'nda', // Estágio inicial padrão
+        trackVolume: selectedMasterDeal.volume,
+        probability: 10,
+        status: 'active'
+      })
+      toast.success('Deal vinculado com sucesso')
+      setIsLinkDealModalOpen(false)
+      setSelectedDealToLink('')
+    } catch (error) {
+      toast.error('Erro ao vincular deal')
+    }
+  }
+
+  const handleUnlinkDeal = async (trackId: string) => {
+    if (confirm('Tem certeza que deseja desvincular este deal? O histórico dessa interação será perdido.')) {
+      try {
+        await deleteTrackMutation.mutateAsync(trackId)
+        toast.success('Deal desvinculado')
+      } catch (error) {
+        toast.error('Erro ao desvincular deal')
+      }
+    }
+  }
 
   // --- Fim Lógica de Tabela ---
 
@@ -473,33 +515,76 @@ export default function PlayerDetailPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Deals Vinculados</CardTitle>
-                    <CardDescription>Oportunidades onde este player está envolvido.</CardDescription>
+                    {/* Subtítulo alterado conforme solicitação */}
+                    <CardDescription>Oportunidades apresentadas para este player.</CardDescription>
                   </div>
                   
-                  {/* Filtro de Estágio */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className={dealStageFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                        <Funnel className="mr-2 h-3 w-3" />
-                        Estágio {dealStageFilters.length > 0 && `(${dealStageFilters.length})`}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Filtrar por Estágio</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {Object.entries(STAGE_LABELS).map(([key, label]) => (
-                        <DropdownMenuCheckboxItem
-                          key={key}
-                          checked={dealStageFilters.includes(key as PlayerStage)}
-                          onCheckedChange={(checked) => {
-                            setDealStageFilters(prev => checked ? [...prev, key as PlayerStage] : prev.filter(k => k !== key))
-                          }}
-                        >
-                          {label}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex gap-2">
+                    {/* Botão Vincular Deal */}
+                    {!isNew && (
+                      <Dialog open={isLinkDealModalOpen} onOpenChange={setIsLinkDealModalOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <LinkIcon className="mr-2 h-4 w-4" /> Vincular Deal
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Vincular Deal Existente</DialogTitle>
+                            <DialogDescription>
+                              Selecione um deal para apresentar a este player.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="py-4">
+                            <Label>Selecione o Deal</Label>
+                            <Select value={selectedDealToLink} onValueChange={setSelectedDealToLink}>
+                              <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Selecione..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {allDeals?.map(deal => (
+                                  <SelectItem key={deal.id} value={deal.id}>
+                                    {deal.clientName} ({formatCurrency(deal.volume)})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsLinkDealModalOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleLinkDeal} disabled={!selectedDealToLink}>
+                              Vincular
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+
+                    {/* Filtro de Estágio */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className={dealStageFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                          <Funnel className="mr-2 h-3 w-3" />
+                          Estágio {dealStageFilters.length > 0 && `(${dealStageFilters.length})`}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Filtrar por Estágio</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {Object.entries(STAGE_LABELS).map(([key, label]) => (
+                          <DropdownMenuCheckboxItem
+                            key={key}
+                            checked={dealStageFilters.includes(key as PlayerStage)}
+                            onCheckedChange={(checked) => {
+                              setDealStageFilters(prev => checked ? [...prev, key as PlayerStage] : prev.filter(k => k !== key))
+                            }}
+                          >
+                            {label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
                 
                 <CardContent>
@@ -516,12 +601,11 @@ export default function PlayerDetailPage() {
                             >
                               <div className="flex items-center">Nome do Deal <SortIcon columnKey="dealName" /></div>
                             </TableHead>
-                            {/* COLUNA PRODUTO ADICIONADA */}
                             <TableHead 
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => handleDealSort('dealProduct')}
                             >
-                              <div className="flex items-center">Produto <SortIcon columnKey="dealProduct" /></div>
+                              <div className="flex items-center">Tipo <SortIcon columnKey="dealProduct" /></div>
                             </TableHead>
                             <TableHead 
                               className="cursor-pointer hover:bg-muted/50"
@@ -535,12 +619,7 @@ export default function PlayerDetailPage() {
                             >
                               <div className="flex items-center">Estágio <SortIcon columnKey="currentStage" /></div>
                             </TableHead>
-                            <TableHead 
-                              className="text-right cursor-pointer hover:bg-muted/50"
-                              onClick={() => handleDealSort('probability')}
-                            >
-                              <div className="flex items-center justify-end">Probabilidade <SortIcon columnKey="probability" /></div>
-                            </TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -549,7 +628,6 @@ export default function PlayerDetailPage() {
                               <TableCell className="font-medium">
                                 {(track as any).dealName || 'Deal Desconhecido'}
                               </TableCell>
-                              {/* CÉLULA PRODUTO ADICIONADA */}
                               <TableCell className="text-muted-foreground text-sm">
                                 {(track as any).dealProduct && ALL_PRODUCT_LABELS[(track as any).dealProduct] 
                                   ? ALL_PRODUCT_LABELS[(track as any).dealProduct] 
@@ -563,10 +641,17 @@ export default function PlayerDetailPage() {
                                   {STAGE_LABELS[track.currentStage]}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right">
-                                <Badge variant={track.probability > 50 ? "default" : "secondary"}>
-                                  {track.probability}%
-                                </Badge>
+                              {/* Botão de Desvincular (Lixeira) */}
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-destructive hover:text-destructive/90"
+                                  onClick={() => handleUnlinkDeal(track.id)}
+                                  title="Desvincular Deal"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           )) : (
