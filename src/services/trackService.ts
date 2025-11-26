@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlayerTrack, PlayerStage } from '@/lib/types';
-import { PlayerTrackDB } from '@/lib/databaseTypes';
 
 // ============================================================================
 // Types
@@ -33,7 +32,8 @@ export interface TrackUpdate {
 // Helpers
 // ============================================================================
 
-function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string } {
+// Função única e atualizada para mapear os dados do banco
+function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProduct?: string } {
     return {
         id: item.id,
         masterDealId: item.master_deal_id,
@@ -46,8 +46,9 @@ function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string } {
         notes: item.notes || '',
         createdAt: item.created_at,
         updatedAt: item.updated_at,
-        // Mapeia o nome do deal se vier do join
-        dealName: item.master_deal?.client_name
+        // JOIN: Mapeia nome e produto (se disponíveis no select)
+        dealName: item.master_deal?.client_name,
+        dealProduct: item.master_deal?.deal_product
     };
 }
 
@@ -85,35 +86,13 @@ export async function getTracksByDeal(dealId: string): Promise<PlayerTrack[]> {
 }
 
 /**
- * NOVA FUNÇÃO: Fetch tracks by PLAYER ID (incluindo nome do Deal)
+ * Fetch tracks by PLAYER ID (incluindo nome do Deal e Produto)
  */
-// ... (imports)
-
-// Atualize a tipagem do retorno para incluir dealProduct
-function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProduct?: string } {
-    return {
-        // ... (outros campos iguais)
-        id: item.id,
-        masterDealId: item.master_deal_id,
-        playerName: item.player_name,
-        trackVolume: item.track_volume || 0,
-        currentStage: (item.current_stage as PlayerStage) || 'nda',
-        probability: item.probability || 0,
-        responsibles: item.responsibles || [],
-        status: (item.status as any) || 'active',
-        notes: item.notes || '',
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-        // JOIN: Mapeia nome e produto
-        dealName: item.master_deal?.client_name,
-        dealProduct: item.master_deal?.deal_product
-    };
-}
-
 export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack & { dealName?: string; dealProduct?: string })[]> {
     const { data, error } = await supabase
         .from('player_tracks')
-        .select('*, master_deal:master_deals(client_name, deal_product)') // <--- Adicionado deal_product aqui
+        // Join explícito para pegar client_name e deal_product da tabela master_deals
+        .select('*, master_deal:master_deals(client_name, deal_product)') 
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
 
@@ -122,6 +101,9 @@ export async function getTracksByPlayer(playerId: string): Promise<(PlayerTrack 
     return (data || []).map(mapTrackFromDB);
 }
 
+/**
+ * Get a single track
+ */
 export async function getTrack(trackId: string): Promise<PlayerTrack> {
     const { data, error } = await supabase
         .from('player_tracks')
@@ -210,7 +192,7 @@ export function useTracks(dealId?: string) {
     });
 }
 
-// NOVO HOOK: Busca tracks pelo Player ID
+// Hook para buscar tracks pelo Player ID
 export function usePlayerTracks(playerId: string | undefined) {
     return useQuery({
         queryKey: ['player-tracks', playerId],

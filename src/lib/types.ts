@@ -31,7 +31,7 @@ export interface User {
 
 export interface PipelineStage {
   id: string
-  pipelineId: string | null  // null for global/default stages
+  pipelineId: string | null
   name: string
   color: string
   stageOrder: number
@@ -40,12 +40,13 @@ export interface PipelineStage {
   updatedAt: string
 }
 
-
 export interface MasterDeal {
   id: string
   clientName: string
   volume: number
   operationType: OperationType
+  // CAMPO NOVO:
+  dealProduct?: string; 
   deadline: string
   observations: string
   status: DealStatus
@@ -54,7 +55,6 @@ export interface MasterDeal {
   createdBy: string
   deletedAt?: string
   feePercentage?: number
-  // Campo expandido (join)
   createdByUser?: {
     id: string
     name: string
@@ -451,26 +451,3 @@ export const ALL_PRODUCT_LABELS: Record<string, string> = {
   ...EQUITY_SUBTYPE_LABELS,
   ...BARTER_SUBTYPE_LABELS
 };
-
-export interface MasterDeal {
-  id: string
-  clientName: string
-  volume: number
-  operationType: OperationType
-  // NOVO CAMPO:
-  dealProduct?: string; 
-  deadline: string
-  observations: string
-  status: DealStatus
-  createdAt: string
-  updatedAt: string
-  createdBy: string
-  deletedAt?: string
-  feePercentage?: number
-  createdByUser?: {
-    id: string
-    name: string
-    email: string
-    avatar?: string
-  }
-}
