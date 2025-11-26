@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
 } from '@/components/ui/dialog'
@@ -31,8 +32,11 @@ import {
   PlayerType
 } from '@/lib/types'
 
-// Estilo para inputs desabilitados ficarem bem legíveis (texto preto)
-const INPUT_STYLES = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground font-medium"
+// Estilo Padrão (Cinza/Muted) - Para campos secundários
+const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
+
+// Estilo Destaque (Preto/Foreground) - Apenas para o Nome
+const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
 
 export default function PlayerDetailPage() {
   const { id } = useParams()
@@ -69,18 +73,15 @@ export default function PlayerDetailPage() {
     isPrimary: false
   })
 
-  // Sincroniza dados do banco com o formulário
   useEffect(() => {
-    // Só atualiza o form se NÃO estiver editando (protege contra sobrescrita)
-    // OU se acabamos de carregar os dados pela primeira vez
-    if (player && !isEditing) {
+    if (player) {
       setFormData({
         ...player,
         products: player.products || { credit: [], equity: [], barter: [] },
         gestoraTypes: player.gestoraTypes || []
       })
     }
-  }, [player, isEditing])
+  }, [player])
 
   const toggleProduct = (category: 'credit' | 'equity' | 'barter', subtype: string) => {
     if (!isEditing) return
@@ -89,14 +90,9 @@ export default function PlayerDetailPage() {
       const newList = currentList.includes(subtype as any)
         ? currentList.filter(i => i !== subtype)
         : [...currentList, subtype as any]
-      
-      // Importante: Criar nova referência de objeto para products
       return {
         ...prev,
-        products: { 
-          ...prev.products, 
-          [category]: newList 
-        } as any
+        products: { ...prev.products, [category]: newList }
       }
     })
   }
@@ -138,9 +134,7 @@ export default function PlayerDetailPage() {
     if (isNew) {
       navigate('/players')
     } else {
-      // Reset PROFUNDO para garantir que checkboxes limpem
       if (player) {
-        // JSON parse/stringify cria uma cópia limpa sem referências de memória
         const cleanPlayer = JSON.parse(JSON.stringify(player));
         setFormData({
           ...cleanPlayer,
@@ -214,156 +208,170 @@ export default function PlayerDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* COLUNA ESQUERDA: Dados */}
+        {/* COLUNA ESQUERDA: ABAS (Informações / Produtos) */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados Cadastrais</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label>Nome da Entidade *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  disabled={!isEditing}
-                  className={INPUT_STYLES}
-                  placeholder="Ex: XP Investimentos"
-                />
-              </div>
+          
+          <Tabs defaultValue="info" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="info">Informações</TabsTrigger>
+              <TabsTrigger value="products">Produtos & Teses</TabsTrigger>
+            </TabsList>
 
-              <div className="space-y-2">
-                <Label>CNPJ</Label>
-                <Input
-                  value={formData.cnpj}
-                  onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
-                  disabled={!isEditing}
-                  className={INPUT_STYLES}
-                  placeholder="00.000.000/0000-00"
-                />
-              </div>
+            {/* ABA 1: INFORMAÇÕES */}
+            <TabsContent value="info" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações</CardTitle> {/* Item 1: Título Alterado */}
+                </CardHeader>
+                {/* Item 5: Espaçamento aumentado para gap-6 */}
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Nome do Player *</Label> {/* Item 2: Label Alterado */}
+                    <Input
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      disabled={!isEditing}
+                      className={INPUT_STYLE_PRIMARY} // Item 3: Cor Preta/Destaque
+                      placeholder="Ex: XP Investimentos"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Site</Label>
-                <Input
-                  value={formData.site}
-                  onChange={e => setFormData({ ...formData, site: e.target.value })}
-                  disabled={!isEditing}
-                  className={INPUT_STYLES}
-                  placeholder="https://..."
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label>CNPJ</Label>
+                    <Input
+                      value={formData.cnpj}
+                      onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
+                      disabled={!isEditing}
+                      className={INPUT_STYLE_SECONDARY} // Item 3: Cor Cinza
+                      placeholder="00.000.000/0000-00"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Tipo de Player</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(v: PlayerType) => setFormData({ ...formData, type: v })}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger className={INPUT_STYLES}><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label>Site</Label>
+                    <Input
+                      value={formData.site}
+                      onChange={e => setFormData({ ...formData, site: e.target.value })}
+                      disabled={!isEditing}
+                      className={INPUT_STYLE_SECONDARY}
+                      placeholder="https://..."
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Nível de Relacionamento</Label>
-                <Select
-                  value={formData.relationshipLevel}
-                  onValueChange={(v: any) => setFormData({ ...formData, relationshipLevel: v })}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger className={INPUT_STYLES}><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label>Tipo de Player</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(v: PlayerType) => setFormData({ ...formData, type: v })}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger className={INPUT_STYLE_SECONDARY}><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {formData.type === 'asset_manager' && (
-                <div className="md:col-span-2 bg-muted/30 p-4 rounded-lg border">
-                  <Label className="mb-3 block text-primary font-semibold">Tipos de Fundos sob Gestão</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {Object.entries(ASSET_MANAGER_TYPE_LABELS).map(([key, label]) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`gestora-${key}`}
-                          checked={formData.gestoraTypes?.includes(key as any)}
-                          onCheckedChange={() => toggleGestoraType(key as any)}
-                          disabled={!isEditing}
-                          className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                        />
-                        <Label htmlFor={`gestora-${key}`} className="text-sm font-normal cursor-pointer disabled:cursor-default">
-                          {label}
-                        </Label>
+                  <div className="space-y-2">
+                    <Label>Nível de Relacionamento</Label>
+                    <Select
+                      value={formData.relationshipLevel}
+                      onValueChange={(v: any) => setFormData({ ...formData, relationshipLevel: v })}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger className={INPUT_STYLE_SECONDARY}><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.type === 'asset_manager' && (
+                    <div className="md:col-span-2 bg-muted/30 p-4 rounded-lg border">
+                      <Label className="mb-3 block text-primary font-semibold">Tipos de Fundos sob Gestão</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {Object.entries(ASSET_MANAGER_TYPE_LABELS).map(([key, label]) => (
+                          <div key={key} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`gestora-${key}`}
+                              checked={formData.gestoraTypes?.includes(key as any)}
+                              onCheckedChange={() => toggleGestoraType(key as any)}
+                              disabled={!isEditing}
+                              className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                            />
+                            <Label htmlFor={`gestora-${key}`} className="text-sm font-normal cursor-pointer disabled:cursor-default text-muted-foreground">
+                              {label}
+                            </Label>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="md:col-span-2 space-y-2">
-                <Label>Observações / Tese</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  disabled={!isEditing}
-                  className={`${INPUT_STYLES} h-24`}
-                  placeholder="Detalhes adicionais sobre o player..."
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* PRODUTOS */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Produtos & Teses</CardTitle>
-              <CardDescription>Tipos de operações que este player analisa</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {['credit', 'equity', 'barter'].map((category) => {
-                const labels = category === 'credit' ? CREDIT_SUBTYPE_LABELS
-                  : category === 'equity' ? EQUITY_SUBTYPE_LABELS
-                    : BARTER_SUBTYPE_LABELS
-                const color = category === 'credit' ? 'bg-blue-500'
-                  : category === 'equity' ? 'bg-green-500'
-                    : 'bg-purple-500'
-                const title = category === 'credit' ? 'Crédito'
-                  : category === 'equity' ? 'Equity'
-                    : 'Permuta'
-
-                return (
-                  <div key={category}>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
-                      <div className={`w-2 h-2 rounded-full ${color}`} /> {title}
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {Object.entries(labels).map(([key, label]) => (
-                        <div key={key} className={`flex items-center space-x-2 p-2 rounded border border-transparent ${isEditing ? 'bg-slate-50 hover:border-border' : ''}`}>
-                          <Checkbox
-                            id={`${category}-${key}`}
-                            checked={formData.products?.[category as any]?.includes(key as any)}
-                            onCheckedChange={() => toggleProduct(category as any, key)}
-                            disabled={!isEditing}
-                            className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                          />
-                          <Label htmlFor={`${category}-${key}`} className="text-xs cursor-pointer disabled:cursor-default">{label}</Label>
-                        </div>
-                      ))}
                     </div>
-                    {category !== 'barter' && <Separator className="mt-6" />}
+                  )}
+
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Observações / Tese</Label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={e => setFormData({ ...formData, description: e.target.value })}
+                      disabled={!isEditing}
+                      className={`${INPUT_STYLE_SECONDARY} h-24`}
+                      placeholder="Detalhes adicionais sobre o player..."
+                    />
                   </div>
-                )
-              })}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ABA 2: PRODUTOS */}
+            <TabsContent value="products">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Produtos & Teses</CardTitle>
+                  <CardDescription>Tipos de operações que este player analisa</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {['credit', 'equity', 'barter'].map((category) => {
+                    const labels = category === 'credit' ? CREDIT_SUBTYPE_LABELS
+                      : category === 'equity' ? EQUITY_SUBTYPE_LABELS
+                        : BARTER_SUBTYPE_LABELS
+                    const color = category === 'credit' ? 'bg-blue-500'
+                      : category === 'equity' ? 'bg-green-500'
+                        : 'bg-purple-500'
+                    const title = category === 'credit' ? 'Crédito'
+                      : category === 'equity' ? 'Equity'
+                        : 'Permuta'
+
+                    return (
+                      <div key={category}>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
+                          <div className={`w-2 h-2 rounded-full ${color}`} /> {title}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {Object.entries(labels).map(([key, label]) => (
+                            <div key={key} className={`flex items-center space-x-2 p-2 rounded border border-transparent ${isEditing ? 'bg-slate-50 hover:border-border' : ''}`}>
+                              <Checkbox
+                                id={`${category}-${key}`}
+                                checked={formData.products?.[category as any]?.includes(key as any)}
+                                onCheckedChange={() => toggleProduct(category as any, key)}
+                                disabled={!isEditing}
+                                className="disabled:opacity-100 disabled:cursor-default data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                              />
+                              <Label htmlFor={`${category}-${key}`} className="text-xs cursor-pointer disabled:cursor-default text-muted-foreground">{label}</Label>
+                            </div>
+                          ))}
+                        </div>
+                        {category !== 'barter' && <Separator className="mt-6" />}
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
           {/* Ações Rodapé Coluna Esquerda */}
           <div className="flex justify-end">
@@ -371,7 +379,7 @@ export default function PlayerDetailPage() {
           </div>
         </div>
 
-        {/* COLUNA DIREITA: Contatos */}
+        {/* COLUNA DIREITA: Contatos (Fixo/Visível em ambas as abas) */}
         <div className="space-y-6">
           <Card className="h-full flex flex-col">
             <CardHeader>
