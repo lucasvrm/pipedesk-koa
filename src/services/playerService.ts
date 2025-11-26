@@ -21,7 +21,6 @@ function mapContactFromDB(item: any): PlayerContact {
 }
 
 function mapPlayerFromDB(item: any): Player {
-  // Tenta encontrar o contato principal se ele vier carregado (join)
   const primaryContactData = item.primary_contact && item.primary_contact.length > 0 
     ? item.primary_contact[0] 
     : null;
@@ -48,11 +47,8 @@ function mapPlayerFromDB(item: any): Player {
     deletedAt: item.deleted_at,
     isSynthetic: item.is_synthetic,
     
-    // Campos de Join
     creator: item.creator,
-    // Se vier a lista completa de contatos (no detalhe), mapeia. Senão array vazio.
     contacts: item.contacts ? item.contacts.map(mapContactFromDB) : [],
-    // Novo campo virtual para a lista
     primaryContact: primaryContact
   }
 }
@@ -61,9 +57,6 @@ function mapPlayerFromDB(item: any): Player {
 // API Functions
 // ============================================================================
 
-/**
- * Busca lista de players INCLUINDO o contato principal
- */
 export async function getPlayers(): Promise<Player[]> {
   const { data, error } = await supabase
     .from('players')
@@ -73,22 +66,14 @@ export async function getPlayers(): Promise<Player[]> {
       editor:profiles!players_updated_by_fkey(name),
       primary_contact:player_contacts(id, name, phone, email, role, is_primary)
     `)
-    .eq('primary_contact.is_primary', true) // Filtra o join, não a tabela pai (truque do PostgREST)
+    .eq('primary_contact.is_primary', true)
     .is('deleted_at', null)
     .order('name')
 
   if (error) throw error
-  
-  // O filtro eq() no join acima às vezes filtra o PAI se o filho não existir (inner join implícito em algumas versões).
-  // Uma abordagem mais segura para garantir que todos os players venham, mesmo sem contato:
-  // O PostgREST aplica o filtro no "recurso embedado". Se não tiver contato principal, vem array vazio.
-  
   return data.map(mapPlayerFromDB)
 }
 
-/**
- * Busca um player específico com TODOS os contatos
- */
 export async function getPlayer(id: string): Promise<Player> {
   const { data, error } = await supabase
     .from('players')
@@ -105,9 +90,6 @@ export async function getPlayer(id: string): Promise<Player> {
   return mapPlayerFromDB(data)
 }
 
-/**
- * Cria um novo player
- */
 export async function createPlayer(player: Partial<Player>, userId: string): Promise<Player> {
   const { data, error } = await supabase
     .from('players')
@@ -130,9 +112,6 @@ export async function createPlayer(player: Partial<Player>, userId: string): Pro
   return mapPlayerFromDB(data)
 }
 
-/**
- * Atualiza um player existente
- */
 export async function updatePlayer(id: string, updates: Partial<Player>, userId: string): Promise<Player> {
   const { data, error } = await supabase
     .from('players')
@@ -156,9 +135,6 @@ export async function updatePlayer(id: string, updates: Partial<Player>, userId:
   return mapPlayerFromDB(data)
 }
 
-/**
- * Soft delete de um player
- */
 export async function deletePlayer(id: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from('players')
@@ -167,6 +143,19 @@ export async function deletePlayer(id: string, userId: string): Promise<void> {
       updated_by: userId
     })
     .eq('id', id)
+
+  if (error) throw error
+}
+
+// --- NOVA FUNÇÃO: Deleção em Massa ---
+export async function deletePlayers(ids: string[], userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('players')
+    .update({
+      deleted_at: new Date().toISOString(),
+      updated_by: userId
+    })
+    .in('id', ids)
 
   if (error) throw error
 }
@@ -220,6 +209,18 @@ export function useDeletePlayer() {
   return useMutation({
     mutationFn: ({ id, userId }: { id: string, userId: string }) => 
       deletePlayer(id, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['players'] })
+    }
+  })
+}
+
+// Hook para Deleção em Massa
+export function useDeletePlayers() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ ids, userId }: { ids: string[], userId: string }) => 
+      deletePlayers(ids, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['players'] })
     }

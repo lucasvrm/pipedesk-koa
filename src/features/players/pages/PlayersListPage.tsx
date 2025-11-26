@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePlayers, deletePlayer } from '@/services/playerService'
+import { usePlayers, useDeletePlayer, useDeletePlayers } from '@/services/playerService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,65 +8,149 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, PencilSimple, User, Phone } from '@phosphor-icons/react'
-import { PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player } from '@/lib/types'
+import { Checkbox } from '@/components/ui/checkbox'
+import { 
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle 
+} from "@/components/ui/alert-dialog"
+import { 
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, 
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
+import { 
+  Plus, MagnifyingGlass, Trash, Buildings, CaretLeft, CaretRight, 
+  PencilSimple, User, Phone, Funnel, X 
+} from '@phosphor-icons/react'
+import { 
+  PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel 
+} from '@/lib/types'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
 
 export default function PlayersListPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const { data: players, isLoading, refetch } = usePlayers()
+  const { data: players, isLoading } = usePlayers()
   
+  // Mutations
+  const deleteSingleMutation = useDeletePlayer()
+  const deleteBulkMutation = useDeletePlayers()
+
+  // Estados de Controle
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  
+  // Estado do Modal de Deleção (Dupla Confirmação)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation()
-    if (!profile) return
-    if (!confirm('Tem certeza que deseja excluir este player?')) return
+  // Estados dos Filtros Avançados
+  const [typeFilters, setTypeFilters] = useState<PlayerType[]>([])
+  const [relFilters, setRelFilters] = useState<RelationshipLevel[]>([])
+  const [productFilters, setProductFilters] = useState<string[]>([]) // 'credit', 'equity', 'barter'
 
-    try {
-      await deletePlayer(id, profile.id)
-      toast.success('Player excluído')
-      refetch()
-    } catch (error) {
-      toast.error('Erro ao excluir')
+  // --- LÓGICA DE FILTRAGEM (POWER FILTER) ---
+  const filteredPlayers = useMemo(() => {
+    if (!players) return []
+
+    return players.filter(p => {
+      // 1. Busca Textual (Nome, Tipo, Contato)
+      const searchLower = search.toLowerCase()
+      const matchesSearch = 
+        p.name.toLowerCase().includes(searchLower) ||
+        p.type.toLowerCase().includes(searchLower) ||
+        (p.primaryContact?.name || '').toLowerCase().includes(searchLower)
+
+      if (!matchesSearch) return false
+
+      // 2. Filtro de Tipo
+      if (typeFilters.length > 0 && !typeFilters.includes(p.type)) return false
+
+      // 3. Filtro de Relacionamento
+      if (relFilters.length > 0 && !relFilters.includes(p.relationshipLevel)) return false
+
+      // 4. Filtro de Produtos (Atuação)
+      if (productFilters.length > 0) {
+        const hasSelectedProduct = productFilters.some(prod => {
+          if (prod === 'credit') return p.products.credit && p.products.credit.length > 0
+          if (prod === 'equity') return p.products.equity && p.products.equity.length > 0
+          if (prod === 'barter') return p.products.barter && p.products.barter.length > 0
+          return false
+        })
+        if (!hasSelectedProduct) return false
+      }
+
+      return true
+    })
+  }, [players, search, typeFilters, relFilters, productFilters])
+
+  // --- PAGINAÇÃO ---
+  const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentPlayers = filteredPlayers.slice(startIndex, endIndex)
+
+  // --- HANDLERS DE SELEÇÃO ---
+  const toggleSelectAll = () => {
+    if (selectedIds.length === currentPlayers.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(currentPlayers.map(p => p.id))
     }
   }
 
+  const toggleSelectOne = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(prev => prev.filter(item => item !== id))
+    } else {
+      setSelectedIds(prev => [...prev, id])
+    }
+  }
+
+  // --- HANDLERS DE DELEÇÃO ---
+  const confirmDelete = (target: string | 'bulk') => {
+    setItemToDelete(target)
+    setDeleteDialogOpen(true)
+  }
+
+  const executeDelete = async () => {
+    if (!profile || !itemToDelete) return
+
+    try {
+      if (itemToDelete === 'bulk') {
+        await deleteBulkMutation.mutateAsync({ ids: selectedIds, userId: profile.id })
+        toast.success(`${selectedIds.length} players excluídos`)
+        setSelectedIds([])
+      } else {
+        await deleteSingleMutation.mutateAsync({ id: itemToDelete, userId: profile.id })
+        toast.success('Player excluído')
+      }
+    } catch (error) {
+      toast.error('Erro ao excluir')
+    } finally {
+      setDeleteDialogOpen(false)
+      setItemToDelete(null)
+    }
+  }
+
+  // --- HELPERS VISUAIS ---
   const renderProductTags = (products: Player['products']) => {
     if (!products) return <span className="text-muted-foreground">-</span>;
-    
     const tags = [];
     
     if (products.credit?.length > 0) {
-      tags.push(
-        <Badge key="credit" variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 mr-1 mb-1 font-normal">
-          Crédito
-        </Badge>
-      );
+      tags.push(<Badge key="credit" variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-normal mr-1 mb-1">Crédito</Badge>);
     }
-    
     if (products.equity?.length > 0) {
-      tags.push(
-        <Badge key="equity" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 mr-1 mb-1 font-normal">
-          Equity
-        </Badge>
-      );
+      tags.push(<Badge key="equity" variant="outline" className="bg-green-50 text-green-700 border-green-200 font-normal mr-1 mb-1">Equity</Badge>);
     }
-    
     if (products.barter?.length > 0) {
-      tags.push(
-        <Badge key="barter" variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 mr-1 mb-1 font-normal">
-          Permuta
-        </Badge>
-      );
+      tags.push(<Badge key="barter" variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-normal mr-1 mb-1">Permuta</Badge>);
     }
 
     if (tags.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
-    
     return <div className="flex flex-wrap">{tags}</div>;
   }
 
@@ -79,27 +163,22 @@ export default function PlayersListPage() {
     }
   }
 
-  // Lógica de Filtragem
-  const filteredPlayers = players?.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.type.toLowerCase().includes(search.toLowerCase()) ||
-    (p.primaryContact?.name || '').toLowerCase().includes(search.toLowerCase()) // Busca também pelo contato
-  ) || []
-
-  // Lógica de Paginação
-  const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentPlayers = filteredPlayers.slice(startIndex, endIndex)
-
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage)
-    }
+    if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage)
+  }
+
+  const clearFilters = () => {
+    setSearch('')
+    setTypeFilters([])
+    setRelFilters([])
+    setProductFilters([])
+    setCurrentPage(1)
   }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
+      
+      {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -114,33 +193,139 @@ export default function PlayersListPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="relative w-full md:w-96">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar por nome, contato..." 
-              value={search}
-              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="pl-10"
-            />
-          </div>
+        <CardHeader className="pb-4 space-y-4">
           
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Itens por página:</span>
-            <Select 
-              value={String(itemsPerPage)} 
-              onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
-            >
-              <SelectTrigger className="w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Linha 1: Busca e Paginação */}
+          <div className="flex flex-col md:flex-row gap-4 justify-between">
+            <div className="relative w-full md:w-96">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar por nome, contato..." 
+                value={search}
+                onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Itens por página:</span>
+              <Select 
+                value={String(itemsPerPage)} 
+                onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
+              >
+                <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          {/* Linha 2: Filtros Avançados */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mr-2">
+              <Funnel /> Filtros:
+            </div>
+
+            {/* Filtro de Tipo */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={typeFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                  Tipo {typeFilters.length > 0 && `(${typeFilters.length})`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Tipos de Player</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={typeFilters.includes(key as PlayerType)}
+                    onCheckedChange={(checked) => {
+                      setTypeFilters(prev => checked ? [...prev, key as PlayerType] : prev.filter(k => k !== key))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Filtro de Atuação/Produto */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={productFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                  Atuação {productFilters.length > 0 && `(${productFilters.length})`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Produtos</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {['credit', 'equity', 'barter'].map(key => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={productFilters.includes(key)}
+                    onCheckedChange={(checked) => {
+                      setProductFilters(prev => checked ? [...prev, key] : prev.filter(k => k !== key))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {key === 'credit' ? 'Crédito' : key === 'equity' ? 'Equity' : 'Permuta'}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Filtro de Relacionamento */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={relFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                  Relacionamento {relFilters.length > 0 && `(${relFilters.length})`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={relFilters.includes(key as RelationshipLevel)}
+                    onCheckedChange={(checked) => {
+                      setRelFilters(prev => checked ? [...prev, key as RelationshipLevel] : prev.filter(k => k !== key))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {(typeFilters.length > 0 || relFilters.length > 0 || productFilters.length > 0 || search) && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                <X className="mr-1" /> Limpar
+              </Button>
+            )}
+          </div>
+
+          {/* Barra de Ações em Massa */}
+          {selectedIds.length > 0 && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive p-2 rounded-md flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+              <span className="text-sm font-medium ml-2">
+                {selectedIds.length} player(s) selecionado(s)
+              </span>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => confirmDelete('bulk')}
+              >
+                <Trash className="mr-2" /> Excluir Selecionados
+              </Button>
+            </div>
+          )}
+
         </CardHeader>
         
         <CardContent>
@@ -152,10 +337,16 @@ export default function PlayersListPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[40px]">
+                        <Checkbox 
+                          checked={currentPlayers.length > 0 && selectedIds.length === currentPlayers.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead className="w-[250px]">Nome</TableHead>
-                      <TableHead>Contato Principal</TableHead> {/* Nova Coluna */}
+                      <TableHead>Contato Principal</TableHead>
                       <TableHead>Tipo</TableHead>
-                      <TableHead>Produtos</TableHead>
+                      <TableHead>Atuação</TableHead>
                       <TableHead>Relacionamento</TableHead>
                       <TableHead>Website</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -168,6 +359,12 @@ export default function PlayersListPage() {
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => navigate(`/players/${player.id}`)} 
                       >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox 
+                            checked={selectedIds.includes(player.id)}
+                            onCheckedChange={() => toggleSelectOne(player.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                             <div className="flex flex-col">
                                 <span>{player.name}</span>
@@ -175,7 +372,6 @@ export default function PlayersListPage() {
                             </div>
                         </TableCell>
                         
-                        {/* Coluna de Contato Principal */}
                         <TableCell>
                           {player.primaryContact ? (
                             <div className="flex flex-col text-sm">
@@ -232,7 +428,10 @@ export default function PlayersListPage() {
                               variant="ghost" 
                               size="icon" 
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={(e) => handleDelete(e, player.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmDelete(player.id);
+                              }}
                             >
                               <Trash />
                             </Button>
@@ -243,7 +442,7 @@ export default function PlayersListPage() {
                     {currentPlayers.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          Nenhum player encontrado
+                          Nenhum player encontrado com os filtros atuais.
                         </TableCell>
                       </TableRow>
                     )}
@@ -251,6 +450,7 @@ export default function PlayersListPage() {
                 </Table>
               </div>
 
+              {/* Paginação */}
               {filteredPlayers.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
@@ -282,6 +482,33 @@ export default function PlayersListPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* MODAL DE CONFIRMAÇÃO DUPLA (IRREVERSÍVEL) */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. 
+              {itemToDelete === 'bulk' 
+                ? ` Você está prestes a excluir permanentemente ${selectedIds.length} players selecionados.`
+                : " Você está prestes a excluir este player permanentemente."
+              }
+              <br /><br />
+              Todos os dados associados, incluindo contatos e histórico, serão perdidos ou arquivados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setItemToDelete(null); }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={executeDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Confirmar Deleção
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   )
 }
