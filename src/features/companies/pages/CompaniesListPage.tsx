@@ -129,7 +129,6 @@ export default function CompaniesListPage() {
           bValue = b.dealsCount || 0;
           break;
         case 'relationshipLevel':
-          // Ordem lógica customizada para relacionamento
           const relOrder: Record<string, number> = { 'none': 0, 'basic': 1, 'intermediate': 2, 'close': 3 };
           aValue = relOrder[a.relationshipLevel] || 0;
           bValue = relOrder[b.relationshipLevel] || 0;
@@ -171,6 +170,8 @@ export default function CompaniesListPage() {
         toast.success('Empresa excluída')
         setIsDeleteAlertOpen(false)
         setItemToDelete(null)
+        // Remove da seleção se estiver selecionado
+        setSelectedIds(prev => prev.filter(id => id !== itemToDelete))
       } catch (error) {
         toast.error('Erro ao excluir empresa')
       }
@@ -195,9 +196,9 @@ export default function CompaniesListPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Buildings className="text-primary" />
-            Empresas
+            Base de Empresas
           </h1>
-          <p className="text-muted-foreground">Gerencie seus clientes e parceiros de negócios.</p>
+          <p className="text-muted-foreground">Diretório de clientes e parceiros.</p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -278,7 +279,6 @@ export default function CompaniesListPage() {
                       />
                     </TableHead>
                     
-                    {/* Colunas Ordenáveis */}
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
                       <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
                     </TableHead>
@@ -365,7 +365,7 @@ export default function CompaniesListPage() {
                       </TableCell>
 
                       <TableCell>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1">
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -374,14 +374,18 @@ export default function CompaniesListPage() {
                           >
                             <PencilSimple className="h-4 w-4" />
                           </Button>
+                          
+                          {/* Ícone de Lixeira Bloqueado até Seleção */}
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive/90"
+                            className="h-8 w-8 text-destructive hover:text-destructive/90 disabled:opacity-30 disabled:cursor-not-allowed"
+                            disabled={!selectedIds.includes(company.id)}
                             onClick={() => {
                               setItemToDelete(company.id)
                               setIsDeleteAlertOpen(true)
                             }}
+                            title={selectedIds.includes(company.id) ? "Excluir Empresa" : "Selecione para excluir"}
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
