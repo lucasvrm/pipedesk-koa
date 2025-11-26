@@ -18,7 +18,7 @@ import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
-  FileText, Sparkle, Tag, Question, ArrowLeft 
+  FileText, Sparkle, Tag, Question, ArrowLeft, WarningCircle
 } from '@phosphor-icons/react'
 import PlayerTracksList from '../components/PlayerTracksList'
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
@@ -90,15 +90,15 @@ export default function DealDetailPage() {
     }
   }
 
-  // Helper para cor do badge (consistente com DealsView)
-  const getStatusClass = (status: DealStatus) => {
-      switch (status) {
-          case 'active': return 'status-active'; // Usa classe CSS existente ou fallback
-          case 'concluded': return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200';
-          case 'cancelled': return 'status-cancelled';
-          case 'on_hold': return 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200';
-          default: return '';
-      }
+  // Helper para cores de status (usado no Badge e no Select)
+  const getStatusColor = (status: DealStatus) => {
+    switch (status) {
+      case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
+      case 'concluded': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
+      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
+      case 'on_hold': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
   }
 
   return (
@@ -113,7 +113,7 @@ export default function DealDetailPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">{deal.clientName}</h1>
             <div className="flex items-center gap-3 text-sm">
-              <Badge className={getStatusClass(deal.status)}>
+              <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
                 {STATUS_LABELS[deal.status]}
               </Badge>
               <span className="text-muted-foreground">{OPERATION_LABELS[deal.operationType]}</span>
@@ -122,13 +122,15 @@ export default function DealDetailPage() {
           
           <div className="flex gap-2 items-center">
             <DocumentGenerator deal={deal} playerTracks={dealTracks} />
+            
+            {/* 3. Campo de Status Colorido */}
             <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className={`w-[180px] border h-10 font-medium transition-colors ${getStatusColor(deal.status)}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="on_hold">Em Espera</SelectItem> {/* ADICIONADO */}
+                <SelectItem value="on_hold">Em Espera</SelectItem>
                 <SelectItem value="concluded">Concluído</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>
@@ -137,49 +139,57 @@ export default function DealDetailPage() {
         </div>
       </div>
 
+      {/* 1. & 2. Cards de Métricas: Altura Reduzida e Cores Específicas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Volume Total</CardTitle>
+        
+        {/* Volume Total: Azul Claro */}
+        <Card className="bg-blue-50 border-blue-200 shadow-sm">
+          <CardHeader className="p-4 pb-1 space-y-0">
+            <CardTitle className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Volume Total</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold truncate" title={formatCurrency(deal.volume)}>
+          <CardContent className="p-4 pt-0">
+            <p className="text-xl font-bold text-blue-900 truncate" title={formatCurrency(deal.volume)}>
               {formatCurrency(deal.volume)}
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Fee (%)</CardTitle>
+
+        {/* Fee (%): Padrão (Neutro) com altura reduzida */}
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 pb-1 space-y-0">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fee (%)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{deal.feePercentage ? `${deal.feePercentage}%` : '—'}</p>
+          <CardContent className="p-4 pt-0">
+            <p className="text-xl font-bold text-foreground">{deal.feePercentage ? `${deal.feePercentage}%` : '—'}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Prazo Final</CardTitle>
+
+        {/* Prazo Final: Vermelho */}
+        <Card className="bg-red-50 border-red-200 shadow-sm">
+          <CardHeader className="p-4 pb-1 space-y-0">
+            <CardTitle className="text-xs font-semibold text-red-600 uppercase tracking-wider">Prazo Final</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatDate(deal.deadline)}</p>
+          <CardContent className="p-4 pt-0">
+            <p className="text-xl font-bold text-red-900 flex items-center gap-2">
+              {formatDate(deal.deadline)}
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Players Ativos</CardTitle>
+
+        {/* Players Ativos: Amarelo */}
+        <Card className="bg-amber-50 border-amber-200 shadow-sm">
+          <CardHeader className="p-4 pb-1 space-y-0">
+            <CardTitle className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Players Ativos</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{dealTracks.filter(t => t.status === 'active').length}</p>
+          <CardContent className="p-4 pt-0">
+            <p className="text-xl font-bold text-amber-900">
+              {dealTracks.filter(t => t.status === 'active').length}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {deal.observations && (
-        <div className="bg-muted/30 p-4 rounded-lg mb-6 border">
-          <h3 className="font-semibold mb-1 text-sm">Observações</h3>
-          <p className="text-sm text-muted-foreground">{deal.observations}</p>
-        </div>
-      )}
+      {/* (Container de Observações foi removido daqui conforme pedido 4) */}
 
       <Tabs defaultValue="players" className="w-full space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/50">
@@ -210,6 +220,19 @@ export default function DealDetailPage() {
             </div>
           ) : (
             <PlayerTracksList tracks={dealTracks} currentUser={currentUser} />
+          )}
+
+          {/* 4. Observações movidas para baixo da lista de players */}
+          {deal.observations && (
+            <div className="mt-8 pt-6 border-t">
+              <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                Observações do Negócio
+              </h3>
+              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground leading-relaxed">
+                {deal.observations}
+              </div>
+            </div>
           )}
         </TabsContent>
 
