@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/tooltip"
 import { 
   Plus, MagnifyingGlass, Trash, Buildings, PencilSimple, User, Phone, Funnel, X,
-  CaretUp, CaretDown, CaretUpDown
+  CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight // <--- ADICIONADO AQUI
 } from '@phosphor-icons/react'
 import { 
   PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel,
@@ -46,7 +46,7 @@ interface SortConfig {
 export default function PlayersListPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const { data: players, isLoading, refetch } = usePlayers()
+  const { data: players, isLoading } = usePlayers()
   
   // Mutations
   const deleteSingleMutation = useDeletePlayer()
@@ -180,11 +180,9 @@ export default function PlayersListPage() {
         await deleteBulkMutation.mutateAsync({ ids: selectedIds, userId: profile.id })
         toast.success(`${selectedIds.length} players excluídos`)
         setSelectedIds([])
-        refetch()
       } else {
         await deleteSingleMutation.mutateAsync({ id: itemToDelete, userId: profile.id })
         toast.success('Player excluído')
-        refetch()
       }
     } catch (error) {
       toast.error('Erro ao excluir')
@@ -211,13 +209,13 @@ export default function PlayersListPage() {
   // Cores do Relacionamento
   const getRelationshipBadgeClass = (level: string) => {
     switch (level) {
-      case 'close': 
+      case 'close': // Próximo -> Verde
         return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-      case 'intermediate': 
+      case 'intermediate': // Intermediário -> Azul
         return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-      case 'basic': 
+      case 'basic': // Básico -> Cinza
         return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
-      default: 
+      default: // Nenhum -> Branco/Outline
         return 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
     }
   }
@@ -472,7 +470,6 @@ export default function PlayersListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* CORREÇÃO: Aqui usamos processedPlayers, que é a lista já filtrada e ordenada */}
                     {currentPlayers.map((player) => {
                       const isSelected = selectedIds.includes(player.id);
                       return (
@@ -549,7 +546,7 @@ export default function PlayersListPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                disabled={!isSelected} // BLOQUEIO SOLICITADO
+                                disabled={!isSelected} // Botão desabilitado se não selecionado
                                 className={`
                                   ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30'}
                                 `}
@@ -577,7 +574,7 @@ export default function PlayersListPage() {
               </div>
 
               {/* Paginação */}
-              {processedPlayers.length > 0 && ( // CORREÇÃO APLICADA AQUI
+              {processedPlayers.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
                     Mostrando {startIndex + 1} a {Math.min(endIndex, processedPlayers.length)} de {processedPlayers.length} players
