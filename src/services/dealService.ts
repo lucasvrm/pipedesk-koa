@@ -15,16 +15,13 @@ function withoutDeleted(query: any) {
 // ============================================================================
 
 export interface Deal extends MasterDeal {
-  // Extended with joins
   createdByUser?: {
     id: string;
     name: string;
     email: string;
     avatar?: string;
   };
-  // Join com a Empresa (Cliente)
   company?: Company;
-  // Join com Responsáveis (Múltiplos)
   responsibles?: User[];
 }
 
@@ -61,7 +58,6 @@ function mapDealFromDB(item: any): Deal {
   const profile = item.createdByUser;
   const company = item.company;
 
-  // Tenta mapear os membros. Se a tabela não existiu no join, pode vir undefined.
   const responsibles: User[] = item.deal_members?.map((dm: any) => ({
     id: dm.user?.id,
     name: dm.user?.name || 'Usuário',
@@ -70,7 +66,6 @@ function mapDealFromDB(item: any): Deal {
     role: dm.user?.role || 'analyst'
   })) || [];
 
-  // Fallback: Se a lista estiver vazia (ex: deal antigo ou migração não rodou), usa o criador
   if (responsibles.length === 0 && profile) {
     responsibles.push({
       id: profile.id,
@@ -84,7 +79,7 @@ function mapDealFromDB(item: any): Deal {
     id: item.id,
     clientName: item.client_name,
     volume: item.volume || 0,
-    operationType: (item.operation_type as OperationType) || 'acquisition',
+    operationType: (item.operation_type as OperationType) || 'ccb',
     deadline: item.deadline || '',
     observations: item.observations || '',
     status: (item.status as DealStatus) || 'active',
@@ -119,8 +114,6 @@ function mapDealFromDB(item: any): Deal {
 // ============================================================================
 
 export async function getDeals(): Promise<Deal[]> {
-  // Tenta buscar com a nova relação. Se falhar (ex: erro PGRST301 - tabela não existe),
-  // cai no catch e tentamos uma busca simples de fallback.
   try {
     const { data, error } = await withoutDeleted(
       supabase
@@ -136,7 +129,6 @@ export async function getDeals(): Promise<Deal[]> {
     ).order('created_at', { ascending: false });
 
     if (error) {
-      // Se o erro for de relação não encontrada, tentamos fallback
       if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
         console.warn("Tabela deal_members não encontrada. Usando fallback.");
         return getDealsFallback();
@@ -147,12 +139,10 @@ export async function getDeals(): Promise<Deal[]> {
     return (data || []).map((item: any) => mapDealFromDB(item));
   } catch (error) {
     console.error('Error fetching deals (with members):', error);
-    // Tenta fallback em caso de crash total da query
     return getDealsFallback();
   }
 }
 
-// Fallback function para quando a migração do banco ainda não foi rodada
 async function getDealsFallback(): Promise<Deal[]> {
   const { data, error } = await withoutDeleted(
     supabase
@@ -166,6 +156,23 @@ async function getDealsFallback(): Promise<Deal[]> {
 
   if (error) throw error;
   return (data || []).map((item: any) => mapDealFromDB(item));
+}
+
+// FIX: Adicionada função de Fallback para getDeal individual
+async function getDealFallback(dealId: string): Promise<Deal> {
+  const { data, error } = await withoutDeleted(
+    supabase
+      .from('master_deals')
+      .select(`
+        *,
+        createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
+        company:companies(id, name, type, site)
+      `)
+      .eq('id', dealId)
+  ).single();
+
+  if (error) throw error;
+  return mapDealFromDB(data);
 }
 
 export async function getDeal(dealId: string): Promise<Deal> {
@@ -184,12 +191,21 @@ export async function getDeal(dealId: string): Promise<Deal> {
         .eq('id', dealId)
     ).single();
 
-    if (error) throw error; // Se falhar aqui, deixamos falhar pois é detalhe específico
+    if (error) {
+      // FIX: Tratamento de erro similar ao getDeals
+      if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
+         console.warn("Tabela deal_members não encontrada no getDeal. Usando fallback.");
+         return getDealFallback(dealId);
+      }
+      throw error; 
+    }
 
     return mapDealFromDB(data);
   } catch (error) {
     console.error('Error fetching deal:', error);
-    throw error;
+    // Tenta fallback em caso de erro genérico se for seguro, ou relança
+    // Aqui vamos tentar o fallback para garantir que o usuário veja o deal se existir
+    return getDealFallback(dealId);
   }
 }
 
@@ -217,7 +233,6 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
 
     if (dealError) throw dealError;
 
-    // Tenta adicionar membro. Se falhar (tabela não existe), apenas loga aviso.
     if (deal.createdBy) {
       const { error: memberError } = await supabase
         .from('deal_members')
@@ -321,7 +336,6 @@ export async function deleteDeals(ids: string[]): Promise<void> {
   }
 }
 
-// React Query Hooks
 export function useDeals() {
   return useQuery({ queryKey: ['deals'], queryFn: getDeals });
 }

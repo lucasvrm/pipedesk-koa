@@ -21,7 +21,7 @@ import {
   FileText, Sparkle, Tag, Question, ArrowLeft 
 } from '@phosphor-icons/react'
 import PlayerTracksList from '../components/PlayerTracksList'
-import CreatePlayerDialog from '../components/CreatePlayerDialog' // Este modal pode manter pois é uma ação rápida de criação
+import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
@@ -90,6 +90,17 @@ export default function DealDetailPage() {
     }
   }
 
+  // Helper para cor do badge (consistente com DealsView)
+  const getStatusClass = (status: DealStatus) => {
+      switch (status) {
+          case 'active': return 'status-active'; // Usa classe CSS existente ou fallback
+          case 'concluded': return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200';
+          case 'cancelled': return 'status-cancelled';
+          case 'on_hold': return 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200';
+          default: return '';
+      }
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       <div className="mb-6">
@@ -102,10 +113,7 @@ export default function DealDetailPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">{deal.clientName}</h1>
             <div className="flex items-center gap-3 text-sm">
-              <Badge className={
-                deal.status === 'active' ? 'status-active' :
-                deal.status === 'cancelled' ? 'status-cancelled' : 'status-concluded'
-              }>
+              <Badge className={getStatusClass(deal.status)}>
                 {STATUS_LABELS[deal.status]}
               </Badge>
               <span className="text-muted-foreground">{OPERATION_LABELS[deal.operationType]}</span>
@@ -120,6 +128,7 @@ export default function DealDetailPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="on_hold">Em Espera</SelectItem> {/* ADICIONADO */}
                 <SelectItem value="concluded">Concluído</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>

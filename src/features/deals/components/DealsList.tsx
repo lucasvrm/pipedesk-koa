@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/EmptyState'
 import { Eye, WarningCircle, Briefcase } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { useNavigate } from 'react-router-dom' // Hook para navegação
+import { useNavigate } from 'react-router-dom'
 
 interface DealsListProps {
   deals: MasterDeal[]
@@ -17,11 +17,10 @@ interface DealsListProps {
 
 export default function DealsList({ deals, compact = false, bulkMode = false }: DealsListProps) {
   const { profile: currentUser } = useAuth()
-  const navigate = useNavigate() // Instancia o hook
+  const navigate = useNavigate()
 
   const handleDealClick = (deal: MasterDeal) => {
     if (!bulkMode) {
-      // MUDANÇA: Navega para a página em vez de setar estado
       navigate(`/deals/${deal.id}`)
     }
   }
@@ -42,6 +41,10 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
         const daysUntil = getDaysUntil(deal.deadline)
         const overdue = isOverdue(deal.deadline)
 
+        // Helper rápido de classe
+        const statusClass = deal.status === 'active' ? 'status-active' :
+                           deal.status === 'on_hold' ? 'bg-amber-100 text-amber-700' : '';
+
         return (
           <div
             key={deal.id}
@@ -52,14 +55,13 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
             )}
             onClick={() => handleDealClick(deal)}
           >
-            {/* ... (Mesmo conteúdo de renderização do card) ... */}
             <div className="flex-1 min-w-0 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className={cn("font-semibold truncate", compact ? "text-sm" : "text-base")}>
                     {deal.clientName}
                   </h3>
-                  <Badge variant="secondary" className={cn("text-xs", deal.status === 'active' ? 'status-active' : '')}>
+                  <Badge variant="secondary" className={cn("text-xs", statusClass)}>
                     {STATUS_LABELS[deal.status]}
                   </Badge>
                 </div>
@@ -77,7 +79,7 @@ export default function DealsList({ deals, compact = false, bulkMode = false }: 
             {!compact && !bulkMode && (
               <Button variant="ghost" size="icon" onClick={(e) => {
                 e.stopPropagation()
-                navigate(`/deals/${deal.id}`) // Navegação explícita no botão também
+                navigate(`/deals/${deal.id}`)
               }}>
                 <Eye />
               </Button>
