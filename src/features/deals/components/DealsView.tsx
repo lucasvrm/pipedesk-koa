@@ -10,53 +10,48 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from '@/components/ui/select'
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+import {
+  Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { 
-  MagnifyingGlass, 
-  Trash, 
-  Kanban, 
-  CaretUp, 
-  CaretDown, 
-  CaretUpDown,
-  CaretLeft,
-  CaretRight,
-  Funnel,
-  PencilSimple,
-  Buildings,
-  User as UserIcon,
-  X
+  MagnifyingGlass, Trash, Kanban, CaretUp, CaretDown, CaretUpDown, 
+  CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, X, Plus
 } from '@phosphor-icons/react'
 import { DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { formatCurrency, getInitials } from '@/lib/helpers'
 import { toast } from 'sonner'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 
-// Configuração de Ordenação
+// Tipos
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
   key: SortKey;
   direction: SortDirection;
+}
+
+interface FilterState {
+  status: DealStatus | 'all';
+  type: OperationType | 'all';
+  responsible: string;
+  minVolume: string;
+  maxVolume: string;
+}
+
+const INITIAL_FILTERS: FilterState = {
+  status: 'all',
+  type: 'all',
+  responsible: 'all',
+  minVolume: '',
+  maxVolume: ''
 }
 
 export default function DealsView() {
@@ -74,15 +69,52 @@ export default function DealsView() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'clientName', direction: 'asc' })
 
-  // Estados dos Filtros
-  const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all')
-  const [typeFilter, setTypeFilter] = useState<OperationType | 'all'>('all')
-  const [responsibleFilter, setResponsibleFilter] = useState<string>('all')
-  const [volumeRange, setVolumeRange] = useState<{ min: string, max: string }>({ min: '', max: '' })
+  // Estado Unificado de Filtros
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
+  const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS) // Para o Popover
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   // Modais
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
+
+  // --- Helpers de Filtros Ativos ---
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (filters.status !== 'all') count++
+    if (filters.type !== 'all') count++
+    if (filters.responsible !== 'all') count++
+    if (filters.minVolume || filters.maxVolume) count++
+    return count
+  }, [filters])
+
+  const hasActiveFilters = activeFilterCount > 0 || searchQuery.length > 0
+
+  const applyFilters = () => {
+    setFilters(tempFilters)
+    setIsFilterOpen(false)
+    setCurrentPage(1)
+  }
+
+  const clearFilter = (key: keyof FilterState) => {
+    const newFilters = { ...filters }
+    if (key === 'minVolume' || key === 'maxVolume') {
+      newFilters.minVolume = ''
+      newFilters.maxVolume = ''
+    } else {
+      // @ts-ignore
+      newFilters[key] = INITIAL_FILTERS[key]
+    }
+    setFilters(newFilters)
+    setTempFilters(newFilters)
+  }
+
+  const resetAllFilters = () => {
+    setFilters(INITIAL_FILTERS)
+    setTempFilters(INITIAL_FILTERS)
+    setSearchQuery('')
+    setCurrentPage(1)
+  }
 
   // --- Processamento de Dados ---
   const processedDeals = useMemo(() => {
@@ -90,32 +122,27 @@ export default function DealsView() {
 
     // 1. Filtragem
     let result = masterDeals.filter(deal => {
-      // REGRA 3b: Lógica de Busca: Somente pelo nome da empresa (Company)
+      // Busca por Empresa
       if (searchQuery) {
         const companyName = deal.company?.name?.toLowerCase() || ''
-        // Se não tem empresa ou o nome não bate, remove
         if (!companyName.includes(searchQuery.toLowerCase())) return false
       }
 
-      // Filtro de Status
-      if (statusFilter !== 'all' && deal.status !== statusFilter) return false
-
-      // Filtro de Tipo
-      if (typeFilter !== 'all' && deal.operationType !== typeFilter) return false
-
-      // REGRA 5: Filtro de Responsável (Verifica se o ID está na lista de responsibles)
-      if (responsibleFilter !== 'all') {
-        const isResponsible = deal.responsibles?.some(u => u.id === responsibleFilter)
+      // Filtros Avançados
+      if (filters.status !== 'all' && deal.status !== filters.status) return false
+      if (filters.type !== 'all' && deal.operationType !== filters.type) return false
+      
+      if (filters.responsible !== 'all') {
+        const isResponsible = deal.responsibles?.some(u => u.id === filters.responsible)
         if (!isResponsible) return false
       }
 
-      // REGRA 5: Filtro de Volume
       const dealVolume = deal.volume || 0
-      const minVol = volumeRange.min ? parseFloat(volumeRange.min) : 0
-      const maxVol = volumeRange.max ? parseFloat(volumeRange.max) : Infinity
+      const min = filters.minVolume ? parseFloat(filters.minVolume) : 0
+      const max = filters.maxVolume ? parseFloat(filters.maxVolume) : Infinity
       
-      if (dealVolume < minVol) return false
-      if (volumeRange.max && dealVolume > maxVol) return false
+      if (dealVolume < min) return false
+      if (filters.maxVolume && dealVolume > max) return false
 
       return true
     })
@@ -126,7 +153,7 @@ export default function DealsView() {
       let bValue: any = '';
 
       switch (sortConfig.key) {
-        case 'clientName': // REGRA 1: Coluna Negócio (era Título)
+        case 'clientName':
           aValue = a.clientName.toLowerCase();
           bValue = b.clientName.toLowerCase();
           break;
@@ -154,7 +181,7 @@ export default function DealsView() {
     });
 
     return result;
-  }, [masterDeals, searchQuery, statusFilter, typeFilter, responsibleFilter, volumeRange, sortConfig]);
+  }, [masterDeals, searchQuery, filters, sortConfig]);
 
   // --- Paginação ---
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
@@ -209,15 +236,6 @@ export default function DealsView() {
     }
   }
 
-  const clearFilters = () => {
-    setSearchQuery('')
-    setStatusFilter('all')
-    setTypeFilter('all')
-    setResponsibleFilter('all')
-    setVolumeRange({ min: '', max: '' })
-    setCurrentPage(1)
-  }
-
   // --- UI Helpers ---
   const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
     if (sortConfig.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" />
@@ -238,128 +256,167 @@ export default function DealsView() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
       
-      {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Kanban className="text-primary" />
             Diretório de Master Deals
           </h1>
-          {/* REGRA 6: Subtítulo alterado */}
-          <p className="text-muted-foreground">Diretório de Master Deals</p>
+          <p className="text-muted-foreground">Gerencie as oportunidades e mandatos da casa.</p>
         </div>
       </div>
 
       <Card>
         <CardHeader className="pb-4 space-y-4">
           
-          {/* Barra de Ferramentas */}
+          {/* BARRA DE FERRAMENTAS */}
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
             
-            {/* Grupo Esquerda: Busca e Filtros */}
-            <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
+            <div className="flex flex-1 flex-col md:flex-row gap-3 w-full items-center">
               
               {/* Busca */}
-              <div className="relative w-full md:w-72">
+              <div className="relative w-full md:w-96">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                {/* REGRA 3a: Máscara "Buscar por cliente" */}
                 <Input
-                  placeholder="Buscar por cliente..."
+                  placeholder="Buscar por cliente (Empresa)..."
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="pl-10"
                 />
               </div>
 
-              {/* Filtros */}
-              <div className="flex flex-wrap items-center gap-2">
-                
-                <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as DealStatus | 'all'); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[130px] h-9">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Status: Todos</SelectItem>
-                    <SelectItem value="active">Ativos</SelectItem>
-                    <SelectItem value="concluded">Concluídos</SelectItem>
-                    <SelectItem value="cancelled">Cancelados</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as OperationType | 'all'); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[130px] h-9">
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tipo: Todos</SelectItem>
-                    {Object.entries(OPERATION_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* REGRA 5: Filtro por Responsável */}
-                <Select value={responsibleFilter} onValueChange={(v) => { setResponsibleFilter(v); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[150px] h-9">
-                    <UserIcon className="mr-2 h-3 w-3 text-muted-foreground" />
-                    <SelectValue placeholder="Responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Resp: Todos</SelectItem>
-                    {(users || []).map(user => (
-                      <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* REGRA 5: Filtro de Volume */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
-                      <Funnel className="mr-2 h-3 w-3" />
-                      Volume
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4">
+              {/* Botão de Filtros (Popover) */}
+              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={`border-dashed ${activeFilterCount > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
+                    <Funnel className="mr-2 h-4 w-4" />
+                    Filtros
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="ml-2 h-5 px-1.5 rounded-sm bg-primary text-primary-foreground hover:bg-primary/90">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="start">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium leading-none">Filtros Avançados</h4>
+                      {activeFilterCount > 0 && (
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          setTempFilters(INITIAL_FILTERS)
+                          // setFilters será chamado no "Aplicar" ou podemos limpar direto
+                        }} className="h-auto p-0 text-xs text-muted-foreground hover:text-primary">
+                          Limpar
+                        </Button>
+                      )}
+                    </div>
+                    
                     <div className="space-y-2">
-                      <h4 className="font-medium leading-none">Faixa de Volume</h4>
-                      <p className="text-sm text-muted-foreground">Filtrar por valor estimado.</p>
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <div className="space-y-1">
-                          <span className="text-xs">Mínimo</span>
-                          <Input 
-                            type="number" 
-                            placeholder="0" 
-                            value={volumeRange.min}
-                            onChange={e => setVolumeRange({...volumeRange, min: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-xs">Máximo</span>
-                          <Input 
-                            type="number" 
-                            placeholder="∞" 
-                            value={volumeRange.max}
-                            onChange={e => setVolumeRange({...volumeRange, max: e.target.value})}
-                          />
-                        </div>
+                      <Label className="text-xs">Status</Label>
+                      <Select value={tempFilters.status} onValueChange={(v) => setTempFilters({...tempFilters, status: v as DealStatus | 'all'})}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="active">Ativos</SelectItem>
+                          <SelectItem value="concluded">Concluídos</SelectItem>
+                          <SelectItem value="cancelled">Cancelados</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tipo de Operação</Label>
+                      <Select value={tempFilters.type} onValueChange={(v) => setTempFilters({...tempFilters, type: v as OperationType | 'all'})}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          {Object.entries(OPERATION_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Responsável</Label>
+                      <Select value={tempFilters.responsible} onValueChange={(v) => setTempFilters({...tempFilters, responsible: v})}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          {(users || []).map(user => (
+                            <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Volume (R$)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          placeholder="Min" className="h-8 text-xs" type="number"
+                          value={tempFilters.minVolume} 
+                          onChange={e => setTempFilters({...tempFilters, minVolume: e.target.value})}
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <Input 
+                          placeholder="Max" className="h-8 text-xs" type="number"
+                          value={tempFilters.maxVolume} 
+                          onChange={e => setTempFilters({...tempFilters, maxVolume: e.target.value})}
+                        />
                       </div>
                     </div>
-                  </PopoverContent>
-                </Popover>
 
-                {/* Botão Limpar Filtros */}
-                {(statusFilter !== 'all' || typeFilter !== 'all' || responsibleFilter !== 'all' || searchQuery || volumeRange.min || volumeRange.max) && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground">
-                    <X className="mr-1 h-3 w-3" /> Limpar
+                    <Button className="w-full" size="sm" onClick={applyFilters}>
+                      Aplicar Filtros
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Tags de Filtros Ativos */}
+              {hasActiveFilters && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Separator orientation="vertical" className="h-6" />
+                  
+                  {filters.status !== 'all' && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Status: {STATUS_LABELS[filters.status]}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('status')} />
+                    </Badge>
+                  )}
+                  
+                  {filters.type !== 'all' && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Tipo: {OPERATION_LABELS[filters.type]}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('type')} />
+                    </Badge>
+                  )}
+
+                  {filters.responsible !== 'all' && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Resp: {users?.find(u => u.id === filters.responsible)?.name.split(' ')[0]}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('responsible')} />
+                    </Badge>
+                  )}
+
+                  {(filters.minVolume || filters.maxVolume) && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Vol: {filters.minVolume || '0'} - {filters.maxVolume || '∞'}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('minVolume')} />
+                    </Badge>
+                  )}
+
+                  <Button variant="ghost" size="sm" onClick={resetAllFilters} className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive">
+                    Limpar tudo
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Grupo Direita: Ações em Massa e Paginação */}
+            {/* Ações em Massa e Paginação */}
             <div className="flex items-center gap-3 shrink-0">
-              {/* REGRA 1: Botão de Excluir em Massa (Igual /players) */}
               {selectedIds.length > 0 && (
                 <Button 
                   variant="destructive" 
@@ -405,7 +462,6 @@ export default function DealsView() {
                         />
                       </TableHead>
                       
-                      {/* REGRA 1: Título -> Negócio */}
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 w-[25%]" 
                         onClick={() => handleSort('clientName')}
@@ -420,7 +476,6 @@ export default function DealsView() {
                         <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
                       </TableHead>
 
-                      {/* REGRA 4: Coluna Responsável */}
                       <TableHead className="cursor-pointer hover:bg-muted/50">
                         <div className="flex items-center">Responsável</div>
                       </TableHead>
@@ -445,8 +500,6 @@ export default function DealsView() {
                       >
                         <div className="flex items-center justify-center">Status <SortIcon columnKey="status" /></div>
                       </TableHead>
-
-                      {/* REGRA 2: Coluna Data removida */}
 
                       <TableHead className="text-right w-[80px]">Ações</TableHead>
                     </TableRow>
@@ -482,7 +535,6 @@ export default function DealsView() {
                             )}
                           </TableCell>
 
-                          {/* Coluna Responsável (Avatar Group se múltiplos, mas aqui mostramos o principal e +X) */}
                           <TableCell>
                             <div className="flex -space-x-2 overflow-hidden">
                               {deal.responsibles && deal.responsibles.length > 0 ? (
