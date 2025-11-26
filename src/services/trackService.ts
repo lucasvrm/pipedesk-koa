@@ -9,7 +9,6 @@ import { PlayerTrack, PlayerStage } from '@/lib/types';
 export interface TrackInput {
     masterDealId: string;
     playerName: string;
-    // CORREÇÃO: Campo obrigatório para vincular ao player correto
     playerId: string; 
     trackVolume?: number;
     currentStage: PlayerStage;
@@ -109,7 +108,6 @@ export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
         .insert({
             master_deal_id: track.masterDealId,
             player_name: track.playerName,
-            // CORREÇÃO: Inserindo o ID do player
             player_id: track.playerId, 
             track_volume: track.trackVolume,
             current_stage: track.currentStage,

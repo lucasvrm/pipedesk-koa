@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
 import { usePlayerTracks, useCreateTrack, useDeleteTrack } from '@/services/trackService'
-import { useDeals, useCreateDeal } from '@/services/dealService' // Importado useCreateDeal
+import { useDeals, useCreateDeal, useUpdateDeal } from '@/services/dealService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -72,14 +72,18 @@ export default function PlayerDetailPage() {
   const { data: allDeals } = useDeals() 
   const createTrackMutation = useCreateTrack()
   const deleteTrackMutation = useDeleteTrack()
-  const createDealMutation = useCreateDeal() // Mutation para criar novo deal
+  const createDealMutation = useCreateDeal()
+  const updateDealMutation = useUpdateDeal() // NOVO: Para atualizar o produto ao vincular
   
   const createContactMutation = useCreateContact()
   const deleteContactMutation = useDeleteContact()
 
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [isLinkDealModalOpen, setIsLinkDealModalOpen] = useState(false)
+  
+  // Estado para vinculação existente
   const [selectedDealToLink, setSelectedDealToLink] = useState<string>('')
+  const [selectedDealProduct, setSelectedDealProduct] = useState<string>('') // NOVO
 
   // Estado para criação rápida de deal
   const [newDealForm, setNewDealForm] = useState({
@@ -87,6 +91,18 @@ export default function PlayerDetailPage() {
     volume: '',
     dealProduct: '',
   })
+
+  // Efeito para preencher o produto quando selecionar um deal existente
+  useEffect(() => {
+    if (selectedDealToLink && allDeals) {
+      const deal = allDeals.find(d => d.id === selectedDealToLink)
+      if (deal) {
+        setSelectedDealProduct(deal.dealProduct || '')
+      }
+    } else {
+      setSelectedDealProduct('')
+    }
+  }, [selectedDealToLink, allDeals])
 
   // Estados da tabela de Deals
   const [dealSortConfig, setDealSortConfig] = useState<DealSortConfig | null>(null)
@@ -198,10 +214,19 @@ export default function PlayerDetailPage() {
     if (!selectedMasterDeal) return
 
     try {
+      // 1. Se o usuário alterou/definiu o produto, atualizamos o Master Deal
+      if (selectedDealProduct && selectedDealProduct !== selectedMasterDeal.dealProduct) {
+        await updateDealMutation.mutateAsync({
+          dealId: selectedDealToLink,
+          updates: { dealProduct: selectedDealProduct }
+        })
+      }
+
+      // 2. Criamos o Track (Vínculo)
       await createTrackMutation.mutateAsync({
         masterDealId: selectedDealToLink,
         playerName: player.name,
-        playerId: id, // CORREÇÃO: Passando o ID do player
+        playerId: id,
         currentStage: 'nda',
         trackVolume: selectedMasterDeal.volume,
         probability: 10,
@@ -210,6 +235,7 @@ export default function PlayerDetailPage() {
       toast.success('Deal vinculado com sucesso')
       setIsLinkDealModalOpen(false)
       setSelectedDealToLink('')
+      setSelectedDealProduct('')
     } catch (error) {
       toast.error('Erro ao vincular deal')
     }
@@ -224,7 +250,7 @@ export default function PlayerDetailPage() {
         volume: Number(newDealForm.volume) || 0,
         dealProduct: newDealForm.dealProduct,
         createdBy: profile.id,
-        playerId: id, // Isso ativa a criação automática do track no backend (vide dealService)
+        playerId: id,
         initialStage: 'nda'
       })
       toast.success('Novo deal criado e vinculado!')
@@ -554,23 +580,48 @@ export default function PlayerDetailPage() {
                               <TabsTrigger value="new">Criar e Vincular</TabsTrigger>
                             </TabsList>
                             
-                            {/* ABA EXISTENTE */}
+                            {/* ABA EXISTENTE - ATUALIZADA */}
                             <TabsContent value="existing" className="space-y-4 pt-4">
-                              <div className="space-y-2">
-                                <Label>Selecione o Deal</Label>
-                                <Select value={selectedDealToLink} onValueChange={setSelectedDealToLink}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {allDeals?.map(deal => (
-                                      <SelectItem key={deal.id} value={deal.id}>
-                                        {deal.clientName} ({formatCurrency(deal.volume)})
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Selecione o Deal</Label>
+                                  <Select value={selectedDealToLink} onValueChange={setSelectedDealToLink}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {allDeals?.map(deal => (
+                                        <SelectItem key={deal.id} value={deal.id}>
+                                          {deal.clientName} ({formatCurrency(deal.volume)})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Campo para atualizar/definir o Produto do deal existente */}
+                                <div className="space-y-2">
+                                  <Label>Tipo de Produto</Label>
+                                  <Select 
+                                    value={selectedDealProduct} 
+                                    onValueChange={setSelectedDealProduct}
+                                    disabled={!selectedDealToLink} // Só habilita se selecionou um deal
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o produto..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(ALL_PRODUCT_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="text-xs text-muted-foreground">
+                                    Define ou atualiza o produto deste deal ao vincular.
+                                  </p>
+                                </div>
                               </div>
+
                               <div className="flex justify-end pt-4">
                                 <Button onClick={handleLinkExistingDeal} disabled={!selectedDealToLink}>
                                   Vincular Selecionado
