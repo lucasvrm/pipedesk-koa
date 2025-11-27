@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -17,13 +17,15 @@ import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
-  FileText, Sparkle, Tag, Question, ArrowLeft, PencilSimple
+  FileText, Sparkle, Tag, Question, ArrowLeft, PencilSimple,
+  Kanban as KanbanIcon, List as ListIcon 
 } from '@phosphor-icons/react'
 
+// Componentes
 import DealPlayersKanban from '../components/DealPlayersKanban' 
+import { DroppedPlayersList } from '../components/DroppedPlayersList' // NOVO COMPONENTE
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
-// MUDANÇA AQUI: Importação nomeada (entre chaves)
-import { EditDealDialog } from '../components/EditDealDialog' 
+import { EditDealDialog } from '../components/EditDealDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
@@ -33,6 +35,7 @@ import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import QAPanel from '@/components/QAPanel'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group" // Certifique-se de ter este componente ou use botões simples
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -45,6 +48,9 @@ export default function DealDetailPage() {
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
+  
+  // Estado para alternar visualização dos players
+  const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
   if (isLoading) {
     return (
@@ -63,12 +69,15 @@ export default function DealDetailPage() {
     )
   }
 
-  const dealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
+  // Filtragem dos Tracks
+  const allDealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
+  const activeTracks = allDealTracks.filter(t => t.status !== 'cancelled')
+  const droppedTracks = allDealTracks.filter(t => t.status === 'cancelled')
 
   const handleStatusChange = (newStatus: DealStatus) => {
     if (newStatus === 'cancelled') {
-      const activeTracks = dealTracks.filter(t => t.status === 'active')
-      activeTracks.forEach(track => {
+      const activeTracksList = activeTracks.filter(t => t.status === 'active')
+      activeTracksList.forEach(track => {
         updateTrack.mutate({
           trackId: track.id,
           updates: { status: 'cancelled' }
@@ -135,7 +144,7 @@ export default function DealDetailPage() {
           </div>
           
           <div className="flex gap-2 items-center">
-            <DocumentGenerator deal={deal} playerTracks={dealTracks} />
+            <DocumentGenerator deal={deal} playerTracks={activeTracks} />
             <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
               <SelectTrigger className={`w-[180px] border h-10 font-medium transition-colors ${getStatusColor(deal.status)}`}>
                 <SelectValue />
@@ -151,10 +160,8 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      {/* 1. Cards de Métricas (Super Compactos) */}
+      {/* Cards de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        
-        {/* Volume Total */}
         <Card className="bg-blue-50 border-blue-200 shadow-sm p-3 flex flex-col justify-center gap-1">
           <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Volume Total</span>
           <p className="text-lg font-bold text-blue-900 truncate" title={formatCurrency(deal.volume)}>
@@ -162,7 +169,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Fee (%) */}
         <Card className="bg-card shadow-sm p-3 flex flex-col justify-center gap-1">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fee (%)</span>
           <p className="text-lg font-bold text-foreground">
@@ -170,7 +176,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Prazo Final */}
         <Card className="bg-red-50 border-red-200 shadow-sm p-3 flex flex-col justify-center gap-1">
           <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Prazo Final</span>
           <p className="text-lg font-bold text-red-900 truncate">
@@ -178,11 +183,10 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Players Ativos */}
         <Card className="bg-amber-50 border-amber-200 shadow-sm p-3 flex flex-col justify-center gap-1">
           <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Players Ativos</span>
           <p className="text-lg font-bold text-amber-900">
-            {dealTracks.filter(t => t.status === 'active').length}
+            {activeTracks.filter(t => t.status === 'active').length}
           </p>
         </Card>
       </div>
@@ -193,38 +197,61 @@ export default function DealDetailPage() {
           <TabsTrigger value="players" className="py-2"><Users className="mr-2" /> Players</TabsTrigger>
           <TabsTrigger value="documents" className="py-2"><FileText className="mr-2" /> Docs</TabsTrigger>
           <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
-          
-          {/* Abas Bloqueadas */}
           <TabsTrigger value="qa" disabled className="py-2 opacity-50 cursor-not-allowed"><Question className="mr-2" /> Q&A</TabsTrigger>
           <TabsTrigger value="ai" disabled className="py-2 opacity-50 cursor-not-allowed"><Sparkle className="mr-2" /> IA</TabsTrigger>
           <TabsTrigger value="fields" disabled className="py-2 opacity-50 cursor-not-allowed"><Tag className="mr-2" /> Campos</TabsTrigger>
-          
           <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividade</TabsTrigger>
         </TabsList>
 
         {/* Tab: Players */}
         <TabsContent value="players" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">Players em Negociação</h3>
+            
+            {/* Toggle de Visualização */}
+            <div className="flex items-center bg-muted p-1 rounded-md">
+              <Button 
+                variant={playersView === 'active' ? 'default' : 'ghost'} 
+                size="sm" 
+                className="h-8 text-xs"
+                onClick={() => setPlayersView('active')}
+              >
+                <KanbanIcon className="mr-2" />
+                Em Negociação
+              </Button>
+              <Button 
+                variant={playersView === 'dropped' ? 'default' : 'ghost'} 
+                size="sm" 
+                className="h-8 text-xs"
+                onClick={() => setPlayersView('dropped')}
+              >
+                <ListIcon className="mr-2" />
+                Descartados ({droppedTracks.length})
+              </Button>
+            </div>
+
             <Button onClick={() => setCreatePlayerOpen(true)}>
               <Plus className="mr-2" /> Adicionar Player
             </Button>
           </div>
           
-          {dealTracks.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">Nenhum player adicionado ainda</p>
-              <Button variant="link" onClick={() => setCreatePlayerOpen(true)}>
-                Adicionar Primeiro Player
-              </Button>
-            </div>
+          {playersView === 'active' ? (
+            activeTracks.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
+                <p className="text-muted-foreground">Nenhum player ativo.</p>
+                <Button variant="link" onClick={() => setCreatePlayerOpen(true)}>
+                  Adicionar Primeiro Player
+                </Button>
+              </div>
+            ) : (
+              <DealPlayersKanban tracks={activeTracks} currentUser={currentUser} />
+            )
           ) : (
-            <DealPlayersKanban tracks={dealTracks} currentUser={currentUser} />
+            // Lista de Descartados
+            <DroppedPlayersList tracks={droppedTracks} />
           )}
         </TabsContent>
 
-        {/* Tab: Docs */}
         <TabsContent value="documents">
           {currentUser && (
             <DocumentManager 
@@ -236,7 +263,6 @@ export default function DealDetailPage() {
           )}
         </TabsContent>
 
-        {/* Tab: Comentários + Observações */}
         <TabsContent value="comments" className="space-y-6">
           {deal.observations && (
             <div className="mb-6">
@@ -249,11 +275,20 @@ export default function DealDetailPage() {
               </div>
             </div>
           )}
-          
           {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
 
-        {/* Tab: Atividade */}
+        {/* Abas desativadas omitidas para brevidade, mas devem ser mantidas */}
+        <TabsContent value="qa">
+          {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
+        </TabsContent>
+        <TabsContent value="ai">
+          {currentUser && <AINextSteps dealId={deal.id} />}
+        </TabsContent>
+        <TabsContent value="fields">
+          {currentUser && <CustomFieldsRenderer entityId={deal.id} entityType="deal" currentUser={currentUser} mode="edit" />}
+        </TabsContent>
+
         <TabsContent value="activity">
           <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
         </TabsContent>
