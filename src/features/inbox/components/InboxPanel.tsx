@@ -1,28 +1,33 @@
-import { useState } from 'react'
-import { useNotifications, useMarkAsRead, useMarkAllAsRead } from '@/services/notificationService'
 import { useAuth } from '@/contexts/AuthContext'
+import { 
+  useNotifications, 
+  useMarkAsRead, 
+  useMarkAllAsRead, 
+  useDeleteNotification, 
+  Notification 
+} from '@/services/notificationService' // Importando do serviço centralizado
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { EmptyState } from '@/components/EmptyState'
-import { Notification } from '@/lib/types'
-import { formatDateTime } from '@/lib/helpers'
-import {
-  Bell,
-  CheckCircle,
-  WarningCircle,
-  User,
-  Tag,
-  ArrowRight,
+import { 
+  Bell, 
+  Check, 
+  Trash, 
+  ChatCircle, 
+  User, 
+  Clock, 
+  WarningCircle, 
+  CheckCircle 
 } from '@phosphor-icons/react'
+import { formatDate } from '@/lib/helpers'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 interface InboxPanelProps {
@@ -31,137 +36,141 @@ interface InboxPanelProps {
 }
 
 export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
-  const { user } = useAuth()
-  const { data: notifications } = useNotifications(user?.id || null)
+  const { profile } = useAuth()
+  const navigate = useNavigate()
+  
+  // Hooks do serviço de notificação
+  const { data: notifications, isLoading } = useNotifications(profile?.id || null)
   const markAsRead = useMarkAsRead()
   const markAllAsRead = useMarkAllAsRead()
-  const [filter, setFilter] = useState<'all' | Notification['type']>('all')
+  const deleteNotification = useDeleteNotification()
 
-  const handleMarkAsRead = (id: string) => {
-    markAsRead.mutate(id)
-  }
+  const unreadCount = notifications?.filter(n => !n.read).length || 0
 
-  const handleMarkAllAsRead = () => {
-    if (user?.id) {
-      markAllAsRead.mutate(user.id)
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markAsRead.mutate(notification.id)
     }
-  }
-
-  const handleNavigate = (notification: Notification) => {
-    handleMarkAsRead(notification.id)
     if (notification.link) {
+      navigate(notification.link)
       onOpenChange(false)
     }
   }
 
-  const filteredNotifications = (notifications || []).filter((n) =>
-    filter === 'all' || n.type === filter
-  )
-
-  const unreadCount = (notifications || []).filter((n) => !n.read).length
-
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getIcon = (type: Notification['type']) => {
     switch (type) {
-      case 'mention':
-        return <Tag className="text-primary" />
-      case 'assignment':
-        return <User className="text-accent" />
-      case 'status_change':
-        return <CheckCircle className="text-success" />
-      case 'sla_breach':
-      case 'deadline':
-        return <WarningCircle className="text-destructive" />
-      default:
-        return <Bell />
+      case 'mention': return <ChatCircle className="text-blue-500" weight="fill" size={18} />
+      case 'assignment': return <User className="text-purple-500" weight="fill" size={18} />
+      case 'deadline': return <Clock className="text-amber-500" weight="fill" size={18} />
+      case 'sla_breach': return <WarningCircle className="text-red-500" weight="fill" size={18} />
+      case 'status_change': return <CheckCircle className="text-green-500" weight="fill" size={18} />
+      default: return <Bell className="text-gray-500" weight="fill" size={18} />
     }
   }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:w-[400px] sm:max-w-[400px]">
-        <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            <span>Notificações</span>
+      <SheetContent className="w-[400px] sm:w-[540px] flex flex-col p-0 gap-0">
+        
+        {/* Cabeçalho Fixo */}
+        <SheetHeader className="p-4 border-b bg-muted/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SheetTitle>Notificações</SheetTitle>
+              {unreadCount > 0 && (
+                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                  {unreadCount} novas
+                </Badge>
+              )}
+            </div>
             {unreadCount > 0 && (
-              <Badge variant="secondary">{unreadCount} não lidas</Badge>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs h-8"
+                onClick={() => markAllAsRead.mutate(profile!.id)}
+                disabled={markAllAsRead.isPending}
+              >
+                <Check className="mr-1.5 h-3.5 w-3.5" />
+                Marcar todas como lidas
+              </Button>
             )}
-          </SheetTitle>
-          <SheetDescription>
-            Suas atualizações e menções
+          </div>
+          <SheetDescription className="hidden">
+            Central de notificações do usuário
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">Todas</TabsTrigger>
-              <TabsTrigger value="mention">Menções</TabsTrigger>
-              <TabsTrigger value="assignment">Tarefas</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {unreadCount > 0 && (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="w-full mt-4"
-            >
-              Marcar todas como lidas
-            </Button>
-            <Separator className="my-4" />
-          </>
-        )}
-
-        <div className="mt-6 space-y-4">
-          {(!filteredNotifications || filteredNotifications.length === 0) ? (
-            <EmptyState
-              icon={<Bell size={48} weight="duotone" />}
-              title="Nenhuma notificação"
-              description="Você está em dia! Não há notificações no momento."
-            />
+        {/* Área de Scroll com Altura Limitada */}
+        <div className="flex-1 overflow-hidden relative">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Carregando...
+            </div>
+          ) : notifications?.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <Bell className="h-6 w-6 opacity-50" />
+              </div>
+              <p className="text-sm">Tudo limpo por aqui!</p>
+            </div>
           ) : (
-            filteredNotifications
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map((notification) => (
-                <div
-                  key={notification.id}
-                  className={cn(
-                    'p-4 rounded-lg border cursor-pointer transition-colors hover:bg-secondary/50',
-                    notification.read
-                      ? 'bg-card border-border'
-                      : 'bg-accent/5 border-accent/20'
-                  )}
-                  onClick={() => handleNavigate(notification)}
-                >
-                  <div className="flex gap-3">
-                    <div className="mt-0.5">
-                      {getNotificationIcon(notification.type)}
+            <ScrollArea className="h-full w-full">
+              <div className="flex flex-col p-2">
+                {notifications?.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={cn(
+                      "group flex gap-3 p-3 rounded-lg transition-colors cursor-pointer relative border mb-2 last:mb-0",
+                      notification.read 
+                        ? "bg-card border-transparent hover:bg-muted/50" 
+                        : "bg-primary/5 border-primary/10 hover:bg-primary/10"
+                    )}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    {/* Ícone */}
+                    <div className="mt-1 shrink-0">
+                      {getIcon(notification.type)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium mb-1">
-                        {notification.title}
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-2">
+
+                    {/* Conteúdo */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className={cn("text-sm font-medium leading-none", !notification.read && "text-foreground")}>
+                          {notification.title}
+                        </p>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
+                          {formatDate(notification.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-snug">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(notification.createdAt)}
-                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!notification.read && (
-                        <div className="h-2 w-2 rounded-full bg-accent" />
-                      )}
-                      {notification.link && (
-                        <ArrowRight className="text-muted-foreground" size={16} />
-                      )}
+
+                    {/* Ações (Hover) */}
+                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteNotification.mutate(notification.id)
+                        }}
+                      >
+                        <Trash size={14} />
+                      </Button>
                     </div>
+                    
+                    {/* Bolinha de não lido */}
+                    {!notification.read && (
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-3 w-1.5 h-1.5 rounded-full bg-primary" />
+                    )}
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </div>
       </SheetContent>

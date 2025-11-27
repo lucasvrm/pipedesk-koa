@@ -153,7 +153,8 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
                       >
                         <Card 
                           className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card"
-                          onClick={() => navigate(`/players/${track.id}`)} 
+                          // ATUALIZAÇÃO AQUI: Redirecionamento para a nova rota de Tracks
+                          onClick={() => navigate(`/tracks/${track.id}`)} 
                         >
                           <CardContent className="p-2 md:p-3 space-y-2 relative">
                             {/* Botão Cancelar */}

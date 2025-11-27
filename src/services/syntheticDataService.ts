@@ -5,10 +5,11 @@ import {
   PlayerStage, 
   PlayerType, 
   AssetManagerType, 
-  OperationType, // ADICIONADO
+  OperationType, 
   RELATIONSHIP_LEVEL_LABELS, 
   CREDIT_SUBTYPE_LABELS, 
-  EQUITY_SUBTYPE_LABELS 
+  EQUITY_SUBTYPE_LABELS,
+  STAGE_PROBABILITIES // IMPORTANTE: Importar a tabela de regras
 } from '@/lib/types';
 
 // ============================================================================
@@ -22,29 +23,18 @@ const RELATIONSHIP_LEVELS = ['basic', 'intermediate', 'close'];
 const CREDIT_KEYS = Object.keys(CREDIT_SUBTYPE_LABELS);
 const EQUITY_KEYS = Object.keys(EQUITY_SUBTYPE_LABELS);
 
-// ATUALIZADO: Novas Operações
+// Tipos de Operação
 const OPERATIONS: OperationType[] = [
-  'ccb',
-  'cri_land',
-  'cri_construction',
-  'cri_corporate',
-  'debt_construction',
-  'receivables_advance',
-  'working_capital',
-  'built_to_suit',
-  'preferred_equity',
-  'repurchase',
-  'sale_and_lease_back',
-  'inventory_purchase',
-  'financial_swap',
-  'physical_swap',
-  'hybrid_swap'
+  'ccb', 'cri_land', 'cri_construction', 'cri_corporate', 
+  'debt_construction', 'receivables_advance', 'working_capital', 
+  'built_to_suit', 'preferred_equity', 'repurchase', 
+  'sale_and_lease_back', 'inventory_purchase', 
+  'financial_swap', 'physical_swap', 'hybrid_swap'
 ];
 
-// ATUALIZADO: Novos Status
+// Status possíveis
 const STATUSES: DealStatus[] = ['active', 'concluded', 'cancelled', 'on_hold'];
 
-// Garante que SEMPRE retorna ao menos um produto
 const getRandomProducts = () => {
   let products = { credit: [], equity: [], barter: [] };
   let hasAny = false;
@@ -164,7 +154,6 @@ export const syntheticDataService = {
         client_name: faker.company.name(),
         volume: parseFloat(faker.finance.amount({ min: 500000, max: 50000000 })),
         
-        // ATUALIZADO: Usando as novas listas
         operation_type: faker.helpers.arrayElement(OPERATIONS),
         status: faker.helpers.arrayElement(STATUSES),
         
@@ -202,13 +191,19 @@ export const syntheticDataService = {
           playerName = p.name;
         }
 
+        // MUDANÇA AQUI: Escolhe a fase e aplica a probabilidade correta
+        const stage = faker.helpers.arrayElement(stages);
+        const correctProbability = STAGE_PROBABILITIES[stage];
+
         tracks.push({
           master_deal_id: deal.id,
           player_id: playerId,
           player_name: playerName,
           track_volume: deal.volume,
-          current_stage: faker.helpers.arrayElement(stages),
-          probability: faker.number.int({ min: 10, max: 90 }),
+          
+          current_stage: stage,
+          probability: correctProbability, // Valor correto, não aleatório
+          
           status: 'active',
           responsibles: [faker.helpers.arrayElement(userIds)],
           is_synthetic: true

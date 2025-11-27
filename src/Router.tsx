@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import AuthForm from '@/components/Auth/AuthForm'
 import Profile from '@/pages/Profile'
 import App from '@/App'
+import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage'
 
 export default function Router() {
   const { isAuthenticated, loading } = useAuth()
