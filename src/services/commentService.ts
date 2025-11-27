@@ -1,124 +1,107 @@
-import { supabase } from '@/lib/supabaseClient';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Comment } from '@/lib/types';
-import { CommentDB } from '@/lib/databaseTypes';
+import { supabase } from '@/lib/supabaseClient'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Comment } from '@/lib/types'
+import { createNotification } from '@/services/notificationService' 
 
-// ============================================================================
-// Types
-// ============================================================================
+export async function getComments(entityId: string, entityType: string): Promise<Comment[]> {
+  const { data, error } = await supabase
+    .from('comments')
+    .select(`
+      *,
+      author:profiles!comments_author_id_fkey(id, name, avatar_url)
+    `)
+    .eq('entity_id', entityId)
+    .eq('entity_type', entityType)
+    .order('created_at', { ascending: true })
 
-export interface CommentInput {
-    entityId: string;
-    entityType: 'deal' | 'track' | 'task';
-    authorId: string;
-    content: string;
-    mentions?: string[];
+  if (error) throw error
+  
+  return data.map((item: any) => ({
+    id: item.id,
+    entityId: item.entity_id,
+    entityType: item.entity_type,
+    authorId: item.author_id,
+    author: item.author,
+    content: item.content,
+    createdAt: item.created_at,
+    mentions: item.mentions || []
+  }))
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
+export async function createComment(data: {
+  entityId: string
+  entityType: string
+  content: string
+  authorId: string
+  mentions: string[] // Lista de IDs
+}) {
+  // 1. Criar o Comentário
+  const { data: comment, error } = await supabase
+    .from('comments')
+    .insert({
+      entity_id: data.entityId,
+      entity_type: data.entityType,
+      content: data.content,
+      author_id: data.authorId,
+      mentions: data.mentions
+    })
+    .select('*, author:profiles(name)')
+    .single()
 
-function mapCommentFromDB(item: CommentDB): Comment {
-    return {
-        id: item.id,
-        entityId: item.entity_id,
-        entityType: item.entity_type as 'deal' | 'track' | 'task',
-        authorId: item.author_id,
-        content: item.content,
-        mentions: item.mentions || [],
-        createdAt: item.created_at,
-    };
-}
+  if (error) throw error
 
-// ============================================================================
-// Service Functions
-// ============================================================================
+  // 2. Disparar Notificações
+  if (data.mentions && data.mentions.length > 0) {
+    const authorName = comment.author?.name || 'Alguém'
+    const link = data.entityType === 'deal' ? `/deals/${data.entityId}?tab=comments` : `/dashboard`
 
-/**
- * Fetch comments for a specific entity
- */
-export async function getComments(
-    entityId: string,
-    entityType: 'deal' | 'track' | 'task'
-): Promise<Comment[]> {
-    const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_id', entityId)
-        .eq('entity_type', entityType)
-        .order('created_at', { ascending: true });
-
-    if (error) throw error;
-
-    return (data || []).map(mapCommentFromDB);
-}
-
-/**
- * Create a new comment
- */
-export async function createComment(comment: CommentInput): Promise<Comment> {
-    const { data, error } = await supabase
-        .from('comments')
-        .insert({
-            entity_id: comment.entityId,
-            entity_type: comment.entityType,
-            author_id: comment.authorId,
-            content: comment.content,
-            mentions: comment.mentions || [],
+    // Dispara para cada usuário mencionado (exceto o próprio autor)
+    await Promise.all(data.mentions.map(userId => {
+      if (userId !== data.authorId) {
+        // CORREÇÃO: Passando objeto único conforme esperado pelo notificationService
+        return createNotification({
+          userId,
+          type: 'mention',
+          title: 'Você foi mencionado',
+          message: `${authorName} mencionou você em um comentário.`,
+          link
         })
-        .select()
-        .single();
+      }
+    }))
+  }
 
-    if (error) throw error;
-
-    return mapCommentFromDB(data);
+  return comment
 }
 
-/**
- * Delete a comment
- */
-export async function deleteComment(commentId: string): Promise<void> {
-    const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId);
-
-    if (error) throw error;
+export async function deleteComment(commentId: string) {
+  const { error } = await supabase.from('comments').delete().eq('id', commentId)
+  if (error) throw error
 }
 
-// ============================================================================
-// React Query Hooks
-// ============================================================================
-
+// Hooks
 export function useComments(entityId: string, entityType: 'deal' | 'track' | 'task') {
-    return useQuery({
-        queryKey: ['comments', entityType, entityId],
-        queryFn: () => getComments(entityId, entityType),
-        enabled: !!entityId,
-    });
+  return useQuery({
+    queryKey: ['comments', entityId],
+    queryFn: () => getComments(entityId, entityType)
+  })
 }
 
 export function useCreateComment() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: createComment,
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({
-                queryKey: ['comments', data.entityType, data.entityId]
-            });
-        },
-    });
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createComment,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['comments', variables.entityId] })
+    }
+  })
 }
 
 export function useDeleteComment() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: deleteComment,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments'] });
-        },
-    });
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteComment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] })
+    }
+  })
 }

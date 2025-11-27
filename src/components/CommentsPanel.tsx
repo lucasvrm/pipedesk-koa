@@ -1,16 +1,15 @@
 import { useState, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useUsers } from '@/services/userService' // Hook de usuários
+import { useUsers } from '@/services/userService'
 import { useComments, useCreateComment, useDeleteComment } from '@/services/commentService'
-import { logActivity } from '@/services/activityService' // Log
+import { logActivity } from '@/services/activityService'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getInitials, formatDate } from '@/lib/helpers'
-import { PaperPlaneRight, Trash, At } from '@phosphor-icons/react'
+import { PaperPlaneRight, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface CommentsPanelProps {
   entityId: string
@@ -26,9 +25,12 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   
   const [content, setContent] = useState('')
   const [mentionOpen, setMentionOpen] = useState(false)
+  
+  // Armazena usuários que foram selecionados via @: { id: '...', name: 'Lucas' }
+  const [mentionedUsersMap, setMentionedUsersMap] = useState<Map<string, string>>(new Map())
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Lógica de detecção de @
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setContent(value)
@@ -36,14 +38,19 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
     const lastChar = value[value.length - 1]
     if (lastChar === '@') {
       setMentionOpen(true)
-    } else if (mentionOpen && lastChar === ' ') {
+    } else if (mentionOpen && (lastChar === ' ' || value === '')) {
       setMentionOpen(false)
     }
   }
 
-  const insertMention = (userName: string) => {
-    const newContent = content + userName + ' '
+  const insertMention = (user: { id: string, name: string }) => {
+    // Insere o nome no texto
+    const newContent = content + user.name + ' '
     setContent(newContent)
+    
+    // Guarda o ID do usuário mencionado
+    setMentionedUsersMap(prev => new Map(prev).set(user.name, user.id))
+    
     setMentionOpen(false)
     textareaRef.current?.focus()
   }
@@ -51,19 +58,27 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   const handleSubmit = async () => {
     if (!content.trim()) return
 
+    // Filtra IDs: Só envia se o nome do usuário ainda estiver no texto final
+    const finalMentions: string[] = []
+    mentionedUsersMap.forEach((id, name) => {
+      if (content.includes(name)) {
+        finalMentions.push(id)
+      }
+    })
+
     try {
       await createComment.mutateAsync({
         entityId,
         entityType,
         content,
         authorId: currentUser.id,
-        mentions: [] // Pode expandir lógica para extrair IDs dos usuários mencionados
+        mentions: finalMentions // Agora enviamos os IDs reais!
       })
       
-      // LOG DE ATIVIDADE
       logActivity(entityId, entityType, 'Novo Comentário', currentUser.id, { content_preview: content.substring(0, 50) })
 
       setContent('')
+      setMentionedUsersMap(new Map()) // Limpa mapa
       toast.success('Comentário enviado')
     } catch (error) {
       toast.error('Erro ao enviar comentário')
@@ -99,7 +114,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
             {comments?.map((comment) => (
               <div key={comment.id} className="flex gap-3 group">
                 <Avatar className="h-8 w-8 mt-1">
-                  {/* Assumindo que o comentário vem com dados do autor via join */}
                   <AvatarImage src={comment.author?.avatar_url} />
                   <AvatarFallback>{getInitials(comment.author?.name || '?')}</AvatarFallback>
                 </Avatar>
@@ -108,7 +122,10 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
                     <span className="font-semibold text-sm">{comment.author?.name || 'Usuário'}</span>
                     <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                  {/* Destaque visual simples para menções (opcional) */}
+                  <p className="text-sm whitespace-pre-wrap">
+                    {comment.content}
+                  </p>
                 </div>
                 {currentUser.id === comment.authorId && (
                   <Button 
@@ -127,7 +144,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
       </ScrollArea>
 
       <div className="p-4 border-t bg-background relative">
-        {/* Popover de Menção Simplificado */}
+        {/* Popover de Menção */}
         {mentionOpen && (
           <div className="absolute bottom-20 left-4 w-64 bg-popover border rounded-md shadow-lg p-1 z-50 animate-in fade-in zoom-in-95">
             <div className="text-xs font-medium p-2 text-muted-foreground">Mencionar:</div>
@@ -136,7 +153,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
                 <div 
                   key={user.id} 
                   className="flex items-center gap-2 p-2 hover:bg-accent rounded-sm cursor-pointer text-sm"
-                  onClick={() => insertMention(user.name)}
+                  onClick={() => insertMention({ id: user.id, name: user.name })}
                 >
                   <Avatar className="h-6 w-6">
                     <AvatarImage src={user.avatar} />
