@@ -27,17 +27,15 @@ interface PlayerSelectProps {
 export function PlayerSelect({ value, onChange, onCheckNew }: PlayerSelectProps) {
   const [open, setOpen] = useState(false);
   
-  // Busca os players usando o serviço existente
   const { data: players = [], isLoading } = useQuery({
     queryKey: ["players"],
     queryFn: getPlayers,
   });
 
-  // Encontra o player selecionado baseado no ID (value)
   const selectedPlayer = players.find((p) => p.id === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -59,7 +57,15 @@ export function PlayerSelect({ value, onChange, onCheckNew }: PlayerSelectProps)
               <div className="p-2 text-center text-sm">
                 <p className="mb-2 text-muted-foreground">Player não encontrado.</p>
                 {onCheckNew && (
-                  <Button variant="secondary" size="sm" onClick={onCheckNew} className="w-full">
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => {
+                      onCheckNew();
+                      setOpen(false);
+                    }} 
+                    className="w-full"
+                  >
                     <Plus className="mr-2 h-3 w-3" />
                     Cadastrar Novo
                   </Button>
