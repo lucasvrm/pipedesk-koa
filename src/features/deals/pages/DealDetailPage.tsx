@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card } from '@/components/ui/card' // Import simplificado de Card
+import { Card } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -20,10 +20,10 @@ import {
   FileText, Sparkle, Tag, Question, ArrowLeft, PencilSimple
 } from '@phosphor-icons/react'
 
-// Componentes
 import DealPlayersKanban from '../components/DealPlayersKanban' 
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
-import EditDealDialog from '../components/EditDealDialog' // NOVO
+// MUDANÇA AQUI: Importação nomeada (entre chaves)
+import { EditDealDialog } from '../components/EditDealDialog' 
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
@@ -44,7 +44,7 @@ export default function DealDetailPage() {
   const updateTrack = useUpdateTrack()
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
-  const [editDealOpen, setEditDealOpen] = useState(false) // Estado para o modal de edição
+  const [editDealOpen, setEditDealOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -265,7 +265,6 @@ export default function DealDetailPage() {
         onOpenChange={setCreatePlayerOpen} 
       />
 
-      {/* Dialog de Edição */}
       <EditDealDialog 
         deal={deal}
         open={editDealOpen}
