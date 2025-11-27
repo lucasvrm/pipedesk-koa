@@ -40,6 +40,18 @@ export interface User {
   has_completed_onboarding?: boolean
   createdAt?: string
   updatedAt?: string
+  // Novos Campos
+  address?: string
+  cellphone?: string // Novo campo
+  pixKeyPJ?: string
+  pixKeyPF?: string
+  rg?: string
+  cpf?: string
+  secondaryEmail?: string
+  // URLs dos Documentos
+  docIdentityUrl?: string
+  docSocialContractUrl?: string
+  docServiceAgreementUrl?: string
 }
 
 export interface PipelineStage {

@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
-import { UserDB } from '@/lib/databaseTypes';
 
 // ============================================================================
 // Helpers
@@ -11,14 +10,25 @@ function mapUserFromDB(item: any): User {
     return {
         id: item.id,
         name: item.name || 'Usuário sem nome',
-        email: item.email || '', // Agora usamos a coluna email que adicionamos ao profile
+        email: item.email || '',
         role: (item.role as any) || 'client',
-        // O banco usa avatar_url, o front usa avatar
-        avatar: item.avatar_url || item.avatar || undefined, 
+        avatar: item.avatar_url || undefined,
         clientEntity: item.client_entity || undefined,
         has_completed_onboarding: item.has_completed_onboarding,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        
+        // Novos Campos Mapeados
+        address: item.address || '',
+        cellphone: item.cellphone || '', // Novo campo mapeado
+        pixKeyPJ: item.pix_key_pj || '',
+        pixKeyPF: item.pix_key_pf || '',
+        rg: item.rg || '',
+        cpf: item.cpf || '',
+        secondaryEmail: item.secondary_email || '',
+        docIdentityUrl: item.doc_identity_url || undefined,
+        docSocialContractUrl: item.doc_social_contract_url || undefined,
+        docServiceAgreementUrl: item.doc_service_agreement_url || undefined,
     };
 }
 
@@ -26,12 +36,9 @@ function mapUserFromDB(item: any): User {
 // Service Functions
 // ============================================================================
 
-/**
- * Fetch all users
- */
 export async function getUsers(): Promise<User[]> {
     const { data, error } = await supabase
-        .from('profiles') // <--- CORRIGIDO: mudado de 'users' para 'profiles'
+        .from('profiles')
         .select('*')
         .order('name');
 
@@ -40,12 +47,9 @@ export async function getUsers(): Promise<User[]> {
     return (data || []).map(mapUserFromDB);
 }
 
-/**
- * Get a single user
- */
 export async function getUser(userId: string): Promise<User> {
     const { data, error } = await supabase
-        .from('profiles') // <--- CORRIGIDO: mudado de 'users' para 'profiles'
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
