@@ -1,265 +1,330 @@
 import { useState, useRef } from 'react'
-import { useKV } from '@/hooks/useKV'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useAuth } from '@/contexts/AuthContext'
+import { useFolders } from '@/hooks/useFolders'
+import {
+  Folder as FolderIcon,
+  FileText,
+  DownloadSimple,
+  Trash,
+  Plus,
+  DotsThreeVertical,
+  FilePdf,
+  FileXls,
+  FileDoc,
+  Image as ImageIcon,
+  MagnifyingGlass,
+  UploadSimple,
+  CaretRight,
+  CaretDown
+} from '@phosphor-icons/react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
-import { User } from '@/lib/types'
-import { formatDateTime } from '@/lib/helpers'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import {
-  Upload,
-  File,
-  FileText,
-  FilePdf,
-  FileDoc,
-  FileXls,
-  FileImage,
-  Trash,
-  Download,
-  DotsThree,
-  CloudArrowUp,
-} from '@phosphor-icons/react'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { logActivity } from './ActivityHistory'
+import { formatBytes, formatDate } from '@/lib/helpers'
+// MUDANÇA AQUI: Importação corrigida para o novo serviço
+import { logActivity } from '@/services/activityService'
 
 export interface DocumentFile {
   id: string
-  entityId: string
-  entityType: 'deal' | 'track' | 'task'
-  fileName: string
-  fileType: string
-  fileSize: number
+  name: string
+  size: number
+  type: string
+  url: string
+  folderId?: string
   uploadedBy: string
   uploadedAt: string
-  fileData: string
+  entityId: string
+  entityType: string
+}
+
+export interface Folder {
+  id: string
+  name: string
+  parentId?: string
 }
 
 interface DocumentManagerProps {
   entityId: string
   entityType: 'deal' | 'track' | 'task'
-  currentUser: User
-  entityName: string
+  currentUser: any
+  entityName?: string
 }
 
 export default function DocumentManager({
   entityId,
   entityType,
   currentUser,
-  entityName,
+  entityName
 }: DocumentManagerProps) {
-  const [documents, setDocuments] = useKV<DocumentFile[]>('documents', [])
-  const [users] = useKV<User[]>('users', [])
-  const [isUploading, setIsUploading] = useState(false)
+  // Estado local simplificado para demonstração (idealmente viria de um hook useDocuments)
+  const [files, setFiles] = useState<DocumentFile[]>([])
+  const { folders, createFolder, deleteFolder } = useFolders(entityId, entityType)
+  
+  const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const entityDocuments = (documents || [])
-    .filter(d => d.entityId === entityId && d.entityType === entityType)
-    .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+  // Filtra arquivos e pastas
+  const filteredFiles = files.filter(f => {
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesFolder = f.folderId === currentFolderId
+    return matchesSearch && matchesFolder
+  })
 
-  const handleFileSelect = () => {
-    fileInputRef.current?.click()
+  const currentFolders = (folders || []).filter(f => f.parentId === currentFolderId)
+
+  // Helper para ícones de arquivo
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.includes('pdf')) return <FilePdf size={24} className="text-red-500" />
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return <FileXls size={24} className="text-green-500" />
+    if (mimeType.includes('word') || mimeType.includes('document')) return <FileDoc size={24} className="text-blue-500" />
+    if (mimeType.includes('image')) return <ImageIcon size={24} className="text-purple-500" />
+    return <FileText size={24} className="text-gray-500" />
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+  // Ações
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFiles = e.target.files
+    if (!uploadedFiles) return
 
-    setIsUploading(true)
+    const newFiles: DocumentFile[] = Array.from(uploadedFiles).map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: URL.createObjectURL(file), // Simulação
+      folderId: currentFolderId,
+      uploadedBy: currentUser.id,
+      uploadedAt: new Date().toISOString(),
+      entityId,
+      entityType
+    }))
 
+    setFiles(prev => [...prev, ...newFiles])
+    
+    // Log de atividade usando o novo serviço
+    logActivity(
+      entityId, 
+      entityType, 
+      'upload de arquivo', 
+      currentUser.id, 
+      { count: newFiles.length, names: newFiles.map(f => f.name).join(', ') }
+    )
+
+    toast.success(`${newFiles.length} arquivo(s) enviado(s)`)
+    setIsUploadOpen(false)
+  }
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+    
     try {
-      for (const file of Array.from(files)) {
-        const maxSize = 10 * 1024 * 1024
-        if (file.size > maxSize) {
-          toast.error(`Arquivo ${file.name} é muito grande (máx 10MB)`)
-          continue
-        }
-
-        const reader = new FileReader()
-        const fileData = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => resolve(e.target?.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-
-        const document: DocumentFile = {
-          id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          entityId,
-          entityType,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          uploadedBy: currentUser.id,
-          uploadedAt: new Date().toISOString(),
-          fileData,
-        }
-
-        setDocuments(current => [...(current || []), document])
-
-        logActivity({
-          userId: currentUser.id,
-          action: 'uploaded',
-          entityType: 'file',
-          entityId: document.id,
-          entityName: file.name,
-          details: `Arquivo enviado para ${entityType}: ${entityName}`,
-          metadata: {
-            fileSize: formatFileSize(file.size),
-            fileType: file.type,
-          },
-        })
-
-        toast.success(`${file.name} enviado com sucesso`)
-      }
+      await createFolder.mutateAsync({
+        name: newFolderName,
+        parentId: currentFolderId,
+        entityId,
+        entityType,
+        type: 'custom'
+      })
+      setNewFolderName('')
+      setIsNewFolderOpen(false)
+      toast.success('Pasta criada')
     } catch (error) {
-      console.error('Error uploading file:', error)
-      toast.error('Erro ao enviar arquivo')
-    } finally {
-      setIsUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+      toast.error('Erro ao criar pasta')
     }
   }
 
-  const handleDownload = (doc: DocumentFile) => {
-    try {
-      const link = document.createElement('a')
-      link.href = doc.fileData
-      link.download = doc.fileName
-      link.click()
-      toast.success('Download iniciado')
-    } catch {
-      toast.error('Erro ao baixar arquivo')
-    }
-  }
-
-  const handleDelete = (docId: string) => {
-    setDocuments(current => (current || []).filter(d => d.id !== docId))
+  const handleDeleteFile = (fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId))
     toast.success('Arquivo excluído')
   }
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return <FilePdf className="text-destructive" />
-    if (fileType.includes('word') || fileType.includes('document')) return <FileDoc className="text-primary" />
-    if (fileType.includes('sheet') || fileType.includes('excel')) return <FileXls className="text-success" />
-    if (fileType.includes('image')) return <FileImage className="text-accent" />
-    if (fileType.includes('text')) return <FileText className="text-muted-foreground" />
-    return <File className="text-muted-foreground" />
+  // Breadcrumbs simplificado
+  const getBreadcrumbs = () => {
+    if (!currentFolderId) return [{ id: undefined, name: 'Raiz' }]
+    
+    // Lógica recursiva real seria necessária para breadcrumbs profundos
+    // Aqui mostramos apenas Raiz > Atual para simplificar
+    const current = folders?.find(f => f.id === currentFolderId)
+    return [
+      { id: undefined, name: 'Raiz' },
+      ...(current ? [current] : [])
+    ]
   }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-  }
-
-  const getUploader = (userId: string) => {
-    return (users || []).find(u => u.id === userId)
-  }
-
-  const totalSize = entityDocuments.reduce((sum, doc) => sum + doc.fileSize, 0)
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold">Documentos ({entityDocuments.length})</h3>
-          {entityDocuments.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Total: {formatFileSize(totalSize)}
-            </p>
-          )}
+    <div className="h-[600px] flex flex-col border rounded-lg bg-card">
+      {/* Toolbar */}
+      <div className="p-4 border-b flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="relative flex-1 max-w-sm">
+            <MagnifyingGlass className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input 
+              placeholder="Buscar documentos..." 
+              className="pl-8 h-9"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
-        <Button onClick={handleFileSelect} disabled={isUploading} size="sm">
-          <Upload className="mr-2" />
-          {isUploading ? 'Enviando...' : 'Enviar Arquivo'}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif"
-        />
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsNewFolderOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Nova Pasta
+          </Button>
+          <Button size="sm" onClick={() => fileInputRef.current?.click()}>
+            <UploadSimple className="mr-2 h-4 w-4" /> Upload
+          </Button>
+          <input 
+            type="file" 
+            multiple 
+            className="hidden" 
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+        </div>
       </div>
 
-      {entityDocuments.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <CloudArrowUp className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-sm text-muted-foreground mb-4">
-              Nenhum documento anexado
-            </p>
-            <Button variant="outline" onClick={handleFileSelect} disabled={isUploading}>
-              <Upload className="mr-2" />
-              Enviar Primeiro Documento
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <ScrollArea className="h-[400px] pr-2">
-          <div className="space-y-2">
-            {entityDocuments.map(doc => {
-              const uploader = getUploader(doc.uploadedBy)
-              
-              return (
-                <Card key={doc.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 flex-shrink-0">
-                        {getFileIcon(doc.fileType)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <p className="font-medium text-sm truncate">{doc.fileName}</p>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
-                                <DotsThree />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleDownload(doc)}>
-                                <Download className="mr-2" />
-                                Download
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(doc.id)}
-                                className="text-destructive"
-                              >
-                                <Trash className="mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                          <span>{formatFileSize(doc.fileSize)}</span>
-                          <span>•</span>
-                          <span>{uploader?.name || 'Usuário'}</span>
-                          <span>•</span>
-                          <span>{formatDateTime(doc.uploadedAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+      {/* Breadcrumbs */}
+      <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm">
+        {getBreadcrumbs().map((crumb, index, arr) => (
+          <div key={crumb.id || 'root'} className="flex items-center">
+            <button 
+              className="hover:underline hover:text-primary font-medium"
+              onClick={() => setCurrentFolderId(crumb.id)}
+            >
+              {crumb.name}
+            </button>
+            {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
           </div>
-        </ScrollArea>
-      )}
+        ))}
+      </div>
+
+      {/* Content Area */}
+      <ScrollArea className="flex-1 p-4">
+        {/* Folders Grid */}
+        {currentFolders && currentFolders.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pastas</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {currentFolders.map(folder => (
+                <div 
+                  key={folder.id}
+                  className="group flex flex-col items-center p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors relative"
+                  onClick={() => setCurrentFolderId(folder.id)}
+                >
+                  <FolderIcon size={48} weight="fill" className="text-yellow-400 mb-2 drop-shadow-sm" />
+                  <span className="text-sm font-medium text-center truncate w-full">{folder.name}</span>
+                  
+                  {/* Context Menu */}
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => deleteFolder.mutate(folder.id)} className="text-destructive">
+                          <Trash className="mr-2 h-4 w-4" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Files List */}
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Arquivos</h4>
+          {filteredFiles.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+              {searchQuery ? 'Nenhum arquivo encontrado na busca.' : 'Esta pasta está vazia.'}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filteredFiles.map(file => (
+                <div 
+                  key={file.id} 
+                  className="group flex items-center gap-3 p-3 border rounded-md hover:bg-muted/40 transition-colors"
+                >
+                  <div className="shrink-0">{getFileIcon(file.type)}</div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{file.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{formatBytes(file.size)}</span>
+                      <span>•</span>
+                      <span>{formatDate(file.uploadedAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Download">
+                      <DownloadSimple className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><DotsThreeVertical /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleDeleteFile(file.id)} className="text-destructive">
+                          <Trash className="mr-2 h-4 w-4" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* New Folder Dialog */}
+      <Dialog open={isNewFolderOpen} onOpenChange={setIsNewFolderOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Pasta</DialogTitle>
+            <DialogDescription>Crie uma nova pasta para organizar documentos.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              placeholder="Nome da pasta" 
+              value={newFolderName} 
+              onChange={e => setNewFolderName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleCreateFolder()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewFolderOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateFolder}>Criar Pasta</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
