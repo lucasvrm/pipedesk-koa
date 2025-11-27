@@ -4,8 +4,9 @@ import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import AuthForm from '@/components/Auth/AuthForm'
 import Profile from '@/pages/Profile'
 import App from '@/App'
-import DealDetailPage from '@/features/deals/pages/DealDetailPage' // Importante
-import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage' // VERIFIQUE ESTA IMPORTAÇÃO
+import DealDetailPage from '@/features/deals/pages/DealDetailPage'
+// Verifique se o caminho abaixo está EXATAMENTE correto no seu projeto
+import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage' 
 
 export default function Router() {
   const { isAuthenticated, loading } = useAuth()
@@ -28,6 +29,7 @@ export default function Router() {
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthForm />
         } />
 
+        {/* Rotas Protegidas */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <App />
@@ -40,20 +42,23 @@ export default function Router() {
           </ProtectedRoute>
         } />
 
+        {/* COLOQUE ESTAS ROTAS ANTES DO CATCH-ALL (*) */}
         <Route path="/deals/:id" element={
           <ProtectedRoute>
             <DealDetailPage />
           </ProtectedRoute>
         } />
 
-        {/* VERIFIQUE SE ESTA ROTA EXISTE */}
         <Route path="/tracks/:id" element={
           <ProtectedRoute>
             <TrackDetailPage />
           </ProtectedRoute>
         } />
 
+        {/* Redirecionamento Raiz */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* Catch-All (Deve ser sempre o ÚLTIMO) */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
