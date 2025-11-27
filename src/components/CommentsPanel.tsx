@@ -147,29 +147,31 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
           {/* Filtro Data (Novo) */}
           <div className="flex items-center gap-1">
             <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  size="sm"
-                  className={cn(
-                    "h-8 text-xs justify-start text-left font-normal w-[130px]",
-                    !filterDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarBlank className="mr-2 h-3 w-3" />
-                  {filterDate ? format(filterDate, "P", { locale: ptBR }) : <span>Data</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={filterDate}
-                  onSelect={setFilterDate}
-                  initialFocus
-                  locale={ptBR}
-                />
-              </PopoverContent>
-            </Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              size="sm"
+              className={cn(
+                "h-8 text-xs justify-start text-left font-normal w-[130px]",
+                !filterDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarBlank className="mr-2 h-3 w-3" />
+              {filterDate ? format(filterDate, "P", { locale: ptBR }) : <span>Data</span>}
+            </Button>
+          </PopoverTrigger>
+          {/* A classe z-50 e w-auto são cruciais aqui */}
+          <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+            <Calendar
+              mode="single"
+              selected={filterDate}
+              onSelect={setFilterDate}
+              initialFocus
+              locale={ptBR}
+              className="p-3 pointer-events-auto" // Garante eventos de mouse
+            />
+            </PopoverContent>
+          </Popover>
             
             {filterDate && (
               <Button 
