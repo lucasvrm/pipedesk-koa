@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers } from '@/services/userService'
-import { useCreateTrack } from '@/services/trackService'
+import { useCreateTrack, useTracks } from '@/services/trackService'
 import { usePlayers, useCreatePlayer } from '@/services/playerService'
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
 import { MasterDeal, PlayerStage, STAGE_LABELS } from '@/lib/types'
 import { toast } from 'sonner'
 import { ArrowLeft, Plus } from '@phosphor-icons/react'
-import { PlayerSelect } from '@/components/PlayerSelect' // Certifique-se que o caminho está correto
+import { PlayerSelect } from '@/components/PlayerSelect'
 
 interface CreatePlayerDialogProps {
   masterDeal: MasterDeal
@@ -39,7 +39,9 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
   
   // Hooks de dados
   const { data: users } = useUsers()
-  const { data: existingPlayers } = usePlayers() // Busca para recuperar o nome pelo ID selecionado
+  const { data: existingPlayers } = usePlayers()
+  // 1. Buscando tracks existentes para validação de duplicidade
+  const { data: existingTracks } = useTracks(masterDeal.id)
   
   // Hooks de mutação
   const createTrack = useCreateTrack()
@@ -77,13 +79,12 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
     let finalPlayerName = ''
 
     try {
-      // Cenário 1: Criando um novo Player no banco antes de criar o Track
+      // Lógica de Obtenção do ID do Player (Novo ou Existente)
       if (isCreatingNew) {
         if (!newPlayerName.trim()) {
           toast.error('Nome do player é obrigatório')
           return
         }
-
         if (!currentUser) {
           toast.error('Usuário não autenticado')
           return
@@ -92,7 +93,7 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
         const newPlayer = await createPlayerMutation.mutateAsync({
           data: {
             name: newPlayerName,
-            type: 'other', // Padrão, pode ser editado depois na tela do player
+            type: 'other', 
             relationshipLevel: 'none'
           },
           userId: currentUser.id
@@ -102,20 +103,28 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
         finalPlayerName = newPlayer.name
       
       } else {
-        // Cenário 2: Usando Player Existente
         if (!selectedPlayerId) {
           toast.error('Selecione um player')
           return
         }
-        
         const selectedPlayer = existingPlayers?.find(p => p.id === selectedPlayerId)
         if (!selectedPlayer) {
           toast.error('Player selecionado inválido')
           return
         }
-        
         finalPlayerId = selectedPlayer.id
         finalPlayerName = selectedPlayer.name
+      }
+
+      // 1. VALIDAÇÃO DE DUPLICIDADE
+      // Verifica se já existe um track com este playerId neste deal
+      const isDuplicate = existingTracks?.some(t => t.playerId === finalPlayerId)
+      
+      if (isDuplicate) {
+        toast.error('Este player já está cadastrado neste deal.', {
+          description: 'Verifique a lista de ativos ou a aba "Dropped".'
+        })
+        return
       }
 
       // Criação do Track (Vínculo)
@@ -149,6 +158,9 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
     )
   }
 
+  // 2. EQUIPE RESPONSÁVEL
+  // Se outros usuários não aparecem, verifique se eles possuem as roles abaixo no banco de dados.
+  // Caso contrário, ajuste este filtro ou verifique as políticas RLS (Row Level Security) do Supabase.
   const teamMembers = (users || []).filter(
     (u) => u.role === 'admin' || u.role === 'analyst' || u.role === 'newbusiness'
   )
@@ -168,7 +180,6 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
 
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Seleção ou Criação de Player */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="player-select">Player *</Label>
@@ -264,7 +275,9 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
             <Label>Equipe Responsável</Label>
             <div className="border border-border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
               {teamMembers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum membro de equipe disponível</p>
+                <p className="text-sm text-muted-foreground">
+                  Nenhum membro de equipe disponível. (Verifique permissões ou roles)
+                </p>
               ) : (
                 teamMembers.map((user) => (
                   <div key={user.id} className="flex items-center gap-2">

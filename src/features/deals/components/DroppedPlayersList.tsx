@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ArrowUUpLeft, Trash } from '@phosphor-icons/react'
-import { useUpdateTrack } from '@/services/trackService'
+import { useUpdateTrack, useDeleteTrack } from '@/services/trackService' // Importado useDeleteTrack
 import { toast } from 'sonner'
 
 interface DroppedPlayersListProps {
@@ -20,6 +20,7 @@ interface DroppedPlayersListProps {
 
 export function DroppedPlayersList({ tracks }: DroppedPlayersListProps) {
   const updateTrack = useUpdateTrack()
+  const deleteTrack = useDeleteTrack() // Hook de deleção
 
   const handleReactivate = (trackId: string) => {
     updateTrack.mutate({
@@ -31,11 +32,20 @@ export function DroppedPlayersList({ tracks }: DroppedPlayersListProps) {
     })
   }
 
+  // 4. DELETE TRACK
+  const handleDelete = (trackId: string) => {
+    if (confirm('Tem certeza que deseja excluir definitivamente este registro? Esta ação não pode ser desfeita.')) {
+      deleteTrack.mutate(trackId, {
+        onSuccess: () => toast.success('Player excluído definitivamente.'),
+        onError: () => toast.error('Erro ao excluir player')
+      })
+    }
+  }
+
   if (tracks.length === 0) {
     return (
       <div className="text-center py-12 border border-dashed rounded-lg bg-muted/10">
         <Trash className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-        {/* MUDANÇA AQUI: Texto atualizado */}
         <p className="text-sm text-muted-foreground">Sem Dropps até o momento.</p>
       </div>
     )
@@ -67,15 +77,27 @@ export function DroppedPlayersList({ tracks }: DroppedPlayersListProps) {
                 {formatDate(track.updatedAt)}
               </TableCell>
               <TableCell className="text-right">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => handleReactivate(track.id)}
-                  title="Reativar Player"
-                >
-                  <ArrowUUpLeft className="mr-2 h-4 w-4" />
-                  Reativar
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleReactivate(track.id)}
+                    title="Reativar Player"
+                  >
+                    <ArrowUUpLeft className="mr-2 h-4 w-4" />
+                    Reativar
+                  </Button>
+                  {/* Botão de Excluir */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDelete(track.id)}
+                    title="Excluir Definitivamente"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
