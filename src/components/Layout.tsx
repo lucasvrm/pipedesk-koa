@@ -15,7 +15,6 @@ import {
   Users,
   GoogleLogo,
   MagnifyingGlass,
-  GridFour,
   ShieldCheck,
   Gear,
   ListChecks,
@@ -25,11 +24,10 @@ import {
   Question,
   FlowArrow,
   Clock,
-  ChartLineUp,
   Buildings,
   Briefcase,
-  Eye,       // Ícone para o menu
-  EyeSlash   // Ícone para o menu
+  Eye,
+  EyeSlash
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -111,6 +109,7 @@ export function Layout({ children }: LayoutProps) {
               PipeDesk
             </h1>
 
+            {/* MENU PRINCIPAL DESKTOP - REORDENADO */}
             <nav className="hidden md:flex items-center gap-2">
               <Button
                 variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
@@ -137,17 +136,6 @@ export function Layout({ children }: LayoutProps) {
               </Button>
 
               <Button
-                variant={isActive('/players') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/players">
-                  <Buildings className="mr-2" />
-                  Players
-                </Link>
-              </Button>
-
-              <Button
                 variant={isActive('/companies') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild
@@ -159,14 +147,13 @@ export function Layout({ children }: LayoutProps) {
               </Button>
 
               <Button
-                variant={isActive('/deals/comparison') ? 'secondary' : 'ghost'}
+                variant={isActive('/players') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild
-                data-tour="comparison-nav"
               >
-                <Link to="/deals/comparison">
-                  <ChartLineUp className="mr-2" />
-                  Comparação
+                <Link to="/players">
+                  <Buildings className="mr-2" />
+                  Players
                 </Link>
               </Button>
 
@@ -178,18 +165,6 @@ export function Layout({ children }: LayoutProps) {
                 <Link to="/tasks">
                   <ListChecks className="mr-2" />
                   Tarefas
-                </Link>
-              </Button>
-
-              <Button
-                variant={isActive('/kanban') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-                data-tour="kanban-nav"
-              >
-                <Link to="/kanban">
-                  <GridFour className="mr-2" />
-                  Kanban
                 </Link>
               </Button>
 
@@ -209,8 +184,6 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* REMOVIDO O SWITCH DAQUI */}
-
             <Button
               variant="ghost"
               size="icon"
@@ -338,7 +311,6 @@ export function Layout({ children }: LayoutProps) {
                 
                 <DropdownMenuSeparator />
                 
-                {/* SWITCH MODO CLIENTE MOVIDO PARA CÁ */}
                 {currentUser.role === 'admin' && (
                   <div className="px-2 py-2 flex items-center justify-between hover:bg-accent rounded-sm transition-colors">
                     <div className="flex items-center gap-2">
@@ -388,7 +360,6 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
 
-      {/* ... RESTO DO CÓDIGO MANTIDO IGUAL ... */}
       {/* COMPONENTES GLOBAIS */}
       <GlobalSearch
         open={searchOpen}
@@ -423,7 +394,6 @@ export function Layout({ children }: LayoutProps) {
 
       {/* BOTTOM BAR (MOBILE) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
-        {/* ... Botões Mobile ... */}
         <Button
           variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
           size="sm"
@@ -457,18 +427,6 @@ export function Layout({ children }: LayoutProps) {
         </Button>
 
         <Button
-          variant={isActive('/players') ? 'secondary' : 'ghost'}
-          size="sm"
-          asChild
-          className="flex-col h-full py-1 px-2 rounded-none flex-1"
-        >
-          <Link to="/players">
-            <Buildings className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Players</span>
-          </Link>
-        </Button>
-
-        <Button
           variant={isActive('/companies') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
@@ -481,14 +439,14 @@ export function Layout({ children }: LayoutProps) {
         </Button>
 
         <Button
-          variant={isActive('/tasks') ? 'secondary' : 'ghost'}
+          variant={isActive('/players') ? 'secondary' : 'ghost'}
           size="sm"
           asChild
           className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
-          <Link to="/tasks">
-            <ListChecks className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Tasks</span>
+          <Link to="/players">
+            <Buildings className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Players</span>
           </Link>
         </Button>
       </div>
