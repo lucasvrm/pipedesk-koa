@@ -278,7 +278,7 @@ export default function DealDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity">
-          <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
+          <ActivityHistory entityId={deal.id} entityType="deal" limit={50} disableScroll={true}/>
         </TabsContent>
       </Tabs>
 
