@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
-import { logActivity } from '@/services/activityService' // LOG
+import { logActivity } from '@/services/activityService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -113,6 +113,15 @@ export default function DealDetailPage() {
     }
   }
 
+  // Lógica de Cálculo do Fee
+  const feeValue = deal.feePercentage && deal.volume 
+    ? (deal.volume * (deal.feePercentage / 100)) 
+    : 0;
+
+  const feeDisplay = deal.feePercentage
+    ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}`
+    : '—';
+
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       {/* Cabeçalho */}
@@ -137,8 +146,9 @@ export default function DealDetailPage() {
               </Button>
             </div>
 
+            {/* 1. MUDANÇA: Espaçamento aumentado para mb-6 */}
             {deal.company && (
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-3 pl-0.5">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-6 pl-0.5">
                 <Buildings className="h-4 w-4" />
                 <span className="font-medium text-sm">{deal.company.name}</span>
               </div>
@@ -178,10 +188,11 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
+        {/* 2. MUDANÇA: Card de Fee com valor calculado */}
         <Card className="bg-card shadow-sm p-3 flex flex-col justify-center gap-1">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fee (%)</span>
-          <p className="text-lg font-bold text-foreground">
-            {deal.feePercentage ? `${deal.feePercentage}%` : '—'}
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fee Estimado</span>
+          <p className="text-sm font-bold text-foreground truncate" title={feeDisplay}>
+            {feeDisplay}
           </p>
         </Card>
 
@@ -206,14 +217,9 @@ export default function DealDetailPage() {
           <TabsTrigger value="players" className="py-2"><Users className="mr-2" /> Players</TabsTrigger>
           <TabsTrigger value="documents" className="py-2"><FileText className="mr-2" /> Docs</TabsTrigger>
           <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
-          
-          {/* MUDANÇA: QA Habilitado para receber observações */}
           <TabsTrigger value="qa" className="py-2"><Question className="mr-2" /> Q&A / Obs</TabsTrigger>
-          
           <TabsTrigger value="ai" disabled className="py-2 opacity-50 cursor-not-allowed"><Sparkle className="mr-2" /> IA</TabsTrigger>
           <TabsTrigger value="fields" disabled className="py-2 opacity-50 cursor-not-allowed"><Tag className="mr-2" /> Campos</TabsTrigger>
-          
-          {/* MUDANÇA: Nome renomeado */}
           <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividades</TabsTrigger>
         </TabsList>
 
@@ -274,13 +280,10 @@ export default function DealDetailPage() {
         </TabsContent>
 
         <TabsContent value="comments" className="space-y-6">
-          {/* Observações removidas daqui */}
           {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
 
-        {/* Tab: QA (Com Observações) */}
         <TabsContent value="qa" className="space-y-6">
-          {/* MUDANÇA: Observações inseridas aqui */}
           {deal.observations && (
             <div className="mb-6">
               <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
