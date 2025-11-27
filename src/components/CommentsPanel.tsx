@@ -7,14 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-// Imports do Calendário e Popover para o filtro de data
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { format, isSameDay } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { getInitials, formatDateTime } from '@/lib/helpers'
-import { PaperPlaneRight, Trash, ArrowsDownUp, Funnel, CalendarBlank, X } from '@phosphor-icons/react'
+import { PaperPlaneRight, Trash, ArrowsDownUp, Funnel } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface CommentsPanelProps {
@@ -32,7 +26,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   // Estados para UX
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [filterUser, setFilterUser] = useState<string>('all')
-  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined) // Novo estado para data
 
   const [content, setContent] = useState('')
   const [mentionOpen, setMentionOpen] = useState(false)
@@ -40,7 +33,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Lógica de Processamento (Sort + Filter User + Filter Date)
+  // Lógica de Processamento (Sort + Filter User)
   const processedComments = useMemo(() => {
     if (!comments) return []
     
@@ -51,12 +44,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
       result = result.filter(c => c.authorId === filterUser)
     }
 
-    // 2. Filtro Data
-    if (filterDate) {
-      result = result.filter(c => isSameDay(new Date(c.createdAt), filterDate))
-    }
-
-    // 3. Ordenação
+    // 2. Ordenação
     result.sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime()
       const dateB = new Date(b.createdAt).getTime()
@@ -64,7 +52,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
     })
 
     return result
-  }, [comments, sortOrder, filterUser, filterDate])
+  }, [comments, sortOrder, filterUser])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
@@ -144,48 +132,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
         </h3>
         
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Filtro Data (Novo) */}
-          <div className="flex items-center gap-1">
-            <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              size="sm"
-              className={cn(
-                "h-8 text-xs justify-start text-left font-normal w-[130px]",
-                !filterDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarBlank className="mr-2 h-3 w-3" />
-              {filterDate ? format(filterDate, "P", { locale: ptBR }) : <span>Data</span>}
-            </Button>
-          </PopoverTrigger>
-          {/* A classe z-50 e w-auto são cruciais aqui */}
-          <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
-            <Calendar
-              mode="single"
-              selected={filterDate}
-              onSelect={setFilterDate}
-              initialFocus
-              locale={ptBR}
-              className="p-3 pointer-events-auto" // Garante eventos de mouse
-            />
-            </PopoverContent>
-          </Popover>
-            
-            {filterDate && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-foreground" 
-                onClick={() => setFilterDate(undefined)} 
-                title="Limpar Data"
-              >
-                <X size={12} />
-              </Button>
-            )}
-          </div>
-
           {/* Filtro Usuário */}
           <div className="w-[120px]">
             <Select value={filterUser} onValueChange={setFilterUser}>
@@ -217,7 +163,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
         </div>
       </div>
 
-      {/* Lista de Comentários */}
       <div className="flex-1 min-h-0 overflow-hidden relative">
         <ScrollArea className="h-full w-full">
           <div className="p-4 space-y-4 pb-4">
@@ -266,7 +211,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
         </ScrollArea>
       </div>
 
-      {/* Input Area */}
       <div className="p-4 border-t bg-background relative shrink-0 z-10">
         {mentionOpen && (
           <div className="absolute bottom-full left-4 mb-2 w-64 bg-popover border rounded-md shadow-xl z-50 animate-in fade-in zoom-in-95 overflow-hidden">

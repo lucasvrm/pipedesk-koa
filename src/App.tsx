@@ -24,6 +24,9 @@ const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'
 const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
 const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetailPage'))
 
+// IMPORTS PARA TRACKS (ADICIONADO)
+const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPage'))
+
 // NOVOS IMPORTS PARA EMPRESAS
 const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
@@ -69,7 +72,10 @@ function App() {
             <Route path="/players" element={<PlayersListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
 
-            {/* ROTAS DE EMPRESAS (NOVO) */}
+            {/* ROTA DE TRACKS (ADICIONADA) */}
+            <Route path="/tracks/:id" element={<TrackDetailPage />} />
+
+            {/* ROTAS DE EMPRESAS */}
             <Route path="/companies" element={<CompaniesListPage />} />
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
 

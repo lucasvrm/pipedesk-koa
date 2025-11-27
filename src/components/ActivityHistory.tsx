@@ -2,20 +2,14 @@ import { useState, useMemo } from 'react'
 import { useActivities } from '@/services/activityService'
 import { useUsers } from '@/services/userService'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
 import { getInitials, formatDateTime } from '@/lib/helpers'
-import { cn } from '@/lib/utils'
-import { format, isSameDay } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import {
   Plus, PencilSimple, Trash, XCircle, ArrowRight,
   ChatCircle, FileArrowUp, ClockCounterClockwise,
-  Funnel, ArrowsDownUp, CalendarBlank, X
+  Funnel, ArrowsDownUp
 } from '@phosphor-icons/react'
 
 interface ActivityHistoryProps {
@@ -29,20 +23,18 @@ interface ActivityHistoryProps {
 export default function ActivityHistory({ 
   entityId, 
   entityType, 
-  limit = 100, // Aumentei o limite padrão para fazer sentido filtrar
+  limit = 100,
   showUser = true,
   disableScroll = false
 }: ActivityHistoryProps) {
   const { data: activities, isLoading } = useActivities(entityId, entityType)
   const { data: users } = useUsers()
 
-  // Estados dos Filtros
+  // Estados dos Filtros (DATA REMOVIDA)
   const [filterUser, setFilterUser] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
-  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Helper para identificar tipo
   const getActivityType = (action: string) => {
     const lower = action.toLowerCase()
     if (lower.includes('coment')) return 'comment'
@@ -54,7 +46,6 @@ export default function ActivityHistory({
     return 'other'
   }
 
-  // Filtragem e Ordenação
   const processedActivities = useMemo(() => {
     if (!activities) return []
 
@@ -65,17 +56,12 @@ export default function ActivityHistory({
       result = result.filter(a => a.user_id === filterUser)
     }
 
-    // 2. Filtro Data
-    if (filterDate) {
-      result = result.filter(a => isSameDay(new Date(a.created_at), filterDate))
-    }
-
-    // 3. Filtro Tipo
+    // 2. Filtro Tipo
     if (filterType !== 'all') {
       result = result.filter(a => getActivityType(a.action) === filterType)
     }
 
-    // 4. Ordenação
+    // 3. Ordenação
     result.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime()
       const dateB = new Date(b.created_at).getTime()
@@ -83,9 +69,8 @@ export default function ActivityHistory({
     })
 
     return result.slice(0, limit)
-  }, [activities, filterUser, filterDate, filterType, sortOrder, limit])
+  }, [activities, filterUser, filterType, sortOrder, limit])
 
-  // Helper de Ícone
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'creation': return <Plus className="text-emerald-500" />
@@ -195,39 +180,6 @@ export default function ActivityHistory({
             <SelectItem value="file">Arquivos</SelectItem>
           </SelectContent>
         </Select>
-
-        {/* Filtro Data */}
-        <div className="flex items-center gap-1">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                size="sm"
-                className={cn(
-                  "h-8 text-xs justify-start text-left font-normal w-[130px] bg-background",
-                  !filterDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarBlank className="mr-2 h-3 w-3" />
-                {filterDate ? format(filterDate, "P", { locale: ptBR }) : <span>Data</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 z-50" align="end">
-              <Calendar
-                mode="single"
-                selected={filterDate}
-                onSelect={setFilterDate}
-                initialFocus
-                locale={ptBR}
-              />
-            </PopoverContent>
-          </Popover>
-          {filterDate && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFilterDate(undefined)}>
-              <X size={12} />
-            </Button>
-          )}
-        </div>
 
         {/* Ordenação */}
         <Button 
