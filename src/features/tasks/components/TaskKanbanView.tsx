@@ -1,9 +1,14 @@
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
 import { Task, PlayerTrack, MasterDeal } from '@/lib/types'
-import { CalendarBlank, User as UserIcon, Flag, LinkSimple, CheckCircle, Warning, Clock } from '@phosphor-icons/react'
+import { 
+  CalendarBlank, User as UserIcon, Flag, LinkSimple, 
+  CheckCircle, Warning, Clock, Users, XCircle, Archive, Kanban
+} from '@phosphor-icons/react'
 import { formatDate } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +21,7 @@ interface TaskKanbanViewProps {
   isTaskOverdue: (task: Task) => boolean
 }
 
-type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'completed'
+type TaskStatus = 'todo' | 'in_progress' | 'waiting_third_party' | 'blocked' | 'completed' | 'cancelled'
 
 export default function TaskKanbanView({
   tasks,
@@ -25,7 +30,15 @@ export default function TaskKanbanView({
   getTrackInfo,
   isTaskOverdue,
 }: TaskKanbanViewProps) {
+  
+  // Estado do Toggle de Visualização
+  const [viewMode, setViewMode] = useState<'active' | 'archived'>('active')
+
   const getTaskStatus = (task: Task): TaskStatus => {
+    // Se o status estiver explícito no banco, usa ele
+    if (task.status) return task.status
+
+    // Lógica de fallback para dados antigos ou sem status definido
     if (task.completed) return 'completed'
     
     const blockedBy = task.dependencies.filter(depId => {
@@ -34,27 +47,59 @@ export default function TaskKanbanView({
     })
     
     if (blockedBy.length > 0) return 'blocked'
-    if (task.assignees.length > 0) return 'in-progress'
+    if (task.assignees.length > 0) return 'in_progress'
     
     return 'todo'
   }
 
-  const columns: { status: TaskStatus; label: string; color: string; icon: any }[] = [
-    { status: 'todo', label: 'A Fazer', color: 'border-t-slate-400', icon: CheckCircle },
-    { status: 'in-progress', label: 'Em Progresso', color: 'border-t-blue-500', icon: Clock },
+  // Definição das Colunas por Modo de Visualização
+  const activeColumns: { status: TaskStatus; label: string; color: string; icon: any }[] = [
+    { status: 'todo', label: 'Pendentes', color: 'border-t-slate-400', icon: CheckCircle },
+    { status: 'in_progress', label: 'Em Progresso', color: 'border-t-blue-500', icon: Clock },
+    { status: 'waiting_third_party', label: 'Terceiros', color: 'border-t-purple-500', icon: Users },
     { status: 'blocked', label: 'Bloqueadas', color: 'border-t-red-500', icon: Warning },
-    { status: 'completed', label: 'Concluídas', color: 'border-t-emerald-500', icon: CheckCircle },
   ]
 
-  const tasksByStatus = columns.reduce((acc, col) => {
+  const archivedColumns: { status: TaskStatus; label: string; color: string; icon: any }[] = [
+    { status: 'completed', label: 'Concluídas', color: 'border-t-emerald-500', icon: CheckCircle },
+    { status: 'cancelled', label: 'Canceladas', color: 'border-t-slate-500', icon: XCircle },
+  ]
+
+  const currentColumns = viewMode === 'active' ? activeColumns : archivedColumns
+
+  const tasksByStatus = currentColumns.reduce((acc, col) => {
     acc[col.status] = tasks.filter(task => getTaskStatus(task) === col.status)
     return acc
   }, {} as Record<TaskStatus, Task[]>)
 
   return (
-    <div className="h-full p-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
-        {columns.map((column) => (
+    <div className="h-full p-4 flex flex-col gap-4">
+      {/* Toggle de Visualização */}
+      <div className="flex justify-end">
+        <div className="bg-muted p-1 rounded-lg flex gap-1">
+          <Button
+            variant={viewMode === 'active' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('active')}
+            className="h-8 text-xs gap-2"
+          >
+            <Kanban size={14} />
+            Em Andamento
+          </Button>
+          <Button
+            variant={viewMode === 'archived' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('archived')}
+            className="h-8 text-xs gap-2"
+          >
+            <Archive size={14} />
+            Arquivadas
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full min-h-0">
+        {currentColumns.map((column) => (
           <div key={column.status} className="flex flex-col min-h-0 bg-muted/20 rounded-xl border border-border/50">
             {/* Column Header */}
             <div className={cn("p-3 border-b bg-card/50 rounded-t-xl border-t-4 flex items-center justify-between", column.color)}>
