@@ -28,6 +28,19 @@ export function formatDateTime(date: string | Date): string {
   }).format(new Date(date))
 }
 
+// ADICIONADO: Função para formatar tamanho de arquivos
+export function formatBytes(bytes: number, decimals = 2): string {
+  if (!+bytes) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
 export function calculateWeightedVolume(volume: number, probability: number): number {
   return volume * (probability / 100)
 }
@@ -69,45 +82,50 @@ export function trackStageChange(
   newStage: string,
   oldStage?: string
 ): void {
+  // Nota: Esta função usa storage local (KV) e pode precisar ser migrada 
+  // para o backend (Supabase) futuramente se for manter o histórico no banco.
   if (!oldStage || oldStage === newStage) return
 
   const stageHistoryKey = 'stageHistory'
   
-  window.spark.kv.get<any[]>(stageHistoryKey).then((history) => {
-    const existingHistory = history || []
-    
-    const openRecord = existingHistory.find(
-      (h) => h.playerTrackId === trackId && h.stage === oldStage && !h.exitedAt
-    )
+  // Verificação de segurança para ambiente SSR
+  if (typeof window !== 'undefined' && window.spark && window.spark.kv) {
+    window.spark.kv.get<any[]>(stageHistoryKey).then((history) => {
+      const existingHistory = history || []
+      
+      const openRecord = existingHistory.find(
+        (h) => h.playerTrackId === trackId && h.stage === oldStage && !h.exitedAt
+      )
 
-    const now = new Date().toISOString()
-    const updatedHistory = [...existingHistory]
+      const now = new Date().toISOString()
+      const updatedHistory = [...existingHistory]
 
-    if (openRecord) {
-      const exitedAt = now
-      const enteredAt = new Date(openRecord.enteredAt)
-      const durationHours =
-        (new Date(exitedAt).getTime() - enteredAt.getTime()) / (1000 * 60 * 60)
+      if (openRecord) {
+        const exitedAt = now
+        const enteredAt = new Date(openRecord.enteredAt)
+        const durationHours =
+          (new Date(exitedAt).getTime() - enteredAt.getTime()) / (1000 * 60 * 60)
 
-      const index = updatedHistory.findIndex((h) => h.id === openRecord.id)
-      if (index !== -1) {
-        updatedHistory[index] = {
-          ...openRecord,
-          exitedAt,
-          durationHours,
+        const index = updatedHistory.findIndex((h) => h.id === openRecord.id)
+        if (index !== -1) {
+          updatedHistory[index] = {
+            ...openRecord,
+            exitedAt,
+            durationHours,
+          }
         }
       }
-    }
 
-    const newRecord = {
-      id: `stage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      playerTrackId: trackId,
-      stage: newStage,
-      enteredAt: now,
-    }
+      const newRecord = {
+        id: `stage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        playerTrackId: trackId,
+        stage: newStage,
+        enteredAt: now,
+      }
 
-    updatedHistory.push(newRecord)
+      updatedHistory.push(newRecord)
 
-    window.spark.kv.set(stageHistoryKey, updatedHistory)
-  })
+      window.spark.kv.set(stageHistoryKey, updatedHistory)
+    })
+  }
 }
