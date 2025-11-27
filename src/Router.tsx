@@ -4,7 +4,8 @@ import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import AuthForm from '@/components/Auth/AuthForm'
 import Profile from '@/pages/Profile'
 import App from '@/App'
-import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage' // Certifique-se de ter este arquivo criado
+import DealDetailPage from '@/features/deals/pages/DealDetailPage' // Importante
+import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage' // VERIFIQUE ESTA IMPORTAÇÃO
 
 export default function Router() {
   const { isAuthenticated, loading } = useAuth()
@@ -39,7 +40,13 @@ export default function Router() {
           </ProtectedRoute>
         } />
 
-        {/* --- ROTA ADICIONADA AQUI --- */}
+        <Route path="/deals/:id" element={
+          <ProtectedRoute>
+            <DealDetailPage />
+          </ProtectedRoute>
+        } />
+
+        {/* VERIFIQUE SE ESTA ROTA EXISTE */}
         <Route path="/tracks/:id" element={
           <ProtectedRoute>
             <TrackDetailPage />
@@ -47,8 +54,6 @@ export default function Router() {
         } />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-        {/* Catch all - redirect to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

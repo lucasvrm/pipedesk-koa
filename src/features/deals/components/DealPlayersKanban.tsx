@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom' // USANDO LINK AGORA
 import { cn } from '@/lib/utils'
 import { CalendarBlank, Wallet, User, XCircle } from '@phosphor-icons/react'
 import { useUpdateTrack } from '@/services/trackService'
@@ -32,7 +32,6 @@ interface DealPlayersKanbanProps {
 const KANBAN_STAGES: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing']
 
 export default function DealPlayersKanban({ tracks, currentUser: propsUser }: DealPlayersKanbanProps) {
-  const navigate = useNavigate()
   const updateTrack = useUpdateTrack()
   const { profile: currentUser } = useAuth()
   
@@ -52,29 +51,6 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
     })
     return cols
   }, [tracks])
-
-  // --- HANDLERS ---
-
-  const handleCardClick = (e: React.MouseEvent, trackId: string) => {
-    // Evita propagação se clicar em botões internos
-    e.stopPropagation();
-    console.log('[DEBUG] Card clicked. Track ID:', trackId);
-    
-    if (!trackId) {
-      console.error('[DEBUG] Track ID is missing!');
-      toast.error('Erro: ID do track não encontrado.');
-      return;
-    }
-
-    const targetUrl = `/tracks/${trackId}`;
-    console.log('[DEBUG] Navigating to:', targetUrl);
-    
-    try {
-      navigate(targetUrl);
-    } catch (error) {
-      console.error('[DEBUG] Navigation error:', error);
-    }
-  };
 
   const confirmCancel = () => {
     if (!trackToCancel) return
@@ -167,7 +143,6 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                   isDragOver ? "bg-primary/10 border-primary border-dashed" : "bg-muted/30 border-border/50"
                 )}
               >
-                {/* Header */}
                 <div className={cn("p-2 md:p-3 border-b bg-card rounded-t-lg border-t-4 shadow-sm select-none", getStageColor(stage))}>
                   <div className="flex flex-wrap items-center justify-between mb-1 gap-1">
                     <h4 className="font-semibold text-xs md:text-sm uppercase tracking-tight text-foreground/90 truncate">
@@ -183,7 +158,6 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                   </div>
                 </div>
 
-                {/* Cards */}
                 <ScrollArea className="flex-1 p-1 md:p-2">
                   <div className="space-y-2">
                     {items.map((track) => (
@@ -196,24 +170,22 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                           draggedTrack?.id === track.id ? "opacity-50" : "opacity-100"
                         )}
                       >
-                        {/* Wrapper Div para garantir captura do click, independente do Card */}
-                        <div 
-                          className="cursor-pointer"
-                          onClick={(e) => handleCardClick(e, track.id)}
-                        >
-                          <Card 
-                            className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card pointer-events-none" // pointer-events-none no card interno para evitar conflitos, eventos capturados pelo wrapper
-                          >
-                            <CardContent className="p-2 md:p-3 space-y-2 relative pointer-events-auto"> {/* Reativa eventos para conteúdo interno */}
+                        {/* SOLUÇÃO: Usar Link envolve o card e força a navegação correta.
+                           O 'block' garante que o link ocupe o espaço.
+                        */}
+                        <Link to={`/tracks/${track.id}`} className="block">
+                          <Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card group/card-content">
+                            <CardContent className="p-2 md:p-3 space-y-2 relative">
                               
-                              {/* Botão Cancelar - Stop Propagation Importante */}
-                              <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+                              {/* Botão Cancelar (Z-Index alto para ficar acima do Link) */}
+                              <div className="absolute top-1 right-1 opacity-0 group-hover/card-content:opacity-100 transition-opacity z-20">
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                   onClick={(e) => {
-                                    e.stopPropagation()
+                                    e.preventDefault(); // Previne navegação do Link
+                                    e.stopPropagation();
                                     setTrackToCancel(track)
                                   }}
                                   title="Cancelar Track"
@@ -223,7 +195,7 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                               </div>
 
                               <div className="flex justify-between items-start gap-2 pr-6">
-                                <h5 className="text-xs md:text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors break-words">
+                                <h5 className="text-xs md:text-sm font-semibold leading-tight line-clamp-2 group-hover/card-content:text-primary transition-colors break-words">
                                   {track.playerName}
                                 </h5>
                               </div>
@@ -253,7 +225,7 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                               </div>
                             </CardContent>
                           </Card>
-                        </div>
+                        </Link>
                       </div>
                     ))}
                     
