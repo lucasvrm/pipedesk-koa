@@ -5,10 +5,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { CalendarBlank, Wallet, User } from '@phosphor-icons/react'
-import { useUpdateTrack } from '@/services/trackService' // Hook de mutação
+import { CalendarBlank, Wallet, User, XCircle } from '@phosphor-icons/react'
+import { useUpdateTrack } from '@/services/trackService'
 import { toast } from 'sonner'
 
 interface DealPlayersKanbanProps {
@@ -22,12 +23,10 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
   const navigate = useNavigate()
   const updateTrack = useUpdateTrack()
   
-  // Estado para controlar o item sendo arrastado
   const [draggedTrack, setDraggedTrack] = useState<PlayerTrack | null>(null)
-  // Estado para controlar visualmente a coluna alvo (hover)
   const [dragOverStage, setDragOverStage] = useState<PlayerStage | null>(null)
 
-  // Agrupa os tracks por estágio (useMemo para performance)
+  // Filtra tracks ativos (não cancelados) e agrupa por estágio
   const columns = useMemo(() => {
     const cols: Record<PlayerStage, PlayerTrack[]> = {
       nda: [],
@@ -38,7 +37,9 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
     }
 
     tracks.forEach(track => {
-      if (cols[track.currentStage]) {
+      // Exibe apenas tracks que NÃO estão cancelados ou concluídos (se quiser esconder concluídos também)
+      // Aqui vamos esconder apenas os 'cancelled' do fluxo principal
+      if (track.status !== 'cancelled' && cols[track.currentStage]) {
         cols[track.currentStage].push(track)
       }
     })
@@ -46,14 +47,27 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
     return cols
   }, [tracks])
 
-  // --- HANDLERS DE DRAG AND DROP ---
+  // --- HANDLERS ---
+
+  const handleCancelTrack = (e: React.MouseEvent, track: PlayerTrack) => {
+    e.stopPropagation() // Evita abrir o card ao clicar no botão
+    if (!confirm('Tem certeza que deseja cancelar este player?')) return
+
+    updateTrack.mutate({
+      trackId: track.id,
+      updates: { status: 'cancelled' }
+    }, {
+      onSuccess: () => toast.success('Player cancelado com sucesso'),
+      onError: () => toast.error('Erro ao cancelar player')
+    })
+  }
 
   const handleDragStart = (track: PlayerTrack) => {
     setDraggedTrack(track)
   }
 
   const handleDragOver = (e: React.DragEvent, stage: PlayerStage) => {
-    e.preventDefault() // Necessário para permitir o Drop
+    e.preventDefault()
     if (dragOverStage !== stage) {
       setDragOverStage(stage)
     }
@@ -64,28 +78,22 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
   }
 
   const handleDrop = (targetStage: PlayerStage) => {
-    setDragOverStage(null) // Limpa o highlight
+    setDragOverStage(null)
 
     if (!draggedTrack) return
-    if (draggedTrack.currentStage === targetStage) return // Não faz nada se soltar na mesma coluna
+    if (draggedTrack.currentStage === targetStage) return
 
-    // Chama a API para atualizar
     updateTrack.mutate({
       trackId: draggedTrack.id,
       updates: { currentStage: targetStage }
     }, {
-      onSuccess: () => {
-        toast.success(`Movido para ${STAGE_LABELS[targetStage]}`)
-      },
-      onError: () => {
-        toast.error("Erro ao mover o player")
-      }
+      onSuccess: () => toast.success(`Movido para ${STAGE_LABELS[targetStage]}`),
+      onError: () => toast.error("Erro ao mover o player")
     })
     
     setDraggedTrack(null)
   }
 
-  // --- HELPER DE CORES ---
   const getStageColor = (stage: PlayerStage) => {
     switch (stage) {
       case 'nda': return 'border-t-slate-400'
@@ -109,20 +117,15 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
           return (
             <div 
               key={stage} 
-              // Eventos de Drop na Coluna inteira
               onDragOver={(e) => handleDragOver(e, stage)}
               onDragLeave={handleDragLeave}
               onDrop={() => handleDrop(stage)}
               className={cn(
                 "flex flex-col flex-1 min-w-0 rounded-lg border transition-colors duration-200",
-                // Estilo condicional quando um card está "sobrevoando" a coluna
-                isDragOver 
-                  ? "bg-primary/10 border-primary border-dashed" 
-                  : "bg-muted/30 border-border/50"
+                isDragOver ? "bg-primary/10 border-primary border-dashed" : "bg-muted/30 border-border/50"
               )}
             >
-              
-              {/* Header da Coluna */}
+              {/* Header */}
               <div className={cn("p-2 md:p-3 border-b bg-card rounded-t-lg border-t-4 shadow-sm select-none", getStageColor(stage))}>
                 <div className="flex flex-wrap items-center justify-between mb-1 gap-1">
                   <h4 className="font-semibold text-xs md:text-sm uppercase tracking-tight text-foreground/90 truncate">
@@ -138,28 +141,40 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
                 </div>
               </div>
 
-              {/* Área de Cards */}
+              {/* Cards */}
               <ScrollArea className="flex-1 p-1 md:p-2">
                 <div className="space-y-2">
                   {items.map((track) => (
                     <div
                       key={track.id}
-                      draggable // Habilita o arraste
+                      draggable
                       onDragStart={() => handleDragStart(track)}
                       className={cn(
-                        "transition-opacity",
-                        // Diminui opacidade do card original enquanto arrasta
+                        "transition-opacity relative group/card",
                         draggedTrack?.id === track.id ? "opacity-50" : "opacity-100"
                       )}
                     >
                       <Card 
-                        className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary group bg-card"
+                        className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card"
                         onClick={() => navigate(`/players/${track.id}`)} 
                       >
-                        <CardContent className="p-2 md:p-3 space-y-2">
+                        <CardContent className="p-2 md:p-3 space-y-2 relative">
                           
+                          {/* Botão de Cancelar (Aparece no Hover do Card) */}
+                          <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => handleCancelTrack(e, track)}
+                              title="Cancelar Track"
+                            >
+                              <XCircle weight="fill" />
+                            </Button>
+                          </div>
+
                           {/* Título */}
-                          <div className="flex justify-between items-start gap-2">
+                          <div className="flex justify-between items-start gap-2 pr-6"> {/* pr-6 para não cobrir texto com o botão */}
                             <h5 className="text-xs md:text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors break-words">
                               {track.playerName}
                             </h5>
@@ -204,7 +219,7 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
                   {items.length === 0 && (
                     <div className={cn(
                       "flex flex-col items-center justify-center py-10 px-2 text-center transition-opacity",
-                      isDragOver ? "opacity-0" : "opacity-50" // Esconde o texto "vazio" se estiver arrastando algo em cima
+                      isDragOver ? "opacity-0" : "opacity-50"
                     )}>
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
                         <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />

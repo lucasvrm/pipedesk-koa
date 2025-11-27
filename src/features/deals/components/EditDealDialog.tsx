@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -28,15 +29,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdateDeal } from '@/services/dealService'
-import { Deal, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { Deal, OPERATION_LABELS, STATUS_LABELS, OperationType, DealStatus } from '@/lib/types'
 import { toast } from 'sonner'
 
 const formSchema = z.object({
   clientName: z.string().min(1, 'Nome do cliente é obrigatório'),
   operationType: z.string().min(1, 'Tipo de operação é obrigatório'),
+  status: z.string().min(1, 'Status é obrigatório'),
   volume: z.coerce.number().min(0, 'Volume inválido'),
   feePercentage: z.coerce.number().min(0).max(100).optional(),
   deadline: z.string().min(1, 'Prazo é obrigatório'),
+  observations: z.string().optional(),
 })
 
 interface EditDealDialogProps {
@@ -45,7 +48,6 @@ interface EditDealDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-// MUDANÇA AQUI: 'export function' em vez de 'export default function'
 export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps) {
   const updateDeal = useUpdateDeal()
 
@@ -54,9 +56,11 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
     defaultValues: {
       clientName: deal.clientName,
       operationType: deal.operationType,
+      status: deal.status,
       volume: deal.volume,
       feePercentage: deal.feePercentage || 0,
       deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
+      observations: deal.observations || '',
     },
   })
 
@@ -65,9 +69,11 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
       form.reset({
         clientName: deal.clientName,
         operationType: deal.operationType,
+        status: deal.status,
         volume: deal.volume,
         feePercentage: deal.feePercentage || 0,
         deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
+        observations: deal.observations || '',
       })
     }
   }, [deal, form])
@@ -79,9 +85,11 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
         updates: {
           clientName: values.clientName,
           operationType: values.operationType as OperationType,
+          status: values.status as DealStatus,
           volume: values.volume,
           feePercentage: values.feePercentage,
           deadline: new Date(values.deadline).toISOString(),
+          observations: values.observations,
         },
       })
       toast.success('Negócio atualizado com sucesso!')
@@ -94,11 +102,11 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Negócio</DialogTitle>
           <DialogDescription>
-            Atualize as informações principais do mandato.
+            Atualize as informações do mandato.
           </DialogDescription>
         </DialogHeader>
 
@@ -147,13 +155,24 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
 
               <FormField
                 control={form.control}
-                name="deadline"
+                name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prazo Final</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -189,6 +208,38 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="deadline"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prazo Final</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="observations"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observações</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Detalhes adicionais, contexto, etc." 
+                      className="min-h-[100px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
