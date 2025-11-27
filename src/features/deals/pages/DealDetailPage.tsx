@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
+import { logActivity } from '@/services/activityService' // LOG
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,7 +47,6 @@ export default function DealDetailPage() {
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
-  
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
   if (isLoading) {
@@ -83,7 +83,10 @@ export default function DealDetailPage() {
         dealId: deal.id,
         updates: { status: newStatus }
       }, {
-        onSuccess: () => toast.success('Negócio cancelado e players atualizados.'),
+        onSuccess: () => {
+          toast.success('Negócio cancelado e players atualizados.')
+          if (currentUser) logActivity(deal.id, 'deal', `Status alterado para ${STATUS_LABELS[newStatus]}`, currentUser.id)
+        },
         onError: () => toast.error('Erro ao atualizar status')
       })
     } else {
@@ -91,7 +94,10 @@ export default function DealDetailPage() {
         dealId: deal.id,
         updates: { status: newStatus }
       }, {
-        onSuccess: () => toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`),
+        onSuccess: () => {
+          toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`)
+          if (currentUser) logActivity(deal.id, 'deal', `Status alterado para ${STATUS_LABELS[newStatus]}`, currentUser.id)
+        },
         onError: () => toast.error('Erro ao atualizar status')
       })
     }
@@ -118,7 +124,7 @@ export default function DealDetailPage() {
         
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-1"> {/* mb-1 para aproximar do subtítulo */}
+            <div className="flex items-center gap-3 mb-1">
               <h1 className="text-3xl font-bold">{deal.clientName}</h1>
               <Button 
                 variant="ghost" 
@@ -131,7 +137,6 @@ export default function DealDetailPage() {
               </Button>
             </div>
 
-            {/* MUDANÇA: Subtítulo com o nome da Empresa */}
             {deal.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground mb-3 pl-0.5">
                 <Buildings className="h-4 w-4" />
@@ -201,16 +206,19 @@ export default function DealDetailPage() {
           <TabsTrigger value="players" className="py-2"><Users className="mr-2" /> Players</TabsTrigger>
           <TabsTrigger value="documents" className="py-2"><FileText className="mr-2" /> Docs</TabsTrigger>
           <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
-          <TabsTrigger value="qa" disabled className="py-2 opacity-50 cursor-not-allowed"><Question className="mr-2" /> Q&A</TabsTrigger>
+          
+          {/* MUDANÇA: QA Habilitado para receber observações */}
+          <TabsTrigger value="qa" className="py-2"><Question className="mr-2" /> Q&A / Obs</TabsTrigger>
+          
           <TabsTrigger value="ai" disabled className="py-2 opacity-50 cursor-not-allowed"><Sparkle className="mr-2" /> IA</TabsTrigger>
           <TabsTrigger value="fields" disabled className="py-2 opacity-50 cursor-not-allowed"><Tag className="mr-2" /> Campos</TabsTrigger>
-          <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividade</TabsTrigger>
+          
+          {/* MUDANÇA: Nome renomeado */}
+          <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividades</TabsTrigger>
         </TabsList>
 
         <TabsContent value="players" className="space-y-4">
           <div className="flex justify-between items-center">
-            
-            {/* Toggle de Visualização: Gap alterado para gap-2 */}
             <div className="flex items-center bg-muted p-1 rounded-md gap-2">
               <Button 
                 variant={playersView === 'active' ? 'default' : 'ghost'} 
@@ -219,7 +227,7 @@ export default function DealDetailPage() {
                 onClick={() => setPlayersView('active')}
               >
                 <KanbanIcon className="mr-2" />
-                Em Negociação ({activeTracks.length}) {/* MUDANÇA: Count adicionado */}
+                Em Negociação ({activeTracks.length})
               </Button>
               <Button 
                 variant={playersView === 'dropped' ? 'default' : 'ghost'} 
@@ -228,7 +236,7 @@ export default function DealDetailPage() {
                 onClick={() => setPlayersView('dropped')}
               >
                 <ListIcon className="mr-2" />
-                Dropped ({droppedTracks.length}) {/* MUDANÇA: Renomeado para Dropped */}
+                Dropped ({droppedTracks.length})
               </Button>
             </div>
 
@@ -266,24 +274,27 @@ export default function DealDetailPage() {
         </TabsContent>
 
         <TabsContent value="comments" className="space-y-6">
+          {/* Observações removidas daqui */}
+          {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
+        </TabsContent>
+
+        {/* Tab: QA (Com Observações) */}
+        <TabsContent value="qa" className="space-y-6">
+          {/* MUDANÇA: Observações inseridas aqui */}
           {deal.observations && (
             <div className="mb-6">
               <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
                 <FileText className="h-4 w-4" />
-                Observações do Negócio
+                Observações Gerais do Negócio
               </h3>
-              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground leading-relaxed">
+              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                 {deal.observations}
               </div>
             </div>
           )}
-          {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
-        </TabsContent>
-
-        {/* Abas desativadas */}
-        <TabsContent value="qa">
           {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
+
         <TabsContent value="ai">
           {currentUser && <AINextSteps dealId={deal.id} />}
         </TabsContent>

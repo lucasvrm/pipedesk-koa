@@ -29,6 +29,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdateDeal } from '@/services/dealService'
+import { useCompanies } from '@/services/companyService' // Hook de Empresas
+import { logActivity } from '@/services/activityService' // Log de Atividade
+import { useAuth } from '@/contexts/AuthContext'
 import { Deal, OPERATION_LABELS, STATUS_LABELS, OperationType, DealStatus } from '@/lib/types'
 import { toast } from 'sonner'
 
@@ -40,6 +43,7 @@ const formSchema = z.object({
   feePercentage: z.coerce.number().min(0).max(100).optional(),
   deadline: z.string().min(1, 'Prazo é obrigatório'),
   observations: z.string().optional(),
+  companyId: z.string().optional(), // Novo campo
 })
 
 interface EditDealDialogProps {
@@ -50,6 +54,8 @@ interface EditDealDialogProps {
 
 export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps) {
   const updateDeal = useUpdateDeal()
+  const { data: companies } = useCompanies() // Busca empresas
+  const { user } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,6 +67,7 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
       feePercentage: deal.feePercentage || 0,
       deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
       observations: deal.observations || '',
+      companyId: deal.companyId || undefined,
     },
   })
 
@@ -74,6 +81,7 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
         feePercentage: deal.feePercentage || 0,
         deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
         observations: deal.observations || '',
+        companyId: deal.companyId || undefined,
       })
     }
   }, [deal, form])
@@ -90,8 +98,15 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
           feePercentage: values.feePercentage,
           deadline: new Date(values.deadline).toISOString(),
           observations: values.observations,
+          companyId: values.companyId, // Salva o vínculo
         },
       })
+
+      // REGISTRO DE ATIVIDADE
+      if (user) {
+        logActivity(deal.id, 'deal', 'Edição de Propriedades', user.id, values)
+      }
+
       toast.success('Negócio atualizado com sucesso!')
       onOpenChange(false)
     } catch (error) {
@@ -122,6 +137,33 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                   <FormControl>
                     <Input placeholder="Ex: Grupo XYZ" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* SELETOR DE EMPRESA */}
+            <FormField
+              control={form.control}
+              name="companyId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Empresa Vinculada</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma empresa..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none_value">-- Nenhuma --</SelectItem>
+                      {(companies || []).map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
