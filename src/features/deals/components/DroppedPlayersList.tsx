@@ -18,7 +18,6 @@ interface DroppedPlayersListProps {
   tracks: PlayerTrack[]
 }
 
-// MUDANÇA IMPORTANTE: 'export function' (Nomeada)
 export function DroppedPlayersList({ tracks }: DroppedPlayersListProps) {
   const updateTrack = useUpdateTrack()
 
@@ -36,7 +35,8 @@ export function DroppedPlayersList({ tracks }: DroppedPlayersListProps) {
     return (
       <div className="text-center py-12 border border-dashed rounded-lg bg-muted/10">
         <Trash className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-        <p className="text-sm text-muted-foreground">Nenhum player descartado.</p>
+        {/* MUDANÇA AQUI: Texto atualizado */}
+        <p className="text-sm text-muted-foreground">Sem Dropps até o momento.</p>
       </div>
     )
   }

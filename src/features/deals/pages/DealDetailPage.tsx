@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -18,12 +18,11 @@ import { formatCurrency, formatDate } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
   FileText, Sparkle, Tag, Question, ArrowLeft, PencilSimple,
-  Kanban as KanbanIcon, List as ListIcon 
+  Kanban as KanbanIcon, List as ListIcon, Buildings
 } from '@phosphor-icons/react'
 
-// Componentes
 import DealPlayersKanban from '../components/DealPlayersKanban' 
-import { DroppedPlayersList } from '../components/DroppedPlayersList' // NOVO COMPONENTE
+import { DroppedPlayersList } from '../components/DroppedPlayersList'
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
 import CommentsPanel from '@/components/CommentsPanel'
@@ -35,7 +34,6 @@ import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import QAPanel from '@/components/QAPanel'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group" // Certifique-se de ter este componente ou use botões simples
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -49,7 +47,6 @@ export default function DealDetailPage() {
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
   
-  // Estado para alternar visualização dos players
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
   if (isLoading) {
@@ -69,7 +66,6 @@ export default function DealDetailPage() {
     )
   }
 
-  // Filtragem dos Tracks
   const allDealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
   const activeTracks = allDealTracks.filter(t => t.status !== 'cancelled')
   const droppedTracks = allDealTracks.filter(t => t.status === 'cancelled')
@@ -122,7 +118,7 @@ export default function DealDetailPage() {
         
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-1"> {/* mb-1 para aproximar do subtítulo */}
               <h1 className="text-3xl font-bold">{deal.clientName}</h1>
               <Button 
                 variant="ghost" 
@@ -134,6 +130,14 @@ export default function DealDetailPage() {
                 <PencilSimple className="h-5 w-5" />
               </Button>
             </div>
+
+            {/* MUDANÇA: Subtítulo com o nome da Empresa */}
+            {deal.company && (
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-3 pl-0.5">
+                <Buildings className="h-4 w-4" />
+                <span className="font-medium text-sm">{deal.company.name}</span>
+              </div>
+            )}
             
             <div className="flex items-center gap-3 text-sm">
               <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
@@ -203,12 +207,11 @@ export default function DealDetailPage() {
           <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividade</TabsTrigger>
         </TabsList>
 
-        {/* Tab: Players */}
         <TabsContent value="players" className="space-y-4">
           <div className="flex justify-between items-center">
             
-            {/* Toggle de Visualização */}
-            <div className="flex items-center bg-muted p-1 rounded-md">
+            {/* Toggle de Visualização: Gap alterado para gap-2 */}
+            <div className="flex items-center bg-muted p-1 rounded-md gap-2">
               <Button 
                 variant={playersView === 'active' ? 'default' : 'ghost'} 
                 size="sm" 
@@ -216,7 +219,7 @@ export default function DealDetailPage() {
                 onClick={() => setPlayersView('active')}
               >
                 <KanbanIcon className="mr-2" />
-                Em Negociação
+                Em Negociação ({activeTracks.length}) {/* MUDANÇA: Count adicionado */}
               </Button>
               <Button 
                 variant={playersView === 'dropped' ? 'default' : 'ghost'} 
@@ -225,7 +228,7 @@ export default function DealDetailPage() {
                 onClick={() => setPlayersView('dropped')}
               >
                 <ListIcon className="mr-2" />
-                Descartados ({droppedTracks.length})
+                Dropped ({droppedTracks.length}) {/* MUDANÇA: Renomeado para Dropped */}
               </Button>
             </div>
 
@@ -247,7 +250,6 @@ export default function DealDetailPage() {
               <DealPlayersKanban tracks={activeTracks} currentUser={currentUser} />
             )
           ) : (
-            // Lista de Descartados
             <DroppedPlayersList tracks={droppedTracks} />
           )}
         </TabsContent>
@@ -278,7 +280,7 @@ export default function DealDetailPage() {
           {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
 
-        {/* Abas desativadas omitidas para brevidade, mas devem ser mantidas */}
+        {/* Abas desativadas */}
         <TabsContent value="qa">
           {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
