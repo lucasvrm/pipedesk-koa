@@ -50,10 +50,10 @@ export default function Router() {
         } />
 
         <Route path="/tracks/:id" element={
-          <ProtectedRoute>
-            <TrackDetailPage />
-          </ProtectedRoute>
-        } />
+  <div style={{ padding: 100, background: 'red', color: 'white', fontSize: 30 }}>
+    TESTE DA ROTA: FUNCIONA!
+  </div>
+} />
 
         {/* Redirecionamento Raiz */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
