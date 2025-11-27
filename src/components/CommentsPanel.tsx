@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useUsers } from '@/services/userService'
 import { useComments, useCreateComment, useDeleteComment } from '@/services/commentService'
 import { logActivity } from '@/services/activityService'
@@ -6,8 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getInitials, formatDateTime } from '@/lib/helpers'
-import { PaperPlaneRight, Trash } from '@phosphor-icons/react'
+import { PaperPlaneRight, Trash, ArrowsDownUp, Funnel } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface CommentsPanelProps {
@@ -22,11 +23,36 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   const createComment = useCreateComment()
   const deleteComment = useDeleteComment()
   
+  // Estados para UX (Ordenação e Filtro)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [filterUser, setFilterUser] = useState<string>('all')
+
   const [content, setContent] = useState('')
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionedUsersMap, setMentionedUsersMap] = useState<Map<string, string>>(new Map())
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Lógica de Processamento dos Comentários (Sort + Filter)
+  const processedComments = useMemo(() => {
+    if (!comments) return []
+    
+    let result = [...comments]
+
+    // Filtro
+    if (filterUser !== 'all') {
+      result = result.filter(c => c.authorId === filterUser)
+    }
+
+    // Ordenação
+    result.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime()
+      const dateB = new Date(b.createdAt).getTime()
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+    })
+
+    return result
+  }, [comments, sortOrder, filterUser])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
@@ -86,9 +112,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
     }
   }
 
-  // Regex ajustada: captura @Nome ou @Nome Sobrenome, parando antes de pontuações ou outros espaços excessivos
   const renderContentWithMentions = (text: string) => {
-    // Esta regex procura por @ seguido de palavra, opcionalmente seguido de um espaço e outra palavra
     const parts = text.split(/(@[\w\u00C0-\u00FF]+(?:\s[\w\u00C0-\u00FF]+)?)/g)
     
     return parts.map((part, index) => {
@@ -100,56 +124,95 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   }
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-lg bg-card relative">
-      <div className="p-4 border-b bg-muted/20">
-        <h3 className="font-semibold flex items-center gap-2">
-          Comentários <span className="text-muted-foreground text-xs font-normal">({comments?.length || 0})</span>
+    <div className="flex flex-col h-[600px] border rounded-lg bg-card relative overflow-hidden">
+      {/* Header com Controles */}
+      <div className="p-3 border-b bg-muted/20 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <h3 className="font-semibold flex items-center gap-2 text-sm">
+          Comentários <span className="text-muted-foreground text-xs font-normal">({processedComments.length})</span>
         </h3>
+        
+        <div className="flex items-center gap-2">
+          {/* Filtro de Usuário */}
+          <div className="w-[140px]">
+            <Select value={filterUser} onValueChange={setFilterUser}>
+              <SelectTrigger className="h-8 text-xs">
+                <div className="flex items-center gap-2 truncate">
+                  <Funnel className="h-3 w-3" />
+                  <SelectValue placeholder="Filtrar" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {users?.map(u => (
+                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Ordenação */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0" 
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? 'Mais antigos primeiro' : 'Mais recentes primeiro'}
+          >
+            <ArrowsDownUp className={sortOrder === 'asc' ? 'rotate-180' : ''} />
+          </Button>
+        </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        {isLoading ? (
-          <div className="text-center text-sm text-muted-foreground">Carregando...</div>
-        ) : comments?.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
-            Nenhum comentário ainda. Inicie a conversa!
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {comments?.map((comment) => (
-              <div key={comment.id} className="flex gap-3 group">
-                <Avatar className="h-8 w-8 mt-1">
-                  <AvatarImage src={comment.author?.avatar_url} />
-                  <AvatarFallback>{getInitials(comment.author?.name || '?')}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 bg-muted/30 p-3 rounded-lg border">
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="flex flex-col">
-                        {/* Nome do usuário em Azul */}
-                        <span className="font-semibold text-sm text-blue-600">{comment.author?.name || 'Usuário Desconhecido'}</span>
-                        {/* Data e Hora */}
-                        <span className="text-[10px] text-muted-foreground">{formatDateTime(comment.createdAt)}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap mt-1">{renderContentWithMentions(comment.content)}</p>
-                </div>
-                {currentUser.id === comment.authorId && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                    onClick={() => handleDelete(comment.id)}
-                  >
-                    <Trash size={14} />
-                  </Button>
-                )}
+      {/* Lista de Comentários (ScrollArea) */}
+      <div className="flex-1 min-h-0 overflow-hidden relative">
+        <ScrollArea className="h-full w-full">
+          <div className="p-4 space-y-4 pb-4">
+            {isLoading ? (
+              <div className="text-center text-sm text-muted-foreground pt-8">Carregando...</div>
+            ) : processedComments.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-xs">
+                Nenhum comentário encontrado.
               </div>
-            ))}
+            ) : (
+              processedComments.map((comment) => (
+                <div key={comment.id} className="flex gap-3 group">
+                  <Avatar className="h-8 w-8 mt-1 shrink-0">
+                    <AvatarImage src={comment.author?.avatar_url} />
+                    <AvatarFallback>{getInitials(comment.author?.name || '?')}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 bg-muted/30 p-3 rounded-lg border min-w-0">
+                    <div className="flex justify-between items-start mb-1 gap-2">
+                      <span className="font-semibold text-xs text-blue-600 truncate">
+                        {comment.author?.name || 'Usuário Desconhecido'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
+                        {formatDateTime(comment.createdAt)}
+                      </span>
+                    </div>
+                    {/* Mudança na Fonte: text-xs */}
+                    <p className="text-xs whitespace-pre-wrap leading-relaxed break-words">
+                      {renderContentWithMentions(comment.content)}
+                    </p>
+                  </div>
+                  {currentUser.id === comment.authorId && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive shrink-0 mt-1"
+                      onClick={() => handleDelete(comment.id)}
+                    >
+                      <Trash size={14} />
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
-        )}
-      </ScrollArea>
+        </ScrollArea>
+      </div>
 
-      <div className="p-4 border-t bg-background relative">
+      {/* Input Area (Fixa no rodapé) */}
+      <div className="p-4 border-t bg-background relative shrink-0 z-10">
         {mentionOpen && (
           <div className="absolute bottom-full left-4 mb-2 w-64 bg-popover border rounded-md shadow-xl z-50 animate-in fade-in zoom-in-95 overflow-hidden">
             <div className="text-xs font-medium p-2 bg-muted/50 text-muted-foreground border-b">
@@ -181,7 +244,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
             placeholder="Escreva um comentário... (Use @ para mencionar)" 
             value={content}
             onChange={handleInputChange}
-            className="min-h-[80px] resize-none"
+            className="min-h-[80px] resize-none text-sm"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()

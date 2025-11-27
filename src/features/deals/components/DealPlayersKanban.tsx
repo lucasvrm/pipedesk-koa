@@ -53,6 +53,29 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
     return cols
   }, [tracks])
 
+  // --- HANDLERS ---
+
+  const handleCardClick = (e: React.MouseEvent, trackId: string) => {
+    // Evita propagação se clicar em botões internos
+    e.stopPropagation();
+    console.log('[DEBUG] Card clicked. Track ID:', trackId);
+    
+    if (!trackId) {
+      console.error('[DEBUG] Track ID is missing!');
+      toast.error('Erro: ID do track não encontrado.');
+      return;
+    }
+
+    const targetUrl = `/tracks/${trackId}`;
+    console.log('[DEBUG] Navigating to:', targetUrl);
+    
+    try {
+      navigate(targetUrl);
+    } catch (error) {
+      console.error('[DEBUG] Navigation error:', error);
+    }
+  };
+
   const confirmCancel = () => {
     if (!trackToCancel) return
 
@@ -144,6 +167,7 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                   isDragOver ? "bg-primary/10 border-primary border-dashed" : "bg-muted/30 border-border/50"
                 )}
               >
+                {/* Header */}
                 <div className={cn("p-2 md:p-3 border-b bg-card rounded-t-lg border-t-4 shadow-sm select-none", getStageColor(stage))}>
                   <div className="flex flex-wrap items-center justify-between mb-1 gap-1">
                     <h4 className="font-semibold text-xs md:text-sm uppercase tracking-tight text-foreground/90 truncate">
@@ -159,6 +183,7 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                   </div>
                 </div>
 
+                {/* Cards */}
                 <ScrollArea className="flex-1 p-1 md:p-2">
                   <div className="space-y-2">
                     {items.map((track) => (
@@ -171,58 +196,64 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                           draggedTrack?.id === track.id ? "opacity-50" : "opacity-100"
                         )}
                       >
-                        <Card 
-                          className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card"
-                          // CORREÇÃO AQUI: Redireciona para /tracks/{id}
-                          onClick={() => navigate(`/tracks/${track.id}`)} 
+                        {/* Wrapper Div para garantir captura do click, independente do Card */}
+                        <div 
+                          className="cursor-pointer"
+                          onClick={(e) => handleCardClick(e, track.id)}
                         >
-                          <CardContent className="p-2 md:p-3 space-y-2 relative">
-                            <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setTrackToCancel(track)
-                                }}
-                                title="Cancelar Track"
-                              >
-                                <XCircle weight="fill" />
-                              </Button>
-                            </div>
-
-                            <div className="flex justify-between items-start gap-2 pr-6">
-                              <h5 className="text-xs md:text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors break-words">
-                                {track.playerName}
-                              </h5>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-1">
-                              <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-1.5 overflow-hidden">
-                                <Wallet className="h-3 w-3 shrink-0 text-primary/70" />
-                                <span className="font-medium text-foreground truncate">{formatCurrency(track.trackVolume)}</span>
+                          <Card 
+                            className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card pointer-events-none" // pointer-events-none no card interno para evitar conflitos, eventos capturados pelo wrapper
+                          >
+                            <CardContent className="p-2 md:p-3 space-y-2 relative pointer-events-auto"> {/* Reativa eventos para conteúdo interno */}
+                              
+                              {/* Botão Cancelar - Stop Propagation Importante */}
+                              <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setTrackToCancel(track)
+                                  }}
+                                  title="Cancelar Track"
+                                >
+                                  <XCircle weight="fill" />
+                                </Button>
                               </div>
-                              <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-1.5 overflow-hidden">
-                                <CalendarBlank className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{formatDate(track.updatedAt)}</span>
-                              </div>
-                            </div>
 
-                            <div className="pt-2 border-t flex justify-between items-center gap-1">
-                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-dashed shrink-0">
-                                {track.probability}%
-                              </Badge>
-                              {track.responsibles?.length > 0 && (
-                                <div className="flex -space-x-1.5 overflow-hidden">
-                                  <Avatar className="h-5 w-5 border border-background ring-1 ring-background shrink-0">
-                                    <AvatarFallback className="text-[8px] bg-primary/10 text-primary"><User size={10} /></AvatarFallback>
-                                  </Avatar>
+                              <div className="flex justify-between items-start gap-2 pr-6">
+                                <h5 className="text-xs md:text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors break-words">
+                                  {track.playerName}
+                                </h5>
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-1">
+                                <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-1.5 overflow-hidden">
+                                  <Wallet className="h-3 w-3 shrink-0 text-primary/70" />
+                                  <span className="font-medium text-foreground truncate">{formatCurrency(track.trackVolume)}</span>
                                 </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
+                                <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-1.5 overflow-hidden">
+                                  <CalendarBlank className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{formatDate(track.updatedAt)}</span>
+                                </div>
+                              </div>
+
+                              <div className="pt-2 border-t flex justify-between items-center gap-1">
+                                <Badge variant="outline" className="text-[9px] h-4 px-1 border-dashed shrink-0">
+                                  {track.probability}%
+                                </Badge>
+                                {track.responsibles?.length > 0 && (
+                                  <div className="flex -space-x-1.5 overflow-hidden">
+                                    <Avatar className="h-5 w-5 border border-background ring-1 ring-background shrink-0">
+                                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary"><User size={10} /></AvatarFallback>
+                                    </Avatar>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
                       </div>
                     ))}
                     
