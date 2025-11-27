@@ -50,16 +50,16 @@ export default function Router() {
         } />
 
         <Route path="/tracks/:id" element={
-  <div style={{ padding: 100, background: 'red', color: 'white', fontSize: 30 }}>
-    TESTE DA ROTA: FUNCIONA!
-  </div>
-} />
+          <ProtectedRoute>
+            <TrackDetailPage />
+          </ProtectedRoute>
+        } />
 
         {/* Redirecionamento Raiz */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         {/* Catch-All (Deve ser sempre o ÚLTIMO) */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* <Route path="*" element={<Navigate to="/dashboard" replace />} /> */}
       </Routes>
     </BrowserRouter>
   )
