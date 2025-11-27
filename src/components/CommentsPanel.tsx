@@ -1,368 +1,175 @@
 import { useState, useRef } from 'react'
-import { useKV } from '@/hooks/useKV'
+import { useAuth } from '@/contexts/AuthContext'
+import { useUsers } from '@/services/userService' // Hook de usuários
+import { useComments, useCreateComment, useDeleteComment } from '@/services/commentService'
+import { logActivity } from '@/services/activityService' // Log
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
-
-import { Separator } from '@/components/ui/separator'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Comment, User, Notification } from '@/lib/types'
-import { getInitials, formatDateTime } from '@/lib/helpers'
-import { 
-  PaperPlaneRight, 
-  DotsThree, 
-  Trash,
-  Sparkle,
-  At,
-} from '@phosphor-icons/react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { getInitials, formatDate } from '@/lib/helpers'
+import { PaperPlaneRight, Trash, At } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface CommentsPanelProps {
   entityId: string
   entityType: 'deal' | 'track' | 'task'
-  currentUser: User
+  currentUser: any
 }
 
 export default function CommentsPanel({ entityId, entityType, currentUser }: CommentsPanelProps) {
-  const [comments, setComments] = useKV<Comment[]>('comments', [])
-  const [users] = useKV<User[]>('users', [])
-  const [, setNotifications] = useKV<Notification[]>('notifications', [])
-  const [newComment, setNewComment] = useState('')
-  const [showMentions, setShowMentions] = useState(false)
-  const [mentionSearch, setMentionSearch] = useState('')
-  const [cursorPosition, setCursorPosition] = useState(0)
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
-  const [commentSummary, setCommentSummary] = useState('')
+  const { data: comments, isLoading } = useComments(entityId, entityType)
+  const { data: users } = useUsers()
+  const createComment = useCreateComment()
+  const deleteComment = useDeleteComment()
+  
+  const [content, setContent] = useState('')
+  const [mentionOpen, setMentionOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const entityComments = (comments || [])
-    .filter(c => c.entityId === entityId && c.entityType === entityType)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  // Lógica de detecção de @
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setContent(value)
 
-  const extractMentions = (text: string): string[] => {
-    const mentionRegex = /@(\w+)/g
-    const matches = text.match(mentionRegex)
-    return matches ? matches.map(m => m.slice(1)) : []
-  }
-
-  const handleTextChange = (value: string) => {
-    setNewComment(value)
-    
-    const cursorPos = textareaRef.current?.selectionStart || 0
-    setCursorPosition(cursorPos)
-    
-    const textBeforeCursor = value.slice(0, cursorPos)
-    const lastAtSymbol = textBeforeCursor.lastIndexOf('@')
-    
-    if (lastAtSymbol !== -1 && lastAtSymbol === cursorPos - 1) {
-      setShowMentions(true)
-      setMentionSearch('')
-    } else if (lastAtSymbol !== -1) {
-      const searchTerm = textBeforeCursor.slice(lastAtSymbol + 1)
-      if (searchTerm.includes(' ')) {
-        setShowMentions(false)
-      } else {
-        setShowMentions(true)
-        setMentionSearch(searchTerm.toLowerCase())
-      }
-    } else {
-      setShowMentions(false)
+    const lastChar = value[value.length - 1]
+    if (lastChar === '@') {
+      setMentionOpen(true)
+    } else if (mentionOpen && lastChar === ' ') {
+      setMentionOpen(false)
     }
   }
 
-  const insertMention = (user: User) => {
-    const textBeforeCursor = newComment.slice(0, cursorPosition)
-    const textAfterCursor = newComment.slice(cursorPosition)
-    const lastAtSymbol = textBeforeCursor.lastIndexOf('@')
-    
-    const beforeAt = newComment.slice(0, lastAtSymbol)
-    const mention = `@${user.name.split(' ')[0]} `
-    const newText = beforeAt + mention + textAfterCursor
-    
-    setNewComment(newText)
-    setShowMentions(false)
+  const insertMention = (userName: string) => {
+    const newContent = content + userName + ' '
+    setContent(newContent)
+    setMentionOpen(false)
     textareaRef.current?.focus()
   }
 
-  const filteredUsers = (users || []).filter(u => 
-    u.id !== currentUser.id &&
-    (u.name.toLowerCase().includes(mentionSearch) || 
-     u.email.toLowerCase().includes(mentionSearch))
-  )
+  const handleSubmit = async () => {
+    if (!content.trim()) return
 
-  const createNotifications = (mentions: string[], commentId: string) => {
-    const mentionedUsers = (users || []).filter(u => 
-      mentions.some(mention => 
-        u.name.toLowerCase().includes(mention.toLowerCase())
-      )
-    )
-
-    const newNotifications: Notification[] = mentionedUsers.map(user => ({
-      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      userId: user.id,
-      type: 'mention',
-      title: 'Menção em comentário',
-      message: `${currentUser.name} mencionou você em um comentário`,
-      link: `#comment-${commentId}`,
-      read: false,
-      createdAt: new Date().toISOString(),
-    }))
-
-    setNotifications(current => [...(current || []), ...newNotifications])
-  }
-
-  const handleSubmitComment = async () => {
-    if (!newComment.trim()) return
-
-    const mentions = extractMentions(newComment)
-    
-    const comment: Comment = {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      entityId,
-      entityType,
-      authorId: currentUser.id,
-      content: newComment,
-      createdAt: new Date().toISOString(),
-      mentions,
-    }
-
-    setComments(current => [...(current || []), comment])
-    
-    if (mentions.length > 0) {
-      createNotifications(mentions, comment.id)
-      toast.success(`Comentário adicionado com ${mentions.length} menção(ões)`)
-    } else {
-      toast.success('Comentário adicionado')
-    }
-
-    setNewComment('')
-    setCommentSummary('')
-  }
-
-  const handleDeleteComment = (commentId: string) => {
-    setComments(current => (current || []).filter(c => c.id !== commentId))
-    toast.success('Comentário excluído')
-  }
-
-  const handleGenerateSummary = async () => {
-    if (entityComments.length === 0) {
-      toast.error('Nenhum comentário para resumir')
-      return
-    }
-
-    setIsGeneratingSummary(true)
-    
     try {
-      const commentsText = entityComments.map(c => {
-        const author = (users || []).find(u => u.id === c.authorId)
-        return `${author?.name || 'Usuário'}: ${c.content}`
-      }).join('\n')
+      await createComment.mutateAsync({
+        entityId,
+        entityType,
+        content,
+        authorId: currentUser.id,
+        mentions: [] // Pode expandir lógica para extrair IDs dos usuários mencionados
+      })
+      
+      // LOG DE ATIVIDADE
+      logActivity(entityId, entityType, 'Novo Comentário', currentUser.id, { content_preview: content.substring(0, 50) })
 
-      const entityTypeLabel = entityType === 'deal' ? 'negócio' : entityType === 'track' ? 'player track' : 'tarefa'
-
-      const promptText = `Você é um assistente de negócios especializado em M&A e investment banking. 
-
-Analise os seguintes comentários de um ${entityTypeLabel} e forneça um resumo executivo conciso destacando:
-1. Principais decisões tomadas
-2. Próximos passos acordados
-3. Questões em aberto ou preocupações levantadas
-4. Prazos mencionados
-
-Comentários:
-${commentsText}
-
-Forneça um resumo em português brasileiro em formato de bullet points, sendo objetivo e focado no que é acionável.`
-
-      const summary = await window.spark.llm(promptText, 'gpt-4o-mini')
-      setCommentSummary(summary)
-      toast.success('Resumo gerado com IA')
+      setContent('')
+      toast.success('Comentário enviado')
     } catch (error) {
-      toast.error('Erro ao gerar resumo')
-      console.error(error)
-    } finally {
-      setIsGeneratingSummary(false)
+      toast.error('Erro ao enviar comentário')
     }
   }
 
-  const renderCommentContent = (content: string) => {
-    const parts = content.split(/(@\w+)/)
-    return parts.map((part, i) => {
-      if (part.startsWith('@')) {
-        return (
-          <span key={i} className="text-primary font-medium bg-primary/10 px-1 rounded">
-            {part}
-          </span>
-        )
-      }
-      return part
-    })
-  }
-
-  const getAuthor = (authorId: string) => {
-    return (users || []).find(u => u.id === authorId)
+  const handleDelete = async (commentId: string) => {
+    try {
+      await deleteComment.mutateAsync(commentId)
+      toast.success('Comentário excluído')
+    } catch (error) {
+      toast.error('Erro ao excluir')
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">
-          Comentários ({entityComments.length})
+    <div className="flex flex-col h-[600px] border rounded-lg bg-card">
+      <div className="p-4 border-b bg-muted/20">
+        <h3 className="font-semibold flex items-center gap-2">
+          Comentários <span className="text-muted-foreground text-xs font-normal">({comments?.length || 0})</span>
         </h3>
-        {entityComments.length > 2 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateSummary}
-            disabled={isGeneratingSummary}
-          >
-            <Sparkle className="mr-2" />
-            {isGeneratingSummary ? 'Gerando...' : 'Resumir com IA'}
-          </Button>
-        )}
       </div>
 
-      {commentSummary && (
-        <Card className="bg-accent/10 border-accent/20">
-          <CardContent className="pt-4">
-            <div className="flex items-start gap-2 mb-2">
-              <Sparkle className="text-accent mt-1 flex-shrink-0" />
-              <h4 className="font-semibold text-sm">Resumo Executivo (IA)</h4>
-            </div>
-            <div className="text-sm whitespace-pre-wrap">{commentSummary}</div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-        {entityComments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            Nenhum comentário ainda. Seja o primeiro a comentar!
+      <ScrollArea className="flex-1 p-4">
+        {isLoading ? (
+          <div className="text-center text-sm text-muted-foreground">Carregando...</div>
+        ) : comments?.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            Nenhum comentário ainda. Inicie a conversa!
           </div>
         ) : (
-          entityComments.map(comment => {
-            const author = getAuthor(comment.authorId)
-            const isAuthor = comment.authorId === currentUser.id
-            
-            return (
-              <Card key={comment.id} id={`comment-${comment.id}`}>
-                <CardContent className="pt-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {getInitials(author?.name || 'U')}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm">
-                            {author?.name || 'Usuário'}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDateTime(comment.createdAt)}
-                          </span>
-                        </div>
-                        
-                        {isAuthor && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
-                                <DotsThree />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteComment(comment.id)}
-                                className="text-destructive"
-                              >
-                                <Trash className="mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm break-words">
-                        {renderCommentContent(comment.content)}
-                      </p>
-                      
-                      {comment.mentions.length > 0 && (
-                        <div className="flex items-center gap-1 mt-2">
-                          <At className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">
-                            {comment.mentions.length} menção(ões)
-                          </span>
-                        </div>
-                      )}
-                    </div>
+          <div className="space-y-4">
+            {comments?.map((comment) => (
+              <div key={comment.id} className="flex gap-3 group">
+                <Avatar className="h-8 w-8 mt-1">
+                  {/* Assumindo que o comentário vem com dados do autor via join */}
+                  <AvatarImage src={comment.author?.avatar_url} />
+                  <AvatarFallback>{getInitials(comment.author?.name || '?')}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 bg-muted/30 p-3 rounded-lg border">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="font-semibold text-sm">{comment.author?.name || 'Usuário'}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })
+                  <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                </div>
+                {currentUser.id === comment.authorId && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                    onClick={() => handleDelete(comment.id)}
+                  >
+                    <Trash size={14} />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
         )}
-      </div>
+      </ScrollArea>
 
-      <Separator />
+      <div className="p-4 border-t bg-background relative">
+        {/* Popover de Menção Simplificado */}
+        {mentionOpen && (
+          <div className="absolute bottom-20 left-4 w-64 bg-popover border rounded-md shadow-lg p-1 z-50 animate-in fade-in zoom-in-95">
+            <div className="text-xs font-medium p-2 text-muted-foreground">Mencionar:</div>
+            <ScrollArea className="h-40">
+              {users?.map(user => (
+                <div 
+                  key={user.id} 
+                  className="flex items-center gap-2 p-2 hover:bg-accent rounded-sm cursor-pointer text-sm"
+                  onClick={() => insertMention(user.name)}
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                  </Avatar>
+                  {user.name}
+                </div>
+              ))}
+            </ScrollArea>
+          </div>
+        )}
 
-      <div className="relative">
-        <div className="space-y-2">
-          <Textarea
+        <div className="flex gap-2">
+          <Textarea 
             ref={textareaRef}
-            placeholder="Adicione um comentário... Use @ para mencionar alguém"
-            value={newComment}
-            onChange={(e) => handleTextChange(e.target.value)}
+            placeholder="Escreva um comentário... (Use @ para mencionar)" 
+            value={content}
+            onChange={handleInputChange}
             className="min-h-[80px] resize-none"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                handleSubmitComment()
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit()
               }
             }}
           />
-          
-          {showMentions && filteredUsers.length > 0 && (
-            <Card className="absolute bottom-full mb-2 w-full z-50 max-h-48 overflow-y-auto">
-              <CardContent className="p-2">
-                <div className="space-y-1">
-                  {filteredUsers.slice(0, 5).map(user => (
-                    <button
-                      key={user.id}
-                      onClick={() => insertMention(user)}
-                      className="w-full flex items-center gap-2 p-2 hover:bg-muted rounded text-left"
-                    >
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {getInitials(user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{user.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              Pressione Ctrl+Enter para enviar
-            </span>
-            <Button onClick={handleSubmitComment} size="sm" disabled={!newComment.trim()}>
-              <PaperPlaneRight className="mr-2" />
-              Enviar
-            </Button>
-          </div>
+          <Button 
+            className="self-end h-[80px] w-[50px]" 
+            onClick={handleSubmit} 
+            disabled={createComment.isPending}
+          >
+            <PaperPlaneRight size={20} />
+          </Button>
         </div>
       </div>
     </div>
