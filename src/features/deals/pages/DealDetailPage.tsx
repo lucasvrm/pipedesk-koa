@@ -8,11 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
@@ -32,7 +28,6 @@ import DocumentManager from '@/components/DocumentManager'
 import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
-import QAPanel from '@/components/QAPanel'
 import { toast } from 'sonner'
 import { useState } from 'react'
 
@@ -113,14 +108,8 @@ export default function DealDetailPage() {
     }
   }
 
-  // Lógica de Cálculo do Fee
-  const feeValue = deal.feePercentage && deal.volume 
-    ? (deal.volume * (deal.feePercentage / 100)) 
-    : 0;
-
-  const feeDisplay = deal.feePercentage
-    ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}`
-    : '—';
+  const feeValue = deal.feePercentage && deal.volume ? (deal.volume * (deal.feePercentage / 100)) : 0;
+  const feeDisplay = deal.feePercentage ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}` : '—';
 
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
@@ -146,7 +135,6 @@ export default function DealDetailPage() {
               </Button>
             </div>
 
-            {/* 1. MUDANÇA: Espaçamento aumentado para mb-6 */}
             {deal.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground mb-6 pl-0.5">
                 <Buildings className="h-4 w-4" />
@@ -188,7 +176,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* 2. MUDANÇA: Card de Fee com valor calculado */}
         <Card className="bg-card shadow-sm p-3 flex flex-col justify-center gap-1">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fee Estimado</span>
           <p className="text-sm font-bold text-foreground truncate" title={feeDisplay}>
@@ -217,7 +204,7 @@ export default function DealDetailPage() {
           <TabsTrigger value="players" className="py-2"><Users className="mr-2" /> Players</TabsTrigger>
           <TabsTrigger value="documents" className="py-2"><FileText className="mr-2" /> Docs</TabsTrigger>
           <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
-          <TabsTrigger value="qa" className="py-2"><Question className="mr-2" /> Q&A / Obs</TabsTrigger>
+          
           <TabsTrigger value="ai" disabled className="py-2 opacity-50 cursor-not-allowed"><Sparkle className="mr-2" /> IA</TabsTrigger>
           <TabsTrigger value="fields" disabled className="py-2 opacity-50 cursor-not-allowed"><Tag className="mr-2" /> Campos</TabsTrigger>
           <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividades</TabsTrigger>
@@ -281,21 +268,6 @@ export default function DealDetailPage() {
 
         <TabsContent value="comments" className="space-y-6">
           {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
-        </TabsContent>
-
-        <TabsContent value="qa" className="space-y-6">
-          {deal.observations && (
-            <div className="mb-6">
-              <h3 className="font-semibold mb-2 text-sm flex items-center gap-2 text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                Observações Gerais do Negócio
-              </h3>
-              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                {deal.observations}
-              </div>
-            </div>
-          )}
-          {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
 
         <TabsContent value="ai">

@@ -4,33 +4,18 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useUpdateDeal } from '@/services/dealService'
-import { useCompanies } from '@/services/companyService' // Hook de Empresas
-import { logActivity } from '@/services/activityService' // Log de Atividade
+import { useCompanies } from '@/services/companyService' 
+import { logActivity } from '@/services/activityService' 
 import { useAuth } from '@/contexts/AuthContext'
 import { Deal, OPERATION_LABELS, STATUS_LABELS, OperationType, DealStatus } from '@/lib/types'
 import { toast } from 'sonner'
@@ -42,8 +27,7 @@ const formSchema = z.object({
   volume: z.coerce.number().min(0, 'Volume inválido'),
   feePercentage: z.coerce.number().min(0).max(100).optional(),
   deadline: z.string().min(1, 'Prazo é obrigatório'),
-  observations: z.string().optional(),
-  companyId: z.string().optional(), // Novo campo
+  companyId: z.string().optional(),
 })
 
 interface EditDealDialogProps {
@@ -54,7 +38,7 @@ interface EditDealDialogProps {
 
 export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps) {
   const updateDeal = useUpdateDeal()
-  const { data: companies } = useCompanies() // Busca empresas
+  const { data: companies } = useCompanies()
   const { user } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -66,7 +50,6 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
       volume: deal.volume,
       feePercentage: deal.feePercentage || 0,
       deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
-      observations: deal.observations || '',
       companyId: deal.companyId || undefined,
     },
   })
@@ -80,7 +63,6 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
         volume: deal.volume,
         feePercentage: deal.feePercentage || 0,
         deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
-        observations: deal.observations || '',
         companyId: deal.companyId || undefined,
       })
     }
@@ -97,12 +79,10 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
           volume: values.volume,
           feePercentage: values.feePercentage,
           deadline: new Date(values.deadline).toISOString(),
-          observations: values.observations,
-          companyId: values.companyId, // Salva o vínculo
+          companyId: values.companyId,
         },
       })
 
-      // REGISTRO DE ATIVIDADE
       if (user) {
         logActivity(deal.id, 'deal', 'Edição de Propriedades', user.id, values)
       }
@@ -120,29 +100,23 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Negócio</DialogTitle>
-          <DialogDescription>
-            Atualize as informações do mandato.
-          </DialogDescription>
+          <DialogDescription>Atualize as informações do mandato.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            
             <FormField
               control={form.control}
               name="clientName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome do Cliente / Negócio</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Grupo XYZ" {...field} />
-                  </FormControl>
+                  <FormControl><Input placeholder="Ex: Grupo XYZ" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* SELETOR DE EMPRESA */}
             <FormField
               control={form.control}
               name="companyId"
@@ -150,17 +124,11 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                 <FormItem>
                   <FormLabel>Empresa Vinculada</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma empresa..." />
-                      </SelectTrigger>
-                    </FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione uma empresa..." /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="none_value">-- Nenhuma --</SelectItem>
                       {(companies || []).map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
+                        <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -177,16 +145,10 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                   <FormItem>
                     <FormLabel>Tipo de Operação</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                      </FormControl>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         {Object.entries(OPERATION_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -194,7 +156,6 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="status"
@@ -202,16 +163,10 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                   <FormItem>
                     <FormLabel>Status</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                      </FormControl>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -228,23 +183,18 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Volume (R$)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="feePercentage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Success Fee (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.1" {...field} />
-                    </FormControl>
+                    <FormControl><Input type="number" step="0.1" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -257,39 +207,15 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Prazo Final</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="observations"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observações</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Detalhes adicionais, contexto, etc." 
-                      className="min-h-[100px]"
-                      {...field} 
-                    />
-                  </FormControl>
+                  <FormControl><Input type="date" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={updateDeal.isPending}>
-                {updateDeal.isPending ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" disabled={updateDeal.isPending}>Salvar Alterações</Button>
             </DialogFooter>
           </form>
         </Form>

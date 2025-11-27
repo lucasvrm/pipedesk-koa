@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
 import { useUsers } from '@/services/userService'
 import { useComments, useCreateComment, useDeleteComment } from '@/services/commentService'
 import { logActivity } from '@/services/activityService'
@@ -25,8 +24,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   
   const [content, setContent] = useState('')
   const [mentionOpen, setMentionOpen] = useState(false)
-  
-  // Armazena usuários que foram selecionados via @: { id: '...', name: 'Lucas' }
   const [mentionedUsersMap, setMentionedUsersMap] = useState<Map<string, string>>(new Map())
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -35,6 +32,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
     const value = e.target.value
     setContent(value)
 
+    // Lógica simples de detecção do @
     const lastChar = value[value.length - 1]
     if (lastChar === '@') {
       setMentionOpen(true)
@@ -44,13 +42,9 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   }
 
   const insertMention = (user: { id: string, name: string }) => {
-    // Insere o nome no texto
     const newContent = content + user.name + ' '
     setContent(newContent)
-    
-    // Guarda o ID do usuário mencionado
     setMentionedUsersMap(prev => new Map(prev).set(user.name, user.id))
-    
     setMentionOpen(false)
     textareaRef.current?.focus()
   }
@@ -58,7 +52,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   const handleSubmit = async () => {
     if (!content.trim()) return
 
-    // Filtra IDs: Só envia se o nome do usuário ainda estiver no texto final
     const finalMentions: string[] = []
     mentionedUsersMap.forEach((id, name) => {
       if (content.includes(name)) {
@@ -72,13 +65,14 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
         entityType,
         content,
         authorId: currentUser.id,
-        mentions: finalMentions // Agora enviamos os IDs reais!
+        mentions: finalMentions
       })
       
+      // Log de atividade
       logActivity(entityId, entityType, 'Novo Comentário', currentUser.id, { content_preview: content.substring(0, 50) })
 
       setContent('')
-      setMentionedUsersMap(new Map()) // Limpa mapa
+      setMentionedUsersMap(new Map())
       toast.success('Comentário enviado')
     } catch (error) {
       toast.error('Erro ao enviar comentário')
@@ -95,7 +89,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
   }
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-lg bg-card">
+    <div className="flex flex-col h-[600px] border rounded-lg bg-card relative">
       <div className="p-4 border-b bg-muted/20">
         <h3 className="font-semibold flex items-center gap-2">
           Comentários <span className="text-muted-foreground text-xs font-normal">({comments?.length || 0})</span>
@@ -119,13 +113,11 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
                 </Avatar>
                 <div className="flex-1 bg-muted/30 p-3 rounded-lg border">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-semibold text-sm">{comment.author?.name || 'Usuário'}</span>
+                    {/* Nome do usuário corrigido */}
+                    <span className="font-semibold text-sm">{comment.author?.name || 'Usuário Desconhecido'}</span>
                     <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
                   </div>
-                  {/* Destaque visual simples para menções (opcional) */}
-                  <p className="text-sm whitespace-pre-wrap">
-                    {comment.content}
-                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
                 </div>
                 {currentUser.id === comment.authorId && (
                   <Button 
@@ -144,24 +136,28 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
       </ScrollArea>
 
       <div className="p-4 border-t bg-background relative">
-        {/* Popover de Menção */}
+        {/* Menu de Menção Melhorado */}
         {mentionOpen && (
-          <div className="absolute bottom-20 left-4 w-64 bg-popover border rounded-md shadow-lg p-1 z-50 animate-in fade-in zoom-in-95">
-            <div className="text-xs font-medium p-2 text-muted-foreground">Mencionar:</div>
-            <ScrollArea className="h-40">
-              {users?.map(user => (
-                <div 
-                  key={user.id} 
-                  className="flex items-center gap-2 p-2 hover:bg-accent rounded-sm cursor-pointer text-sm"
-                  onClick={() => insertMention({ id: user.id, name: user.name })}
-                >
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
-                  {user.name}
-                </div>
-              ))}
+          <div className="absolute bottom-full left-4 mb-2 w-64 bg-popover border rounded-md shadow-xl z-50 animate-in fade-in zoom-in-95 overflow-hidden">
+            <div className="text-xs font-medium p-2 bg-muted/50 text-muted-foreground border-b">
+              Mencionar Usuário
+            </div>
+            <ScrollArea className="h-48">
+              <div className="p-1">
+                {(users || []).map(user => (
+                  <button
+                    key={user.id} 
+                    className="w-full flex items-center gap-2 p-2 hover:bg-accent rounded-sm cursor-pointer text-sm text-left transition-colors"
+                    onClick={() => insertMention({ id: user.id, name: user.name })}
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{user.name}</span>
+                  </button>
+                ))}
+              </div>
             </ScrollArea>
           </div>
         )}

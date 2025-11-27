@@ -4,6 +4,7 @@ import { Comment } from '@/lib/types'
 import { createNotification } from '@/services/notificationService' 
 
 export async function getComments(entityId: string, entityType: string): Promise<Comment[]> {
+  // Ajuste na query para garantir o JOIN correto com profiles
   const { data, error } = await supabase
     .from('comments')
     .select(`
@@ -21,7 +22,7 @@ export async function getComments(entityId: string, entityType: string): Promise
     entityId: item.entity_id,
     entityType: item.entity_type,
     authorId: item.author_id,
-    author: item.author,
+    author: item.author, // O objeto author deve vir preenchido aqui
     content: item.content,
     createdAt: item.created_at,
     mentions: item.mentions || []
@@ -33,7 +34,7 @@ export async function createComment(data: {
   entityType: string
   content: string
   authorId: string
-  mentions: string[] // Lista de IDs
+  mentions: string[] 
 }) {
   // 1. Criar o Comentário
   const { data: comment, error } = await supabase
@@ -45,7 +46,7 @@ export async function createComment(data: {
       author_id: data.authorId,
       mentions: data.mentions
     })
-    .select('*, author:profiles(name)')
+    .select('*, author:profiles!comments_author_id_fkey(name, avatar_url)') // JOIN imediato para retorno
     .single()
 
   if (error) throw error
@@ -55,10 +56,8 @@ export async function createComment(data: {
     const authorName = comment.author?.name || 'Alguém'
     const link = data.entityType === 'deal' ? `/deals/${data.entityId}?tab=comments` : `/dashboard`
 
-    // Dispara para cada usuário mencionado (exceto o próprio autor)
     await Promise.all(data.mentions.map(userId => {
       if (userId !== data.authorId) {
-        // CORREÇÃO: Passando objeto único conforme esperado pelo notificationService
         return createNotification({
           userId,
           type: 'mention',

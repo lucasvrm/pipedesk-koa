@@ -57,36 +57,26 @@ const INITIAL_FILTERS: FilterState = {
 // --- HELPER DE CORES PARA OPERAÇÕES ---
 const getOperationBadgeColor = (type: OperationType) => {
   switch (type) {
-    // Dívida / Crédito Estruturado (Azul/Indigo)
     case 'ccb':
     case 'cri_land':
     case 'cri_construction':
     case 'cri_corporate':
       return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-
-    // Crédito Corporativo / Giro (Cyan/Sky)
     case 'debt_construction':
     case 'receivables_advance':
     case 'working_capital':
       return 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100';
-
-    // Imobiliário Físico / BTS (Laranja/Amber)
     case 'built_to_suit':
     case 'sale_and_lease_back':
     case 'inventory_purchase':
     case 'repurchase':
       return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-
-    // Equity (Verde/Emerald)
     case 'preferred_equity':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-
-    // Permutas (Roxo/Violeta)
     case 'financial_swap':
     case 'physical_swap':
     case 'hybrid_swap':
       return 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
-
     default:
       return 'bg-slate-100 text-slate-700 border-slate-200';
   }
@@ -109,7 +99,7 @@ export default function DealsView() {
 
   // Estado Unificado de Filtros
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
-  const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS) // Para o Popover
+  const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS) 
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   // Modais
@@ -160,14 +150,12 @@ export default function DealsView() {
 
     // 1. Filtragem
     let result = masterDeals.filter(deal => {
-      // Busca por Empresa
       if (searchQuery) {
         const companyName = deal.company?.name?.toLowerCase() || ''
         const clientName = deal.clientName?.toLowerCase() || ''
         if (!companyName.includes(searchQuery.toLowerCase()) && !clientName.includes(searchQuery.toLowerCase())) return false
       }
 
-      // Filtros Avançados
       if (filters.status !== 'all' && deal.status !== filters.status) return false
       if (filters.type !== 'all' && deal.operationType !== filters.type) return false
       
@@ -275,7 +263,6 @@ export default function DealsView() {
     }
   }
 
-  // --- UI Helpers ---
   const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
     if (sortConfig.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" />
     return sortConfig.direction === 'asc' 
@@ -309,12 +296,10 @@ export default function DealsView() {
       <Card>
         <CardHeader className="pb-4 space-y-4">
           
-          {/* BARRA DE FERRAMENTAS */}
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
             
             <div className="flex flex-1 flex-col md:flex-row gap-3 w-full items-center">
               
-              {/* Busca */}
               <div className="relative w-full md:w-96">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -325,7 +310,6 @@ export default function DealsView() {
                 />
               </div>
 
-              {/* Botão de Filtros (Popover) */}
               <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={`border-dashed ${activeFilterCount > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
@@ -415,7 +399,6 @@ export default function DealsView() {
                 </PopoverContent>
               </Popover>
 
-              {/* Tags de Filtros Ativos */}
               {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
                   <Separator orientation="vertical" className="h-6" />
@@ -455,7 +438,6 @@ export default function DealsView() {
               )}
             </div>
 
-            {/* Ações em Massa e Paginação */}
             <div className="flex items-center gap-3 shrink-0">
               {selectedIds.length > 0 && (
                 <Button 
@@ -502,6 +484,15 @@ export default function DealsView() {
                         />
                       </TableHead>
                       
+                      {/* MUDANÇA: Coluna Empresa agora é a primeira */}
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50" 
+                        onClick={() => handleSort('companyName')}
+                      >
+                        <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
+                      </TableHead>
+
+                      {/* MUDANÇA: Coluna Negócio agora é a segunda */}
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 w-[25%]" 
                         onClick={() => handleSort('clientName')}
@@ -511,19 +502,10 @@ export default function DealsView() {
 
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50" 
-                        onClick={() => handleSort('companyName')}
-                      >
-                        <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
-                      </TableHead>
-
-                      {/* --- COLUNA TIPO (POSICIONADA CORRETAMENTE) --- */}
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort('operationType')}
                       >
                         <div className="flex items-center">Tipo <SortIcon columnKey="operationType" /></div>
                       </TableHead>
-                      {/* ------------------------------------------- */}
 
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 text-right" 
@@ -562,10 +544,7 @@ export default function DealsView() {
                             />
                           </TableCell>
                           
-                          <TableCell className="font-medium">
-                            {deal.clientName}
-                          </TableCell>
-
+                          {/* MUDANÇA: Célula Empresa */}
                           <TableCell>
                             {deal.company ? (
                               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -577,7 +556,11 @@ export default function DealsView() {
                             )}
                           </TableCell>
 
-                          {/* --- BADGE DE TIPO COM CORES --- */}
+                          {/* MUDANÇA: Célula Negócio */}
+                          <TableCell className="font-medium">
+                            {deal.clientName}
+                          </TableCell>
+
                           <TableCell>
                             <Badge 
                               variant="outline" 
@@ -586,7 +569,6 @@ export default function DealsView() {
                               {OPERATION_LABELS[deal.operationType] || deal.operationType || '-'}
                             </Badge>
                           </TableCell>
-                          {/* ------------------------------- */}
 
                           <TableCell className="text-right font-medium">
                             {formatCurrency(deal.volume)}
@@ -664,7 +646,6 @@ export default function DealsView() {
                 </Table>
               </div>
 
-              {/* Paginação */}
               {processedDeals.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
@@ -703,7 +684,6 @@ export default function DealsView() {
         </CardContent>
       </Card>
 
-      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
