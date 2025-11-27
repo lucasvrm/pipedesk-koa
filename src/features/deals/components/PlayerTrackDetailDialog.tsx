@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -22,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
-import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Question, Clock } from '@phosphor-icons/react'
+import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Clock } from '@phosphor-icons/react'
 import TaskList from '@/features/tasks/components/TaskList'
 import PlayerKanban from './PlayerKanban'
 import PlayerGantt from './PlayerGantt'
@@ -33,7 +32,7 @@ import DocumentManager from '@/components/DocumentManager'
 import ActivityHistory from '@/components/ActivityHistory'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import PhaseValidationDialog from '@/components/PhaseValidationDialog'
-import QAPanel from '@/components/QAPanel'
+// REMOVIDO: import QAPanel from '@/components/QAPanel'
 import { ActivitySummarizer } from '@/components/ActivitySummarizer'
 import { SLAIndicator } from '@/components/SLAIndicator'
 import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
@@ -245,7 +244,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
         <Separator className="my-4" />
 
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-6 lg:grid-cols-11 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-6 lg:grid-cols-10 overflow-x-auto">
             <TabsTrigger value="list">
               <ListChecks className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Lista</span>
@@ -278,10 +277,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
               <ClockCounterClockwise className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Sumário</span>
             </TabsTrigger>
-            <TabsTrigger value="qa">
-              <Question className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Q&A</span>
-            </TabsTrigger>
+            {/* REMOVIDO: Trigger Q&A */}
             <TabsTrigger value="comments">
               <ChatCircle className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Comentários</span>
@@ -345,15 +341,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
             />
           </TabsContent>
 
-          <TabsContent value="qa" className="space-y-4">
-            {currentUser && (
-              <QAPanel
-                entityId={track.id}
-                entityType="track"
-                currentUser={currentUser}
-              />
-            )}
-          </TabsContent>
+          {/* REMOVIDO: TabsContent Q&A */}
 
           <TabsContent value="comments" className="space-y-4">
             {currentUser && (
