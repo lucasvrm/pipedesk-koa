@@ -10,8 +10,6 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { CalendarBlank, Wallet, User, XCircle } from '@phosphor-icons/react'
 import { useUpdateTrack } from '@/services/trackService'
-import { logActivity } from '@/services/activityService' // Importado
-import { useAuth } from '@/contexts/AuthContext' // Importado
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -31,10 +29,9 @@ interface DealPlayersKanbanProps {
 
 const KANBAN_STAGES: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing']
 
-export default function DealPlayersKanban({ tracks, currentUser: propsUser }: DealPlayersKanbanProps) {
+export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKanbanProps) {
   const navigate = useNavigate()
   const updateTrack = useUpdateTrack()
-  const { profile: currentUser } = useAuth() // Hook para garantir acesso ao ID do usuário
   
   const [draggedTrack, setDraggedTrack] = useState<PlayerTrack | null>(null)
   const [dragOverStage, setDragOverStage] = useState<PlayerStage | null>(null)
@@ -65,15 +62,6 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
     }, {
       onSuccess: () => {
         toast.success('Player cancelado com sucesso')
-        // Log de atividade para cancelamento
-        if (currentUser) {
-          logActivity(
-            trackToCancel.masterDealId,
-            'track',
-            `Player ${trackToCancel.playerName} foi movido para Dropped (Cancelado)`,
-            currentUser.id
-          )
-        }
         setTrackToCancel(null)
       },
       onError: () => toast.error('Erro ao cancelar player')
@@ -93,26 +81,11 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
     setDragOverStage(null)
     if (!draggedTrack || draggedTrack.currentStage === targetStage) return
 
-    const oldStageLabel = STAGE_LABELS[draggedTrack.currentStage]
-    const newStageLabel = STAGE_LABELS[targetStage]
-
     updateTrack.mutate({
       trackId: draggedTrack.id,
       updates: { currentStage: targetStage }
     }, {
-      onSuccess: () => {
-        toast.success(`Movido para ${newStageLabel}`)
-        // 3. REGISTRAR ATIVIDADE
-        if (currentUser) {
-          logActivity(
-            draggedTrack.masterDealId,
-            'track',
-            `Moveu ${draggedTrack.playerName} de ${oldStageLabel} para ${newStageLabel}`,
-            currentUser.id,
-            { from: draggedTrack.currentStage, to: targetStage }
-          )
-        }
-      },
+      onSuccess: () => toast.success(`Movido para ${STAGE_LABELS[targetStage]}`),
       onError: () => toast.error("Erro ao mover o player")
     })
     setDraggedTrack(null)

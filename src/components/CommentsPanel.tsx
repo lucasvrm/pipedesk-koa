@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { getInitials, formatDate } from '@/lib/helpers'
+import { getInitials, formatDateTime } from '@/lib/helpers' // Mudança 3: Importando formatDateTime
 import { PaperPlaneRight, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -32,7 +32,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
     const value = e.target.value
     setContent(value)
 
-    // Lógica simples de detecção do @
     const lastChar = value[value.length - 1]
     if (lastChar === '@') {
       setMentionOpen(true)
@@ -68,7 +67,6 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
         mentions: finalMentions
       })
       
-      // Log de atividade
       logActivity(entityId, entityType, 'Novo Comentário', currentUser.id, { content_preview: content.substring(0, 50) })
 
       setContent('')
@@ -86,6 +84,20 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
     } catch (error) {
       toast.error('Erro ao excluir')
     }
+  }
+
+  // Mudança 2: Função para renderizar conteúdo com menções coloridas
+  const renderContentWithMentions = (text: string) => {
+    const parts = text.split(/(@[\w\s]+)/g)
+    
+    return parts.map((part, index) => {
+      // Verifica se a parte é uma menção (começa com @ e o nome está no mapa de usuários ou parece um nome)
+      // Simplificação: se começar com @, destacamos
+      if (part.startsWith('@')) {
+         return <span key={index} className="text-red-600 font-medium">{part}</span>
+      }
+      return part
+    })
   }
 
   return (
@@ -113,11 +125,13 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
                 </Avatar>
                 <div className="flex-1 bg-muted/30 p-3 rounded-lg border">
                   <div className="flex justify-between items-start mb-1">
-                    {/* Nome do usuário corrigido */}
-                    <span className="font-semibold text-sm">{comment.author?.name || 'Usuário Desconhecido'}</span>
-                    <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                    {/* Mudança 1: Nome do usuário em azul */}
+                    <span className="font-semibold text-sm text-blue-600">{comment.author?.name || 'Usuário Desconhecido'}</span>
+                    {/* Mudança 3: Data e Hora */}
+                    <span className="text-xs text-muted-foreground">{formatDateTime(comment.createdAt)}</span>
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                  {/* Mudança 2: Renderizando menções */}
+                  <p className="text-sm whitespace-pre-wrap">{renderContentWithMentions(comment.content)}</p>
                 </div>
                 {currentUser.id === comment.authorId && (
                   <Button 
@@ -136,7 +150,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
       </ScrollArea>
 
       <div className="p-4 border-t bg-background relative">
-        {/* Menu de Menção Melhorado */}
+        {/* Menu de Menção */}
         {mentionOpen && (
           <div className="absolute bottom-full left-4 mb-2 w-64 bg-popover border rounded-md shadow-xl z-50 animate-in fade-in zoom-in-95 overflow-hidden">
             <div className="text-xs font-medium p-2 bg-muted/50 text-muted-foreground border-b">

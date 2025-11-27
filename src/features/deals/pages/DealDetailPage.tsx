@@ -115,10 +115,7 @@ export default function DealDetailPage() {
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       {/* Cabeçalho */}
       <div className="mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/deals')} className="mb-4 pl-0">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar para Negócios
-        </Button>
+        {/* REMOVIDO BOTÃO DE VOLTAR AQUI */}
         
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
@@ -278,7 +275,7 @@ export default function DealDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity">
-          <ActivityHistory entityId={deal.id} entityType="deal" limit={50} disableScroll={true}/>
+          <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
         </TabsContent>
       </Tabs>
 
