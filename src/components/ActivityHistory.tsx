@@ -1,9 +1,8 @@
-import { useKV } from '@/hooks/useKV'
+import { useActivities, ActivityLogEntry } from '@/services/activityService'
 import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { User } from '@/lib/types'
 import { getInitials, formatDateTime } from '@/lib/helpers'
 import {
   Plus,
@@ -13,38 +12,14 @@ import {
   XCircle,
   ArrowRight,
   ChatCircle,
-  UserPlus,
-  At,
+  User,
   FileArrowUp,
+  ClockCounterClockwise
 } from '@phosphor-icons/react'
-
-export interface ActivityLogEntry {
-  id: string
-  userId: string
-  action: ActivityAction
-  entityType: 'deal' | 'track' | 'task' | 'comment' | 'user' | 'file'
-  entityId: string
-  entityName: string
-  details?: string
-  metadata?: Record<string, any>
-  createdAt: string
-}
-
-export type ActivityAction =
-  | 'created'
-  | 'updated'
-  | 'deleted'
-  | 'completed'
-  | 'cancelled'
-  | 'stage_changed'
-  | 'commented'
-  | 'mentioned'
-  | 'assigned'
-  | 'uploaded'
 
 interface ActivityHistoryProps {
   entityId?: string
-  entityType?: 'deal' | 'track' | 'task'
+  entityType?: string
   limit?: number
   showUser?: boolean
 }
@@ -55,206 +30,94 @@ export default function ActivityHistory({
   limit = 50,
   showUser = true 
 }: ActivityHistoryProps) {
-  const [activityLog] = useKV<ActivityLogEntry[]>('activityLog', [])
-  const [users] = useKV<User[]>('users', [])
+  // O Hook agora cuida de buscar, filtrar e ordenar os dados
+  const { data: activities, isLoading } = useActivities(entityId, entityType)
 
-  const filteredActivities = (activityLog || [])
-    .filter(activity => {
-      if (entityId && entityType) {
-        return activity.entityId === entityId && activity.entityType === entityType
-      }
-      return true
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, limit)
+  const filteredActivities = (activities || []).slice(0, limit)
 
-  const getUser = (userId: string) => {
-    return (users || []).find(u => u.id === userId)
+  // Helper simples para escolher ícones baseados no texto da ação
+  const getActivityIcon = (action: string) => {
+    const lowerAction = action.toLowerCase()
+    if (lowerAction.includes('criou') || lowerAction.includes('created')) return <Plus className="text-emerald-500" />
+    if (lowerAction.includes('edit') || lowerAction.includes('atualiz') || lowerAction.includes('edição')) return <PencilSimple className="text-blue-500" />
+    if (lowerAction.includes('delet') || lowerAction.includes('exclu')) return <Trash className="text-red-500" />
+    if (lowerAction.includes('cancel')) return <XCircle className="text-red-500" />
+    if (lowerAction.includes('coment')) return <ChatCircle className="text-slate-500" />
+    if (lowerAction.includes('status') || lowerAction.includes('mov')) return <ArrowRight className="text-amber-500" />
+    if (lowerAction.includes('arquivo') || lowerAction.includes('upload')) return <FileArrowUp className="text-indigo-500" />
+    return <ClockCounterClockwise className="text-muted-foreground" />
   }
 
-  const getActivityIcon = (action: ActivityAction) => {
-    switch (action) {
-      case 'created':
-        return <Plus className="text-success" />
-      case 'updated':
-        return <PencilSimple className="text-primary" />
-      case 'deleted':
-        return <Trash className="text-destructive" />
-      case 'completed':
-        return <CheckCircle className="text-success" />
-      case 'cancelled':
-        return <XCircle className="text-destructive" />
-      case 'stage_changed':
-        return <ArrowRight className="text-accent" />
-      case 'commented':
-        return <ChatCircle className="text-muted-foreground" />
-      case 'mentioned':
-        return <At className="text-primary" />
-      case 'assigned':
-        return <UserPlus className="text-accent" />
-      case 'uploaded':
-        return <FileArrowUp className="text-primary" />
-      default:
-        return <PencilSimple className="text-muted-foreground" />
-    }
-  }
-
-  const getActivityLabel = (action: ActivityAction) => {
-    switch (action) {
-      case 'created':
-        return 'criou'
-      case 'updated':
-        return 'atualizou'
-      case 'deleted':
-        return 'excluiu'
-      case 'completed':
-        return 'completou'
-      case 'cancelled':
-        return 'cancelou'
-      case 'stage_changed':
-        return 'mudou estágio de'
-      case 'commented':
-        return 'comentou em'
-      case 'mentioned':
-        return 'mencionou em'
-      case 'assigned':
-        return 'atribuiu'
-      case 'uploaded':
-        return 'enviou arquivo para'
-      default:
-        return 'modificou'
-    }
-  }
-
-  const getEntityTypeLabel = (type: string) => {
-    switch (type) {
-      case 'deal':
-        return 'negócio'
-      case 'track':
-        return 'player track'
-      case 'task':
-        return 'tarefa'
-      case 'comment':
-        return 'comentário'
-      case 'user':
-        return 'usuário'
-      case 'file':
-        return 'arquivo'
-      default:
-        return type
-    }
+  if (isLoading) {
+    return <div className="text-center py-8 text-muted-foreground text-sm">Carregando histórico...</div>
   }
 
   if (filteredActivities.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground text-sm">
-        Nenhuma atividade registrada
+      <div className="text-center py-12 border border-dashed rounded-lg bg-muted/10 mx-4 my-4">
+        <ClockCounterClockwise className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+        <p className="text-sm text-muted-foreground">Nenhuma atividade registrada.</p>
       </div>
     )
   }
 
   return (
     <ScrollArea className="h-[500px] pr-4">
-      <div className="space-y-2">
+      <div className="space-y-4 p-1">
         {filteredActivities.map((activity, index) => {
-          const user = getUser(activity.userId)
+          const user = activity.user
           const isFirst = index === 0
-          const prevActivity = index > 0 ? filteredActivities[index - 1] : null
-          const showDate = !prevActivity || 
-            new Date(activity.createdAt).toDateString() !== new Date(prevActivity.createdAt).toDateString()
-
+          
           return (
-            <div key={activity.id}>
-              {showDate && (
-                <div className="flex items-center gap-2 my-4">
-                  <div className="h-px bg-border flex-1" />
-                  <span className="text-xs text-muted-foreground font-medium px-2">
-                    {new Date(activity.createdAt).toLocaleDateString('pt-BR', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                  <div className="h-px bg-border flex-1" />
-                </div>
-              )}
+            <div key={activity.id} className="relative pl-4 border-l border-border pb-4 last:pb-0 last:border-0">
+              {/* Linha do tempo (bolinha) */}
+              <div className={`absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full border bg-background ${isFirst ? 'border-primary bg-primary' : 'border-muted-foreground'}`} />
 
-              <Card className={isFirst ? 'border-primary/20' : ''}>
-                <CardContent className="py-3">
-                  <div className="flex items-start gap-3">
-                    {showUser && (
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {getInitials(user?.name || 'U')}
-                        </AvatarFallback>
+              <div className="flex flex-col gap-1">
+                {/* Cabeçalho do evento */}
+                <div className="flex items-center gap-2 text-sm">
+                  {showUser && (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5 border border-border">
+                        <AvatarImage src={user?.avatar_url} />
+                        <AvatarFallback className="text-[9px] bg-muted">{getInitials(user?.name || 'U')}</AvatarFallback>
                       </Avatar>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="flex items-center gap-1 text-sm">
-                          {getActivityIcon(activity.action)}
-                          {showUser && (
-                            <span className="font-medium">{user?.name || 'Usuário'}</span>
-                          )}
-                          <span className="text-muted-foreground">
-                            {getActivityLabel(activity.action)}
-                          </span>
-                          <Badge variant="secondary" className="text-xs">
-                            {getEntityTypeLabel(activity.entityType)}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <p className="text-sm font-medium mb-1">{activity.entityName}</p>
-
-                      {activity.details && (
-                        <p className="text-xs text-muted-foreground mb-2">{activity.details}</p>
-                      )}
-
-                      {activity.metadata && Object.keys(activity.metadata).length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {Object.entries(activity.metadata).map(([key, value]) => (
-                            <Badge key={key} variant="outline" className="text-xs">
-                              {key}: {String(value)}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      <span className="text-xs text-muted-foreground">
-                        {formatDateTime(activity.createdAt)}
-                      </span>
+                      <span className="font-semibold text-xs text-foreground">{user?.name || 'Sistema'}</span>
                     </div>
+                  )}
+                  <span className="text-muted-foreground text-xs">•</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(activity.created_at)}</span>
+                </div>
+
+                {/* Cartão da Ação */}
+                <div className="flex items-start gap-3 mt-1 bg-card border rounded-md p-3 shadow-sm transition-all hover:border-primary/20">
+                  <div className="mt-0.5 shrink-0">{getActivityIcon(activity.action)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                    
+                    {/* Renderiza detalhes do JSON de mudanças (se houver) */}
+                    {activity.changes && Object.keys(activity.changes).length > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded border border-border/50">
+                        {Object.entries(activity.changes).map(([key, value]) => {
+                          // Ignora campos técnicos ou vazios para não poluir
+                          if (!value || key === 'updated_at') return null
+                          
+                          return (
+                            <div key={key} className="flex gap-1 items-start mb-0.5 last:mb-0">
+                              <span className="font-semibold capitalize text-foreground/80 shrink-0">{key.replace(/_/g, ' ')}:</span>
+                              <span className="truncate break-all">{String(value)}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           )
         })}
       </div>
     </ScrollArea>
   )
-}
-
-export function logActivity(entry: Omit<ActivityLogEntry, 'id' | 'createdAt'>) {
-  window.spark.kv.get<ActivityLogEntry[]>('activityLog').then(log => {
-    const activityLog = log || []
-    
-    const newEntry: ActivityLogEntry = {
-      ...entry,
-      id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString(),
-    }
-
-    const updatedLog = [...activityLog, newEntry]
-    
-    const maxEntries = 10000
-    const trimmedLog = updatedLog.length > maxEntries 
-      ? updatedLog.slice(-maxEntries) 
-      : updatedLog
-
-    window.spark.kv.set('activityLog', trimmedLog)
-  })
 }
