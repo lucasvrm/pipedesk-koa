@@ -4,7 +4,7 @@ import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import AuthForm from '@/components/Auth/AuthForm'
 import Profile from '@/pages/Profile'
 import App from '@/App'
-import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage'
+import TrackDetailPage from '@/features/tracks/pages/TrackDetailPage' // Certifique-se de ter este arquivo criado
 
 export default function Router() {
   const { isAuthenticated, loading } = useAuth()
@@ -36,6 +36,13 @@ export default function Router() {
         <Route path="/profile" element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        } />
+
+        {/* --- ROTA ADICIONADA AQUI --- */}
+        <Route path="/tracks/:id" element={
+          <ProtectedRoute>
+            <TrackDetailPage />
           </ProtectedRoute>
         } />
 

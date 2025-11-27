@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { CalendarBlank, Wallet, User, XCircle } from '@phosphor-icons/react'
 import { useUpdateTrack } from '@/services/trackService'
+import { logActivity } from '@/services/activityService'
+import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -29,14 +31,14 @@ interface DealPlayersKanbanProps {
 
 const KANBAN_STAGES: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing']
 
-export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKanbanProps) {
+export default function DealPlayersKanban({ tracks, currentUser: propsUser }: DealPlayersKanbanProps) {
   const navigate = useNavigate()
   const updateTrack = useUpdateTrack()
+  const { profile: currentUser } = useAuth()
   
   const [draggedTrack, setDraggedTrack] = useState<PlayerTrack | null>(null)
   const [dragOverStage, setDragOverStage] = useState<PlayerStage | null>(null)
   
-  // Estado para o modal de cancelamento
   const [trackToCancel, setTrackToCancel] = useState<PlayerTrack | null>(null)
 
   const columns = useMemo(() => {
@@ -51,8 +53,6 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
     return cols
   }, [tracks])
 
-  // --- HANDLERS ---
-
   const confirmCancel = () => {
     if (!trackToCancel) return
 
@@ -62,6 +62,14 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
     }, {
       onSuccess: () => {
         toast.success('Player cancelado com sucesso')
+        if (currentUser) {
+          logActivity(
+            trackToCancel.masterDealId,
+            'track',
+            `Player ${trackToCancel.playerName} foi movido para Dropped (Cancelado)`,
+            currentUser.id
+          )
+        }
         setTrackToCancel(null)
       },
       onError: () => toast.error('Erro ao cancelar player')
@@ -81,11 +89,25 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
     setDragOverStage(null)
     if (!draggedTrack || draggedTrack.currentStage === targetStage) return
 
+    const oldStageLabel = STAGE_LABELS[draggedTrack.currentStage]
+    const newStageLabel = STAGE_LABELS[targetStage]
+
     updateTrack.mutate({
       trackId: draggedTrack.id,
       updates: { currentStage: targetStage }
     }, {
-      onSuccess: () => toast.success(`Movido para ${STAGE_LABELS[targetStage]}`),
+      onSuccess: () => {
+        toast.success(`Movido para ${newStageLabel}`)
+        if (currentUser) {
+          logActivity(
+            draggedTrack.masterDealId,
+            'track',
+            `Moveu ${draggedTrack.playerName} de ${oldStageLabel} para ${newStageLabel}`,
+            currentUser.id,
+            { from: draggedTrack.currentStage, to: targetStage }
+          )
+        }
+      },
       onError: () => toast.error("Erro ao mover o player")
     })
     setDraggedTrack(null)
@@ -122,7 +144,6 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
                   isDragOver ? "bg-primary/10 border-primary border-dashed" : "bg-muted/30 border-border/50"
                 )}
               >
-                {/* Header */}
                 <div className={cn("p-2 md:p-3 border-b bg-card rounded-t-lg border-t-4 shadow-sm select-none", getStageColor(stage))}>
                   <div className="flex flex-wrap items-center justify-between mb-1 gap-1">
                     <h4 className="font-semibold text-xs md:text-sm uppercase tracking-tight text-foreground/90 truncate">
@@ -138,7 +159,6 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
                   </div>
                 </div>
 
-                {/* Cards */}
                 <ScrollArea className="flex-1 p-1 md:p-2">
                   <div className="space-y-2">
                     {items.map((track) => (
@@ -153,10 +173,10 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
                       >
                         <Card 
                           className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-primary bg-card"
+                          // CORREÇÃO AQUI: Redireciona para /tracks/{id}
                           onClick={() => navigate(`/tracks/${track.id}`)} 
                         >
                           <CardContent className="p-2 md:p-3 space-y-2 relative">
-                            {/* Botão Cancelar */}
                             <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
                               <Button 
                                 variant="ghost" 
