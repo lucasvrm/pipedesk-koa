@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card' // Import simplificado de Card
 import {
   Select,
   SelectContent,
@@ -17,12 +17,13 @@ import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
-  FileText, Sparkle, Tag, Question, ArrowLeft 
+  FileText, Sparkle, Tag, Question, ArrowLeft, PencilSimple
 } from '@phosphor-icons/react'
 
 // Componentes
 import DealPlayersKanban from '../components/DealPlayersKanban' 
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
+import EditDealDialog from '../components/EditDealDialog' // NOVO
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
@@ -41,7 +42,9 @@ export default function DealDetailPage() {
   const { data: playerTracks } = useTracks()
   const updateDeal = useUpdateDeal()
   const updateTrack = useUpdateTrack()
+  
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
+  const [editDealOpen, setEditDealOpen] = useState(false) // Estado para o modal de edição
 
   if (isLoading) {
     return (
@@ -65,14 +68,12 @@ export default function DealDetailPage() {
   const handleStatusChange = (newStatus: DealStatus) => {
     if (newStatus === 'cancelled') {
       const activeTracks = dealTracks.filter(t => t.status === 'active')
-      
       activeTracks.forEach(track => {
         updateTrack.mutate({
           trackId: track.id,
           updates: { status: 'cancelled' }
         })
       })
-
       updateDeal.mutate({
         dealId: deal.id,
         updates: { status: newStatus }
@@ -112,7 +113,19 @@ export default function DealDetailPage() {
         
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{deal.clientName}</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold">{deal.clientName}</h1>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={() => setEditDealOpen(true)}
+                title="Editar Informações"
+              >
+                <PencilSimple className="h-5 w-5" />
+              </Button>
+            </div>
+            
             <div className="flex items-center gap-3 text-sm">
               <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
                 {STATUS_LABELS[deal.status]}
@@ -138,52 +151,39 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* 1. Cards de Métricas (Super Compactos) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        
         {/* Volume Total */}
-        <Card className="bg-blue-50 border-blue-200 shadow-sm">
-          <CardHeader className="p-3 pb-0 space-y-0">
-            <CardTitle className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Volume Total</CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="text-xl font-bold text-blue-900 truncate" title={formatCurrency(deal.volume)}>
-              {formatCurrency(deal.volume)}
-            </p>
-          </CardContent>
+        <Card className="bg-blue-50 border-blue-200 shadow-sm p-3 flex flex-col justify-center gap-1">
+          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Volume Total</span>
+          <p className="text-lg font-bold text-blue-900 truncate" title={formatCurrency(deal.volume)}>
+            {formatCurrency(deal.volume)}
+          </p>
         </Card>
 
         {/* Fee (%) */}
-        <Card className="shadow-sm">
-          <CardHeader className="p-3 pb-0 space-y-0">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fee (%)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="text-xl font-bold text-foreground">{deal.feePercentage ? `${deal.feePercentage}%` : '—'}</p>
-          </CardContent>
+        <Card className="bg-card shadow-sm p-3 flex flex-col justify-center gap-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fee (%)</span>
+          <p className="text-lg font-bold text-foreground">
+            {deal.feePercentage ? `${deal.feePercentage}%` : '—'}
+          </p>
         </Card>
 
         {/* Prazo Final */}
-        <Card className="bg-red-50 border-red-200 shadow-sm">
-          <CardHeader className="p-3 pb-0 space-y-0">
-            <CardTitle className="text-xs font-semibold text-red-600 uppercase tracking-wider">Prazo Final</CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="text-xl font-bold text-red-900 flex items-center gap-2">
-              {formatDate(deal.deadline)}
-            </p>
-          </CardContent>
+        <Card className="bg-red-50 border-red-200 shadow-sm p-3 flex flex-col justify-center gap-1">
+          <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Prazo Final</span>
+          <p className="text-lg font-bold text-red-900 truncate">
+            {formatDate(deal.deadline)}
+          </p>
         </Card>
 
         {/* Players Ativos */}
-        <Card className="bg-amber-50 border-amber-200 shadow-sm">
-          <CardHeader className="p-3 pb-0 space-y-0">
-            <CardTitle className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Players Ativos</CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="text-xl font-bold text-amber-900">
-              {dealTracks.filter(t => t.status === 'active').length}
-            </p>
-          </CardContent>
+        <Card className="bg-amber-50 border-amber-200 shadow-sm p-3 flex flex-col justify-center gap-1">
+          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Players Ativos</span>
+          <p className="text-lg font-bold text-amber-900">
+            {dealTracks.filter(t => t.status === 'active').length}
+          </p>
         </Card>
       </div>
 
@@ -253,21 +253,6 @@ export default function DealDetailPage() {
           {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
         </TabsContent>
 
-        {/* Tabs Bloqueadas (Conteúdo não será acessado, mas mantido no código caso habilite depois) */}
-        <TabsContent value="qa">
-          {currentUser && <QAPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
-        </TabsContent>
-
-        <TabsContent value="ai">
-          {currentUser && <AINextSteps dealId={deal.id} />}
-        </TabsContent>
-
-        <TabsContent value="fields">
-          {currentUser && (
-            <CustomFieldsRenderer entityId={deal.id} entityType="deal" currentUser={currentUser} mode="edit" />
-          )}
-        </TabsContent>
-
         {/* Tab: Atividade */}
         <TabsContent value="activity">
           <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
@@ -278,6 +263,13 @@ export default function DealDetailPage() {
         masterDeal={deal} 
         open={createPlayerOpen} 
         onOpenChange={setCreatePlayerOpen} 
+      />
+
+      {/* Dialog de Edição */}
+      <EditDealDialog 
+        deal={deal}
+        open={editDealOpen}
+        onOpenChange={setEditDealOpen}
       />
     </div>
   )
