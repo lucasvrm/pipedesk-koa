@@ -31,14 +31,11 @@ export default function TaskKanbanView({
   isTaskOverdue,
 }: TaskKanbanViewProps) {
   
-  // Estado do Toggle de Visualização
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active')
 
   const getTaskStatus = (task: Task): TaskStatus => {
-    // Se o status estiver explícito no banco, usa ele
     if (task.status) return task.status
 
-    // Lógica de fallback para dados antigos ou sem status definido
     if (task.completed) return 'completed'
     
     const blockedBy = task.dependencies.filter(depId => {
@@ -47,12 +44,11 @@ export default function TaskKanbanView({
     })
     
     if (blockedBy.length > 0) return 'blocked'
-    if (task.assignees.length > 0) return 'in_progress'
+    if (task.assignees.length > 0) return 'in-progress'
     
     return 'todo'
   }
 
-  // Definição das Colunas por Modo de Visualização
   const activeColumns: { status: TaskStatus; label: string; color: string; icon: any }[] = [
     { status: 'todo', label: 'Pendentes', color: 'border-t-slate-400', icon: CheckCircle },
     { status: 'in_progress', label: 'Em Progresso', color: 'border-t-blue-500', icon: Clock },
@@ -74,8 +70,8 @@ export default function TaskKanbanView({
 
   return (
     <div className="h-full p-4 flex flex-col gap-4">
-      {/* Toggle de Visualização */}
-      <div className="flex justify-end">
+      {/* Toggle de Visualização - ALINHADO À ESQUERDA (justify-start) */}
+      <div className="flex justify-start">
         <div className="bg-muted p-1 rounded-lg flex gap-1">
           <Button
             variant={viewMode === 'active' ? 'default' : 'ghost'}
@@ -101,7 +97,6 @@ export default function TaskKanbanView({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full min-h-0">
         {currentColumns.map((column) => (
           <div key={column.status} className="flex flex-col min-h-0 bg-muted/20 rounded-xl border border-border/50">
-            {/* Column Header */}
             <div className={cn("p-3 border-b bg-card/50 rounded-t-xl border-t-4 flex items-center justify-between", column.color)}>
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground/80">
@@ -113,7 +108,6 @@ export default function TaskKanbanView({
               </Badge>
             </div>
 
-            {/* Column Content */}
             <ScrollArea className="flex-1 p-2">
               <div className="space-y-3 pb-2">
                 {tasksByStatus[column.status].map((task) => {

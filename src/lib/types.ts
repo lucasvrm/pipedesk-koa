@@ -108,7 +108,8 @@ export interface Task {
   createdAt: string
   updatedAt: string
   position: number
-  status?: 'todo' | 'in_progress' | 'blocked' | 'completed'
+  // ATUALIZADO: Novos status adicionados
+  status?: 'todo' | 'in_progress' | 'waiting_third_party' | 'blocked' | 'completed' | 'cancelled'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
 }
 
