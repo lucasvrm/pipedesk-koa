@@ -49,16 +49,17 @@ export function PlayerSelect({ value, onChange, onCheckNew }: PlayerSelectProps)
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      {/* FIX: Added z-[200] to ensure it stays above the Dialog.
-         Depending on your theme, you might need z-[9999].
-         Also 'p-0' is crucial for Command to render correctly.
-      */}
+      
+      {/* ALTERAÇÕES AQUI: style={{ zIndex: 9999 }} e onOpenAutoFocus */}
       <PopoverContent 
-        className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]" 
+        className="w-[var(--radix-popover-trigger-width)] p-0" 
         align="start"
+        style={{ zIndex: 9999 }} 
+        onOpenAutoFocus={(e) => e.preventDefault()} // Impede que o foco vá para o container, deixa o CommandInput pegar
       >
         <Command>
-          <CommandInput placeholder="Buscar player..." />
+          {/* Adicionado autoFocus */}
+          <CommandInput placeholder="Buscar player..." autoFocus />
           <CommandList>
             <CommandEmpty>
               <div className="p-2 text-center text-sm">
