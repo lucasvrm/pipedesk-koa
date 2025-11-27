@@ -224,9 +224,9 @@ export default function DealPlayersKanban({ tracks, currentUser }: DealPlayersKa
       <AlertDialog open={!!trackToCancel} onOpenChange={() => setTrackToCancel(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Player?</AlertDialogTitle>
+            <AlertDialogTitle>Cancelar Track de Player?</AlertDialogTitle>
             <AlertDialogDescription>
-              Este player será movido para a lista de "Dropped". Você pode reativá-lo depois se necessário.
+              Este track de player será movido para a lista de "Dropped". Você pode reativá-lo depois se necessário.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

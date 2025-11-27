@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers } from '@/services/userService'
 import { useCreateTrack } from '@/services/trackService'
+import { usePlayers, useCreatePlayer } from '@/services/playerService'
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,8 @@ import {
 } from '@/components/ui/select'
 import { MasterDeal, PlayerStage, STAGE_LABELS } from '@/lib/types'
 import { toast } from 'sonner'
-import { FolderOpen } from '@phosphor-icons/react'
+import { ArrowLeft, Plus } from '@phosphor-icons/react'
+import { PlayerSelect } from '@/components/PlayerSelect' // Certifique-se que o caminho está correto
 
 interface CreatePlayerDialogProps {
   masterDeal: MasterDeal
@@ -34,46 +36,109 @@ interface CreatePlayerDialogProps {
 
 export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: CreatePlayerDialogProps) {
   const { profile: currentUser } = useAuth()
+  
+  // Hooks de dados
   const { data: users } = useUsers()
+  const { data: existingPlayers } = usePlayers() // Busca para recuperar o nome pelo ID selecionado
+  
+  // Hooks de mutação
   const createTrack = useCreateTrack()
+  const createPlayerMutation = useCreatePlayer()
 
-  const [playerName, setPlayerName] = useState('')
+  // Estados do Formulário
+  const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [selectedPlayerId, setSelectedPlayerId] = useState('')
+  const [newPlayerName, setNewPlayerName] = useState('')
+  
   const [trackVolume, setTrackVolume] = useState(masterDeal.volume.toString())
   const [currentStage, setCurrentStage] = useState<PlayerStage>('nda')
   const [notes, setNotes] = useState('')
   const [selectedTeam, setSelectedTeam] = useState<string[]>([])
 
+  const resetForm = () => {
+    setIsCreatingNew(false)
+    setSelectedPlayerId('')
+    setNewPlayerName('')
+    setTrackVolume(masterDeal.volume.toString())
+    setCurrentStage('nda')
+    setNotes('')
+    setSelectedTeam([])
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!playerName || !trackVolume) {
-      toast.error('Preencha todos os campos obrigatórios')
+    if (!trackVolume) {
+      toast.error('O volume é obrigatório')
       return
     }
 
-    createTrack.mutate({
-      masterDealId: masterDeal.id,
-      playerName,
-      trackVolume: parseFloat(trackVolume),
-      currentStage,
-      probability: 0,
-      responsibles: selectedTeam,
-      status: 'active',
-      notes,
-    }, {
-      onSuccess: () => {
-        toast.success('Player adicionado com sucesso!')
-        setPlayerName('')
-        setTrackVolume(masterDeal.volume.toString())
-        setCurrentStage('nda')
-        setNotes('')
-        setSelectedTeam([])
-        onOpenChange(false)
-      },
-      onError: () => {
-        toast.error('Erro ao adicionar player')
+    let finalPlayerId = selectedPlayerId
+    let finalPlayerName = ''
+
+    try {
+      // Cenário 1: Criando um novo Player no banco antes de criar o Track
+      if (isCreatingNew) {
+        if (!newPlayerName.trim()) {
+          toast.error('Nome do player é obrigatório')
+          return
+        }
+
+        if (!currentUser) {
+          toast.error('Usuário não autenticado')
+          return
+        }
+
+        const newPlayer = await createPlayerMutation.mutateAsync({
+          data: {
+            name: newPlayerName,
+            type: 'other', // Padrão, pode ser editado depois na tela do player
+            relationshipLevel: 'none'
+          },
+          userId: currentUser.id
+        })
+
+        finalPlayerId = newPlayer.id
+        finalPlayerName = newPlayer.name
+      
+      } else {
+        // Cenário 2: Usando Player Existente
+        if (!selectedPlayerId) {
+          toast.error('Selecione um player')
+          return
+        }
+        
+        const selectedPlayer = existingPlayers?.find(p => p.id === selectedPlayerId)
+        if (!selectedPlayer) {
+          toast.error('Player selecionado inválido')
+          return
+        }
+        
+        finalPlayerId = selectedPlayer.id
+        finalPlayerName = selectedPlayer.name
       }
-    })
+
+      // Criação do Track (Vínculo)
+      await createTrack.mutateAsync({
+        masterDealId: masterDeal.id,
+        playerName: finalPlayerName,
+        playerId: finalPlayerId,
+        trackVolume: parseFloat(trackVolume),
+        currentStage,
+        probability: 0,
+        responsibles: selectedTeam,
+        status: 'active',
+        notes,
+      })
+
+      toast.success('Player adicionado ao deal com sucesso!')
+      resetForm()
+      onOpenChange(false)
+
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao adicionar player')
+    }
   }
 
   const toggleTeamMember = (userId: string) => {
@@ -89,7 +154,10 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
   )
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(val) => {
+      if (!val) resetForm()
+      onOpenChange(val)
+    }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Adicionar Player</DialogTitle>
@@ -99,15 +167,54 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* Seleção ou Criação de Player */}
           <div className="space-y-2">
-            <Label htmlFor="player-name">Nome do Player *</Label>
-            <Input
-              id="player-name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Ex: Banco ABC, Fundo XYZ"
-              required
-            />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="player-select">Player *</Label>
+              {isCreatingNew ? (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-xs px-2"
+                  onClick={() => setIsCreatingNew(false)}
+                >
+                  <ArrowLeft className="mr-1 h-3 w-3" /> Voltar para Seleção
+                </Button>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-xs px-2 text-primary"
+                  onClick={() => setIsCreatingNew(true)}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Criar Novo
+                </Button>
+              )}
+            </div>
+
+            {isCreatingNew ? (
+              <Input
+                autoFocus
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                placeholder="Digite o nome do novo player..."
+                className="bg-primary/5 border-primary/20"
+              />
+            ) : (
+              <PlayerSelect 
+                value={selectedPlayerId}
+                onChange={setSelectedPlayerId}
+                onCheckNew={() => setIsCreatingNew(true)}
+              />
+            )}
+            {isCreatingNew && (
+              <p className="text-[10px] text-muted-foreground">
+                Um novo registro será criado na base de players.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -182,7 +289,9 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Adicionar Player</Button>
+            <Button type="submit" disabled={isCreatingNew ? !newPlayerName : !selectedPlayerId}>
+              {isCreatingNew ? 'Criar e Adicionar' : 'Adicionar Player'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
