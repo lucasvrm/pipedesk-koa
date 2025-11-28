@@ -50,11 +50,9 @@ import {
   Trash, 
   DotsThree, 
   Funnel, 
-  Check,
-  UserPlus
+  Check
 } from '@phosphor-icons/react'
 
-// Sub-componentes (assumindo que já existem ou podem ser importados)
 import InviteUserDialog from './InviteUserDialog'
 import MagicLinksDialog from './MagicLinksDialog'
 import SyntheticDataPanel from './SyntheticDataPanel'
@@ -65,18 +63,24 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   
-  // Estado para ações destrutivas
-  const [userToDelete, setUserToDelete] = useState<string | null>(null) // Para single delete
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false) // Para bulk delete
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
-  // --- Lógica de Filtro e Seleção ---
+  // --- Lógica de Filtro e Seleção (CORRIGIDA) ---
 
   const filteredUsers = useMemo(() => {
     if (!users) return []
     return users.filter(user => {
-      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      // Proteção contra valores nulos/undefined
+      const name = user.name || ''
+      const email = user.email || ''
+      const search = searchTerm.toLowerCase()
+
+      const matchesSearch = name.toLowerCase().includes(search) || 
+                            email.toLowerCase().includes(search)
+      
       const matchesRole = roleFilter === 'all' || user.role === roleFilter
+      
       return matchesSearch && matchesRole
     })
   }, [users, searchTerm, roleFilter])
@@ -117,9 +121,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
 
   const deleteUser = async (userId: string) => {
     try {
-      // Nota: Em produção, deletar do 'profiles' não deleta do 'auth.users' automaticamente
-      // a menos que haja uma trigger ou seja feito via Admin API (backend).
-      // Aqui deletamos do profiles (soft logic) ou assumimos que a trigger cuida.
       const { error } = await supabase
         .from('profiles')
         .delete()
@@ -198,7 +199,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
           </TabsTrigger>
         </TabsList>
 
-        {/* --- TAB: USUÁRIOS (CRUD) --- */}
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -216,7 +216,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
             </CardHeader>
             <CardContent>
               
-              {/* Barra de Ferramentas */}
               <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-end md:items-center">
                 <div className="flex gap-2 w-full md:w-auto">
                   <div className="relative w-full md:w-64">
@@ -245,7 +244,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
                   </DropdownMenu>
                 </div>
 
-                {/* Ações em Massa */}
                 {selectedUsers.length > 0 && (
                   <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-md animate-in fade-in slide-in-from-right-5">
                     <span className="text-sm font-medium px-2">{selectedUsers.length} selecionados</span>
@@ -277,7 +275,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
                 )}
               </div>
 
-              {/* Tabela de Usuários */}
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -310,8 +307,8 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
                               onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
+                          <TableCell className="font-medium">{user.name || 'Sem nome'}</TableCell>
+                          <TableCell>{user.email || '-'}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="font-normal">
                               {ROLE_LABELS[user.role]}
@@ -364,7 +361,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
           </Card>
         </TabsContent>
 
-        {/* --- TAB: CONVITES --- */}
         <TabsContent value="invites" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
@@ -389,7 +385,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
           </div>
         </TabsContent>
 
-        {/* --- TAB: DEFINIÇÕES --- */}
         <TabsContent value="definitions">
           <Card>
             <CardHeader>
@@ -422,14 +417,12 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs de Confirmação */}
       <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação removerá o acesso do usuário ao sistema. 
-              {/* Nota: Em sistemas reais, verificar se deleta dados vinculados */}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
