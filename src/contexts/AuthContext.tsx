@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useRef } fro
 import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { User } from '@/lib/types'
+import { getAuthSettings } from '@/services/settingsService'
 
 interface AuthContextType {
   user: SupabaseUser | null
@@ -115,11 +116,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  // --- Helpers de Política de Segurança ---
+
+  const checkRestrictions = async (email: string, type: 'magic_link' | 'signup') => {
+    try {
+      // Busca as configurações atuais do banco
+      const settings = await getAuthSettings();
+
+      // 1. Verificar Magic Links
+      if (type === 'magic_link' && !settings.enableMagicLinks) {
+        throw new Error('O login via Magic Link foi desabilitado pelo administrador.');
+      }
+
+      // 2. Verificar Restrição de Domínio no Cadastro
+      if (type === 'signup' && settings.restrictDomain && settings.allowedDomain) {
+        const domain = email.split('@')[1];
+        if (domain !== settings.allowedDomain) {
+          throw new Error(`O cadastro é restrito apenas para e-mails do domínio @${settings.allowedDomain}`);
+        }
+      }
+    } catch (err) {
+      // Repassa o erro para ser tratado no catch dos métodos de login
+      throw err;
+    }
+  }
+
   // --- Métodos de Auth ---
 
   const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
       setError(null);
+
+      // Verifica políticas antes de chamar o Supabase
+      await checkRestrictions(email, 'magic_link');
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: `${window.location.origin}/dashboard` },
@@ -127,7 +157,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) throw error;
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to send magic link'));
+      const message = err instanceof Error ? err.message : 'Falha ao enviar magic link';
+      setError(new Error(message));
       return false;
     }
   };
@@ -139,7 +170,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) throw error;
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign in'));
+      setError(err instanceof Error ? err : new Error('Falha ao entrar'));
       throw err;
     }
   }
@@ -147,13 +178,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     try {
       setError(null);
+      // Nota: OAuth geralmente bypassa restrições de domínio simples aqui,
+      // pois a validação ocorre no provedor ou via triggers no banco se necessário strict mode.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/dashboard` },
       });
       if (error) throw error;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign in with Google'));
+      setError(err instanceof Error ? err : new Error('Falha ao entrar com Google'));
       throw err;
     }
   }
@@ -161,6 +194,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signUp = async (email: string, password: string, name?: string) => {
     try {
       setError(null);
+
+      // Verifica políticas antes de criar conta
+      await checkRestrictions(email, 'signup');
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -169,8 +206,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) throw error;
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign up'));
-      throw err;
+      const message = err instanceof Error ? err.message : 'Falha ao cadastrar';
+      setError(new Error(message));
+      throw err; // Re-throw para a UI mostrar o toast de erro
     }
   }
 
@@ -182,7 +220,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       if (error) throw error;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to reset password'));
+      setError(err instanceof Error ? err : new Error('Falha ao redefinir senha'));
       throw err;
     }
   }
@@ -196,7 +234,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) throw error;
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign out'));
+      setError(err instanceof Error ? err : new Error('Falha ao sair'));
       return false;
     } finally {
       setUser(null);

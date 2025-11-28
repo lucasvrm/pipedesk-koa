@@ -1,31 +1,57 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { ShieldCheck, LockKey, Envelope, MagicWand } from '@phosphor-icons/react'
+import { ShieldCheck, LockKey, Envelope, MagicWand, Spinner } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { getAuthSettings, updateAuthSettings, AuthSettings } from '@/services/settingsService'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function AuthSettingsPanel() {
-  // Simulando estado inicial (em produção, viria do banco de dados)
-  const [settings, setSettings] = useState({
+  const { profile } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
+  
+  const [settings, setSettings] = useState<AuthSettings>({
     enableMagicLinks: true,
-    restrictDomain: true,
-    allowedDomain: 'koacapital.com.br',
-    requireMFA: false
+    restrictDomain: false,
+    allowedDomain: 'koacapital.com.br'
   })
 
-  const [loading, setLoading] = useState(false)
+  // Carregar configurações reais
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getAuthSettings()
+        setSettings(data)
+      } catch (err) {
+        toast.error('Erro ao carregar configurações')
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+    load()
+  }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!profile) return
     setLoading(true)
-    // Simulação de delay de rede
-    setTimeout(() => {
-        toast.success('Políticas de autenticação atualizadas com sucesso!')
-        setLoading(false)
-    }, 800)
+    try {
+      await updateAuthSettings(settings, profile.id)
+      toast.success('Políticas de autenticação atualizadas com sucesso!')
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao salvar configurações')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (initialLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Carregando configurações...</div>
   }
 
   return (
@@ -98,7 +124,7 @@ export default function AuthSettingsPanel() {
 
                 <Separator />
 
-                {/* MFA (Futuro) */}
+                {/* MFA (Visual Only for now) */}
                 <div className="flex flex-col space-y-4 opacity-70">
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
@@ -110,7 +136,7 @@ export default function AuthSettingsPanel() {
                                 Exigir segundo fator para todos os administradores. (Em breve)
                             </p>
                         </div>
-                        <Switch disabled checked={settings.requireMFA} />
+                        <Switch disabled />
                     </div>
                 </div>
 
