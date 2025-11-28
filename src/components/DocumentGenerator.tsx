@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ScrollArea } from '@/components/ui/scroll-area' // <--- IMPORT ADICIONADO
 import { MasterDeal, PlayerTrack } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { toast } from 'sonner'
@@ -37,31 +38,178 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
   const [isGenerating, setIsGenerating] = useState(false)
 
   const generateTeaser = () => {
-    // ... (Mantive o código original do Teaser para brevidade, ele não mudou)
-    // Se precisar do código completo do Teaser novamente, posso incluir
     return new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({ text: 'TEASER', heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: deal.clientName, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: 'Visão Geral: ' + formatCurrency(deal.volume) }),
-          // ... resto do teaser
-        ]
-      }]
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              text: 'TEASER',
+              heading: HeadingLevel.TITLE,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            new Paragraph({
+              text: deal.clientName,
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 600 },
+            }),
+            new Paragraph({
+              text: 'Visão Geral',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400, after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Tipo de Operação: ', bold: true }),
+                new TextRun(deal.operationType || 'N/A'),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Volume: ', bold: true }),
+                new TextRun(formatCurrency(deal.volume)),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Prazo: ', bold: true }),
+                new TextRun(deal.deadline ? formatDate(deal.deadline) : 'N/A'),
+              ],
+              spacing: { after: 300 },
+            }),
+            new Paragraph({
+              text: 'Observações',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400, after: 200 },
+            }),
+            new Paragraph({
+              text: deal.observations || 'Nenhuma observação disponível.',
+              spacing: { after: 400 },
+            }),
+            new Paragraph({
+              text: 'Players em Negociação',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400, after: 200 },
+            }),
+            ...playerTracks.map(
+              (track) =>
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `${track.playerName}: `, bold: true }),
+                    new TextRun(
+                      `${formatCurrency(track.trackVolume)} - Estágio: ${track.currentStage} (${track.probability}%)`
+                    ),
+                  ],
+                  spacing: { after: 100 },
+                })
+            ),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: '\n\nDocumento gerado em ' + formatDate(new Date().toISOString()),
+                  italics: true,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 600 },
+            }),
+          ],
+        },
+      ],
     })
   }
 
   const generateCIM = () => {
-    // ... (Mantive o código original do CIM para brevidade)
     return new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({ text: 'CONFIDENTIAL INFORMATION MEMORANDUM', heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-          // ... resto do CIM
-        ]
-      }]
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              text: 'CONFIDENTIAL INFORMATION MEMORANDUM',
+              heading: HeadingLevel.TITLE,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            new Paragraph({
+              text: deal.clientName,
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 600 },
+            }),
+            new Paragraph({
+              text: 'Executive Summary',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400, after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Operation Type: ', bold: true }),
+                new TextRun(deal.operationType || 'N/A'),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Deal Volume: ', bold: true }),
+                new TextRun(formatCurrency(deal.volume)),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Status: ', bold: true }),
+                new TextRun(deal.status),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Deadline: ', bold: true }),
+                new TextRun(deal.deadline ? formatDate(deal.deadline) : 'N/A'),
+              ],
+              spacing: { after: 300 },
+            }),
+            new Paragraph({
+              text: 'Deal Description',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 400, after: 200 },
+            }),
+            new Paragraph({
+              text: deal.observations || 'No description available.',
+              spacing: { after: 400 },
+            }),
+            new Paragraph({
+              text: 'Confidentiality Notice',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 600, after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'This document contains confidential information intended only for the addressee. Unauthorized distribution or copying is strictly prohibited.',
+                  italics: true,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Document generated on ' + formatDate(new Date().toISOString()),
+                  italics: true,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 400 },
+            }),
+          ],
+        },
+      ],
     })
   }
 

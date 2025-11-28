@@ -54,7 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // OTIMIZAÇÃO: Reduzido de 5000ms para 2000ms
       // Se o banco não responder em 2s, assumimos falha para não travar a UI
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 2500)
       );
 
       // Competição: quem terminar primeiro ganha
