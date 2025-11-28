@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUsers } from '@/services/userService'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService'
 import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import {
@@ -46,7 +46,13 @@ export default function UserManagementDialog({
   onOpenChange,
   currentUser,
 }: UserManagementDialogProps) {
-  const { data: users } = useUsers()
+  const { data: users, isLoading } = useUsers()
+  
+  // Mutações
+  const createUserMutation = useCreateUser()
+  const updateUserMutation = useUpdateUser()
+  const deleteUserMutation = useDeleteUser()
+
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -87,34 +93,58 @@ export default function UserManagementDialog({
     })
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.email) {
       toast.error('Nome e email são obrigatórios')
       return
     }
 
-    // Note: This needs userService mutations to be implemented
-    // For now, showing toast that this feature needs backend implementation
-    toast.warning('Gerenciamento de usuários requer implementação no backend')
+    try {
+      if (editingUser) {
+        // Atualizar
+        await updateUserMutation.mutateAsync({
+          id: editingUser.id,
+          data: formData
+        })
+        toast.success('Usuário atualizado com sucesso')
+      } else {
+        // Criar
+        await createUserMutation.mutateAsync(formData)
+        toast.success('Usuário criado com sucesso')
+      }
 
-    setIsCreating(false)
-    setEditingUser(null)
-    setFormData({
-      name: '',
-      email: '',
-      role: 'analyst',
-      clientEntity: '',
-    })
+      // Reset
+      setIsCreating(false)
+      setEditingUser(null)
+      setFormData({
+        name: '',
+        email: '',
+        role: 'analyst',
+        clientEntity: '',
+      })
+    } catch (error: any) {
+      console.error(error)
+      toast.error(error.message || 'Erro ao salvar usuário')
+    }
   }
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (userId === currentUser.id) {
       toast.error('Você não pode excluir seu próprio usuário')
       return
     }
 
-    // Note: This needs userService mutations to be implemented
-    toast.warning('Gerenciamento de usuários requer implementação no backend')
+    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação é irreversível.')) {
+      return
+    }
+
+    try {
+      await deleteUserMutation.mutateAsync(userId)
+      toast.success('Usuário excluído com sucesso')
+    } catch (error: any) {
+      console.error(error)
+      toast.error(error.message || 'Erro ao excluir usuário')
+    }
   }
 
   const getRoleBadgeVariant = (role: UserRole) => {
@@ -177,6 +207,7 @@ export default function UserManagementDialog({
                   setFormData({ ...formData, email: e.target.value })
                 }
                 placeholder="email@empresa.com"
+                disabled={!!editingUser} // Supabase Auth é complexo de mudar email, melhor bloquear na edição simples
               />
             </div>
 
@@ -221,11 +252,18 @@ export default function UserManagementDialog({
                   setIsCreating(false)
                   setEditingUser(null)
                 }}
+                disabled={createUserMutation.isPending || updateUserMutation.isPending}
               >
                 Cancelar
               </Button>
-              <Button onClick={handleSave}>
-                {editingUser ? 'Atualizar' : 'Criar'}
+              <Button 
+                onClick={handleSave} 
+                disabled={createUserMutation.isPending || updateUserMutation.isPending}
+              >
+                {createUserMutation.isPending || updateUserMutation.isPending 
+                  ? 'Salvando...' 
+                  : (editingUser ? 'Atualizar' : 'Criar')
+                }
               </Button>
             </div>
           </div>
@@ -248,63 +286,71 @@ export default function UserManagementDialog({
               </Button>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Função</TableHead>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(users || []).map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(user.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {user.email}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {getRoleLabel(user.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {user.clientEntity || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(user)}
-                        >
-                          <PencilSimple />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(user.id)}
-                          disabled={user.id === currentUser.id}
-                        >
-                          <Trash className="text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Função</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-4">Carregando usuários...</TableCell>
+                    </TableRow>
+                  ) : (
+                    (users || []).map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {getInitials(user.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.email}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.clientEntity || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(user)}
+                            >
+                              <PencilSimple />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(user.id)}
+                              disabled={user.id === currentUser.id || deleteUserMutation.isPending}
+                            >
+                              <Trash className="text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </>
         )}
 

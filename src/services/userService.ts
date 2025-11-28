@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
-import { useQuery } from '@tanstack/react-query';
-import { User } from '@/lib/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { User, UserRole } from '@/lib/types';
 
 // ============================================================================
 // Helpers
@@ -10,7 +10,7 @@ function mapUserFromDB(item: any): User {
     return {
         id: item.id,
         name: item.name || 'Usuário sem nome',
-        email: item.email || '',
+        email: item.email || '', // Email vem de join ou auth (aqui assumindo profile sync)
         role: (item.role as any) || 'client',
         avatar: item.avatar_url || undefined,
         clientEntity: item.client_entity || undefined,
@@ -20,7 +20,7 @@ function mapUserFromDB(item: any): User {
         
         // Novos Campos Mapeados
         address: item.address || '',
-        cellphone: item.cellphone || '', // Novo campo mapeado
+        cellphone: item.cellphone || '', 
         pixKeyPJ: item.pix_key_pj || '',
         pixKeyPF: item.pix_key_pf || '',
         rg: item.rg || '',
@@ -37,6 +37,9 @@ function mapUserFromDB(item: any): User {
 // ============================================================================
 
 export async function getUsers(): Promise<User[]> {
+    // Nota: Em produção, 'email' está na tabela auth.users. 
+    // O profile deve ter o email sincronizado ou fazemos uma view.
+    // Aqui assumimos que o profile tem o campo email (adicionado na migration ou sync)
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -59,6 +62,52 @@ export async function getUser(userId: string): Promise<User> {
     return mapUserFromDB(data);
 }
 
+// --- Funções que chamam a Edge Function 'manage-users' ---
+
+interface CreateUserInput {
+    name: string;
+    email: string;
+    role: UserRole;
+    clientEntity?: string;
+}
+
+export async function createUser(userData: CreateUserInput) {
+    const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+            action: 'create',
+            userData
+        }
+    });
+
+    if (error) throw error;
+    return data;
+}
+
+export async function updateUser(userId: string, userData: Partial<CreateUserInput>) {
+    const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+            action: 'update',
+            userId,
+            userData
+        }
+    });
+
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteUser(userId: string) {
+    const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+            action: 'delete',
+            userId
+        }
+    });
+
+    if (error) throw error;
+    return data;
+}
+
 // ============================================================================
 // React Query Hooks
 // ============================================================================
@@ -75,5 +124,35 @@ export function useUser(userId: string | null) {
         queryKey: ['users', userId],
         queryFn: () => getUser(userId!),
         enabled: !!userId,
+    });
+}
+
+export function useCreateUser() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createUser,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        }
+    });
+}
+
+export function useUpdateUser() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string, data: Partial<CreateUserInput> }) => updateUser(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        }
+    });
+}
+
+export function useDeleteUser() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deleteUser,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        }
     });
 }
