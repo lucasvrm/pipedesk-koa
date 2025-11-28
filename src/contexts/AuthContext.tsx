@@ -31,10 +31,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   
+  // Cache simples para evitar chamadas duplicadas ao Banco
   const loadedProfileId = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
-    // Cache de memória para evitar requisições duplicadas
+    // Se já temos o perfil carregado na memória, não busca novamente
     if (loadedProfileId.current === userId && profile) return;
 
     try {
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .single();
 
       if (error) {
-        // Se perfil não existe (PGRST116), cria um padrão (Auto-fix)
+        // Se o perfil não existe (Erro PGRST116), cria um perfil padrão
         if (error.code === 'PGRST116') {
           const timestamp = Math.floor(Date.now() / 1000);
           const emailName = userEmail?.split('@')[0] || 'User';
@@ -75,7 +76,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setProfile({ ...data, avatar: data.avatar_url });
         loadedProfileId.current = userId;
       }
-
     } catch (err) {
       console.error('Unexpected auth error:', err);
     }
@@ -86,17 +86,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
+        // 1. Obtém a sessão inicial do Supabase
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (mounted && initialSession?.user) {
           setSession(initialSession);
           setUser(initialSession.user);
+          // Busca o perfil (await simples, sem timeout)
           await fetchProfile(initialSession.user.id, initialSession.user.email);
         }
       } catch (err) {
-        console.error('Auth init failed:', err);
+        console.error('Auth initialization failed:', err);
+        setError(err instanceof Error ? err : new Error('Auth init failed'));
       } finally {
         if (mounted) {
+          // ESTA É A LINHA CRÍTICA: Garante que o loading termine SEMPRE.
           setLoading(false);
         }
       }
@@ -104,6 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
 
+    // Listener para mudanças de estado (Login, Logout, etc)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
       
@@ -112,6 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(newUser);
 
       if (newUser) {
+        // Apenas busca o perfil em eventos de entrada, se ainda não estiver carregado
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
             await fetchProfile(newUser.id, newUser.email);
         }
@@ -127,6 +133,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // --- Funções de Autenticação ---
 
   const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
