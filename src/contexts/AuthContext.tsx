@@ -31,19 +31,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   
-  // Cache simples para evitar chamadas repetidas para o mesmo ID
+  // Cache simples para evitar chamadas repetidas desnecessárias
   const loadedProfileId = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
-    // Se já carregamos este perfil, não busca de novo
-    if (loadedProfileId.current === userId && profile) {
-        return;
-    }
+    // Se já carregamos este perfil na memória, não busca de novo
+    if (loadedProfileId.current === userId && profile) return;
 
     try {
-      console.log('[Auth] Fetching profile for:', userId);
-      
-      // Removido o timeout artificial. Deixamos o Supabase/Rede ditar o tempo.
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -51,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .single();
 
       if (error) {
-        // Se não achou perfil, tenta criar (Auto-fix para usuários legados/novos)
+        // Se o perfil não existe, cria um novo (Fluxo padrão para novos usuários)
         if (error.code === 'PGRST116') {
           console.log('[Auth] Profile missing, creating default...');
           const timestamp = Math.floor(Date.now() / 1000);
@@ -77,10 +72,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } else {
             console.error('[Auth] Error fetching profile:', error);
-            // Não jogamos erro aqui para não deslogar o usuário, apenas ficamos sem perfil
         }
       } else if (data) {
-        console.log('[Auth] Profile loaded.');
         setProfile({ ...data, avatar: data.avatar_url });
         loadedProfileId.current = userId;
       }
@@ -98,18 +91,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // 1. Verifica sessão atual
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (mounted) {
-          if (initialSession?.user) {
-            setSession(initialSession);
-            setUser(initialSession.user);
-            // Busca perfil sem bloquear/timeout
-            await fetchProfile(initialSession.user.id, initialSession.user.email);
-          }
+        if (mounted && initialSession?.user) {
+          setSession(initialSession);
+          setUser(initialSession.user);
+          // Busca o perfil de forma padrão (await simples)
+          await fetchProfile(initialSession.user.id, initialSession.user.email);
         }
       } catch (err) {
         console.error('[Auth] Init error:', err);
       } finally {
         if (mounted) {
+          // PONTO CRÍTICO: Isso remove a tela de "Verificando permissões..."
           setLoading(false);
         }
       }
@@ -117,11 +109,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
 
-    // Listener de eventos do Supabase Auth
+    // Escuta mudanças de estado (Login, Logout, Refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
       
-      console.log('[Auth] Event:', event);
       setSession(newSession);
       const newUser = newSession?.user ?? null;
       setUser(newUser);
@@ -220,10 +211,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       setLoading(true);
       loadedProfileId.current = null;
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       return true;
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err : new Error('Failed to sign out'));
       return false;
     } finally {
       setUser(null);
