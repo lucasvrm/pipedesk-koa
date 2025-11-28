@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Checkbox } from '@/components/ui/checkbox' // Importado Checkbox
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   AlertDialog,
@@ -94,9 +95,10 @@ export default function UserManagementPage() {
     direction: 'asc' 
   })
 
-  // Estados de Deleção
+  // Estados de Deleção e Seleção (Atualizado para Single Selection)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null) // Apenas um ID
 
   if (!currentUser || !hasPermission(currentUser.role, 'MANAGE_USERS')) {
     return <div className="p-8">Acesso negado.</div>
@@ -238,8 +240,22 @@ export default function UserManagementPage() {
     }
   }
 
-  const confirmDelete = (e: React.MouseEvent, userId: string) => {
-    e.stopPropagation()
+  // Seleção Única
+  const handleSelect = (id: string) => {
+    if (selectedId === id) {
+      setSelectedId(null) // Desmarca se já estiver selecionado
+    } else {
+      setSelectedId(id) // Seleciona o novo e desmarca o anterior automaticamente
+    }
+  }
+
+  // Dispara modal de deleção
+  const triggerDelete = () => {
+    if (!selectedId) return
+    confirmDelete(selectedId)
+  }
+
+  const confirmDelete = (userId: string) => {
     if (userId === currentUser.id) {
       toast.error('Você não pode excluir seu próprio usuário')
       return
@@ -254,6 +270,7 @@ export default function UserManagementPage() {
     try {
       await deleteUserMutation.mutateAsync(userToDelete)
       toast.success('Usuário excluído com sucesso')
+      setSelectedId(null) // Limpa seleção após deletar
     } catch (error: any) {
       console.error('Erro ao excluir:', error)
       toast.error(error.message || 'Erro ao excluir usuário')
@@ -324,7 +341,49 @@ export default function UserManagementPage() {
               <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Campos do formulário... (mantidos como estavam) */}
+              {/* Campos do formulário (mantidos) */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                  <UserIcon className="h-5 w-5" /> Dados de Acesso e Perfil
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome Completo *</Label>
+                    <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email *</Label>
+                    <Input 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})} 
+                      disabled={!!editingUser} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Função</Label>
+                    <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="analyst">Analista</SelectItem>
+                        <SelectItem value="newbusiness">New Business</SelectItem>
+                        <SelectItem value="client">Cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Empresa / Entidade (Opcional)</Label>
+                    <Input value={formData.clientEntity} onChange={e => setFormData({...formData, clientEntity: e.target.value})} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>URL da Foto (Avatar)</Label>
+                    <Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} placeholder="https://..." />
+                  </div>
+                </div>
+              </div>
+
+              {/* Demais campos do formulário... */}
               
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button 
@@ -345,21 +404,24 @@ export default function UserManagementPage() {
           </Card>
         )}
 
-        {/* Barra de Filtros e Busca */}
+        {/* Barra de Filtros, Busca e Ação de Deleção */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
-          <div className="flex flex-1 flex-col md:flex-row gap-4 w-full">
+          <div className="flex flex-1 flex-col md:flex-row gap-4 w-full items-center">
+            
+            {/* Pesquisa */}
             <div className="relative w-full md:w-80">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Buscar por nome, email ou telefone..."
                 className="pl-9"
                 value={searchQuery}
-                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} // Resetar página na busca
+                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               />
             </div>
 
-            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-              <div className="w-[180px] shrink-0">
+            {/* Filtros */}
+            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap w-full md:w-auto">
+              <div className="w-full md:w-[180px] shrink-0">
                 <Select value={roleFilter} onValueChange={v => { setRoleFilter(v as UserRole | 'all'); setCurrentPage(1); }}>
                   <SelectTrigger>
                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -377,7 +439,7 @@ export default function UserManagementPage() {
                 </Select>
               </div>
 
-              <div className="w-[200px] shrink-0">
+              <div className="w-full md:w-[200px] shrink-0">
                 <Input 
                   placeholder="Filtrar empresa..." 
                   value={companyFilter}
@@ -385,6 +447,19 @@ export default function UserManagementPage() {
                 />
               </div>
             </div>
+
+            {/* Botão de Excluir (Aparece somente quando há seleção) */}
+            {selectedId && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                className="animate-in fade-in slide-in-from-right-5"
+                onClick={triggerDelete}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Excluir Usuário
+              </Button>
+            )}
           </div>
           
           {/* Paginação e Contador */}
@@ -393,7 +468,6 @@ export default function UserManagementPage() {
               {processedUsers.length} usuários
             </div>
             
-            {/* CORREÇÃO DO ALINHAMENTO AQUI */}
             {processedUsers.length > 0 && (
               <div className="flex items-center gap-2">
                 <Button
@@ -424,6 +498,7 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]"></TableHead> {/* Coluna do Checkbox */}
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
                   <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
                 </TableHead>
@@ -442,11 +517,11 @@ export default function UserManagementPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell>
+                  <TableCell colSpan={6} className="text-center py-8">Carregando...</TableCell>
                 </TableRow>
               ) : currentUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhum usuário encontrado com os filtros atuais.
                   </TableCell>
                 </TableRow>
@@ -457,6 +532,12 @@ export default function UserManagementPage() {
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleEdit(user)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={selectedId === user.id}
+                        onCheckedChange={() => handleSelect(user.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -485,9 +566,14 @@ export default function UserManagementPage() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={(e) => confirmDelete(e, user.id)} 
-                          disabled={user.id === currentUser.id}
-                          className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                          disabled={!selectedId || selectedId !== user.id || user.id === currentUser.id}
+                          className={`
+                            ${selectedId === user.id ? 'text-destructive hover:text-destructive/90 hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}
+                          `}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirmDelete(user.id);
+                          }}
                         >
                           <Trash />
                         </Button>
