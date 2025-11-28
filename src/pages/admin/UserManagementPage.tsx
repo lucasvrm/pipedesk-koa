@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useUsers } from '@/services/userService'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService' // Importando mutações reais
 import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, ArrowLeft } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
@@ -21,7 +21,13 @@ import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
 export default function UserManagementPage() {
   const { profile: currentUser } = useAuth()
   const navigate = useNavigate()
-  const { data: users } = useUsers()
+  
+  // Hooks de Dados e Mutações
+  const { data: users, isLoading } = useUsers()
+  const createUserMutation = useCreateUser()
+  const updateUserMutation = useUpdateUser()
+  const deleteUserMutation = useDeleteUser()
+
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -55,29 +61,62 @@ export default function UserManagementPage() {
     })
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.email) {
       toast.error('Nome e email são obrigatórios')
       return
     }
-    toast.warning('Gerenciamento de usuários requer implementação no backend (userService mutations)')
-    setIsCreating(false)
-    setEditingUser(null)
+
+    try {
+      if (editingUser) {
+        // Atualização Real
+        await updateUserMutation.mutateAsync({
+          id: editingUser.id,
+          data: formData
+        })
+        toast.success('Usuário atualizado com sucesso')
+      } else {
+        // Criação Real
+        await createUserMutation.mutateAsync(formData)
+        toast.success('Usuário criado com sucesso')
+      }
+
+      setIsCreating(false)
+      setEditingUser(null)
+      setFormData({ name: '', email: '', role: 'analyst', clientEntity: '' })
+    } catch (error: any) {
+      console.error('Erro ao salvar usuário:', error)
+      toast.error(error.message || 'Erro ao salvar usuário')
+    }
   }
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (userId === currentUser.id) {
       toast.error('Você não pode excluir seu próprio usuário')
       return
     }
-    toast.warning('Funcionalidade requer implementação no backend')
+
+    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação é irreversível.')) {
+      return
+    }
+
+    try {
+      // Deleção Real
+      await deleteUserMutation.mutateAsync(userId)
+      toast.success('Usuário excluído com sucesso')
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error)
+      toast.error(error.message || 'Erro ao excluir usuário')
+    }
   }
 
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case 'admin': return 'default'
       case 'analyst': return 'secondary'
-      case 'client': case 'newbusiness': return 'outline'
+      case 'client': return 'outline'
+      case 'newbusiness': return 'outline'
+      default: return 'outline'
     }
   }
 
@@ -118,7 +157,12 @@ export default function UserManagementPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                  <Input 
+                    type="email" 
+                    value={formData.email} 
+                    onChange={e => setFormData({...formData, email: e.target.value})} 
+                    disabled={!!editingUser} // Supabase Auth dificulta mudança de email
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Função</Label>
@@ -140,8 +184,19 @@ export default function UserManagementPage() {
                 )}
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsCreating(false)}>Cancelar</Button>
-                <Button onClick={handleSave}>Salvar</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreating(false)}
+                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                >
+                  {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar'}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -160,35 +215,46 @@ export default function UserManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(users || []).map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(user.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-                          <PencilSimple />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} disabled={user.id === currentUser.id}>
-                          <Trash className="text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-4">Carregando...</TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  (users || []).map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {getInitials(user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                            <PencilSimple />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDelete(user.id)} 
+                            disabled={user.id === currentUser.id || deleteUserMutation.isPending}
+                          >
+                            <Trash className="text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
