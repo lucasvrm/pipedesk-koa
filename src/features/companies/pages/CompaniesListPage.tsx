@@ -411,6 +411,7 @@ export default function CompaniesListPage() {
                         />
                       </TableHead>
                       
+                      {/* Colunas Ordenáveis */}
                       <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
                         <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
                       </TableHead>
@@ -567,7 +568,8 @@ export default function CompaniesListPage() {
                   <div className="text-sm text-muted-foreground">
                     Mostrando {startIndex + 1} a {Math.min(endIndex, processedCompanies.length)} de {processedCompanies.length} empresas
                   </div>
-                  <div className="space-x-2">
+                  {/* CORREÇÃO AQUI */}
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"

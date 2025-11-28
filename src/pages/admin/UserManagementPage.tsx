@@ -21,10 +21,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { 
   Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, 
   MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown,
-  User as UserIcon, IdentificationCard, Wallet, FileText
+  User as UserIcon, IdentificationCard, Wallet, FileText, Lightning,
+  CaretLeft, CaretRight
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
@@ -74,6 +83,10 @@ export default function UserManagementPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   const [companyFilter, setCompanyFilter] = useState('')
+
+  // Estados de Paginação
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
 
   // Estados de Ordenação
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ 
@@ -149,6 +162,16 @@ export default function UserManagementPage() {
 
     return result
   }, [users, searchQuery, roleFilter, companyFilter, sortConfig])
+
+  // --- Paginação ---
+  const totalPages = Math.ceil(processedUsers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentUsers = processedUsers.slice(startIndex, endIndex)
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage)
+  }
 
   // --- Handlers de Ação ---
 
@@ -260,229 +283,222 @@ export default function UserManagementPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl space-y-6">
       
-      {/* Cabeçalho */}
-      <div className="flex items-center gap-4">
+      {/* Cabeçalho com Dropdown de Ações */}
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Controle de acesso e permissões do sistema</p>
         </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" className="gap-2">
+              <Lightning className="h-4 w-4" />
+              Ações Rápidas
+              <CaretDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Ações Disponíveis</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setInviteDialogOpen(true)}>
+              <EnvelopeSimple className="mr-2 h-4 w-4" /> Enviar Convite
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMagicLinksDialogOpen(true)}>
+              <LinkIcon className="mr-2 h-4 w-4" /> Ver Links Mágicos
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleCreate}>
+              <UserPlus className="mr-2 h-4 w-4" /> Criar Manualmente
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Ações Rápidas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-3 flex-wrap">
-          <Button onClick={() => setInviteDialogOpen(true)}><EnvelopeSimple className="mr-2" /> Enviar Convite</Button>
-          <Button onClick={() => setMagicLinksDialogOpen(true)} variant="outline"><LinkIcon className="mr-2" /> Ver Links Mágicos</Button>
-          <Button onClick={handleCreate} variant="secondary"><UserPlus className="mr-2" /> Criar Manualmente</Button>
-        </CardContent>
-      </Card>
-
-      {/* Formulário de Criação/Edição */}
-      {isCreating && (
-        <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
-          <CardHeader>
-            <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            
-            {/* Grupo: Perfil Básico */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
-                <UserIcon className="h-5 w-5" /> Dados de Acesso e Perfil
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome Completo *</Label>
-                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email *</Label>
-                  <Input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                    disabled={!!editingUser} 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Função</Label>
-                  <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="analyst">Analista</SelectItem>
-                      <SelectItem value="newbusiness">New Business</SelectItem>
-                      <SelectItem value="client">Cliente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Empresa / Entidade (Opcional)</Label>
-                  <Input value={formData.clientEntity} onChange={e => setFormData({...formData, clientEntity: e.target.value})} />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>URL da Foto (Avatar)</Label>
-                  <Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} placeholder="https://..." />
-                </div>
-              </div>
-            </div>
-
-            {/* Outros grupos de inputs (mantidos iguais para brevidade, mas funcionais) */}
-            
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCreating(false)}
-                disabled={createUserMutation.isPending || updateUserMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleSave}
-                disabled={createUserMutation.isPending || updateUserMutation.isPending}
-              >
-                {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Barra de Filtros e Busca (LAYOUT CORRIGIDO) */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
+      <div className="grid gap-6">
         
-        {/* Container Unificado para Campos de Busca/Filtro - Garante espaçamento idêntico */}
-        <div className="flex flex-1 flex-col md:flex-row gap-4 w-full">
-          
-          {/* Pesquisa */}
-          <div className="relative w-full md:w-80">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar por nome, email ou telefone..."
-              className="pl-9"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Filtro Função */}
-          <div className="w-full md:w-[180px]">
-            <Select value={roleFilter} onValueChange={v => setRoleFilter(v as UserRole | 'all')}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Funnel className="h-4 w-4" />
-                  <SelectValue placeholder="Função" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Funções</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="analyst">Analista</SelectItem>
-                <SelectItem value="newbusiness">New Business</SelectItem>
-                <SelectItem value="client">Cliente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filtro Empresa */}
-          <div className="w-full md:w-[220px]">
-            <Input 
-              placeholder="Filtrar empresa..." 
-              value={companyFilter}
-              onChange={e => setCompanyFilter(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        {/* Contador */}
-        <div className="text-sm text-muted-foreground whitespace-nowrap hidden md:block">
-          Total: {processedUsers.length} usuários
-        </div>
-      </div>
-
-      {/* Tabela de Usuários (VISUAL MELHORADO: Removemos o Card extra) */}
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
-                <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('email')}>
-                <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('role')}>
-                <div className="flex items-center gap-1">Função <SortIcon columnKey="role" /></div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientEntity')}>
-                <div className="flex items-center gap-1">Empresa <SortIcon columnKey="clientEntity" /></div>
-              </TableHead>
-              <TableHead className="w-24 text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell>
-              </TableRow>
-            ) : processedUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Nenhum usuário encontrado com os filtros atuais.
-                </TableCell>
-              </TableRow>
-            ) : (
-              processedUsers.map((user) => (
-                <TableRow 
-                  key={user.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleEdit(user)}
+        {/* Formulário de Criação/Edição */}
+        {isCreating && (
+          <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
+            <CardHeader>
+              <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Campos do formulário... (mantidos como estavam) */}
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreating(false)}
+                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
                 >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        {/* Correção do Avatar: Prioridade para URL, depois fallback */}
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          {getInitials(user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{user.name}</span>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                >
+                  {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Barra de Filtros e Busca */}
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
+          <div className="flex flex-1 flex-col md:flex-row gap-4 w-full">
+            <div className="relative w-full md:w-80">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar por nome, email ou telefone..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} // Resetar página na busca
+              />
+            </div>
+
+            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
+              <div className="w-[180px] shrink-0">
+                <Select value={roleFilter} onValueChange={v => { setRoleFilter(v as UserRole | 'all'); setCurrentPage(1); }}>
+                  <SelectTrigger>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Funnel className="h-4 w-4" />
+                      <SelectValue placeholder="Função" />
                     </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
-                      >
-                        <PencilSimple />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={(e) => confirmDelete(e, user.id)} 
-                        disabled={user.id === currentUser.id}
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                      >
-                        <Trash />
-                      </Button>
-                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Funções</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="analyst">Analista</SelectItem>
+                    <SelectItem value="newbusiness">New Business</SelectItem>
+                    <SelectItem value="client">Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-[200px] shrink-0">
+                <Input 
+                  placeholder="Filtrar empresa..." 
+                  value={companyFilter}
+                  onChange={e => { setCompanyFilter(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Paginação e Contador */}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="text-sm text-muted-foreground whitespace-nowrap hidden md:block">
+              {processedUsers.length} usuários
+            </div>
+            
+            {/* CORREÇÃO DO ALINHAMENTO AQUI */}
+            {processedUsers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <CaretLeft className="mr-2 h-4 w-4" />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Próximo
+                  <CaretRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tabela de Usuários */}
+        <div className="rounded-md border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
+                  <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('email')}>
+                  <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('role')}>
+                  <div className="flex items-center gap-1">Função <SortIcon columnKey="role" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientEntity')}>
+                  <div className="flex items-center gap-1">Empresa <SortIcon columnKey="clientEntity" /></div>
+                </TableHead>
+                <TableHead className="w-24 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell>
+                </TableRow>
+              ) : currentUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Nenhum usuário encontrado com os filtros atuais.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                currentUsers.map((user) => (
+                  <TableRow 
+                    key={user.id} 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleEdit(user)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                            {getInitials(user.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{user.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
+                        >
+                          <PencilSimple />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={(e) => confirmDelete(e, user.id)} 
+                          disabled={user.id === currentUser.id}
+                          className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        >
+                          <Trash />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Modais */}

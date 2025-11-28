@@ -25,14 +25,13 @@ import {
 } from "@/components/ui/tooltip"
 import { 
   Plus, MagnifyingGlass, Trash, Buildings, PencilSimple, User, Phone, Funnel, X,
-  CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight // <--- ADICIONADO AQUI
+  CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight
 } from '@phosphor-icons/react'
 import { 
   PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel,
   CREDIT_SUBTYPE_LABELS, EQUITY_SUBTYPE_LABELS, BARTER_SUBTYPE_LABELS
 } from '@/lib/types'
 import { toast } from 'sonner'
-import { formatDate } from '@/lib/helpers'
 
 // Tipagem para ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'relationshipLevel';
@@ -579,7 +578,8 @@ export default function PlayersListPage() {
                   <div className="text-sm text-muted-foreground">
                     Mostrando {startIndex + 1} a {Math.min(endIndex, processedPlayers.length)} de {processedPlayers.length} players
                   </div>
-                  <div className="space-x-2">
+                  {/* CORREÇÃO AQUI */}
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
