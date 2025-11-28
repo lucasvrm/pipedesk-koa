@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService' // Importando mutações reais
-import { User, UserRole } from '@/lib/types'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService'
+import { User, UserRole, ROLE_LABELS } from '@/lib/types' // Importando ROLE_LABELS se disponível, senão usamos fallback
 import { hasPermission } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,16 +11,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, ArrowLeft } from '@phosphor-icons/react'
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { 
+  Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, 
+  MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown 
+} from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
-import { useNavigate } from 'react-router-dom'
 import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
 
+// Tipos para Ordenação
+type SortKey = 'name' | 'email' | 'role' | 'clientEntity';
+type SortDirection = 'asc' | 'desc';
+
 export default function UserManagementPage() {
   const { profile: currentUser } = useAuth()
-  const navigate = useNavigate()
   
   // Hooks de Dados e Mutações
   const { data: users, isLoading } = useUsers()
@@ -28,11 +43,9 @@ export default function UserManagementPage() {
   const updateUserMutation = useUpdateUser()
   const deleteUserMutation = useDeleteUser()
 
+  // Estados de Edição/Criação
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isCreating, setIsCreating] = useState(false)
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
-  const [magicLinksDialogOpen, setMagicLinksDialogOpen] = useState(false)
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -40,9 +53,94 @@ export default function UserManagementPage() {
     clientEntity: '',
   })
 
+  // Estados de Modais Auxiliares
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [magicLinksDialogOpen, setMagicLinksDialogOpen] = useState(false)
+
+  // Estados de Filtro e Busca
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
+  const [companyFilter, setCompanyFilter] = useState('')
+
+  // Estados de Ordenação
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ 
+    key: 'name', 
+    direction: 'asc' 
+  })
+
+  // Estados de Deleção (Novo Modal)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
+
   if (!currentUser || !hasPermission(currentUser.role, 'MANAGE_USERS')) {
     return <div className="p-8">Acesso negado.</div>
   }
+
+  // --- Lógica de Filtros e Ordenação ---
+
+  const handleSort = (key: SortKey) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }))
+  }
+
+  const processedUsers = useMemo(() => {
+    if (!users) return []
+
+    // 1. Filtragem
+    let result = users.filter(user => {
+      // Busca por Nome, Email ou Telefone
+      const searchLower = searchQuery.toLowerCase()
+      const matchesSearch = 
+        user.name.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        (user.cellphone && user.cellphone.includes(searchLower)) || false
+
+      // Filtro de Função
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter
+
+      // Filtro de Empresa
+      const matchesCompany = 
+        !companyFilter || 
+        (user.clientEntity && user.clientEntity.toLowerCase().includes(companyFilter.toLowerCase())) || false
+
+      return matchesSearch && matchesRole && matchesCompany
+    })
+
+    // 2. Ordenação
+    result.sort((a, b) => {
+      let aValue = ''
+      let bValue = ''
+
+      switch (sortConfig.key) {
+        case 'name':
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
+          break
+        case 'email':
+          aValue = a.email.toLowerCase()
+          bValue = b.email.toLowerCase()
+          break
+        case 'role':
+          aValue = a.role
+          bValue = b.role
+          break
+        case 'clientEntity':
+          aValue = (a.clientEntity || '').toLowerCase()
+          bValue = (b.clientEntity || '').toLowerCase()
+          break
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return result
+  }, [users, searchQuery, roleFilter, companyFilter, sortConfig])
+
+  // --- Handlers de Ação ---
 
   const handleCreate = () => {
     setIsCreating(true)
@@ -69,14 +167,12 @@ export default function UserManagementPage() {
 
     try {
       if (editingUser) {
-        // Atualização Real
         await updateUserMutation.mutateAsync({
           id: editingUser.id,
           data: formData
         })
         toast.success('Usuário atualizado com sucesso')
       } else {
-        // Criação Real
         await createUserMutation.mutateAsync(formData)
         toast.success('Usuário criado com sucesso')
       }
@@ -90,25 +186,33 @@ export default function UserManagementPage() {
     }
   }
 
-  const handleDelete = async (userId: string) => {
+  // Abre o modal de deleção
+  const confirmDelete = (userId: string) => {
     if (userId === currentUser.id) {
       toast.error('Você não pode excluir seu próprio usuário')
       return
     }
+    setUserToDelete(userId)
+    setDeleteDialogOpen(true)
+  }
 
-    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação é irreversível.')) {
-      return
-    }
+  // Executa a deleção após confirmação
+  const executeDelete = async () => {
+    if (!userToDelete) return
 
     try {
-      // Deleção Real
-      await deleteUserMutation.mutateAsync(userId)
+      await deleteUserMutation.mutateAsync(userToDelete)
       toast.success('Usuário excluído com sucesso')
     } catch (error: any) {
       console.error('Erro ao excluir:', error)
       toast.error(error.message || 'Erro ao excluir usuário')
+    } finally {
+      setDeleteDialogOpen(false)
+      setUserToDelete(null)
     }
   }
+
+  // --- Render Helpers ---
 
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
@@ -120,12 +224,17 @@ export default function UserManagementPage() {
     }
   }
 
+  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+    if (sortConfig.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" />
+    return sortConfig.direction === 'asc' 
+      ? <CaretUp className="ml-1 h-3 w-3 text-primary" weight="bold" />
+      : <CaretDown className="ml-1 h-3 w-3 text-primary" weight="bold" />
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/rbac')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+        {/* Item 5: Botão Voltar REMOVIDO */}
         <div>
           <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Controle de acesso e permissões do sistema</p>
@@ -133,6 +242,7 @@ export default function UserManagementPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* Ações Rápidas */}
         <Card>
           <CardHeader>
             <CardTitle>Ações Rápidas</CardTitle>
@@ -144,8 +254,9 @@ export default function UserManagementPage() {
           </CardContent>
         </Card>
 
+        {/* Formulário de Criação/Edição */}
         {isCreating && (
-          <Card className="border-primary/20 bg-primary/5">
+          <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
             <CardHeader>
               <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
             </CardHeader>
@@ -202,67 +313,156 @@ export default function UserManagementPage() {
           </Card>
         )}
 
+        {/* Barra de Filtros e Busca */}
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
+          <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
+            {/* Item 4: Pesquisa */}
+            <div className="relative w-full md:w-80">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar por nome, email ou telefone..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Item 2: Filtros */}
+            <div className="flex items-center gap-2">
+              <div className="w-[180px]">
+                <Select value={roleFilter} onValueChange={v => setRoleFilter(v as UserRole | 'all')}>
+                  <SelectTrigger>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Funnel className="h-4 w-4" />
+                      <SelectValue placeholder="Função" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Funções</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="analyst">Analista</SelectItem>
+                    <SelectItem value="newbusiness">New Business</SelectItem>
+                    <SelectItem value="client">Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-[200px]">
+                <Input 
+                  placeholder="Filtrar empresa..." 
+                  value={companyFilter}
+                  onChange={e => setCompanyFilter(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-sm text-muted-foreground">
+            Total: {processedUsers.length} usuários
+          </div>
+        </div>
+
+        {/* Tabela de Usuários */}
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Função</TableHead>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">Carregando...</TableCell>
+                    {/* Item 3: Ordenação */}
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
+                      <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('email')}>
+                      <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('role')}>
+                      <div className="flex items-center gap-1">Função <SortIcon columnKey="role" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientEntity')}>
+                      <div className="flex items-center gap-1">Empresa <SortIcon columnKey="clientEntity" /></div>
+                    </TableHead>
+                    <TableHead className="w-24 text-right">Ações</TableHead>
                   </TableRow>
-                ) : (
-                  (users || []).map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                              {getInitials(user.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{user.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-                            <PencilSimple />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDelete(user.id)} 
-                            disabled={user.id === currentUser.id || deleteUserMutation.isPending}
-                          >
-                            <Trash className="text-destructive" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell>
+                    </TableRow>
+                  ) : processedUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhum usuário encontrado com os filtros atuais.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    processedUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {getInitials(user.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                              <PencilSimple />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => confirmDelete(user.id)} 
+                              disabled={user.id === currentUser.id}
+                              className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                            >
+                              <Trash />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Modais */}
       <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} currentUser={currentUser} />
       <MagicLinksDialog open={magicLinksDialogOpen} onOpenChange={setMagicLinksDialogOpen} />
+
+      {/* Item 1: Modal de Deleção */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário e revogará seu acesso ao sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setUserToDelete(null); }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={executeDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Confirmar Exclusão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { count = 5, password = "password123" } = await req.json()
+    const { action = 'create', count = 5, password = "password123" } = await req.json()
 
     // Usar a SERVICE_ROLE_KEY para ter permissão de admin no Auth
     const supabaseAdmin = createClient(
@@ -23,6 +23,45 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // --- LÓGICA DE EXCLUSÃO ---
+    if (action === 'delete') {
+      // 1. Buscar todos os IDs de perfis sintéticos
+      const { data: profiles, error: fetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('is_synthetic', true)
+
+      if (fetchError) throw fetchError
+
+      let deletedCount = 0
+      const errors = []
+
+      // 2. Deletar usuários do Auth (Isso apaga o profile via CASCADE no banco)
+      for (const p of profiles || []) {
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(p.id)
+        if (deleteError) {
+          console.error(`Erro ao deletar usuário ${p.id}:`, deleteError)
+          errors.push({ id: p.id, error: deleteError.message })
+        } else {
+          deletedCount++
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          deleted: deletedCount, 
+          totalFound: profiles?.length || 0,
+          errors 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
+    }
+
+    // --- LÓGICA DE CRIAÇÃO (Padrão) ---
     const createdUsers = []
     const errors = []
 
@@ -47,13 +86,7 @@ serve(async (req) => {
       }
 
       if (authData.user) {
-        // 2. O Trigger handle_new_user vai criar o perfil automaticamente.
-        // Precisamos apenas garantir que o perfil seja marcado como is_synthetic
-        // e que os dados batam (caso o trigger não use o metadata corretamente)
-        
-        // Pequeno delay para garantir que o trigger rodou (opcional, mas recomendado em testes massivos)
-        // await new Promise(r => setTimeout(r, 100))
-
+        // 2. Garantir flag is_synthetic no profile
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
           .update({ 

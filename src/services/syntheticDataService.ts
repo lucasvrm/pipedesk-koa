@@ -69,7 +69,7 @@ export const syntheticDataService = {
   async generateUsers(count: number) {
     try {
       const { data, error } = await supabase.functions.invoke('generate-synthetic-users', {
-        body: { count, password: 'password123' }
+        body: { action: 'create', count, password: 'password123' }
       });
       if (error) throw error;
       return data.created;
@@ -80,7 +80,19 @@ export const syntheticDataService = {
   },
 
   async clearSyntheticUsers() {
-    await supabase.from('profiles').delete().eq('is_synthetic', true);
+    // Chama a Edge Function para deletar do Auth (que deleta profile em cascata)
+    const { data, error } = await supabase.functions.invoke('generate-synthetic-users', {
+        body: { action: 'delete' }
+    });
+    
+    if (error) throw error;
+    
+    // Se a função retornar erro de lógica
+    if (data && data.error) {
+        throw new Error(data.error);
+    }
+    
+    return data;
   },
 
   // --- 2. PLAYERS ---
