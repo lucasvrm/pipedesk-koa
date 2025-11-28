@@ -46,10 +46,9 @@ export default function UserManagementDialog({
   onOpenChange,
   currentUser,
 }: UserManagementDialogProps) {
-  console.log(">>> DEBUG ATIVO: Versão com Mutações Reais v1.0 <<<");
   const { data: users, isLoading } = useUsers()
   
-  // Hooks de Mutação (Conectados à Edge Function via userService)
+  // Mutações Reais
   const createUserMutation = useCreateUser()
   const updateUserMutation = useUpdateUser()
   const deleteUserMutation = useDeleteUser()
@@ -102,19 +101,19 @@ export default function UserManagementDialog({
 
     try {
       if (editingUser) {
-        // Atualizar Usuário
+        // ATUALIZAÇÃO REAL
         await updateUserMutation.mutateAsync({
           id: editingUser.id,
           data: formData
         })
         toast.success('Usuário atualizado com sucesso')
       } else {
-        // Criar Usuário
+        // CRIAÇÃO REAL
         await createUserMutation.mutateAsync(formData)
         toast.success('Usuário criado com sucesso')
       }
 
-      // Resetar estado
+      // Reset
       setIsCreating(false)
       setEditingUser(null)
       setFormData({
@@ -140,6 +139,7 @@ export default function UserManagementDialog({
     }
 
     try {
+      // DELEÇÃO REAL
       await deleteUserMutation.mutateAsync(userId)
       toast.success('Usuário excluído com sucesso')
     } catch (error: any) {
@@ -202,8 +202,7 @@ export default function UserManagementDialog({
                   setFormData({ ...formData, email: e.target.value })
                 }
                 placeholder="email@empresa.com"
-                // Desabilita edição de email para usuários existentes (complexidade do Supabase Auth)
-                disabled={!!editingUser} 
+                disabled={!!editingUser}
               />
             </div>
 
