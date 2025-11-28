@@ -4,11 +4,10 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/helpers'
-import { MasterDeal } from '@/lib/types'
-import { useDeals } from '@/features/deals/hooks/useDeals'
-import { useTracks } from '@/features/deals/hooks/usePlayerTracks'
+// CORREÇÃO: Imports via services
+import { useDeals } from '@/services/dealService'
+import { useTracks } from '@/services/trackService'
 
-// Cores para os quadrantes/tipos
 const COLORS = ['#0ea5e9', '#22c55e', '#eab308', '#f43f5e', '#8b5cf6'];
 
 export function PortfolioMatrix() {
@@ -21,7 +20,6 @@ export function PortfolioMatrix() {
     return deals
       .filter(d => d.status === 'active')
       .map(deal => {
-        // Encontrar a maior probabilidade entre os tracks ativos deste deal
         const dealTracks = tracks.filter(t => t.masterDealId === deal.id && t.status === 'active');
         const maxProb = dealTracks.length > 0 
           ? Math.max(...dealTracks.map(t => t.probability)) 
@@ -81,11 +79,8 @@ export function PortfolioMatrix() {
             />
             <ZAxis type="number" dataKey="volume" range={[60, 400]} />
             <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
-            
-            {/* Linhas de Quadrantes */}
             <ReferenceLine x={50} stroke="currentColor" strokeDasharray="3 3" className="text-muted-foreground/40" />
             <ReferenceLine y={data.length ? Math.max(...data.map(d => d.volume)) / 2 : 0} stroke="currentColor" strokeDasharray="3 3" className="text-muted-foreground/40" />
-
             <Scatter name="Deals" data={data}>
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.7} />

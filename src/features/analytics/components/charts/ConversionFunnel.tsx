@@ -4,10 +4,11 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/helpers'
-import { useTracks } from '@/features/deals/hooks/usePlayerTracks'
+// CORREÇÃO: Import via services
+import { useTracks } from '@/services/trackService'
 import { STAGE_LABELS, PlayerStage } from '@/lib/types'
 
-const FUNNEL_COLORS = ['#94a3b8', '#60a5fa', '#f59e0b', '#a855f7', '#10b981']; // Cores progressivas
+const FUNNEL_COLORS = ['#94a3b8', '#60a5fa', '#f59e0b', '#a855f7', '#10b981'];
 
 export function ConversionFunnel() {
   const { data: tracks } = useTracks()
@@ -17,22 +18,17 @@ export function ConversionFunnel() {
 
     const stages: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'];
     
-    // Calcula volume total por estágio
-    const funnelData = stages.map((stage, index) => {
-      // Consideramos tracks ativos neste estágio
+    return stages.map((stage, index) => {
       const stageTracks = tracks.filter(t => t.currentStage === stage && t.status === 'active');
       const volume = stageTracks.reduce((sum, t) => sum + (t.trackVolume || 0), 0);
-      const count = stageTracks.length;
 
       return {
         stage: STAGE_LABELS[stage],
         volume,
-        count,
+        count: stageTracks.length,
         fill: FUNNEL_COLORS[index]
       };
     });
-
-    return funnelData;
   }, [tracks]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -56,21 +52,10 @@ export function ConversionFunnel() {
       </CardHeader>
       <CardContent className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
-          {/* Usando BarChart horizontal para simular funil visualmente claro */}
-          <BarChart 
-            data={data} 
-            layout="vertical" 
-            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-          >
+          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted/30" />
             <XAxis type="number" hide />
-            <YAxis 
-              type="category" 
-              dataKey="stage" 
-              width={80} 
-              tick={{ fontSize: 12 }} 
-              interval={0}
-            />
+            <YAxis type="category" dataKey="stage" width={80} tick={{ fontSize: 12 }} interval={0} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
             <Bar dataKey="volume" radius={[0, 4, 4, 0]} barSize={40}>
                {data.map((entry, index) => (
