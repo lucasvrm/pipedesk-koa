@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom' // <--- Link IMPORTADO
 import { useTrack, useUpdateTrack } from '@/services/trackService'
 import { useDeal } from '@/services/dealService'
 import { useTasks, useUpdateTask } from '@/services/taskService'
@@ -20,7 +20,7 @@ import {
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-import { STATUS_LABELS, Task, STAGE_LABELS, PlayerStage } from '@/lib/types'
+import { STATUS_LABELS, Task, STAGE_LABELS, PlayerStage, PlayerTrackStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 
 // Components
@@ -30,7 +30,7 @@ import TaskDetailDialog from '@/features/tasks/components/TaskDetailDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
-import { EditTrackDialog } from '../components/EditTrackDialog' // <--- IMPORTADO
+import { EditTrackDialog } from '../components/EditTrackDialog'
 
 export default function TrackDetailPage() {
   const { id } = useParams()
@@ -47,7 +47,7 @@ export default function TrackDetailPage() {
 
   // UI States
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
-  const [editTrackOpen, setEditTrackOpen] = useState(false) // <--- NOVO ESTADO
+  const [editTrackOpen, setEditTrackOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   
   if (trackLoading || !track) {
@@ -107,6 +107,17 @@ export default function TrackDetailPage() {
     return new Date(task.dueDate) < today
   }
 
+  // Helper de Cores (Copiado do padrão DealDetailPage)
+  const getStatusColor = (status: PlayerTrackStatus) => {
+    switch (status) {
+      case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
+      case 'concluded': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
+      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
+      case 'on_hold': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
   // Cálculo do Fee do Track
   const trackFee = deal?.feePercentage 
     ? (track.trackVolume * (deal.feePercentage / 100)) 
@@ -120,11 +131,22 @@ export default function TrackDetailPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">{track.playerName}</h1>
-              {/* Badge de Status */}
-              <Badge variant="secondary" className="font-medium">
+              {/* TÍTULO COM LINK PARA O PLAYER */}
+              <Link 
+                to={`/players/${track.playerId}`} 
+                className="hover:text-primary transition-colors"
+                title="Ir para página do Player"
+              >
+                <h1 className="text-3xl font-bold tracking-tight text-foreground hover:underline decoration-2 underline-offset-4">
+                  {track.playerName}
+                </h1>
+              </Link>
+
+              {/* Badge de Status COM CORES PADRONIZADAS */}
+              <Badge className={`font-normal ${getStatusColor(track.status)}`}>
                 {STATUS_LABELS[track.status]}
               </Badge>
+
               {/* Botão de Editar */}
               <Button 
                 variant="ghost" 
@@ -138,11 +160,31 @@ export default function TrackDetailPage() {
             </div>
 
             {deal && (
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm font-medium">
                 <Buildings className="h-4 w-4" />
-                <span className="font-medium text-sm">
-                  {deal.clientName} {deal.company?.name && <span className="mx-1 text-muted-foreground/50">|</span>} {deal.company?.name}
-                </span>
+                
+                {/* LINK PARA O DEAL */}
+                <Link 
+                  to={`/deals/${deal.id}`}
+                  className="hover:text-primary hover:underline transition-colors"
+                  title="Ir para página do Deal"
+                >
+                  {deal.clientName}
+                </Link>
+
+                {deal.company?.name && (
+                  <>
+                    <span className="text-muted-foreground/50">|</span>
+                    {/* LINK PARA A EMPRESA */}
+                    <Link 
+                      to={`/companies/${deal.company.id}`}
+                      className="hover:text-primary hover:underline transition-colors"
+                      title="Ir para página da Empresa"
+                    >
+                      {deal.company.name}
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>
