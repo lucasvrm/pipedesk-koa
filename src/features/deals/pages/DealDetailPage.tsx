@@ -1,4 +1,5 @@
-import { useParams, useNavigate, Link } from 'react-router-dom' // Link adicionado
+import { useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { logActivity } from '@/services/activityService'
@@ -10,12 +11,29 @@ import { Card } from '@/components/ui/card'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
-import { formatCurrency, formatDate } from '@/lib/helpers'
+import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
   FileText, Sparkle, Tag, PencilSimple,
-  Kanban as KanbanIcon, List as ListIcon, Buildings
+  Kanban as KanbanIcon, List as ListIcon, Buildings,
+  DotsThreeOutline, Wallet, CalendarBlank, WarningCircle
 } from '@phosphor-icons/react'
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
@@ -29,7 +47,6 @@ import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import { toast } from 'sonner'
-import { useState } from 'react'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -110,52 +127,62 @@ export default function DealDetailPage() {
 
   const feeValue = deal.feePercentage && deal.volume ? (deal.volume * (deal.feePercentage / 100)) : 0;
   const feeDisplay = deal.feePercentage ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}` : '—';
+  
+  // Lógica para cor do Prazo (Vermelho se atrasado, Slate se ok)
+  const isDeadlineOverdue = deal.deadline ? isOverdue(deal.deadline.toString()) : false;
+  const deadlineColorClass = isDeadlineOverdue ? 'border-l-red-500' : 'border-l-slate-400';
+  const deadlineIconColor = isDeadlineOverdue ? 'text-red-500' : 'text-slate-500';
 
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
+      
+      {/* Breadcrumbs */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/deals">Negócios</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{deal.clientName}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Cabeçalho */}
       <div className="mb-6">
-        
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold">{deal.clientName}</h1>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-primary"
-                onClick={() => setEditDealOpen(true)}
-                title="Editar Informações"
-              >
-                <PencilSimple className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {deal.company && (
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-6 pl-0.5">
-                <Buildings className="h-4 w-4" />
-                {/* 1. Link adicionado para redirecionar para a página da empresa */}
-                <Link 
-                  to={`/companies/${deal.company.id}`}
-                  className="font-medium text-sm hover:text-primary hover:underline transition-colors"
-                >
-                  {deal.company.name}
-                </Link>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-3 text-sm">
+              <h1 className="text-3xl font-bold tracking-tight">{deal.clientName}</h1>
               <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
                 {STATUS_LABELS[deal.status]}
               </Badge>
-              <span className="text-muted-foreground">{OPERATION_LABELS[deal.operationType]}</span>
+            </div>
+
+            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+              {deal.company && (
+                <div className="flex items-center gap-1.5 pl-0.5">
+                  <Buildings className="h-4 w-4" />
+                  <Link 
+                    to={`/companies/${deal.company.id}`}
+                    className="font-medium hover:text-primary hover:underline transition-colors"
+                  >
+                    {deal.company.name}
+                  </Link>
+                  <span className="opacity-50 mx-1">|</span>
+                </div>
+              )}
+              <span className="font-medium">{OPERATION_LABELS[deal.operationType]}</span>
             </div>
           </div>
           
           <div className="flex gap-2 items-center">
-            <DocumentGenerator deal={deal} playerTracks={activeTracks} />
+            {/* Status Selector */}
             <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
-              <SelectTrigger className={`w-[180px] border h-10 font-medium transition-colors ${getStatusColor(deal.status)}`}>
+              <SelectTrigger className={`w-[160px] h-9 font-medium transition-colors ${getStatusColor(deal.status)}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -165,38 +192,73 @@ export default function DealDetailPage() {
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Document Generator (Ação Primária/Frequente) */}
+            <DocumentGenerator deal={deal} playerTracks={activeTracks} />
+
+            {/* Menu de Ações Secundárias */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9">
+                  <DotsThreeOutline weight="fill" className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Ações do Negócio</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setEditDealOpen(true)}>
+                  <PencilSimple className="mr-2 h-4 w-4" /> Editar Informações
+                </DropdownMenuItem>
+                {/* Futuramente: Arquivar, Deletar, etc. */}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Card className="bg-blue-50 border-blue-200 shadow-sm p-3 flex flex-col justify-center gap-1">
-          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Volume Total</span>
-          <p className="text-lg font-bold text-blue-900 truncate" title={formatCurrency(deal.volume)}>
+      {/* Cards de Métricas (Padronizados) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Volume (Azul) */}
+        <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Wallet className="h-3.5 w-3.5 text-blue-500" /> Volume Total
+          </span>
+          <p className="text-xl font-bold text-foreground truncate" title={formatCurrency(deal.volume)}>
             {formatCurrency(deal.volume)}
           </p>
         </Card>
 
-        <Card className="bg-card shadow-sm p-3 flex flex-col justify-center gap-1">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fee Estimado</span>
+        {/* Card 2: Fee Estimado (Emerald/Verde - igual ao Track) */}
+        <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkle className="h-3.5 w-3.5 text-emerald-500" /> Fee Estimado
+          </span>
           <p className="text-sm font-bold text-foreground truncate" title={feeDisplay}>
             {feeDisplay}
           </p>
         </Card>
 
-        {/* 2. Alteração da posição: Players Ativos agora é o terceiro card */}
-        <Card className="bg-amber-50 border-amber-200 shadow-sm p-3 flex flex-col justify-center gap-1">
-          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Players Ativos</span>
-          <p className="text-lg font-bold text-amber-900">
+        {/* Card 3: Players Ativos (Amber/Laranja) */}
+        <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 text-amber-500" /> Players Ativos
+          </span>
+          <p className="text-xl font-bold text-foreground">
             {activeTracks.filter(t => t.status === 'active').length}
           </p>
         </Card>
 
-        {/* 2. Alteração da posição: Prazo Final agora é o quarto card */}
-        <Card className="bg-red-50 border-red-200 shadow-sm p-3 flex flex-col justify-center gap-1">
-          <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Prazo Final</span>
-          <p className="text-lg font-bold text-red-900 truncate">
+        {/* Card 4: Prazo (Condicional: Slate ou Vermelho) */}
+        <Card className={`p-4 flex flex-col justify-between gap-1 border-l-4 ${deadlineColorClass} shadow-sm hover:shadow-md transition-shadow`}>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            {isDeadlineOverdue ? (
+               <WarningCircle className={`h-3.5 w-3.5 ${deadlineIconColor}`} />
+            ) : (
+               <CalendarBlank className={`h-3.5 w-3.5 ${deadlineIconColor}`} />
+            )}
+            Prazo Final
+          </span>
+          <p className={`text-xl font-bold truncate ${isDeadlineOverdue ? 'text-red-600' : 'text-foreground'}`}>
             {formatDate(deal.deadline)}
           </p>
         </Card>
@@ -204,14 +266,14 @@ export default function DealDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="players" className="w-full space-y-6">
-        <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/50">
-          <TabsTrigger value="players" className="py-2"><Users className="mr-2" /> Players</TabsTrigger>
-          <TabsTrigger value="documents" className="py-2"><FileText className="mr-2" /> Docs</TabsTrigger>
-          <TabsTrigger value="comments" className="py-2"><ChatCircle className="mr-2" /> Comentários</TabsTrigger>
+        <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
+          <TabsTrigger value="players" className="py-2 px-4"><Users className="mr-2 h-4 w-4" /> Players</TabsTrigger>
+          <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
+          <TabsTrigger value="comments" className="py-2 px-4"><ChatCircle className="mr-2 h-4 w-4" /> Comentários</TabsTrigger>
           
-          <TabsTrigger value="ai" disabled className="py-2 opacity-50 cursor-not-allowed"><Sparkle className="mr-2" /> IA</TabsTrigger>
-          <TabsTrigger value="fields" disabled className="py-2 opacity-50 cursor-not-allowed"><Tag className="mr-2" /> Campos</TabsTrigger>
-          <TabsTrigger value="activity" className="py-2"><ClockCounterClockwise className="mr-2" /> Atividades</TabsTrigger>
+          <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
+          <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
+          <TabsTrigger value="activity" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
         </TabsList>
 
         <TabsContent value="players" className="space-y-4">
@@ -237,14 +299,14 @@ export default function DealDetailPage() {
               </Button>
             </div>
 
-            <Button onClick={() => setCreatePlayerOpen(true)}>
+            <Button onClick={() => setCreatePlayerOpen(true)} size="sm">
               <Plus className="mr-2" /> Adicionar Player
             </Button>
           </div>
           
           {playersView === 'active' ? (
             activeTracks.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+              <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
                 <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
                 <p className="text-muted-foreground">Nenhum player ativo.</p>
                 <Button variant="link" onClick={() => setCreatePlayerOpen(true)}>
