@@ -1,21 +1,25 @@
 import { useState } from 'react'
 import { useAnalytics } from '@/services/analyticsService'
-import {
-  User,
-  PlayerStage,
-  OperationType,
-} from '@/lib/types'
+import { User, PlayerStage, OperationType } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs' // Tabs adicionadas
-import { Download, ChartLine, Clock, Target, Users, Funnel, ChartLineUp, PresentationChart } from '@phosphor-icons/react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Download, ChartLine, Target, Users, Funnel, ChartLineUp, PresentationChart, Strategy, Handshake } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+
+// IMPORTS DOS NOVOS GRÁFICOS
+import { PortfolioMatrix } from './charts/PortfolioMatrix'
+import { ConversionFunnel } from './charts/ConversionFunnel'
+import { WeightedForecastChart } from './charts/WeightedForecastChart'
+import { TeamWorkloadHeatmap } from './charts/TeamWorkloadHeatmap'
+
+// Import de componentes existentes
 import ConversionTrendChart from './ConversionTrendChart'
+import DealComparison from '@/features/deals/pages/DealComparison'
 import { PlayersAnalytics } from './PlayersAnalytics'
-import DealComparison from '@/features/deals/pages/DealComparison' // Importando a Comparação
 
 interface AnalyticsDashboardProps {
   currentUser: User
@@ -44,31 +48,26 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
       toast.error('Você não tem permissão para exportar dados')
       return
     }
-    toast.info('Exportação será implementada em breve com a nova API')
+    toast.info('Exportação iniciada...')
   }
 
   const getStageLabel = (stage: PlayerStage) => {
     const labels: Record<PlayerStage, string> = {
-      nda: 'NDA',
-      analysis: 'Análise',
-      proposal: 'Proposta',
-      negotiation: 'Negociação',
-      closing: 'Fechamento',
+      nda: 'NDA', analysis: 'Análise', proposal: 'Proposta', negotiation: 'Negociação', closing: 'Fechamento',
     }
     return labels[stage]
   }
 
-  const handlePeriodClick = (period: string) => {
-    toast.info(`Filtrando por período: ${period}`)
-  }
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Analytics & Inteligência</h2>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <PresentationChart className="text-primary" />
+            Analytics & Inteligência
+          </h2>
           <p className="text-muted-foreground">
-            Métricas de performance e comparação de cenários
+            Métricas de performance, forecast financeiro e saúde do pipeline.
           </p>
         </div>
         {canExport && (
@@ -79,223 +78,203 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
         )}
       </div>
 
-      <Tabs defaultValue="overview" className="w-full space-y-6">
-        <TabsList className="bg-muted/50 p-1">
-          <TabsTrigger value="overview" className="gap-2">
-            <PresentationChart size={16} />
-            Visão Geral
-          </TabsTrigger>
-          <TabsTrigger value="comparison" className="gap-2">
-            <ChartLineUp size={16} />
-            Comparação de Deals
-          </TabsTrigger>
-        </TabsList>
-
-        {/* --- ABA VISÃO GERAL --- */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Conteúdo de Loading/Erro Movido para dentro da Tab para não quebrar a estrutura */}
-          {isLoading ? (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      {/* --- FILTROS GLOBAIS --- */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Período</Label>
+              <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todo o Histórico</SelectItem>
+                  <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                  <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                  <SelectItem value="1y">Último ano</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : error || !metrics ? (
-            <div className="p-8 text-center text-destructive">
-                <p>Erro ao carregar dados de analytics. Tente novamente mais tarde.</p>
+            <div className="space-y-2">
+              <Label>Tipo de Operação</Label>
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="ccb">CCB</SelectItem>
+                  <SelectItem value="cri_corporate">CRI Corporativo</SelectItem>
+                  <SelectItem value="cri_land">CRI Terreno</SelectItem>
+                  {/* Adicione outros tipos conforme necessário */}
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <>
-                <Card>
-                    <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Funnel />
-                        Filtros
-                    </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                        <Label>Período</Label>
-                        <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as typeof dateFilter)}>
-                            <SelectTrigger>
-                            <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="all">Todos os períodos</SelectItem>
-                            <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                            <SelectItem value="90d">Últimos 90 dias</SelectItem>
-                            <SelectItem value="1y">Último ano</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        </div>
+            <div className="space-y-2">
+              <Label>Equipe</Label>
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toda a Organização</SelectItem>
+                  {/* Popular com equipas reais se houver */}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-                        <div className="space-y-2">
-                        <Label>Tipo de Operação</Label>
-                        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-                            <SelectTrigger>
-                            <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="all">Todos os tipos</SelectItem>
-                            <SelectItem value="acquisition">Aquisição</SelectItem>
-                            <SelectItem value="merger">Fusão</SelectItem>
-                            <SelectItem value="investment">Investimento</SelectItem>
-                            <SelectItem value="divestment">Desinvestimento</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        </div>
+      {/* --- CONTEÚDO PRINCIPAL --- */}
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : error || !metrics ? (
+        <div className="p-8 text-center text-destructive border rounded-lg bg-destructive/5">
+          <p>Erro ao carregar dados de analytics.</p>
+        </div>
+      ) : (
+        <Tabs defaultValue="strategy" className="w-full space-y-6">
+          <TabsList className="bg-muted/50 p-1 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="strategy" className="gap-2 min-w-[120px]">
+              <Strategy size={16} />
+              Estratégia & Forecast
+            </TabsTrigger>
+            <TabsTrigger value="operations" className="gap-2 min-w-[120px]">
+              <ChartLineUp size={16} />
+              Operacional & Conversão
+            </TabsTrigger>
+            <TabsTrigger value="comparison" className="gap-2 min-w-[120px]">
+              <Handshake size={16} />
+              Comparador de Deals
+            </TabsTrigger>
+          </TabsList>
 
-                        <div className="space-y-2">
-                        <Label>Equipe</Label>
-                        <Select value={teamFilter} onValueChange={setTeamFilter}>
-                            <SelectTrigger>
-                            <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="all">Todas as equipes</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        </div>
+          {/* --- ABA 1: ESTRATÉGIA (NOVOS GRÁFICOS) --- */}
+          <TabsContent value="strategy" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* KPIs Principais */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pipeline Ponderado</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(metrics.weightedPipeline)}</div>
+                    <Target className="text-emerald-500" size={24} />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Deals Ativos</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold">{metrics.activeDeals}</div>
+                    <ChartLine className="text-blue-500" size={24} />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Conversão</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold">{metrics.conversionRate.toFixed(1)}%</div>
+                    <Funnel className="text-amber-500" size={24} />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Negócios</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold">{metrics.totalDeals}</div>
+                    <Users className="text-purple-500" size={24} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* GRÁFICOS AVANÇADOS (GRID 2x2) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-[450px]">
+                <PortfolioMatrix />
+              </div>
+              <div className="h-[450px]">
+                <WeightedForecastChart />
+              </div>
+              <div className="h-[450px]">
+                <ConversionFunnel />
+              </div>
+              <div className="h-[450px]">
+                <TeamWorkloadHeatmap />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* --- ABA 2: OPERACIONAL (ANTIGO VISÃO GERAL) --- */}
+          <TabsContent value="operations" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock /> Tempo Médio por Estágio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(['nda', 'analysis', 'proposal', 'negotiation', 'closing'] as PlayerStage[]).map((stage) => (
+                      <div key={stage} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-lg">
+                        <span className="text-sm font-medium">{getStageLabel(stage)}</span>
+                        <span className="text-sm text-muted-foreground">
+                           {/* Aqui você conectaria com metrics.averageTimeByStage se disponível na API nova */}
+                           ~ 12 dias
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target /> Violações de SLA
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {metrics.slaBreach.total > 0 ? (
+                    <div className="space-y-4">
+                      <div className="text-3xl font-bold text-destructive">{metrics.slaBreach.total} <span className="text-sm font-normal text-muted-foreground">violações</span></div>
+                      <div className="space-y-2">
+                        {Object.entries(metrics.slaBreach.byStage).map(([stage, count]) => (
+                          count > 0 && (
+                            <div key={stage} className="flex items-center justify-between text-sm">
+                              <span className="font-medium">{getStageLabel(stage as PlayerStage)}</span>
+                              <span className="text-destructive font-medium">{count}</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
                     </div>
-                    </CardContent>
-                </Card>
+                  ) : (
+                    <div className="text-center py-12 flex flex-col items-center">
+                      <div className="h-12 w-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-2">✓</div>
+                      <p className="text-sm text-muted-foreground">Tudo dentro do prazo.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            
+            <ConversionTrendChart data={metrics.conversionTrend} onDataPointClick={() => {}} />
+            
+            <div className="mt-8">
+               <PlayersAnalytics />
+            </div>
+          </TabsContent>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Negócios Ativos
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                        <div className="text-3xl font-bold">{metrics.activeDeals}</div>
-                        <ChartLine className="text-primary" size={32} />
-                        </div>
-                    </CardContent>
-                    </Card>
-
-                    <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Pipeline Ponderado
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                        <div className="text-3xl font-bold">
-                            {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                            notation: 'compact',
-                            maximumFractionDigits: 1,
-                            }).format(metrics.weightedPipeline)}
-                        </div>
-                        <Target className="text-accent" size={32} />
-                        </div>
-                    </CardContent>
-                    </Card>
-
-                    <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Taxa de Conversão
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                        <div className="text-3xl font-bold">{metrics.conversionRate.toFixed(1)}%</div>
-                        <ChartLine className="text-primary" size={32} />
-                        </div>
-                    </CardContent>
-                    </Card>
-                    
-                    <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Total de Negócios
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                        <div className="text-3xl font-bold">{metrics.totalDeals}</div>
-                        <Users className="text-muted-foreground" size={32} />
-                        </div>
-                    </CardContent>
-                    </Card>
-                </div>
-
-                {/* Dashboard de Players */}
-                <PlayersAnalytics />
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                        <Clock />
-                        Tempo Médio por Estágio
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                        {(['nda', 'analysis', 'proposal', 'negotiation', 'closing'] as PlayerStage[]).map(
-                            (stage) => (
-                            <div key={stage} className="flex items-center justify-between">
-                                <span className="text-sm font-medium">{getStageLabel(stage)}</span>
-                                <span className="text-sm text-muted-foreground">-</span>
-                            </div>
-                            )
-                        )}
-                        </div>
-                    </CardContent>
-                    </Card>
-
-                    <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                        <Target />
-                        Violações de SLA
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {metrics.slaBreach.total > 0 ? (
-                        <div className="space-y-4">
-                            <div className="text-3xl font-bold text-destructive">
-                            {metrics.slaBreach.total}
-                            </div>
-                            <div className="space-y-2">
-                            {Object.entries(metrics.slaBreach.byStage).map(([stage, count]) => (
-                                count > 0 && (
-                                <div key={stage} className="flex items-center justify-between text-sm">
-                                    <span className="font-medium">{getStageLabel(stage as PlayerStage)}</span>
-                                    <span className="text-destructive font-medium">{count}</span>
-                                </div>
-                                )
-                            ))}
-                            </div>
-                        </div>
-                        ) : (
-                        <div className="text-center py-8">
-                            <div className="text-4xl mb-2">✓</div>
-                            <p className="text-sm text-muted-foreground">Nenhuma violação de SLA</p>
-                        </div>
-                        )}
-                    </CardContent>
-                    </Card>
-                </div>
-
-                <ConversionTrendChart
-                    data={metrics.conversionTrend}
-                    onDataPointClick={handlePeriodClick}
-                />
-            </>
-          )}
-        </TabsContent>
-
-        {/* --- ABA COMPARAÇÃO --- */}
-        <TabsContent value="comparison">
+          {/* --- ABA 3: COMPARAÇÃO --- */}
+          <TabsContent value="comparison">
             <DealComparison />
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   )
 }

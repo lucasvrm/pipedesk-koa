@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useCompanies, useDeleteCompany, useDeleteCompanies } from '@/services/companyService'
+import { useNavigate, Link } from 'react-router-dom'
+import { useCompanies, useDeleteCompany, useDeleteCompanies, useCompanyActiveDeals } from '@/services/companyService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -26,6 +26,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog"
 import { 
   Buildings, 
   MagnifyingGlass, 
@@ -37,16 +44,18 @@ import {
   CaretLeft,
   CaretRight,
   Funnel, 
-  PencilSimple 
+  PencilSimple,
+  Briefcase,
+  ArrowSquareOut
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { 
-  Company, 
   COMPANY_TYPE_LABELS, 
   CompanyType, 
   RELATIONSHIP_LEVEL_LABELS,
   RelationshipLevel 
 } from '@/lib/types'
+import { formatCurrency, formatDate } from '@/lib/helpers'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -74,11 +83,16 @@ export default function CompaniesListPage() {
   
   // Filtros
   const [typeFilter, setTypeFilter] = useState<CompanyType[]>([])
+  const [relationshipFilter, setRelationshipFilter] = useState<RelationshipLevel[]>([]) // NOVO FILTRO
 
   // Estados dos Modais
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false)
   const [isBulkDeleteAlertOpen, setIsBulkDeleteAlertOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
+  
+  // Estado Modal Deals
+  const [dealsModalOpen, setDealsModalOpen] = useState(false)
+  const [selectedCompanyIdForDeals, setSelectedCompanyIdForDeals] = useState<string | null>(null)
 
   // --- Lógica de Ordenação ---
   const handleSort = (key: SortKey) => {
@@ -107,8 +121,9 @@ export default function CompaniesListPage() {
         false;
       
       const matchesType = typeFilter.length === 0 || typeFilter.includes(company.type);
+      const matchesRelationship = relationshipFilter.length === 0 || relationshipFilter.includes(company.relationshipLevel);
 
-      return matchesSearch && matchesType;
+      return matchesSearch && matchesType && matchesRelationship;
     })
 
     // 2. Ordenação
@@ -150,7 +165,7 @@ export default function CompaniesListPage() {
     });
 
     return result;
-  }, [companies, searchTerm, typeFilter, sortConfig]);
+  }, [companies, searchTerm, typeFilter, relationshipFilter, sortConfig]);
 
   // --- Paginação ---
   const totalPages = Math.ceil(processedCompanies.length / itemsPerPage)
@@ -203,6 +218,54 @@ export default function CompaniesListPage() {
     }
   }
 
+  // --- Componente Interno do Modal de Deals ---
+  const CompanyDealsModal = () => {
+    const { data: activeDeals, isLoading: isLoadingDeals } = useCompanyActiveDeals(
+      selectedCompanyIdForDeals, 
+      dealsModalOpen
+    );
+
+    const companyName = companies?.find(c => c.id === selectedCompanyIdForDeals)?.name;
+
+    return (
+      <Dialog open={dealsModalOpen} onOpenChange={setDealsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deals Ativos - {companyName}</DialogTitle>
+            <DialogDescription>
+              Lista de oportunidades em andamento para esta empresa.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[300px] overflow-y-auto pr-2 mt-4 space-y-3">
+            {isLoadingDeals ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">Carregando deals...</div>
+            ) : activeDeals && activeDeals.length > 0 ? (
+              activeDeals.map(deal => (
+                <div key={deal.id} className="p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors flex justify-between items-center group">
+                  <div>
+                    <p className="font-medium text-sm">{deal.clientName}</p>
+                    <p className="text-xs text-muted-foreground">{formatCurrency(deal.volume)} • {formatDate(deal.createdAt)}</p>
+                  </div>
+                  <Link to={`/deals/${deal.id}`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowSquareOut className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-md">
+                <Briefcase className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhum deal ativo encontrado.</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       {/* Cabeçalho da Página */}
@@ -224,7 +287,7 @@ export default function CompaniesListPage() {
       <Card>
         <CardHeader className="pb-4 space-y-4">
           
-          {/* Layout Unificado: Busca + Filtros + Ações (Igual Players) */}
+          {/* Layout Unificado: Busca + Filtros + Ações */}
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
             
             {/* Grupo Esquerda: Busca e Filtros */}
@@ -240,6 +303,7 @@ export default function CompaniesListPage() {
               </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto">
+                {/* Filtro de Tipo */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className={typeFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
@@ -266,13 +330,41 @@ export default function CompaniesListPage() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Filtro de Relacionamento (NOVO) */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={relationshipFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                      <Funnel className="mr-2 h-4 w-4" />
+                      Relacionamento {relationshipFilter.length > 0 && `(${relationshipFilter.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Filtrar por Nível</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={relationshipFilter.includes(key as RelationshipLevel)}
+                        onCheckedChange={(checked) => {
+                          setRelationshipFilter(prev => 
+                            checked ? [...prev, key as RelationshipLevel] : prev.filter(t => t !== key)
+                          )
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
             {/* Grupo Direita: Ações em Massa e Paginação */}
             <div className="flex items-center gap-3 shrink-0">
               
-              {/* Botão Excluir em Massa (Condicional) */}
+              {/* Botão Excluir em Massa */}
               {selectedIds.length > 0 && (
                 <Button 
                   variant="destructive" 
@@ -319,7 +411,6 @@ export default function CompaniesListPage() {
                         />
                       </TableHead>
                       
-                      {/* Colunas Ordenáveis */}
                       <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
                         <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
                       </TableHead>
@@ -350,6 +441,9 @@ export default function CompaniesListPage() {
                   <TableBody>
                     {currentCompanies.length > 0 ? currentCompanies.map(company => {
                       const isSelected = selectedIds.includes(company.id);
+                      // Encontra o ID do contato principal, se existir
+                      const primaryContactId = company.contacts?.find(c => c.isPrimary)?.id || company.contacts?.[0]?.id;
+
                       return (
                         <TableRow key={company.id} className="group hover:bg-muted/50">
                           <TableCell>
@@ -363,8 +457,19 @@ export default function CompaniesListPage() {
                             {company.name}
                           </TableCell>
                           
-                          <TableCell className="text-sm text-muted-foreground">
-                            {company.primaryContactName || '-'}
+                          {/* Contato Principal Clicável */}
+                          <TableCell className="text-sm">
+                            {primaryContactId ? (
+                              <Link 
+                                to={`/contacts/company/${primaryContactId}`} 
+                                className="text-muted-foreground hover:text-primary hover:underline transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {company.primaryContactName}
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </TableCell>
 
                           <TableCell>
@@ -373,9 +478,18 @@ export default function CompaniesListPage() {
                             </Badge>
                           </TableCell>
                           
+                          {/* Deals Count Clicável (Abre Modal) */}
                           <TableCell className="text-center">
                             {company.dealsCount && company.dealsCount > 0 ? (
-                              <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                              <Badge 
+                                variant="secondary" 
+                                className="bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer hover:underline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCompanyIdForDeals(company.id);
+                                  setDealsModalOpen(true);
+                                }}
+                              >
                                 {company.dealsCount}
                               </Badge>
                             ) : (
@@ -419,7 +533,6 @@ export default function CompaniesListPage() {
                                 <PencilSimple className="h-4 w-4" />
                               </Button>
                               
-                              {/* Ícone de Lixeira Bloqueado até Seleção */}
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -481,7 +594,7 @@ export default function CompaniesListPage() {
         </CardContent>
       </Card>
 
-      {/* Modal de Exclusão Simples */}
+      {/* Modais de Exclusão */}
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -499,7 +612,6 @@ export default function CompaniesListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Modal de Exclusão em Massa */}
       <AlertDialog open={isBulkDeleteAlertOpen} onOpenChange={setIsBulkDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -516,6 +628,9 @@ export default function CompaniesListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de Deals Ativos */}
+      <CompanyDealsModal />
     </div>
   )
 }

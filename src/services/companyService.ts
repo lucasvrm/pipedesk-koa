@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Company, CompanyType, PlayerContact, RelationshipLevel } from '@/lib/types'
+import { Company, CompanyType, PlayerContact, RelationshipLevel, MasterDeal } from '@/lib/types'
 
 // ============================================================================
 // Types
@@ -194,6 +194,57 @@ export async function deleteCompanyContact(id: string) {
   if (error) throw error
 }
 
+// Busca um contato de empresa específico pelo ID (usado na nova rota de detalhes)
+export async function getCompanyContact(contactId: string): Promise<PlayerContact & { companyName?: string }> {
+  const { data, error } = await supabase
+    .from('company_contacts')
+    .select('*, companies(name)') // Faz join para pegar o nome da empresa
+    .eq('id', contactId)
+    .single()
+
+  if (error) throw error
+  
+  const contact = mapContactFromDB(data)
+  return {
+    ...contact,
+    companyName: data.companies?.name
+  }
+}
+
+// ============================================================================
+// API Functions (Active Deals Lookup)
+// ============================================================================
+
+// Busca apenas deals ativos de uma empresa específica para o modal
+export async function getCompanyActiveDeals(companyId: string): Promise<MasterDeal[]> {
+  const { data, error } = await supabase
+    .from('master_deals')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('status', 'active') // Filtra apenas ativos
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  
+  // Mapeamento simples para garantir compatibilidade com a interface MasterDeal
+  return data.map((item: any) => ({
+    id: item.id,
+    clientName: item.client_name,
+    volume: item.volume,
+    operationType: item.operation_type,
+    dealProduct: item.deal_product,
+    deadline: item.deadline,
+    observations: item.observations,
+    status: item.status,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    createdBy: item.created_by,
+    feePercentage: item.fee_percentage,
+    companyId: item.company_id
+  })) as MasterDeal[]
+}
+
 // ============================================================================
 // React Query Hooks
 // ============================================================================
@@ -275,5 +326,23 @@ export function useDeleteCompanyContact() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] })
     }
+  })
+}
+
+// Hook para buscar um contato específico
+export function useCompanyContact(contactId?: string) {
+  return useQuery({
+    queryKey: ['company-contact', contactId],
+    queryFn: () => getCompanyContact(contactId!),
+    enabled: !!contactId
+  })
+}
+
+// Hook para buscar deals ativos de uma empresa (para o modal)
+export function useCompanyActiveDeals(companyId: string | null, isOpen: boolean) {
+  return useQuery({
+    queryKey: ['company-active-deals', companyId],
+    queryFn: () => getCompanyActiveDeals(companyId!),
+    enabled: !!companyId && isOpen // Só busca quando o modal abre e temos um ID
   })
 }

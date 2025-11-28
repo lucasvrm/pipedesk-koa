@@ -24,12 +24,15 @@ const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'
 const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
 const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetailPage'))
 
-// IMPORTS PARA TRACKS (ADICIONADO)
+// IMPORTS PARA TRACKS
 const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPage'))
 
-// NOVOS IMPORTS PARA EMPRESAS
+// IMPORTS PARA EMPRESAS
 const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
+
+// IMPORTS PARA CONTATOS (NOVO)
+const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
 
 // Pages de Admin/Settings
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
@@ -72,12 +75,15 @@ function App() {
             <Route path="/players" element={<PlayersListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
 
-            {/* ROTA DE TRACKS (ADICIONADA) */}
+            {/* ROTA DE TRACKS */}
             <Route path="/tracks/:id" element={<TrackDetailPage />} />
 
             {/* ROTAS DE EMPRESAS */}
             <Route path="/companies" element={<CompaniesListPage />} />
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
+
+            {/* ROTAS DE CONTATOS (NOVA) */}
+            <Route path="/contacts/company/:id" element={<CompanyContactDetailPage />} />
 
             {/* Rotas de Funcionalidades */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
