@@ -12,58 +12,44 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Criar cliente Supabase com Service Role (Admin)
+    // Cria cliente Supabase com permissão de ADMIN (Service Role)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // 2. Verificar quem está chamando (Auth User)
+    // Verifica token do usuário que chamou (segurança)
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token)
 
-    if (authError || !caller) {
-      throw new Error('Não autorizado')
-    }
+    if (authError || !caller) throw new Error('Não autorizado')
 
-    // 3. Verificar se quem chama é ADMIN
+    // Verifica se o chamador é ADMIN
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', caller.id)
       .single()
 
-    if (profile?.role !== 'admin') {
-      throw new Error('Apenas administradores podem gerenciar usuários')
-    }
+    if (profile?.role !== 'admin') throw new Error('Acesso negado')
 
-    // 4. Processar a requisição
     const { action, userData, userId } = await req.json()
-
     let result
 
     switch (action) {
       case 'create':
-        // Cria usuário no Auth (sem enviar email de confirmação para criação manual)
+        // 1. Cria usuário no Auth (Trigger do banco vai criar o profile básico)
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
           email: userData.email,
-          email_confirm: true, // Já confirma o email
-          user_metadata: {
-            name: userData.name,
-            role: userData.role,
-            client_entity: userData.clientEntity
-          }
+          password: 'Mudar123!', // Senha provisória
+          email_confirm: true,
+          user_metadata: { name: userData.name, role: userData.role }
         })
         if (createError) throw createError
         
-        // O trigger do banco cria o profile, mas vamos garantir o update dos dados extras
+        // 2. Atualiza Profile com dados extras (ex: clientEntity)
         if (newUser.user) {
             await supabaseAdmin.from('profiles').update({
                 name: userData.name,
@@ -75,17 +61,10 @@ serve(async (req) => {
         break
 
       case 'update':
-        // Atualiza Auth (se tiver email/senha)
-        if (userData.email || userData.password) {
-            const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
-                userId,
-                { email: userData.email, password: userData.password }
-            )
-            if (updateAuthError) throw updateAuthError
+        if (userData.email) {
+            await supabaseAdmin.auth.admin.updateUserById(userId, { email: userData.email })
         }
-
-        // Atualiza Profile (metadados)
-        const { data: updatedProfile, error: updateProfileError } = await supabaseAdmin
+        const { data: updatedProfile, error: updateError } = await supabaseAdmin
           .from('profiles')
           .update({
             name: userData.name,
@@ -93,10 +72,9 @@ serve(async (req) => {
             client_entity: userData.clientEntity
           })
           .eq('id', userId)
-          .select()
-          .single()
-
-        if (updateProfileError) throw updateProfileError
+          .select().single()
+        
+        if (updateError) throw updateError
         result = updatedProfile
         break
 
@@ -105,9 +83,6 @@ serve(async (req) => {
         if (deleteError) throw deleteError
         result = { success: true }
         break
-
-      default:
-        throw new Error('Ação inválida')
     }
 
     return new Response(JSON.stringify(result), {
@@ -115,7 +90,7 @@ serve(async (req) => {
       status: 200,
     })
 
-  } catch (error) {
+  } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

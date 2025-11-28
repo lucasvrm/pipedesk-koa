@@ -10,7 +10,7 @@ function mapUserFromDB(item: any): User {
     return {
         id: item.id,
         name: item.name || 'Usuário sem nome',
-        email: item.email || '', // Email vem de join ou auth (aqui assumindo profile sync)
+        email: item.email || '', 
         role: (item.role as any) || 'client',
         avatar: item.avatar_url || undefined,
         clientEntity: item.client_entity || undefined,
@@ -37,9 +37,6 @@ function mapUserFromDB(item: any): User {
 // ============================================================================
 
 export async function getUsers(): Promise<User[]> {
-    // Nota: Em produção, 'email' está na tabela auth.users. 
-    // O profile deve ter o email sincronizado ou fazemos uma view.
-    // Aqui assumimos que o profile tem o campo email (adicionado na migration ou sync)
     const { data, error } = await supabase
         .from('profiles')
         .select('*')

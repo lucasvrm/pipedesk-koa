@@ -48,7 +48,7 @@ export default function UserManagementDialog({
 }: UserManagementDialogProps) {
   const { data: users, isLoading } = useUsers()
   
-  // Mutações
+  // Hooks de Mutação (Conectados à Edge Function via userService)
   const createUserMutation = useCreateUser()
   const updateUserMutation = useUpdateUser()
   const deleteUserMutation = useDeleteUser()
@@ -101,19 +101,19 @@ export default function UserManagementDialog({
 
     try {
       if (editingUser) {
-        // Atualizar
+        // Atualizar Usuário
         await updateUserMutation.mutateAsync({
           id: editingUser.id,
           data: formData
         })
         toast.success('Usuário atualizado com sucesso')
       } else {
-        // Criar
+        // Criar Usuário
         await createUserMutation.mutateAsync(formData)
         toast.success('Usuário criado com sucesso')
       }
 
-      // Reset
+      // Resetar estado
       setIsCreating(false)
       setEditingUser(null)
       setFormData({
@@ -149,27 +149,21 @@ export default function UserManagementDialog({
 
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
-      case 'admin':
-        return 'default'
-      case 'analyst':
-        return 'secondary'
-      case 'client':
-        return 'outline'
-      case 'newbusiness':
-        return 'outline'
+      case 'admin': return 'default'
+      case 'analyst': return 'secondary'
+      case 'client': return 'outline'
+      case 'newbusiness': return 'outline'
+      default: return 'outline'
     }
   }
 
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
-      case 'admin':
-        return 'Admin'
-      case 'analyst':
-        return 'Analista'
-      case 'client':
-        return 'Cliente'
-      case 'newbusiness':
-        return 'New Business'
+      case 'admin': return 'Admin'
+      case 'analyst': return 'Analista'
+      case 'client': return 'Cliente'
+      case 'newbusiness': return 'New Business'
+      default: return role
     }
   }
 
@@ -207,7 +201,8 @@ export default function UserManagementDialog({
                   setFormData({ ...formData, email: e.target.value })
                 }
                 placeholder="email@empresa.com"
-                disabled={!!editingUser} // Supabase Auth é complexo de mudar email, melhor bloquear na edição simples
+                // Desabilita edição de email para usuários existentes (complexidade do Supabase Auth)
+                disabled={!!editingUser} 
               />
             </div>
 
@@ -240,7 +235,7 @@ export default function UserManagementDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, clientEntity: e.target.value })
                   }
-                  placeholder="Nome da empresa"
+                  placeholder="Nome da empresa vinculada"
                 />
               </div>
             )}
