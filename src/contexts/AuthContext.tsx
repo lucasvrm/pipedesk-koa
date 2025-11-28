@@ -31,39 +31,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   
+  // Cache simples para evitar chamadas repetidas para o mesmo ID
   const loadedProfileId = useRef<string | null>(null);
 
-  // Função segura com Timeout para evitar travamento infinito
-  const fetchProfileSafe = async (userId: string, userEmail?: string): Promise<boolean> => {
-    // Se já temos esse perfil carregado, ignora (Cache em memória)
-    if (loadedProfileId.current === userId) {
-        console.log('[Auth] Profile already loaded (cache hit)');
-        return true;
+  const fetchProfile = async (userId: string, userEmail?: string) => {
+    // Se já carregamos este perfil, não busca de novo
+    if (loadedProfileId.current === userId && profile) {
+        return;
     }
 
-    console.log('[Auth] Fetching profile for:', userId);
-
     try {
-      // Cria uma promessa de fetch real
-      const fetchPromise = supabase
+      console.log('[Auth] Fetching profile for:', userId);
+      
+      // Removido o timeout artificial. Deixamos o Supabase/Rede ditar o tempo.
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      // OTIMIZAÇÃO: Reduzido de 5000ms para 2000ms
-      // Se o banco não responder em 2s, assumimos falha para não travar a UI
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 2500)
-      );
-
-      // Competição: quem terminar primeiro ganha
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
-
       if (error) {
-        // Se não achou perfil (PGRST116), tenta criar (Lógica de auto-fix)
+        // Se não achou perfil, tenta criar (Auto-fix para usuários legados/novos)
         if (error.code === 'PGRST116') {
-          console.log('[Auth] Profile missing, auto-creating...');
+          console.log('[Auth] Profile missing, creating default...');
           const timestamp = Math.floor(Date.now() / 1000);
           const emailName = userEmail?.split('@')[0] || 'User';
           
@@ -84,63 +74,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (newProfile) {
              setProfile({ ...newProfile, avatar: newProfile.avatar_url });
              loadedProfileId.current = userId;
-             return true;
           }
+        } else {
+            console.error('[Auth] Error fetching profile:', error);
+            // Não jogamos erro aqui para não deslogar o usuário, apenas ficamos sem perfil
         }
-        console.error('[Auth] Profile fetch error:', error);
-        return false;
-      } 
-      
-      // Sucesso
-      if (data) {
-        console.log('[Auth] Profile loaded successfully');
+      } else if (data) {
+        console.log('[Auth] Profile loaded.');
         setProfile({ ...data, avatar: data.avatar_url });
         loadedProfileId.current = userId;
-        return true;
       }
-      
-      return false;
 
     } catch (err) {
-      console.error('[Auth] Critical error or timeout:', err);
-      return false;
+      console.error('[Auth] Unexpected error:', err);
     }
   }
 
   useEffect(() => {
     let mounted = true;
-    console.log('[Auth] Initializing App...');
 
     const initializeAuth = async () => {
       try {
-        // 1. Tenta pegar sessão existente
+        // 1. Verifica sessão atual
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (mounted && initialSession?.user) {
-          console.log('[Auth] Found existing session. Verifying...');
-          setSession(initialSession);
-          setUser(initialSession.user);
-          
-          // 2. Tenta carregar perfil com o Timeout de segurança
-          const success = await fetchProfileSafe(initialSession.user.id, initialSession.user.email);
-          
-          // 3. SE FALHAR (Timeout ou Erro): A sessão é zumbi/inválida. Matamos ela.
-          if (!success) {
-            console.warn('[Auth] Session appears stale or invalid. Forcing cleanup.');
-            await supabase.auth.signOut(); // Limpa o storage automaticamente
-            if (mounted) {
-              setSession(null);
-              setUser(null);
-              setProfile(null);
-            }
+        if (mounted) {
+          if (initialSession?.user) {
+            setSession(initialSession);
+            setUser(initialSession.user);
+            // Busca perfil sem bloquear/timeout
+            await fetchProfile(initialSession.user.id, initialSession.user.email);
           }
         }
       } catch (err) {
-        console.error('[Auth] Init crashed:', err);
+        console.error('[Auth] Init error:', err);
       } finally {
         if (mounted) {
-          // SEMPRE destrava a tela, não importa o que aconteça
-          console.log('[Auth] Init finished. Unlocking UI.');
           setLoading(false);
         }
       }
@@ -148,28 +117,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
 
-    // Listener para mudanças em tempo real
+    // Listener de eventos do Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('[Auth] State Change:', event);
       if (!mounted) return;
       
+      console.log('[Auth] Event:', event);
       setSession(newSession);
       const newUser = newSession?.user ?? null;
       setUser(newUser);
 
       if (newUser) {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            // Se o usuário mudou, invalida cache
-            if (loadedProfileId.current !== newUser.id) {
-                loadedProfileId.current = null;
-            }
-            // Background refresh (sem travar a tela se já estiver carregada)
-            await fetchProfileSafe(newUser.id, newUser.email);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+            await fetchProfile(newUser.id, newUser.email);
         }
       } else if (event === 'SIGNED_OUT') {
-        loadedProfileId.current = null;
         setProfile(null);
-        // Garante que loading fique false ao sair
+        loadedProfileId.current = null;
         setLoading(false);
       }
     });
@@ -179,6 +142,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // --- Métodos de Auth ---
 
   const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
@@ -255,11 +220,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       setLoading(true);
       loadedProfileId.current = null;
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign out'));
+      console.error(err);
       return false;
     } finally {
       setUser(null);
