@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeals, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
+import { useTracks } from '@/services/trackService' // <--- IMPORTADO
 import { useUsers } from '@/services/userService'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,16 +22,20 @@ import {
 } from "@/components/ui/alert-dialog"
 import { 
   MagnifyingGlass, Trash, Kanban, CaretUp, CaretDown, CaretUpDown, 
-  CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, X
+  CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, X,
+  TrendUp
 } from '@phosphor-icons/react'
-import { DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { 
+  DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType, 
+  PlayerTrack, PlayerStage, STAGE_LABELS 
+} from '@/lib/types'
 import { formatCurrency, getInitials } from '@/lib/helpers'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 
 // Tipos
-type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType';
+type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -52,6 +57,15 @@ const INITIAL_FILTERS: FilterState = {
   responsible: 'all',
   minVolume: '',
   maxVolume: ''
+}
+
+// Mapa de pesos para ordenar os estágios
+const STAGE_WEIGHTS: Record<PlayerStage, number> = {
+  nda: 1,
+  analysis: 2,
+  proposal: 3,
+  negotiation: 4,
+  closing: 5
 }
 
 // --- HELPER DE CORES PARA OPERAÇÕES ---
@@ -84,11 +98,14 @@ const getOperationBadgeColor = (type: OperationType) => {
 
 export default function DealsView() {
   const navigate = useNavigate()
-  const { data: masterDeals, isLoading } = useDeals()
+  const { data: masterDeals, isLoading: dealsLoading } = useDeals()
+  const { data: allTracks, isLoading: tracksLoading } = useTracks() // Buscar todos os tracks
   const { data: users } = useUsers()
   
   const deleteSingleMutation = useDeleteDeal()
   const deleteBulkMutation = useDeleteDeals()
+
+  const isLoading = dealsLoading || tracksLoading
 
   // Estados de Controle
   const [searchQuery, setSearchQuery] = useState('')
@@ -105,6 +122,47 @@ export default function DealsView() {
   // Modais
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
+
+  // --- Helpers de Tracks ---
+  
+  // 1. Agrupar tracks por Deal ID para acesso rápido
+  const tracksByDealId = useMemo(() => {
+    if (!allTracks) return {} as Record<string, PlayerTrack[]>;
+    
+    return allTracks.reduce((acc, track) => {
+      if (!acc[track.masterDealId]) {
+        acc[track.masterDealId] = []
+      }
+      // Consideramos apenas tracks ativos para determinar o "mais avançado"
+      if (track.status === 'active') {
+        acc[track.masterDealId].push(track)
+      }
+      return acc
+    }, {} as Record<string, PlayerTrack[]>)
+  }, [allTracks])
+
+  // 2. Função para pegar o track mais avançado
+  const getAdvancedTrackInfo = (dealId: string) => {
+    const tracks = tracksByDealId[dealId] || []
+    if (tracks.length === 0) return null
+
+    // Ordena por peso do estágio (maior primeiro)
+    const sorted = [...tracks].sort((a, b) => {
+      const weightA = STAGE_WEIGHTS[a.currentStage] || 0
+      const weightB = STAGE_WEIGHTS[b.currentStage] || 0
+      return weightB - weightA // Descendente
+    })
+
+    const bestTrack = sorted[0]
+    const extraCount = tracks.length - 1
+
+    return {
+      bestTrack,
+      extraCount,
+      stageLabel: STAGE_LABELS[bestTrack.currentStage],
+      playerName: bestTrack.playerName
+    }
+  }
 
   // --- Helpers de Filtros Ativos ---
   const activeFilterCount = useMemo(() => {
@@ -200,6 +258,15 @@ export default function DealsView() {
           aValue = OPERATION_LABELS[a.operationType];
           bValue = OPERATION_LABELS[b.operationType];
           break;
+        case 'trackStatus':
+            // Ordenação complexa pelo peso do estágio mais avançado
+            const infoA = getAdvancedTrackInfo(a.id);
+            const infoB = getAdvancedTrackInfo(b.id);
+            const weightA = infoA ? STAGE_WEIGHTS[infoA.bestTrack.currentStage] : -1;
+            const weightB = infoB ? STAGE_WEIGHTS[infoB.bestTrack.currentStage] : -1;
+            aValue = weightA;
+            bValue = weightB;
+            break;
       }
 
       if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -208,7 +275,7 @@ export default function DealsView() {
     });
 
     return result;
-  }, [masterDeals, searchQuery, filters, sortConfig]);
+  }, [masterDeals, searchQuery, filters, sortConfig, tracksByDealId]); // Adicionado tracksByDealId nas deps
 
   // --- Paginação ---
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
@@ -484,7 +551,6 @@ export default function DealsView() {
                         />
                       </TableHead>
                       
-                      {/* MUDANÇA: Coluna Empresa agora é a primeira */}
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort('companyName')}
@@ -492,12 +558,22 @@ export default function DealsView() {
                         <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
                       </TableHead>
 
-                      {/* MUDANÇA: Coluna Negócio agora é a segunda */}
                       <TableHead 
-                        className="cursor-pointer hover:bg-muted/50 w-[25%]" 
+                        className="cursor-pointer hover:bg-muted/50 w-[20%]" 
                         onClick={() => handleSort('clientName')}
                       >
                         <div className="flex items-center">Negócio <SortIcon columnKey="clientName" /></div>
+                      </TableHead>
+                      
+                      {/* NOVA COLUNA: Status (Track) */}
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort('trackStatus')}
+                      >
+                         <div className="flex items-center gap-1">
+                           <TrendUp className="h-4 w-4 text-muted-foreground" />
+                           Estágio <SortIcon columnKey="trackStatus" />
+                         </div>
                       </TableHead>
 
                       <TableHead 
@@ -531,6 +607,8 @@ export default function DealsView() {
                   <TableBody>
                     {currentDeals.length > 0 ? currentDeals.map((deal) => {
                       const isSelected = selectedIds.includes(deal.id)
+                      const advancedTrack = getAdvancedTrackInfo(deal.id)
+
                       return (
                         <TableRow 
                           key={deal.id} 
@@ -544,7 +622,6 @@ export default function DealsView() {
                             />
                           </TableCell>
                           
-                          {/* MUDANÇA: Célula Empresa */}
                           <TableCell>
                             {deal.company ? (
                               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -556,9 +633,31 @@ export default function DealsView() {
                             )}
                           </TableCell>
 
-                          {/* MUDANÇA: Célula Negócio */}
                           <TableCell className="font-medium">
                             {deal.clientName}
+                          </TableCell>
+                          
+                          {/* CÉLULA DO TRACK MAIS AVANÇADO */}
+                          <TableCell>
+                            {advancedTrack ? (
+                              <div className="flex flex-col items-start gap-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap">
+                                    {advancedTrack.stageLabel}
+                                  </Badge>
+                                  {advancedTrack.extraCount > 0 && (
+                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-muted" title={`+${advancedTrack.extraCount} outros players ativos`}>
+                                      +{advancedTrack.extraCount}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground truncate max-w-[140px]" title={advancedTrack.playerName}>
+                                  {advancedTrack.playerName}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">Sem players ativos</span>
+                            )}
                           </TableCell>
 
                           <TableCell>
@@ -637,7 +736,7 @@ export default function DealsView() {
                       )
                     }) : (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           Nenhum negócio encontrado com os filtros atuais.
                         </TableCell>
                       </TableRow>

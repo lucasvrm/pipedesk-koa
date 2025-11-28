@@ -62,7 +62,7 @@ export default function DealDetailPage() {
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
-  const [docGeneratorOpen, setDocGeneratorOpen] = useState(false) // Estado para controle do modal
+  const [docGeneratorOpen, setDocGeneratorOpen] = useState(false)
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
   if (isLoading) {
@@ -160,7 +160,6 @@ export default function DealDetailPage() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-3xl font-bold tracking-tight">{deal.clientName}</h1>
-              {/* Badge visual apenas - alteração via menu agora */}
               <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
                 {STATUS_LABELS[deal.status]}
               </Badge>
@@ -185,7 +184,9 @@ export default function DealDetailPage() {
           
           <div className="flex gap-2 items-center">
             
-            {/* Componente Generator Renderizado mas Controlado Externamente */}
+            {/* IMPORTANTE: O DocumentGenerator fica FORA do DropdownMenu 
+                para evitar conflitos de overlay e pointer-events.
+            */}
             <DocumentGenerator 
               deal={deal} 
               playerTracks={activeTracks} 
@@ -207,7 +208,8 @@ export default function DealDetailPage() {
                   <PencilSimple className="mr-2 h-4 w-4" /> Editar Informações
                 </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={() => setDocGeneratorOpen(true)}>
+                {/* Usamos onSelect para garantir o fechamento limpo do menu antes de abrir o modal */}
+                <DropdownMenuItem onSelect={() => setDocGeneratorOpen(true)}>
                   <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
                 </DropdownMenuItem>
                 
