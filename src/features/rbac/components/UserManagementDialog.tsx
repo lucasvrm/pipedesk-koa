@@ -46,6 +46,7 @@ export default function UserManagementDialog({
   onOpenChange,
   currentUser,
 }: UserManagementDialogProps) {
+  console.log(">>> DEBUG ATIVO: Versão com Mutações Reais v1.0 <<<");
   const { data: users, isLoading } = useUsers()
   
   // Hooks de Mutação (Conectados à Edge Function via userService)
