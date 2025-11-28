@@ -31,11 +31,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   
-  // Cache simples para evitar chamadas duplicadas ao Banco
   const loadedProfileId = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
-    // Se já temos o perfil carregado na memória, não busca novamente
+    // Cache de memória
     if (loadedProfileId.current === userId && profile) return;
 
     try {
@@ -46,8 +45,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .single();
 
       if (error) {
-        // Se o perfil não existe (Erro PGRST116), cria um perfil padrão
+        // Auto-fix: Cria perfil se não existir
         if (error.code === 'PGRST116') {
+          console.log('[Auth] Criando perfil padrão...');
           const timestamp = Math.floor(Date.now() / 1000);
           const emailName = userEmail?.split('@')[0] || 'User';
           
@@ -70,63 +70,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
              loadedProfileId.current = userId;
           }
         } else {
-            console.error('Error fetching profile:', error);
+            console.error('Erro ao buscar perfil:', error);
         }
       } else if (data) {
         setProfile({ ...data, avatar: data.avatar_url });
         loadedProfileId.current = userId;
       }
     } catch (err) {
-      console.error('Unexpected auth error:', err);
+      console.error('Erro inesperado no perfil:', err);
     }
   }
 
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        console.log('1. Iniciando getSession...'); // <--- LOG 1
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log('2. getSession retornou:', initialSession?.user?.id); // <--- LOG 2
-        
-        if (mounted && initialSession?.user) {
-          setSession(initialSession);
-          setUser(initialSession.user);
-          console.log('3. Chamando fetchProfile...'); // <--- LOG 3
-          await fetchProfile(initialSession.user.id, initialSession.user.email);
-          console.log('4. fetchProfile terminou.'); // <--- LOG 4
-        }
-      } catch (err) {
-        console.error('Auth initialization failed:', err);
-        setError(err instanceof Error ? err : new Error('Auth init failed'));
-      } finally {
-        if (mounted) {
-          console.log('5. Setando loading false'); // <--- LOG 5
-          setLoading(false);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    // Listener para mudanças de estado (Login, Logout, etc)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    // A Solução Raiz:
+    // Em vez de "await getSession()", usamos o listener que dispara imediatamente.
+    // Isso evita o deadlock de Promessa pendente.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return;
-      
-      setSession(newSession);
-      const newUser = newSession?.user ?? null;
-      setUser(newUser);
 
-      if (newUser) {
-        // Apenas busca o perfil em eventos de entrada, se ainda não estiver carregado
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-            await fetchProfile(newUser.id, newUser.email);
-        }
-      } else if (event === 'SIGNED_OUT') {
+      console.log(`[Auth] Evento recebido: ${event}`);
+      
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (currentSession?.user) {
+        // Se temos usuário, buscamos o perfil e SÓ DEPOIS liberamos o loading
+        fetchProfile(currentSession.user.id, currentSession.user.email)
+          .finally(() => {
+            if (mounted) setLoading(false);
+          });
+      } else {
+        // Se não temos usuário (logout ou inicial), liberamos o loading imediatamente
         setProfile(null);
         loadedProfileId.current = null;
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     });
 
@@ -136,7 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // --- Funções de Autenticação ---
+  // --- Métodos de Auth ---
 
   const signInWithMagicLink = async (email: string): Promise<boolean> => {
     try {
