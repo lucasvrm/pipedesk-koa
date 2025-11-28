@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom' // Link adicionado
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { logActivity } from '@/services/activityService'
@@ -14,7 +14,7 @@ import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
-  FileText, Sparkle, Tag, Question, ArrowLeft, PencilSimple,
+  FileText, Sparkle, Tag, PencilSimple,
   Kanban as KanbanIcon, List as ListIcon, Buildings
 } from '@phosphor-icons/react'
 
@@ -115,7 +115,6 @@ export default function DealDetailPage() {
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       {/* Cabeçalho */}
       <div className="mb-6">
-        {/* REMOVIDO BOTÃO DE VOLTAR AQUI */}
         
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
@@ -135,7 +134,13 @@ export default function DealDetailPage() {
             {deal.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground mb-6 pl-0.5">
                 <Buildings className="h-4 w-4" />
-                <span className="font-medium text-sm">{deal.company.name}</span>
+                {/* 1. Link adicionado para redirecionar para a página da empresa */}
+                <Link 
+                  to={`/companies/${deal.company.id}`}
+                  className="font-medium text-sm hover:text-primary hover:underline transition-colors"
+                >
+                  {deal.company.name}
+                </Link>
               </div>
             )}
             
@@ -180,17 +185,19 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        <Card className="bg-red-50 border-red-200 shadow-sm p-3 flex flex-col justify-center gap-1">
-          <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Prazo Final</span>
-          <p className="text-lg font-bold text-red-900 truncate">
-            {formatDate(deal.deadline)}
-          </p>
-        </Card>
-
+        {/* 2. Alteração da posição: Players Ativos agora é o terceiro card */}
         <Card className="bg-amber-50 border-amber-200 shadow-sm p-3 flex flex-col justify-center gap-1">
           <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Players Ativos</span>
           <p className="text-lg font-bold text-amber-900">
             {activeTracks.filter(t => t.status === 'active').length}
+          </p>
+        </Card>
+
+        {/* 2. Alteração da posição: Prazo Final agora é o quarto card */}
+        <Card className="bg-red-50 border-red-200 shadow-sm p-3 flex flex-col justify-center gap-1">
+          <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Prazo Final</span>
+          <p className="text-lg font-bold text-red-900 truncate">
+            {formatDate(deal.deadline)}
           </p>
         </Card>
       </div>
