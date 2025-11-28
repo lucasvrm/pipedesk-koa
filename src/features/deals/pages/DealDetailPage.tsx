@@ -9,15 +9,17 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import {
   Breadcrumb,
@@ -33,7 +35,8 @@ import {
   Plus, Users, ChatCircle, ClockCounterClockwise, 
   FileText, Sparkle, Tag, PencilSimple,
   Kanban as KanbanIcon, List as ListIcon, Buildings,
-  DotsThreeOutline, Wallet, CalendarBlank, WarningCircle
+  DotsThreeOutline, Wallet, CalendarBlank, WarningCircle,
+  FileArrowDown, CheckCircle, PauseCircle, XCircle, PlayCircle
 } from '@phosphor-icons/react'
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
@@ -59,6 +62,7 @@ export default function DealDetailPage() {
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
+  const [docGeneratorOpen, setDocGeneratorOpen] = useState(false) // Estado para controle do modal
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
   if (isLoading) {
@@ -128,7 +132,6 @@ export default function DealDetailPage() {
   const feeValue = deal.feePercentage && deal.volume ? (deal.volume * (deal.feePercentage / 100)) : 0;
   const feeDisplay = deal.feePercentage ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}` : '—';
   
-  // Lógica para cor do Prazo (Vermelho se atrasado, Slate se ok)
   const isDeadlineOverdue = deal.deadline ? isOverdue(deal.deadline.toString()) : false;
   const deadlineColorClass = isDeadlineOverdue ? 'border-l-red-500' : 'border-l-slate-400';
   const deadlineIconColor = isDeadlineOverdue ? 'text-red-500' : 'text-slate-500';
@@ -157,6 +160,7 @@ export default function DealDetailPage() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-3xl font-bold tracking-tight">{deal.clientName}</h1>
+              {/* Badge visual apenas - alteração via menu agora */}
               <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
                 {STATUS_LABELS[deal.status]}
               </Badge>
@@ -180,36 +184,62 @@ export default function DealDetailPage() {
           </div>
           
           <div className="flex gap-2 items-center">
-            {/* Status Selector */}
-            <Select value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
-              <SelectTrigger className={`w-[160px] h-9 font-medium transition-colors ${getStatusColor(deal.status)}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="on_hold">Em Espera</SelectItem>
-                <SelectItem value="concluded">Concluído</SelectItem>
-                <SelectItem value="cancelled">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            {/* Componente Generator Renderizado mas Controlado Externamente */}
+            <DocumentGenerator 
+              deal={deal} 
+              playerTracks={activeTracks} 
+              open={docGeneratorOpen} 
+              onOpenChange={setDocGeneratorOpen} 
+            />
 
-            {/* Document Generator (Ação Primária/Frequente) */}
-            <DocumentGenerator deal={deal} playerTracks={activeTracks} />
-
-            {/* Menu de Ações Secundárias */}
+            {/* Menu de Ações (3 Pontinhos) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9">
+                <Button variant="outline" size="icon" className="h-9 w-9 data-[state=open]:bg-muted">
                   <DotsThreeOutline weight="fill" className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Ações do Negócio</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                
                 <DropdownMenuItem onClick={() => setEditDealOpen(true)}>
                   <PencilSimple className="mr-2 h-4 w-4" /> Editar Informações
                 </DropdownMenuItem>
-                {/* Futuramente: Arquivar, Deletar, etc. */}
+
+                <DropdownMenuItem onClick={() => setDocGeneratorOpen(true)}>
+                  <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+
+                {/* Submenu de Status */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    {deal.status === 'active' && <PlayCircle className="mr-2 h-4 w-4 text-green-600" />}
+                    {deal.status === 'on_hold' && <PauseCircle className="mr-2 h-4 w-4 text-amber-600" />}
+                    {deal.status === 'concluded' && <CheckCircle className="mr-2 h-4 w-4 text-blue-600" />}
+                    {deal.status === 'cancelled' && <XCircle className="mr-2 h-4 w-4 text-red-600" />}
+                    <span>Alterar Status</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="p-0">
+                    <DropdownMenuRadioGroup value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
+                      <DropdownMenuRadioItem value="active" className="cursor-pointer">
+                        <PlayCircle className="mr-2 h-4 w-4 text-green-500" /> Ativo
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="on_hold" className="cursor-pointer">
+                        <PauseCircle className="mr-2 h-4 w-4 text-amber-500" /> Em Espera
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="concluded" className="cursor-pointer">
+                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" /> Concluído
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="cancelled" className="cursor-pointer">
+                        <XCircle className="mr-2 h-4 w-4 text-red-500" /> Cancelado
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -228,7 +258,7 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 2: Fee Estimado (Emerald/Verde - igual ao Track) */}
+        {/* Card 2: Fee Estimado (Emerald/Verde) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Sparkle className="h-3.5 w-3.5 text-emerald-500" /> Fee Estimado
@@ -248,7 +278,7 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 4: Prazo (Condicional: Slate ou Vermelho) */}
+        {/* Card 4: Prazo (Condicional) */}
         <Card className={`p-4 flex flex-col justify-between gap-1 border-l-4 ${deadlineColorClass} shadow-sm hover:shadow-md transition-shadow`}>
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             {isDeadlineOverdue ? (

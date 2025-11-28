@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FileArrowDown, File, ShieldCheck, PenNib } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,15 +28,28 @@ import {
 interface DocumentGeneratorProps {
   deal: MasterDeal
   playerTracks?: PlayerTrack[]
+  open?: boolean // Prop para controle externo
+  onOpenChange?: (open: boolean) => void // Callback para controle externo
 }
 
 type TemplateType = 'teaser' | 'cim' | 'nda' | 'mandato'
 
-export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentGeneratorProps) {
-  const [open, setOpen] = useState(false)
+export default function DocumentGenerator({ 
+  deal, 
+  playerTracks = [], 
+  open: controlledOpen, 
+  onOpenChange: setControlledOpen 
+}: DocumentGeneratorProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [templateType, setTemplateType] = useState<TemplateType>('teaser')
   const [isGenerating, setIsGenerating] = useState(false)
 
+  // Lógica para alternar entre controle interno e externo
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? setControlledOpen : setInternalOpen
+
+  // Funções de geração de documento (MANTIDAS IGUAIS)
   const generateTeaser = () => {
     return new Document({
       sections: [
@@ -339,7 +352,7 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
       URL.revokeObjectURL(url)
 
       toast.success(`Documento ${templateType.toUpperCase()} gerado com sucesso!`)
-      setOpen(false)
+      if (setOpen) setOpen(false) // Fecha o modal após gerar
     } catch (error) {
       console.error('Error generating document:', error)
       toast.error('Erro ao gerar documento. Tente novamente.')
@@ -350,12 +363,16 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <FileArrowDown className="mr-2" size={16} />
-          Gerar Documento
-        </Button>
-      </DialogTrigger>
+      {/* Se não for controlado externamente, exibe o trigger padrão. Se for controlado, o trigger é hidden ou inexistente aqui */}
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <FileArrowDown className="mr-2" size={16} />
+            Gerar Documento
+          </Button>
+        </DialogTrigger>
+      )}
+      
       <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Gerador de Documentos</DialogTitle>
@@ -431,7 +448,7 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
         </ScrollArea>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isGenerating}>
+          <Button variant="outline" onClick={() => setOpen && setOpen(false)} disabled={isGenerating}>
             Cancelar
           </Button>
           <Button onClick={handleGenerateDocument} disabled={isGenerating}>
