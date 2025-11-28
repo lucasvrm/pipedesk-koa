@@ -86,21 +86,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
-        // 1. Obtém a sessão inicial do Supabase
+        console.log('1. Iniciando getSession...'); // <--- LOG 1
         const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('2. getSession retornou:', initialSession?.user?.id); // <--- LOG 2
         
         if (mounted && initialSession?.user) {
           setSession(initialSession);
           setUser(initialSession.user);
-          // Busca o perfil (await simples, sem timeout)
+          console.log('3. Chamando fetchProfile...'); // <--- LOG 3
           await fetchProfile(initialSession.user.id, initialSession.user.email);
+          console.log('4. fetchProfile terminou.'); // <--- LOG 4
         }
       } catch (err) {
         console.error('Auth initialization failed:', err);
         setError(err instanceof Error ? err : new Error('Auth init failed'));
       } finally {
         if (mounted) {
-          // ESTA É A LINHA CRÍTICA: Garante que o loading termine SEMPRE.
+          console.log('5. Setando loading false'); // <--- LOG 5
           setLoading(false);
         }
       }
