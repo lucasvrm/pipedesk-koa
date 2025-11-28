@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService'
-import { User, UserRole, ROLE_LABELS } from '@/lib/types' // Importando ROLE_LABELS se disponível, senão usamos fallback
+import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   AlertDialog,
@@ -23,12 +23,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { 
   Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, 
-  MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown 
+  MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown,
+  User as UserIcon, IdentificationCard, Wallet, FileText
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
+import { Separator } from '@/components/ui/separator'
 
 // Tipos para Ordenação
 type SortKey = 'name' | 'email' | 'role' | 'clientEntity';
@@ -46,11 +48,26 @@ export default function UserManagementPage() {
   // Estados de Edição/Criação
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  
+  // Form Data Expandido
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: 'analyst' as UserRole,
     clientEntity: '',
+    avatar: '',
+    // Pessoais
+    cellphone: '',
+    cpf: '',
+    rg: '',
+    address: '',
+    // Financeiro
+    pixKeyPJ: '',
+    pixKeyPF: '',
+    // Docs
+    docIdentityUrl: '',
+    docSocialContractUrl: '',
+    docServiceAgreementUrl: ''
   })
 
   // Estados de Modais Auxiliares
@@ -68,7 +85,7 @@ export default function UserManagementPage() {
     direction: 'asc' 
   })
 
-  // Estados de Deleção (Novo Modal)
+  // Estados de Deleção
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
@@ -142,9 +159,18 @@ export default function UserManagementPage() {
 
   // --- Handlers de Ação ---
 
+  const resetForm = () => {
+    setFormData({
+      name: '', email: '', role: 'analyst', clientEntity: '', avatar: '',
+      cellphone: '', cpf: '', rg: '', address: '',
+      pixKeyPJ: '', pixKeyPF: '',
+      docIdentityUrl: '', docSocialContractUrl: '', docServiceAgreementUrl: ''
+    })
+  }
+
   const handleCreate = () => {
     setIsCreating(true)
-    setFormData({ name: '', email: '', role: 'analyst', clientEntity: '' })
+    resetForm()
     setEditingUser(null)
   }
 
@@ -156,6 +182,16 @@ export default function UserManagementPage() {
       email: user.email,
       role: user.role,
       clientEntity: user.clientEntity || '',
+      avatar: user.avatar || '',
+      cellphone: user.cellphone || '',
+      cpf: user.cpf || '',
+      rg: user.rg || '',
+      address: user.address || '',
+      pixKeyPJ: user.pixKeyPJ || '',
+      pixKeyPF: user.pixKeyPF || '',
+      docIdentityUrl: user.docIdentityUrl || '',
+      docSocialContractUrl: user.docSocialContractUrl || '',
+      docServiceAgreementUrl: user.docServiceAgreementUrl || ''
     })
   }
 
@@ -179,15 +215,15 @@ export default function UserManagementPage() {
 
       setIsCreating(false)
       setEditingUser(null)
-      setFormData({ name: '', email: '', role: 'analyst', clientEntity: '' })
+      resetForm()
     } catch (error: any) {
       console.error('Erro ao salvar usuário:', error)
       toast.error(error.message || 'Erro ao salvar usuário')
     }
   }
 
-  // Abre o modal de deleção
-  const confirmDelete = (userId: string) => {
+  const confirmDelete = (e: React.MouseEvent, userId: string) => {
+    e.stopPropagation() // Evita abrir o modal de edição ao clicar no lixo
     if (userId === currentUser.id) {
       toast.error('Você não pode excluir seu próprio usuário')
       return
@@ -196,7 +232,6 @@ export default function UserManagementPage() {
     setDeleteDialogOpen(true)
   }
 
-  // Executa a deleção após confirmação
   const executeDelete = async () => {
     if (!userToDelete) return
 
@@ -211,8 +246,6 @@ export default function UserManagementPage() {
       setUserToDelete(null)
     }
   }
-
-  // --- Render Helpers ---
 
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
@@ -234,7 +267,6 @@ export default function UserManagementPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex items-center gap-4 mb-6">
-        {/* Item 5: Botão Voltar REMOVIDO */}
         <div>
           <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Controle de acesso e permissões do sistema</p>
@@ -254,47 +286,120 @@ export default function UserManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Formulário de Criação/Edição */}
+        {/* Formulário de Criação/Edição Completo */}
         {isCreating && (
           <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
             <CardHeader>
               <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome</Label>
-                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <CardContent className="space-y-6">
+              
+              {/* Grupo: Perfil Básico */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                  <UserIcon className="h-5 w-5" /> Dados de Acesso e Perfil
                 </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                    disabled={!!editingUser} // Supabase Auth dificulta mudança de email
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Função</Label>
-                  <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="analyst">Analista</SelectItem>
-                      <SelectItem value="newbusiness">New Business</SelectItem>
-                      <SelectItem value="client">Cliente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {formData.role === 'client' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Empresa Cliente</Label>
+                    <Label>Nome Completo *</Label>
+                    <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email *</Label>
+                    <Input 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})} 
+                      disabled={!!editingUser} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Função</Label>
+                    <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="analyst">Analista</SelectItem>
+                        <SelectItem value="newbusiness">New Business</SelectItem>
+                        <SelectItem value="client">Cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Empresa / Entidade (Opcional)</Label>
                     <Input value={formData.clientEntity} onChange={e => setFormData({...formData, clientEntity: e.target.value})} />
                   </div>
-                )}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>URL da Foto (Avatar)</Label>
+                    <Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} placeholder="https://..." />
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-end gap-2">
+
+              {/* Grupo: Dados Pessoais */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                  <IdentificationCard className="h-5 w-5" /> Dados Pessoais
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>CPF</Label>
+                    <Input value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>RG</Label>
+                    <Input value={formData.rg} onChange={e => setFormData({...formData, rg: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Celular</Label>
+                    <Input value={formData.cellphone} onChange={e => setFormData({...formData, cellphone: e.target.value})} />
+                  </div>
+                  <div className="space-y-2 md:col-span-3">
+                    <Label>Endereço Completo</Label>
+                    <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Grupo: Financeiro */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                  <Wallet className="h-5 w-5" /> Dados Financeiros
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Chave PIX (PJ)</Label>
+                    <Input value={formData.pixKeyPJ} onChange={e => setFormData({...formData, pixKeyPJ: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Chave PIX (PF)</Label>
+                    <Input value={formData.pixKeyPF} onChange={e => setFormData({...formData, pixKeyPF: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Grupo: Documentos */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                  <FileText className="h-5 w-5" /> URLs de Documentos
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label>Link do Documento de Identidade</Label>
+                    <Input value={formData.docIdentityUrl} onChange={e => setFormData({...formData, docIdentityUrl: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Link do Contrato Social</Label>
+                    <Input value={formData.docSocialContractUrl} onChange={e => setFormData({...formData, docSocialContractUrl: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Link do Contrato de Prestação de Serviços</Label>
+                    <Input value={formData.docServiceAgreementUrl} onChange={e => setFormData({...formData, docServiceAgreementUrl: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button 
                   variant="outline" 
                   onClick={() => setIsCreating(false)}
@@ -306,7 +411,7 @@ export default function UserManagementPage() {
                   onClick={handleSave}
                   disabled={createUserMutation.isPending || updateUserMutation.isPending}
                 >
-                  {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar'}
+                  {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
               </div>
             </CardContent>
@@ -315,8 +420,8 @@ export default function UserManagementPage() {
 
         {/* Barra de Filtros e Busca */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
-          <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
-            {/* Item 4: Pesquisa */}
+          <div className="flex flex-1 flex-col md:flex-row gap-4 w-full">
+            {/* Pesquisa */}
             <div className="relative w-full md:w-80">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -327,9 +432,9 @@ export default function UserManagementPage() {
               />
             </div>
 
-            {/* Item 2: Filtros */}
-            <div className="flex items-center gap-2">
-              <div className="w-[180px]">
+            {/* Filtros com espaçamento corrigido */}
+            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
+              <div className="w-[180px] shrink-0">
                 <Select value={roleFilter} onValueChange={v => setRoleFilter(v as UserRole | 'all')}>
                   <SelectTrigger>
                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -347,7 +452,7 @@ export default function UserManagementPage() {
                 </Select>
               </div>
 
-              <div className="w-[200px]">
+              <div className="w-[200px] shrink-0">
                 <Input 
                   placeholder="Filtrar empresa..." 
                   value={companyFilter}
@@ -357,7 +462,7 @@ export default function UserManagementPage() {
             </div>
           </div>
           
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
             Total: {processedUsers.length} usuários
           </div>
         </div>
@@ -369,7 +474,6 @@ export default function UserManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {/* Item 3: Ordenação */}
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
                       <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
                     </TableHead>
@@ -398,10 +502,15 @@ export default function UserManagementPage() {
                     </TableRow>
                   ) : (
                     processedUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow 
+                        key={user.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleEdit(user)} // Clique na linha abre edição/visualização
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
+                              <AvatarImage src={user.avatar} alt={user.name} />
                               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                 {getInitials(user.name)}
                               </AvatarFallback>
@@ -416,13 +525,17 @@ export default function UserManagementPage() {
                         <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
+                            >
                               <PencilSimple />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => confirmDelete(user.id)} 
+                              onClick={(e) => confirmDelete(e, user.id)} 
                               disabled={user.id === currentUser.id}
                               className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                             >
@@ -444,7 +557,7 @@ export default function UserManagementPage() {
       <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} currentUser={currentUser} />
       <MagicLinksDialog open={magicLinksDialogOpen} onOpenChange={setMagicLinksDialogOpen} />
 
-      {/* Item 1: Modal de Deleção */}
+      {/* Modal de Deleção */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

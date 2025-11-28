@@ -18,7 +18,7 @@ function mapUserFromDB(item: any): User {
         createdAt: item.created_at,
         updatedAt: item.updated_at,
         
-        // Novos Campos Mapeados
+        // Mapeamento dos novos campos
         address: item.address || '',
         cellphone: item.cellphone || '', 
         pixKeyPJ: item.pix_key_pj || '',
@@ -59,13 +59,24 @@ export async function getUser(userId: string): Promise<User> {
     return mapUserFromDB(data);
 }
 
-// --- Funções que chamam a Edge Function 'manage-users' ---
+// --- Tipagem estendida para suportar todos os campos no Edge Function ---
 
 interface CreateUserInput {
     name: string;
     email: string;
     role: UserRole;
     clientEntity?: string;
+    // Campos adicionais opcionais
+    avatar?: string;
+    cellphone?: string;
+    cpf?: string;
+    rg?: string;
+    address?: string;
+    pixKeyPJ?: string;
+    pixKeyPF?: string;
+    docIdentityUrl?: string;
+    docSocialContractUrl?: string;
+    docServiceAgreementUrl?: string;
 }
 
 export async function createUser(userData: CreateUserInput) {
