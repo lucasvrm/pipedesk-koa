@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { ScrollArea } from '@/components/ui/scroll-area' // <--- IMPORT ADICIONADO
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { MasterDeal, PlayerTrack } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { toast } from 'sonner'
@@ -356,7 +356,7 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
           Gerar Documento
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Gerador de Documentos</DialogTitle>
           <DialogDescription>
@@ -364,68 +364,67 @@ export default function DocumentGenerator({ deal, playerTracks = [] }: DocumentG
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[400px] pr-4">
+        <ScrollArea className="max-h-[500px] pr-4">
           <div className="py-4">
             <RadioGroup value={templateType} onValueChange={(value: TemplateType) => setTemplateType(value)}>
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
                 {/* TEASER */}
-                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors">
+                <div className="relative flex items-start space-x-3 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors h-full">
                   <RadioGroupItem value="teaser" id="teaser" className="mt-1" />
-                  <Label htmlFor="teaser" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1">
+                  <Label htmlFor="teaser" className="cursor-pointer flex-1">
+                    <div className="flex items-center gap-2 mb-2">
                       <File size={20} className="text-blue-500" />
                       <span className="font-semibold">Teaser</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Documento resumido (one-pager) com informações cegas e highlights do negócio para abordagem inicial.
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Documento resumido (one-pager) com informações cegas e highlights do negócio.
                     </p>
                   </Label>
                 </div>
 
                 {/* NDA */}
-                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors">
+                <div className="relative flex items-start space-x-3 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors h-full">
                   <RadioGroupItem value="nda" id="nda" className="mt-1" />
-                  <Label htmlFor="nda" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1">
+                  <Label htmlFor="nda" className="cursor-pointer flex-1">
+                    <div className="flex items-center gap-2 mb-2">
                       <ShieldCheck size={20} className="text-emerald-500" />
-                      <span className="font-semibold">NDA (Acordo de Confidencialidade)</span>
+                      <span className="font-semibold">NDA</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Minuta padrão de confidencialidade para proteger as informações sensíveis antes do envio do CIM.
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Acordo de confidencialidade padrão para proteger informações sensíveis.
                     </p>
                   </Label>
                 </div>
 
                 {/* CIM */}
-                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors">
+                <div className="relative flex items-start space-x-3 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors h-full">
                   <RadioGroupItem value="cim" id="cim" className="mt-1" />
-                  <Label htmlFor="cim" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1">
+                  <Label htmlFor="cim" className="cursor-pointer flex-1">
+                    <div className="flex items-center gap-2 mb-2">
                       <File size={20} className="text-purple-500" />
-                      <span className="font-semibold">CIM (Memorando de Oferta)</span>
+                      <span className="font-semibold">CIM</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Memorando detalhado com análise financeira, descrição completa do ativo e estrutura da operação.
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Memorando de oferta detalhado com análise financeira e descrição completa.
                     </p>
                   </Label>
                 </div>
 
                 {/* MANDATO */}
-                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors">
+                <div className="relative flex items-start space-x-3 rounded-md border p-4 hover:bg-accent cursor-pointer transition-colors h-full">
                   <RadioGroupItem value="mandato" id="mandato" className="mt-1" />
-                  <Label htmlFor="mandato" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1">
+                  <Label htmlFor="mandato" className="cursor-pointer flex-1">
+                    <div className="flex items-center gap-2 mb-2">
                       <PenNib size={20} className="text-amber-500" />
-                      <span className="font-semibold">Mandato de Assessoria</span>
+                      <span className="font-semibold">Mandato</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Contrato de prestação de serviços de estruturação financeira. 
-                      <span className="block mt-1 text-xs text-amber-600 font-medium bg-amber-50 p-1 rounded w-fit">
-                        * Integração com assinatura digital em breve.
-                      </span>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Contrato de prestação de serviços de estruturação financeira.
                     </p>
                   </Label>
                 </div>
+
               </div>
             </RadioGroup>
           </div>

@@ -236,7 +236,7 @@ export const STAGE_LABELS: Record<PlayerStage, string> = {
   analysis: 'Análise',
   proposal: 'Proposta',
   negotiation: 'Negociação',
-  closing: 'Fechamento',
+  closing: 'Liquidação',
 }
 
 export const STATUS_LABELS: Record<DealStatus, string> = {
