@@ -4,11 +4,19 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/helpers'
-// CORREÇÃO: Import via services
 import { useTracks } from '@/services/trackService'
-import { STAGE_LABELS, PlayerStage } from '@/lib/types'
+import { PlayerStage } from '@/lib/types'
 
 const FUNNEL_COLORS = ['#94a3b8', '#60a5fa', '#f59e0b', '#a855f7', '#10b981'];
+
+// Definição local dos labels para corrigir erro de importação
+const STAGE_LABELS: Record<string, string> = {
+  nda: 'NDA',
+  analysis: 'Análise',
+  proposal: 'Proposta',
+  negotiation: 'Negociação',
+  closing: 'Fechamento'
+};
 
 export function ConversionFunnel() {
   const { data: tracks } = useTracks()
@@ -23,7 +31,7 @@ export function ConversionFunnel() {
       const volume = stageTracks.reduce((sum, t) => sum + (t.trackVolume || 0), 0);
 
       return {
-        stage: STAGE_LABELS[stage],
+        stage: STAGE_LABELS[stage] || stage,
         volume,
         count: stageTracks.length,
         fill: FUNNEL_COLORS[index]

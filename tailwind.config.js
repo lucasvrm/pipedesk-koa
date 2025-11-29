@@ -18,11 +18,8 @@ const defaultTheme = {
     padding: "2rem",
   },
   extend: {
-    screens: {
-      coarse: { raw: "(pointer: coarse)" },
-      fine: { raw: "(pointer: fine)" },
-      pwa: { raw: "(display-mode: standalone)" },
-    },
+    // REMOVIDO: screens customizados com 'raw' removidos pois quebram a geração automática 
+    // da classe .container (causando erro "Unexpected token ParenthesisBlock")
     colors: {
       neutral: {
         1: "var(--color-neutral-1)",
