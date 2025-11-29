@@ -48,12 +48,13 @@ import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
-import { TrackTagsPopover } from '../components/TrackTagsPopover' // POPOVER IMPORTADO
+import { TrackTagsDialog } from '../components/TrackTagsDialog' // IMPORTADO
 
 export default function TrackDetailPage() {
   const { id } = useParams()
   const { profile: currentUser } = useAuth()
   
+  // Data Fetching
   const { data: track, isLoading: trackLoading } = useTrack(id || null)
   const { data: deal } = useDeal(track?.masterDealId || null)
   const { data: tasks } = useTasks(id)
@@ -62,8 +63,10 @@ export default function TrackDetailPage() {
   const updateTrack = useUpdateTrack()
   const updateTask = useUpdateTask()
 
+  // UI States
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
   const [editTrackOpen, setEditTrackOpen] = useState(false)
+  const [tagsTrackOpen, setTagsTrackOpen] = useState(false) // NOVO ESTADO
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   
   if (trackLoading || !track) {
@@ -73,6 +76,8 @@ export default function TrackDetailPage() {
       </div>
     )
   }
+
+  // --- Handlers ---
 
   const handleStageChange = (newStage: PlayerStage) => {
     updateTrack.mutate({
@@ -97,6 +102,8 @@ export default function TrackDetailPage() {
     })
   }
 
+  // --- Helpers ---
+
   const getTrackInfo = (trackId: string) => {
     if (track && track.id === trackId) {
        return { track, deal }
@@ -119,6 +126,7 @@ export default function TrackDetailPage() {
     return new Date(task.dueDate) < today
   }
 
+  // Helper de Cores
   const getStatusColor = (status: PlayerTrackStatus) => {
     switch (status) {
       case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
@@ -129,6 +137,7 @@ export default function TrackDetailPage() {
     }
   }
 
+  // Cálculo do Fee do Track
   const trackFee = deal?.feePercentage 
     ? (track.trackVolume * (deal.feePercentage / 100)) 
     : 0
@@ -136,6 +145,7 @@ export default function TrackDetailPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       
+      {/* Breadcrumbs */}
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -160,6 +170,7 @@ export default function TrackDetailPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
+      {/* Cabeçalho */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
@@ -201,18 +212,14 @@ export default function TrackDetailPage() {
               </div>
             )}
 
-            {/* TAGS */}
+            {/* TAGS VISUAIS */}
             {track.tags && track.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {track.tags.map(tag => (
                   <Badge 
                     key={tag.id} 
                     variant="outline" 
-                    style={{ 
-                      backgroundColor: tag.color + '20', 
-                      color: tag.color, 
-                      borderColor: tag.color + '40' 
-                    }}
+                    style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40' }}
                   >
                     {tag.name}
                   </Badge>
@@ -237,9 +244,7 @@ export default function TrackDetailPage() {
                     </Select>
                 </div>
                 
-                {/* Botão de Tags (Via Popover) */}
-                <TrackTagsPopover track={track} />
-
+                {/* Menu de Ações Secundárias */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon" className="h-9 w-9">
@@ -251,6 +256,10 @@ export default function TrackDetailPage() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setEditTrackOpen(true)}>
                             <PencilSimple className="mr-2 h-4 w-4" /> Editar Track
+                        </DropdownMenuItem>
+                        {/* NOVA OPÇÃO DE TAGS */}
+                        <DropdownMenuItem onClick={() => setTagsTrackOpen(true)}>
+                          <TagIcon className="mr-2 h-4 w-4" /> Gerenciar Tags
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -265,6 +274,7 @@ export default function TrackDetailPage() {
         </div>
       </div>
 
+      {/* Cards de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -308,6 +318,7 @@ export default function TrackDetailPage() {
         </Card>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="tasks" className="w-full space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
           <TabsTrigger value="tasks" className="py-2 px-4"><CheckSquare className="mr-2 h-4 w-4" /> Tarefas</TabsTrigger>
@@ -364,6 +375,7 @@ export default function TrackDetailPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Dialogs */}
       <CreateTaskDialog 
         playerTrackId={track.id}
         open={createTaskOpen} 
@@ -374,6 +386,13 @@ export default function TrackDetailPage() {
         track={track}
         open={editTrackOpen}
         onOpenChange={setEditTrackOpen}
+      />
+      
+      {/* MODAL DE TAGS DO TRACK */}
+      <TrackTagsDialog 
+        track={track} 
+        open={tagsTrackOpen} 
+        onOpenChange={setTagsTrackOpen} 
       />
 
       {selectedTask && currentUser && (

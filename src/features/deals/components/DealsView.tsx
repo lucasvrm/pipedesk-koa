@@ -30,7 +30,7 @@ import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { EditDealDialog } from './EditDealDialog'
-import { DealTagsPopover } from './DealTagsPopover' // USANDO O POPOVER
+import { DealTagsDialog } from './DealTagsDialog' // IMPORTADO
 
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
 type SortDirection = 'asc' | 'desc';
@@ -118,11 +118,12 @@ export default function DealsView() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
   
-  // Estados de Edição
+  // Estados de Edição e Tags
   const [editDealOpen, setEditDealOpen] = useState(false)
+  const [tagsDealOpen, setTagsDealOpen] = useState(false) // NOVO ESTADO
   const [selectedDeal, setSelectedDeal] = useState<MasterDeal | null>(null)
 
-  // --- Helpers de Tracks (INTEGRADO NO SEU CÓDIGO) ---
+  // --- Helpers de Tracks ---
   const tracksByDealId = useMemo(() => {
     if (!allTracks) return {} as Record<string, PlayerTrack[]>;
     return allTracks.reduce((acc, track) => {
@@ -530,7 +531,7 @@ export default function DealsView() {
                         <div className="flex items-center">Deal <SortIcon columnKey="clientName" /></div>
                       </TableHead>
                       
-                      {/* COLUNA TRACK STATUS REINTEGRADA */}
+                      {/* NOVA COLUNA TRACK STATUS REINTEGRADA */}
                       <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('trackStatus')}>
                          <div className="flex items-center gap-1">
                            <TrendUp className="h-4 w-4 text-muted-foreground" />
@@ -560,7 +561,7 @@ export default function DealsView() {
                   <TableBody>
                     {currentDeals.length > 0 ? currentDeals.map((deal) => {
                       const isSelected = selectedIds.includes(deal.id)
-                      const advancedTrack = getAdvancedTrackInfo(deal.id)
+                      const advancedTrack = getAdvancedTrackInfo(deal.id) // DADOS DO TRACK
 
                       return (
                         <TableRow 
@@ -588,11 +589,7 @@ export default function DealsView() {
                               {deal.tags && deal.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {deal.tags.map(tag => (
-                                    <Badge 
-                                      key={tag.id} 
-                                      variant="outline" 
-                                      style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40', fontSize: '10px', height: '18px', padding: '0 6px' }}
-                                    >
+                                    <Badge key={tag.id} variant="outline" style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40', fontSize: '10px', height: '18px', padding: '0 6px' }}>
                                       {tag.name}
                                     </Badge>
                                   ))}
@@ -651,37 +648,34 @@ export default function DealsView() {
 
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              {/* USO DO POPOVER DE TAGS */}
-                              <div onClick={(e) => e.stopPropagation()}>
-                                <DealTagsPopover deal={deal} />
-                              </div>
-
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                title="Editar" 
-                                className="h-8 w-8" 
-                                onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setEditDealOpen(true); }}
-                              >
-                                <PencilSimple className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                disabled={!isSelected} 
-                                className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}`} 
-                                onClick={(e) => { e.stopPropagation(); confirmDelete(deal.id); }}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              {/* BOTÃO DE TAGS */}
+                              <Button variant="ghost" size="icon" title="Gerenciar Tags" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setTagsDealOpen(true); }}><TagIcon className="h-4 w-4" /></Button>
+                              
+                              {/* BOTÃO DE EDITAR */}
+                              <Button variant="ghost" size="icon" title="Editar" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setEditDealOpen(true); }}><PencilSimple className="h-4 w-4" /></Button>
+                              
+                              {/* BOTÃO DE EXCLUIR */}
+                              <Button variant="ghost" size="icon" disabled={!isSelected} className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}`} onClick={(e) => { e.stopPropagation(); confirmDelete(deal.id); }}><Trash className="h-4 w-4" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       )
                     }) : <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum deal encontrado.</TableCell></TableRow>}
-                  </TableBody></Table></div>
-              {processedDeals.length > 0 && (<div className="flex items-center justify-between space-x-2 py-4"><div className="text-sm text-muted-foreground">Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals</div><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => { const newPage = currentPage - 1; if (newPage >= 1) setCurrentPage(newPage); }} disabled={currentPage === 1}><CaretLeft className="mr-2 h-4 w-4" /> Anterior</Button><Button variant="outline" size="sm" onClick={() => { const newPage = currentPage + 1; if (newPage <= totalPages) setCurrentPage(newPage); }} disabled={currentPage === totalPages}>Próximo <CaretRight className="ml-2 h-4 w-4" /></Button></div></div>)}</>
-          }
+                  </TableBody>
+                </Table>
+              </div>
+
+              {processedDeals.length > 0 && (
+                <div className="flex items-center justify-between space-x-2 py-4">
+                  <div className="text-sm text-muted-foreground">Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals</div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => { const newPage = currentPage - 1; if (newPage >= 1) setCurrentPage(newPage); }} disabled={currentPage === 1}><CaretLeft className="mr-2 h-4 w-4" /> Anterior</Button>
+                    <Button variant="outline" size="sm" onClick={() => { const newPage = currentPage + 1; if (newPage <= totalPages) setCurrentPage(newPage); }} disabled={currentPage === totalPages}>Próximo <CaretRight className="ml-2 h-4 w-4" /></Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -701,7 +695,10 @@ export default function DealsView() {
       </AlertDialog>
 
       {selectedDeal && (
-        <EditDealDialog deal={selectedDeal} open={editDealOpen} onOpenChange={setEditDealOpen} />
+        <>
+          <EditDealDialog deal={selectedDeal} open={editDealOpen} onOpenChange={setEditDealOpen} />
+          <DealTagsDialog deal={selectedDeal} open={tagsDealOpen} onOpenChange={setTagsDealOpen} />
+        </>
       )}
     </div>
   )
