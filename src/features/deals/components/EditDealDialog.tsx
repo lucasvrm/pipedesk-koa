@@ -1,221 +1,487 @@
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { useUpdateDeal } from '@/services/dealService'
+import { useUsers } from '@/services/userService'
+import { useCompanies } from '@/services/companyService'
+import { MasterDeal, OPERATION_LABELS, DealStatus } from '@/lib/types'
+import { getInitials } from '@/lib/helpers'
+
+// UI Imports
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
-import { useUpdateDeal } from '@/services/dealService'
-import { useCompanies } from '@/services/companyService' 
-import { logActivity } from '@/services/activityService' 
-import { useAuth } from '@/contexts/AuthContext'
-import { Deal, OPERATION_LABELS, STATUS_LABELS, OperationType, DealStatus } from '@/lib/types'
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { CalendarIcon, Check, Plus, Trash, X } from 'lucide-react'
+import { Calendar } from '@/components/ui/calendar'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
+// --- SCHEMA ---
 const formSchema = z.object({
-  clientName: z.string().min(1, 'Nome do cliente é obrigatório'),
-  operationType: z.string().min(1, 'Tipo de operação é obrigatório'),
-  status: z.string().min(1, 'Status é obrigatório'),
-  volume: z.coerce.number().min(0, 'Volume inválido'),
-  feePercentage: z.coerce.number().min(0).max(100).optional(),
-  deadline: z.string().min(1, 'Prazo é obrigatório'),
-  companyId: z.string().optional(),
+  clientName: z.string().min(1, 'Nome do Deal é obrigatório'),
+  company_id: z.string().optional(),
+  volume: z.string().optional(), // String para lidar com a máscara
+  operationType: z.string().min(1, 'Selecione o tipo'),
+  status: z.enum(['active', 'on_hold', 'concluded', 'cancelled']),
+  deadline: z.date().optional(),
+  feePercentage: z.string().optional(), // String para lidar com a máscara
+  observations: z.string().optional(),
+  responsibles: z.array(z.string()).default([]), // Array de User IDs
 })
 
+type FormValues = z.infer<typeof formSchema>
+
 interface EditDealDialogProps {
-  deal: Deal
+  deal: MasterDeal
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps) {
-  const updateDeal = useUpdateDeal()
-  const { data: companies } = useCompanies()
-  const { user } = useAuth()
+// --- HELPERS DE MÁSCARA ---
 
-  const form = useForm<z.infer<typeof formSchema>>({
+// Formata valor numérico para BRL (ex: 1000 -> R$ 1.000,00)
+const formatMoneyDisplay = (value: number | string | undefined) => {
+  if (!value) return ''
+  const numberVal = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(numberVal)) return ''
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numberVal)
+}
+
+// Remove formatação para salvar (ex: R$ 1.000,00 -> 1000)
+const unmaskMoney = (value: string) => {
+  return value.replace(/\D/g, '') // Remove tudo que não é digito
+}
+
+// Formata input enquanto digita (R$ ...)
+const maskCurrencyInput = (value: string) => {
+  const cleanValue = value.replace(/\D/g, '')
+  const numberValue = Number(cleanValue) / 100
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numberValue)
+}
+
+// Máscara de Porcentagem (0,00%)
+const maskPercentageInput = (value: string) => {
+  let cleanValue = value.replace(/[^\d]/g, '')
+  if (!cleanValue) return ''
+  const numberValue = Number(cleanValue) / 100
+  return new Intl.NumberFormat('pt-BR', { 
+    style: 'decimal', 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(numberValue) + '%'
+}
+
+export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps) {
+  const updateDealMutation = useUpdateDeal()
+  const { data: users } = useUsers()
+  const { data: companies } = useCompanies()
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clientName: deal.clientName,
+      company_id: deal.company_id || undefined,
+      volume: deal.volume ? formatMoneyDisplay(deal.volume) : '',
       operationType: deal.operationType,
       status: deal.status,
-      volume: deal.volume,
-      feePercentage: deal.feePercentage || 0,
-      deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
-      companyId: deal.companyId || undefined,
+      deadline: deal.deadline ? new Date(deal.deadline) : undefined,
+      feePercentage: deal.feePercentage ? maskPercentageInput((deal.feePercentage * 100).toFixed(0)) : '',
+      observations: deal.observations || '',
+      responsibles: deal.responsibles?.map(u => u.id) || []
     },
   })
 
+  // Reset form quando o deal muda ou modal abre
   useEffect(() => {
-    if (deal) {
+    if (open) {
       form.reset({
         clientName: deal.clientName,
+        company_id: deal.company_id || undefined,
+        volume: deal.volume ? formatMoneyDisplay(deal.volume) : '',
         operationType: deal.operationType,
         status: deal.status,
-        volume: deal.volume,
-        feePercentage: deal.feePercentage || 0,
-        deadline: deal.deadline ? new Date(deal.deadline).toISOString().split('T')[0] : '',
-        companyId: deal.companyId || undefined,
+        deadline: deal.deadline ? new Date(deal.deadline) : undefined,
+        feePercentage: deal.feePercentage ? maskPercentageInput((deal.feePercentage * 100).toFixed(0)) : '',
+        observations: deal.observations || '',
+        responsibles: deal.responsibles?.map(u => u.id) || []
       })
     }
-  }, [deal, form])
+  }, [deal, open, form])
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     try {
-      await updateDeal.mutateAsync({
-        dealId: deal.id,
-        updates: {
-          clientName: values.clientName,
-          operationType: values.operationType as OperationType,
-          status: values.status as DealStatus,
-          volume: values.volume,
-          feePercentage: values.feePercentage,
-          deadline: new Date(values.deadline).toISOString(),
-          companyId: values.companyId,
-        },
-      })
+      // 1. Unmask Volume
+      const rawVolume = values.volume 
+        ? parseFloat(values.volume.replace(/[^\d,]/g, '').replace(',', '.')) 
+        : 0
 
-      if (user) {
-        logActivity(deal.id, 'deal', 'Edição de Propriedades', user.id, values)
-      }
+      // 2. Unmask Fee
+      const rawFee = values.feePercentage
+        ? parseFloat(values.feePercentage.replace(/[^\d,]/g, '').replace(',', '.'))
+        : 0
+
+      await updateDealMutation.mutateAsync({
+        id: deal.id,
+        clientName: values.clientName,
+        company_id: values.company_id,
+        operationType: values.operationType as any,
+        status: values.status,
+        volume: rawVolume,
+        feePercentage: rawFee,
+        deadline: values.deadline?.toISOString(),
+        observations: values.observations,
+        responsibles: values.responsibles 
+      })
 
       toast.success('Negócio atualizado com sucesso!')
       onOpenChange(false)
     } catch (error) {
       toast.error('Erro ao atualizar negócio')
-      console.error(error)
+    }
+  }
+
+  // Helper para adicionar/remover usuário
+  const toggleUser = (userId: string) => {
+    const current = form.getValues('responsibles')
+    if (current.includes(userId)) {
+      form.setValue('responsibles', current.filter(id => id !== userId))
+    } else {
+      form.setValue('responsibles', [...current, userId])
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle>Editar Negócio</DialogTitle>
-          <DialogDescription>Atualize as informações do mandato.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="clientName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Cliente / Negócio</FormLabel>
-                  <FormControl><Input placeholder="Ex: Grupo XYZ" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <ScrollArea className="flex-1 px-6 py-4">
+              <div className="grid gap-6">
+                
+                {/* LINHA 1: TÍTULO E CLIENTE */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="clientName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Deal</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Aquisição Terreno X" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <FormField
-              control={form.control}
-              name="companyId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Empresa Vinculada</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione uma empresa..." /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="none_value">-- Nenhuma --</SelectItem>
-                      {(companies || []).map((company) => (
-                        <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  <FormField
+                    control={form.control}
+                    name="company_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cliente (Empresa)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a empresa" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <div className="p-1">
+                                <Input className="h-8 text-xs mb-1" placeholder="Buscar empresa..." onKeyDown={(e) => e.stopPropagation()} />
+                            </div>
+                            {companies?.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="operationType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Operação</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {Object.entries(OPERATION_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                {/* LINHA 2: TIPO E STATUS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="operationType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Operação</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(OPERATION_LABELS).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="volume"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Volume (R$)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="feePercentage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Success Fee (%)</FormLabel>
-                    <FormControl><Input type="number" step="0.1" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">Ativo</SelectItem>
+                            <SelectItem value="on_hold">Em Espera</SelectItem>
+                            <SelectItem value="concluded">Concluído</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <FormField
-              control={form.control}
-              name="deadline"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prazo Final</FormLabel>
-                  <FormControl><Input type="date" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                {/* LINHA 3: FINANCEIRO E PRAZO */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="volume"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Volume (R$)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="R$ 0,00"
+                            onChange={(e) => {
+                              const masked = maskCurrencyInput(e.target.value)
+                              field.onChange(masked)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={updateDeal.isPending}>Salvar Alterações</Button>
+                  <FormField
+                    control={form.control}
+                    name="feePercentage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Success Fee (%)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="0,00%"
+                            onChange={(e) => {
+                              const masked = maskPercentageInput(e.target.value)
+                              field.onChange(masked)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="deadline"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prazo Estimado</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: ptBR })
+                                ) : (
+                                  <span>Selecione uma data</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* GESTÃO DE EQUIPE (NOVO) */}
+                <FormField
+                  control={form.control}
+                  name="responsibles"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex justify-between items-center">
+                        Equipe do Deal
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 text-primary">
+                              <Plus className="mr-1 h-3 w-3" /> Adicionar
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0 w-[200px]" align="end">
+                            <Command>
+                              <CommandInput placeholder="Buscar usuário..." />
+                              <CommandList>
+                                <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                                <CommandGroup>
+                                  {users?.map(user => {
+                                    const isSelected = field.value.includes(user.id)
+                                    if (isSelected) return null // Não mostra quem já está
+                                    return (
+                                      <CommandItem key={user.id} onSelect={() => toggleUser(user.id)}>
+                                        <div className="flex items-center gap-2">
+                                          <Avatar className="h-5 w-5">
+                                            <AvatarImage src={user.avatar} />
+                                            <AvatarFallback className="text-[9px]">{getInitials(user.name)}</AvatarFallback>
+                                          </Avatar>
+                                          <span>{user.name}</span>
+                                        </div>
+                                      </CommandItem>
+                                    )
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </FormLabel>
+                      
+                      <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/20 rounded-md border border-dashed">
+                        {field.value.length === 0 ? (
+                          <span className="text-xs text-muted-foreground p-1">Nenhum membro atribuído.</span>
+                        ) : (
+                          field.value.map(userId => {
+                            const user = users?.find(u => u.id === userId)
+                            return (
+                              <Badge key={userId} variant="secondary" className="pl-1 pr-2 py-1 gap-2 flex items-center">
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={user?.avatar} />
+                                  <AvatarFallback className="text-[8px]">{getInitials(user?.name || '?')}</AvatarFallback>
+                                </Avatar>
+                                {user?.name}
+                                <button 
+                                  type="button" 
+                                  onClick={() => toggleUser(userId)}
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </Badge>
+                            )
+                          })
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="observations"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações / Descrição do Produto</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Detalhes sobre a estrutura, garantias, tese..." 
+                          className="min-h-[100px]"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="px-6 py-4 border-t bg-muted/5">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={updateDealMutation.isPending}>
+                {updateDealMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
