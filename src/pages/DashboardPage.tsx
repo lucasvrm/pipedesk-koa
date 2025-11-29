@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { 
@@ -16,7 +16,8 @@ import { useNavigate } from 'react-router-dom'
 // Imports dos componentes internos
 import AnalyticsDashboard from '@/features/analytics/components/AnalyticsDashboard'
 import PlayerIntelligenceDashboard from '@/features/analytics/components/PlayerIntelligenceDashboard'
-import { InboxPanel } from '@/features/inbox/components/InboxPanel' // Sugestão: trazer o Inbox para a home
+// CORREÇÃO AQUI: Removidas as chaves { } porque é um export default
+import InboxPanel from '@/features/inbox/components/InboxPanel' 
 import { hasPermission } from '@/lib/permissions'
 
 export default function DashboardPage() {
@@ -54,7 +55,6 @@ export default function DashboardPage() {
       </div>
 
       {/* --- CARDS DE RESUMO RÁPIDO (OPERACIONAL) --- */}
-      {/* Estes cards aparecem sempre, independentemente da aba, para dar contexto imediato */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary/5 border-primary/10 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/inbox')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -62,7 +62,7 @@ export default function DashboardPage() {
             <Bell className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div> {/* Ligar ao hook de notificações */}
+            <div className="text-2xl font-bold">12</div> 
             <p className="text-xs text-muted-foreground">3 não lidas</p>
           </CardContent>
         </Card>
@@ -73,12 +73,10 @@ export default function DashboardPage() {
             <CheckSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div> {/* Ligar ao hook de tasks */}
+            <div className="text-2xl font-bold">4</div>
             <p className="text-xs text-muted-foreground">2 vencem hoje</p>
           </CardContent>
         </Card>
-
-        {/* Adicionar mais cards conforme necessário */}
       </div>
 
       {/* --- ÁREA PRINCIPAL COM ABAS --- */}
@@ -96,18 +94,15 @@ export default function DashboardPage() {
             Inteligência de Mercado
           </TabsTrigger>
 
-           {/* Sugestão: Uma aba focada apenas no trabalho do utilizador */}
           <TabsTrigger value="my-work" className="data-[state=active]:bg-muted">
              <CheckSquare className="mr-2 h-4 w-4" />
              Minha Mesa
           </TabsTrigger>
         </TabsList>
 
-        {/* CONTEÚDO: ANALYTICS (Incorpora o componente complexo existente) */}
+        {/* CONTEÚDO: ANALYTICS */}
         {canViewAnalytics && (
           <TabsContent value="analytics" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-             {/* Note que o AnalyticsDashboard já tem suas próprias abas internas. 
-                 Isso é aceitável aqui porque isolamos na aba "Visão Executiva" */}
              {profile && <AnalyticsDashboard currentUser={profile} />}
           </TabsContent>
         )}
@@ -117,14 +112,13 @@ export default function DashboardPage() {
             <PlayerIntelligenceDashboard />
         </TabsContent>
 
-        {/* CONTEÚDO: MINHA MESA (Sugestão de UX para operacional) */}
+        {/* CONTEÚDO: MINHA MESA */}
         <TabsContent value="my-work" className="space-y-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Aqui você pode renderizar versões "mini" das listas de tarefas e inbox */}
-              <Card className="h-[400px]">
+              <Card className="h-[400px] overflow-hidden">
                 <CardHeader><CardTitle>Últimas Atualizações</CardTitle></CardHeader>
-                <CardContent>
-                  <InboxPanel /> {/* Reutilizando o componente existente */}
+                <CardContent className="h-full p-0">
+                  <InboxPanel />
                 </CardContent>
               </Card>
               
