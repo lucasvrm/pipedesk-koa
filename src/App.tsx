@@ -31,7 +31,7 @@ const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPa
 const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
 
-// IMPORTS PARA CONTATOS (NOVO)
+// IMPORTS PARA CONTATOS
 const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
 
 // Pages de Admin/Settings
@@ -39,6 +39,7 @@ const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage')
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
 const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
 const PhaseValidationPage = lazy(() => import('@/pages/settings/PhaseValidationPage'))
+const TagsSettingsPage = lazy(() => import('@/pages/settings/TagsSettingsPage')) // NOVA ROTA
 const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
 const HelpCenterPage = lazy(() => import('@/pages/HelpCenterPage'))
 
@@ -82,7 +83,7 @@ function App() {
             <Route path="/companies" element={<CompaniesListPage />} />
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
 
-            {/* ROTAS DE CONTATOS (NOVA) */}
+            {/* ROTAS DE CONTATOS */}
             <Route path="/contacts/company/:id" element={<CompanyContactDetailPage />} />
 
             {/* Rotas de Funcionalidades */}
@@ -102,6 +103,7 @@ function App() {
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
             <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/settings/phase-validation" element={<PhaseValidationPage />} />
+            <Route path="/settings/tags" element={<TagsSettingsPage />} /> {/* NOVA ROTA */}
 
             <Route path="/analytics" element={
                 <ProtectedRoute requiredRole={['admin', 'analyst', 'newbusiness']}>
