@@ -44,9 +44,9 @@ import {
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
 import { DroppedPlayersList } from '../components/DroppedPlayersList'
-// ALTERADO: Importação agora é nomeada (com chaves) para corresponder ao arquivo exportado
 import { CreatePlayerDialog } from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
+import { DealTagsDialog } from '../components/DealTagsDialog' // Componente Novo
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
@@ -66,6 +66,7 @@ export default function DealDetailPage() {
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
+  const [tagsDealOpen, setTagsDealOpen] = useState(false) // Estado para Tags
   const [docGeneratorOpen, setDocGeneratorOpen] = useState(false)
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
@@ -169,7 +170,7 @@ export default function DealDetailPage() {
               </Badge>
             </div>
 
-            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2">
               {deal.company && (
                 <div className="flex items-center gap-1.5 pl-0.5">
                   <Buildings className="h-4 w-4" />
@@ -184,6 +185,25 @@ export default function DealDetailPage() {
               )}
               <span className="font-medium">{OPERATION_LABELS[deal.operationType]}</span>
             </div>
+
+            {/* TAGS VISUAIS NO CABEÇALHO */}
+            {deal.tags && deal.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {deal.tags.map(tag => (
+                  <Badge 
+                    key={tag.id} 
+                    variant="outline" 
+                    style={{ 
+                      backgroundColor: tag.color + '20', 
+                      color: tag.color, 
+                      borderColor: tag.color + '40' 
+                    }}
+                  >
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="flex gap-2 items-center">
@@ -207,6 +227,11 @@ export default function DealDetailPage() {
                 
                 <DropdownMenuItem onClick={() => setEditDealOpen(true)}>
                   <PencilSimple className="mr-2 h-4 w-4" /> Editar Informações
+                </DropdownMenuItem>
+
+                {/* NOVA OPÇÃO DE TAGS */}
+                <DropdownMenuItem onClick={() => setTagsDealOpen(true)}>
+                  <Tag className="mr-2 h-4 w-4" /> Gerenciar Tags
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onSelect={() => setDocGeneratorOpen(true)}>
@@ -250,7 +275,6 @@ export default function DealDetailPage() {
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {/* Card 1: Volume (Azul) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Wallet className="h-3.5 w-3.5 text-blue-500" /> Volume Total
@@ -260,7 +284,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 2: Fee Estimado (Emerald/Verde) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Sparkle className="h-3.5 w-3.5 text-emerald-500" /> Fee Estimado
@@ -270,7 +293,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 3: Players Ativos (Amber/Laranja) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-amber-500" /> Players Ativos
@@ -280,7 +302,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 4: Prazo (Condicional) */}
         <Card className={`p-4 flex flex-col justify-between gap-1 border-l-4 ${deadlineColorClass} shadow-sm hover:shadow-md transition-shadow`}>
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             {isDeadlineOverdue ? (
@@ -380,6 +401,7 @@ export default function DealDetailPage() {
         </TabsContent>
       </Tabs>
 
+      {/* MODAIS */}
       <CreatePlayerDialog 
         masterDeal={deal} 
         open={createPlayerOpen} 
@@ -390,6 +412,12 @@ export default function DealDetailPage() {
         deal={deal}
         open={editDealOpen}
         onOpenChange={setEditDealOpen}
+      />
+
+      <DealTagsDialog 
+        deal={deal}
+        open={tagsDealOpen}
+        onOpenChange={setTagsDealOpen}
       />
     </div>
   )
