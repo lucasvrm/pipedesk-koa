@@ -1,348 +1,267 @@
-import { useState } from 'react'
-import { useDeals } from '@/services/dealService'
-import { useTracks } from '@/services/trackService'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect, useMemo } from 'react'
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
+import { useDeals } from '@/features/deals/hooks/useDeals'
+import { Deal, DealStage } from '@/lib/types'
+import { formatCurrency } from '@/lib/utils'
+import { DealKanbanCard } from './DealKanbanCard'
+import { DealPreviewSheet } from './DealPreviewSheet'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { EmptyState } from '@/components/EmptyState'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { User, STAGE_LABELS, STAGE_PROBABILITIES } from '@/lib/types'
-import { formatCurrency, anonymizePlayerName, calculateWeightedVolume, calculateFee } from '@/lib/helpers'
-import { canViewPlayerName } from '@/lib/permissions'
-import { CaretLeft, CaretRight, Eye, Kanban } from '@phosphor-icons/react'
-import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
-// CORREÇÃO: Importação nomeada com { }
+import { 
+  Funnel, 
+  MagnifyingGlass, 
+  Plus, 
+  Kanban as KanbanIcon,
+  SortAscending
+} from '@phosphor-icons/react'
 import { CreateDealDialog } from './CreateDealDialog'
+import { toast } from 'sonner'
 
-interface MasterMatrixViewProps {
-  currentUser: User
+// --- Componente Utilitário para React 18 Strict Mode ---
+// Necessário para evitar que o Drag&Drop quebre em desenvolvimento
+export const StrictModeDroppable = ({ children, ...props }: any) => {
+  const [enabled, setEnabled] = useState(false)
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true))
+    return () => {
+      cancelAnimationFrame(animation)
+      setEnabled(false)
+    }
+  }, [])
+  if (!enabled) return null
+  return <Droppable {...props}>{children}</Droppable>
 }
 
+interface MasterMatrixViewProps {
+  currentUser: any // Tipagem pode ser ajustada conforme seu User type
+}
+
+// Estágios do Pipeline (Idealmente viriam de uma configuração)
+const STAGES: { id: DealStage; label: string; color: string; probability: number }[] = [
+  { id: 'nda', label: 'NDA / Prospecção', color: 'border-slate-400', probability: 0.1 },
+  { id: 'analysis', label: 'Análise', color: 'border-blue-400', probability: 0.3 },
+  { id: 'proposal', label: 'Proposta', color: 'border-yellow-400', probability: 0.6 },
+  { id: 'negotiation', label: 'Negociação', color: 'border-orange-400', probability: 0.8 },
+  { id: 'closing', label: 'Fechamento', color: 'border-emerald-400', probability: 0.95 },
+]
+
 export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps) {
-  const { data: masterDeals } = useDeals()
-  const { data: playerTracks } = useTracks()
-  const [selectedDealIndex, setSelectedDealIndex] = useState(0)
-  const [selectedTrack, setSelectedTrack] = useState<any | null>(null)
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
-  const [createDealOpen, setCreateDealOpen] = useState(false)
+  const { data: rawDeals, isLoading } = useDeals()
+  
+  // Estado local para gerenciar a UI (optimistic updates)
+  const [deals, setDeals] = useState<Deal[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
-  const canSeePlayerNames = canViewPlayerName(currentUser.role)
-  const activeDeals = (masterDeals || [])
-    .filter(d => d.status === 'active' && !d.deletedAt)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  // Sincroniza dados da API com estado local quando carregam
+  useEffect(() => {
+    if (rawDeals) {
+      setDeals(rawDeals.filter(d => d.status === 'active' && !d.deletedAt))
+    }
+  }, [rawDeals])
 
-  const stages = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'] as const
+  // Filtragem local
+  const filteredDeals = useMemo(() => {
+    if (!searchQuery) return deals
+    return deals.filter(d => 
+      d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [deals, searchQuery])
 
-  const getTracksForDealAndStage = (dealId: string, stage: string) => {
-    return (playerTracks || []).filter(
-      t => t.masterDealId === dealId && t.currentStage === stage && t.status === 'active'
+  // Manipulação do Drag & Drop
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result
+
+    if (!destination) return
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return
+    }
+
+    // Encontrar o deal movido
+    const movedDeal = deals.find(d => d.id === draggableId)
+    if (!movedDeal) return
+
+    // Atualização Otimista
+    const newStage = destination.droppableId as DealStage
+    
+    // Atualiza estado local imediatamente
+    setDeals(prev => prev.map(d => 
+      d.id === draggableId 
+        ? { ...d, stage: newStage, updated_at: new Date().toISOString() } 
+        : d
+    ))
+
+    // Aqui você chamaria sua mutation de API
+    // updateDealMutation.mutate({ id: draggableId, stage: newStage })
+    toast.success(`Deal movido para ${STAGES.find(s => s.id === newStage)?.label}`)
+  }
+
+  // Abrir Preview Drawer
+  const handleCardClick = (deal: Deal) => {
+    setSelectedDeal(deal)
+    setIsSheetOpen(true)
+  }
+
+  // Cálculos de Totais por Coluna
+  const getColumnStats = (stageId: string) => {
+    const stageDeals = filteredDeals.filter(d => d.stage === stageId)
+    const count = stageDeals.length
+    const totalValue = stageDeals.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
+    const stageConfig = STAGES.find(s => s.id === stageId)
+    const weightedValue = totalValue * (stageConfig?.probability || 0)
+
+    return { count, totalValue, weightedValue }
+  }
+
+  if (isLoading) {
+    return (
+        <div className="flex h-[calc(100vh-100px)] items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
     )
   }
 
-  const handleCellClick = (tracks: any[]) => {
-    if (tracks.length === 1) {
-      setSelectedTrack(tracks[0])
-      setDetailDialogOpen(true)
-    }
-  }
-
-  const handlePrevDeal = () => {
-    setSelectedDealIndex(prev => Math.max(0, prev - 1))
-  }
-
-  const handleNextDeal = () => {
-    setSelectedDealIndex(prev => Math.min(activeDeals.length - 1, prev + 1))
-  }
-
-  const currentDeal = activeDeals.length > 0 ? activeDeals[selectedDealIndex] : null
-
   return (
-    <>
-      {activeDeals.length === 0 ? (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
-            <p className="text-muted-foreground">
-              Visualização de deals e players por estágio
-            </p>
-          </div>
-
-          <EmptyState
-            icon={<Kanban size={64} weight="duotone" />}
-            title="Nenhum negócio ativo no Kanban"
-            description="Comece criando um Master Deal para visualizar e gerenciar seus players em cada estágio do pipeline de vendas."
-            actionLabel="Criar Negócio"
-            onAction={() => setCreateDealOpen(true)}
-          />
-        </div>
-      ) : currentDeal ? (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
-              <p className="text-muted-foreground">
-                Visualização de deals e players por estágio
-              </p>
+    <div className="flex flex-col h-[calc(100vh-65px)] bg-slate-50/50 dark:bg-background">
+      
+      {/* --- TOOLBAR --- */}
+      <div className="px-6 py-4 border-b bg-background flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <KanbanIcon size={24} weight="duotone" />
             </div>
-          </div>
+            <div>
+                <h1 className="text-xl font-bold tracking-tight">Pipeline de Vendas</h1>
+                <p className="text-xs text-muted-foreground">Gerencie suas oportunidades</p>
+            </div>
+        </div>
 
-          <div className="hidden md:block">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    {currentDeal.clientName}
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrevDeal}
-                      disabled={selectedDealIndex === 0}
-                    >
-                      <CaretLeft />
-                    </Button>
-                    <span className="text-sm text-muted-foreground px-2">
-                      {selectedDealIndex + 1} / {activeDeals.length}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNextDeal}
-                      disabled={selectedDealIndex === activeDeals.length - 1}
-                    >
-                      <CaretRight />
-                    </Button>
-                  </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {formatCurrency(currentDeal.volume)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-3 font-semibold text-sm bg-muted/50">
-                          Estágio
-                        </th>
-                        {stages.map(stage => (
-                          <th key={stage} className="p-3 text-center font-semibold text-sm bg-muted/50">
-                            <div>{STAGE_LABELS[stage]}</div>
-                            <div className="text-xs text-muted-foreground font-normal mt-1">
-                              {STAGE_PROBABILITIES[stage]}%
+        <div className="flex items-center gap-3">
+            <div className="relative w-64 hidden md:block">
+                <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Buscar deals..."
+                    className="pl-9 h-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+            <Button variant="outline" size="sm" className="hidden sm:flex">
+                <SortAscending className="mr-2 h-4 w-4" /> Filtros
+            </Button>
+            <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" /> Novo Deal
+            </Button>
+        </div>
+      </div>
+
+      {/* --- KANBAN BOARD --- */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="h-full flex px-6 py-6 gap-5 min-w-max">
+            {STAGES.map((stage) => {
+              const stats = getColumnStats(stage.id)
+              
+              return (
+                <div key={stage.id} className="w-[320px] flex flex-col h-full rounded-xl bg-muted/20 border border-slate-200 dark:border-slate-800 shadow-sm">
+                  
+                  {/* STICKY HEADER DA COLUNA */}
+                  <div className={`p-4 border-b rounded-t-xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 border-t-4 ${stage.color}`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="font-bold text-sm uppercase tracking-wider text-foreground/80">
+                            {stage.label}
+                        </span>
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs px-2.5 py-0.5 rounded-full font-semibold border">
+                            {stats.count}
+                        </span>
+                    </div>
+
+                    {/* Resumo Financeiro da Coluna */}
+                    {stats.totalValue > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                            <div className="flex justify-between items-baseline">
+                                <span className="text-[10px] text-muted-foreground uppercase font-medium">Total</span>
+                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                    {formatCurrency(stats.totalValue)}
+                                </span>
                             </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="p-3 font-medium text-sm border-r bg-muted/30">
-                          Players
-                        </td>
-                        {stages.map(stage => {
-                          const tracks = getTracksForDealAndStage(currentDeal.id, stage)
-                          return (
-                            <td
-                              key={stage}
-                              className="p-3 border-r border-b align-top cursor-pointer hover:bg-muted/50 transition-colors"
-                              onClick={() => handleCellClick(tracks)}
-                            >
-                              {tracks.length === 0 ? (
-                                <div className="text-center text-muted-foreground text-sm py-4">
-                                  —
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  {tracks.map((track, idx) => {
-                                    const playerName = canSeePlayerNames
-                                      ? track.playerName
-                                      : anonymizePlayerName(track.playerName, track.id, true)
-                                    const weightedValue = calculateWeightedVolume(
-                                      track.trackVolume,
-                                      track.probability
-                                    )
-                                    const feeValue = calculateFee(
-                                      track.trackVolume,
-                                      currentDeal.feePercentage || 0
-                                    )
-
-                                    return (
-                                      <Card key={track.id} className="hover:shadow-md transition-shadow">
-                                        <CardContent className="p-3">
-                                          <div className="flex items-start justify-between gap-2 mb-1">
-                                            <span className="font-medium text-sm truncate">
-                                              {playerName}
-                                            </span>
-                                            <Badge variant="secondary" className="text-xs flex-shrink-0">
-                                              {track.probability}%
-                                            </Badge>
-                                          </div>
-                                          <div className="text-xs text-muted-foreground">
-                                            {formatCurrency(track.trackVolume)}
-                                          </div>
-                                          <div className="text-xs text-accent font-medium mt-1">
-                                            Fee: {formatCurrency(feeValue)}
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    )
-                                  })}
-                                </div>
-                              )}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Total Players: </span>
-                      <span className="font-semibold">
-                        {(playerTracks || []).filter(t => t.masterDealId === currentDeal.id && t.status === 'active').length}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Pipeline Ponderado: </span>
-                      <span className="font-semibold">
-                        {formatCurrency(
-                          (playerTracks || [])
-                            .filter(t => t.masterDealId === currentDeal.id && t.status === 'active')
-                            .reduce((sum, t) => sum + calculateWeightedVolume(t.trackVolume, t.probability), 0)
-                        )}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Prob. Média: </span>
-                      <span className="font-semibold">
-                        {(() => {
-                          const activeTracks = (playerTracks || []).filter(
-                            t => t.masterDealId === currentDeal.id && t.status === 'active'
-                          )
-                          const avgProb = activeTracks.length > 0
-                            ? activeTracks.reduce((sum, t) => sum + t.probability, 0) / activeTracks.length
-                            : 0
-                          return `${avgProb.toFixed(0)}%`
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="md:hidden space-y-4">
-            <div className="flex items-center justify-between px-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevDeal}
-                disabled={selectedDealIndex === 0}
-              >
-                <CaretLeft className="mr-1" />
-                Anterior
-              </Button>
-              <span className="text-sm font-medium">
-                {selectedDealIndex + 1} / {activeDeals.length}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextDeal}
-                disabled={selectedDealIndex === activeDeals.length - 1}
-              >
-                Próximo
-                <CaretRight className="ml-1" />
-              </Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{currentDeal.clientName}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrency(currentDeal.volume)}
-                </p>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="w-full">
-                  <div className="flex gap-4 pb-4">
-                    {stages.map(stage => {
-                      const tracks = getTracksForDealAndStage(currentDeal.id, stage)
-                      return (
-                        <div key={stage} className="min-w-[200px]">
-                          <div className="font-semibold text-sm mb-2 sticky top-0 bg-background py-2">
-                            {STAGE_LABELS[stage]}
-                            <span className="text-xs text-muted-foreground ml-2">
-                              ({STAGE_PROBABILITIES[stage]}%)
-                            </span>
-                          </div>
-                          <div className="space-y-2">
-                            {tracks.length === 0 ? (
-                              <div className="text-center text-muted-foreground text-sm py-4">
-                                Nenhum player
-                              </div>
-                            ) : (
-                              tracks.map(track => {
-                                const playerName = canSeePlayerNames
-                                  ? track.playerName
-                                  : anonymizePlayerName(track.playerName, track.id, true)
-
-                                return (
-                                  <Card
-                                    key={track.id}
-                                    className="cursor-pointer hover:shadow-md transition-shadow"
-                                    onClick={() => {
-                                      setSelectedTrack(track)
-                                      setDetailDialogOpen(true)
-                                    }}
-                                  >
-                                    <CardContent className="p-3">
-                                      <p className="font-medium text-sm mb-1">{playerName}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {formatCurrency(track.trackVolume)}
-                                      </p>
-                                      <Badge variant="secondary" className="text-xs mt-2">
-                                        {track.probability}%
-                                      </Badge>
-                                    </CardContent>
-                                  </Card>
-                                )
-                              })
-                            )}
-                          </div>
+                            <div className="flex justify-between items-baseline">
+                                <span className="text-[10px] text-muted-foreground uppercase font-medium">Ponderado</span>
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    {formatCurrency(stats.weightedValue)}
+                                </span>
+                            </div>
+                            
+                            {/* Barra de progresso visual do ponderado */}
+                            <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+                                <div 
+                                    className="h-full bg-emerald-500/50 transition-all duration-500" 
+                                    style={{ width: `${Math.min((stats.weightedValue / stats.totalValue) * 100 * 1.5, 100)}%` }} 
+                                />
+                            </div>
                         </div>
-                      )
-                    })}
+                    )}
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+
+                  {/* AREA DE DROP (Cartões) */}
+                  <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                    <StrictModeDroppable droppableId={stage.id}>
+                      {(provided: any, snapshot: any) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`min-h-[150px] transition-colors rounded-lg p-1 ${
+                            snapshot.isDraggingOver ? 'bg-primary/5 ring-2 ring-primary/10 ring-inset' : ''
+                          }`}
+                        >
+                          {filteredDeals
+                            .filter(d => d.stage === stage.id)
+                            .map((deal, index) => (
+                              <DealKanbanCard
+                                key={deal.id}
+                                deal={deal}
+                                index={index}
+                                onClick={handleCardClick}
+                              />
+                            ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </StrictModeDroppable>
+                  </div>
+                </div>
+              )
+            })}
           </div>
+        </DragDropContext>
+      </div>
 
-          {selectedTrack && (
-            <PlayerTrackDetailDialog
-              track={selectedTrack}
-              open={detailDialogOpen}
-              onOpenChange={setDetailDialogOpen}
-            />
-          )}
-        </div>
-      ) : null}
+      {/* --- MODAIS E DRAWER --- */}
+      
+      {/* Drawer de Visualização Rápida */}
+      <DealPreviewSheet 
+        deal={selectedDeal}
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        onEdit={(updatedDeal) => {
+            setDeals(prev => prev.map(d => d.id === updatedDeal.id ? updatedDeal : d))
+            console.log('Deal atualizado via drawer', updatedDeal)
+        }}
+      />
 
-      <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-    </>
+      {/* Dialog de Criação */}
+      <CreateDealDialog 
+        open={isCreateOpen} 
+        onOpenChange={setIsCreateOpen} 
+      />
+
+    </div>
   )
 }
