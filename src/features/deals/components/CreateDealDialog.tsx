@@ -34,39 +34,40 @@ import { createDeal } from "@/services/dealService";
 import { toast } from "sonner";
 import { PlayerSelect } from "@/components/PlayerSelect";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext"; // Importando contexto de autenticação
+import { useAuth } from "@/contexts/AuthContext";
+import { OPERATION_LABELS, OperationType, STAGE_LABELS, PlayerStage } from "@/lib/types"; // Importando Labels Corretos
 
 // Schema de validação
 const formSchema = z.object({
-  title: z.string().min(1, "O título é obrigatório"), // Mapeia para clientName
-  description: z.string().optional(), // Mapeia para observations
+  title: z.string().min(1, "O nome do deal é obrigatório"),
+  description: z.string().optional(),
+  operationType: z.string().min(1, "O tipo de operação é obrigatório"),
   amount: z.string().transform((val) => {
     if (!val) return 0;
-    // Remove R$, espaços e converte vírgula para ponto
     const number = parseFloat(val.replace(/[^\d.,]/g, "").replace(",", "."));
     return isNaN(number) ? 0 : number;
-  }), // Mapeia para volume
+  }),
   stage: z.string().min(1, "A fase é obrigatória"),
-  player_id: z.string().optional(), // Opcional: só cria track se preenchido
+  player_id: z.string().optional(),
 });
 
 interface CreateDealDialogProps {
   children?: React.ReactNode;
-  defaultStage?: string;
+  defaultStage?: PlayerStage; // Tipagem correta
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export function CreateDealDialog({ 
   children, 
-  defaultStage = "prospect",
+  defaultStage = "nda", // Default válido
   open: controlledOpen,
   onOpenChange: setControlledOpen
 }: CreateDealDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Obtendo usuário logado
+  const { user } = useAuth();
   
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -77,6 +78,7 @@ export function CreateDealDialog({
     defaultValues: {
       title: "",
       description: "",
+      operationType: "ccb",
       amount: "0",
       stage: defaultStage,
       player_id: "", 
@@ -87,7 +89,6 @@ export function CreateDealDialog({
     mutationFn: createDeal,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deals"] });
-      // Invalida tracks também, caso um tenha sido criado
       queryClient.invalidateQueries({ queryKey: ["player-tracks"] });
       toast.success("Negócio criado com sucesso!");
       setOpen(false);
@@ -95,7 +96,7 @@ export function CreateDealDialog({
     },
     onError: (error) => {
       console.error("Erro ao criar negócio:", error);
-      toast.error("Erro ao criar negócio. Tente novamente.");
+      toast.error("Erro ao criar negócio. Verifique os dados e tente novamente.");
     },
   });
 
@@ -105,19 +106,14 @@ export function CreateDealDialog({
       return;
     }
 
-    // Mapeamento dos campos do formulário para o formato esperado pelo serviço (DealInput)
     createDealMutation.mutate({
-      clientName: values.title,      // title -> clientName
-      observations: values.description, // description -> observations
-      volume: values.amount,         // amount -> volume
-      createdBy: user.id,            // ID do usuário logado
-      
-      // Campos específicos da nova lógica
+      clientName: values.title,
+      observations: values.description,
+      volume: values.amount,
+      createdBy: user.id,
+      operationType: values.operationType as OperationType,
       initialStage: values.stage,
       playerId: values.player_id && values.player_id.length > 0 ? values.player_id : undefined,
-      
-      // Valores padrão obrigatórios
-      operationType: 'acquisition', // Pode virar campo no form futuramente
       status: 'active'
     });
   }
@@ -135,20 +131,20 @@ export function CreateDealDialog({
         <DialogHeader>
           <DialogTitle>Novo Negócio (Master Deal)</DialogTitle>
           <DialogDescription>
-            Cadastre um novo ativo ou projeto. Se já houver um investidor líder, selecione-o abaixo.
+            Cadastre um novo ativo ou projeto estruturado.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             
-            {/* Título do Negócio */}
+            {/* 1. Nome do Deal (Alterado) */}
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Título do Projeto / Ativo <span className="text-red-500">*</span></FormLabel>
+                  <FormLabel>Nome do Deal <span className="text-red-500">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: Venda Hospital Santa Clara" {...field} />
                   </FormControl>
@@ -157,7 +153,53 @@ export function CreateDealDialog({
               )}
             />
 
-            {/* Seletor de Player (Opcional) */}
+            {/* Grid: Tipo de Operação e Valor */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="operationType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Operação <span className="text-red-500">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[200px]">
+                        {Object.entries(OPERATION_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor Estimado (R$)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="0,00" 
+                        {...field} 
+                        onChange={(e) => field.onChange(e)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 2. Player (Alterado) */}
             <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
               <FormField
                 control={form.control}
@@ -165,7 +207,7 @@ export function CreateDealDialog({
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between mb-1">
-                      <FormLabel className="font-semibold text-primary">Lead Investor (Opcional)</FormLabel>
+                      <FormLabel className="font-semibold text-primary">Player (Opcional)</FormLabel>
                       <span className="text-[11px] text-muted-foreground bg-background px-2 py-0.5 rounded border">
                         Cria Track Automático
                       </span>
@@ -177,61 +219,38 @@ export function CreateDealDialog({
                         onCheckNew={handleCreateNewPlayer}
                       />
                     </FormControl>
-                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                      Deixe vazio se estiver apenas cadastrando o ativo para prospecção futura.
-                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {/* Grid de Valor e Fase */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Estimado (R$)</FormLabel>
+            {/* 3. Fase Inicial (Corrigido para usar STAGE_LABELS) */}
+            <FormField
+              control={form.control}
+              name="stage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fase Inicial <span className="text-red-500">*</span></FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Input 
-                        placeholder="0,00" 
-                        {...field} 
-                        // Pequeno hack para permitir digitar livremente e só formatar no submit
-                        onChange={(e) => field.onChange(e)}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a fase" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fase Inicial <span className="text-red-500">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a fase" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="prospect">Prospecção / NDA</SelectItem>
-                        <SelectItem value="active">Em Análise (Active)</SelectItem>
-                        <SelectItem value="proposal">Proposta (NBO)</SelectItem>
-                        <SelectItem value="negotiation">Negociação (Binding)</SelectItem>
-                        <SelectItem value="closing">Fechamento / Assinatura</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {/* Agora mapeia as fases reais do sistema */}
+                      {Object.entries(STAGE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Descrição */}
             <FormField
@@ -243,7 +262,7 @@ export function CreateDealDialog({
                   <FormControl>
                     <Textarea
                       placeholder="Detalhes importantes, teses de investimento ou notas iniciais..."
-                      className="resize-none min-h-[100px]"
+                      className="resize-none min-h-[80px]"
                       {...field}
                     />
                   </FormControl>
@@ -261,7 +280,7 @@ export function CreateDealDialog({
                 Cancelar
               </Button>
               <Button type="submit" disabled={createDealMutation.isPending}>
-                {createDealMutation.isPending ? "Processando..." : "Criar Master Deal"}
+                {createDealMutation.isPending ? "Criando..." : "Criar Master Deal"}
               </Button>
             </DialogFooter>
           </form>
