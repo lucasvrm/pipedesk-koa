@@ -11,21 +11,31 @@ export function parseCurrency(value: string): number {
 }
 
 export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(date))
+  if (!date) return '-' // Proteção contra datas vazias
+  try {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(date))
+  } catch (error) {
+    return '-' // Fallback em caso de data inválida
+  }
 }
 
 export function formatDateTime(date: string | Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
+  if (!date) return '-'
+  try {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(date))
+  } catch (error) {
+    return '-'
+  }
 }
 
 // ADICIONADO: Função para formatar tamanho de arquivos
@@ -69,10 +79,12 @@ export function getInitials(name: string): string {
 }
 
 export function isOverdue(deadline: string): boolean {
+  if (!deadline) return false
   return new Date(deadline) < new Date()
 }
 
 export function getDaysUntil(date: string): number {
+  if (!date) return 0
   const diff = new Date(date).getTime() - new Date().getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }

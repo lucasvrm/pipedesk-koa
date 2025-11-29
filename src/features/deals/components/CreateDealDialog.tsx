@@ -31,23 +31,26 @@ import {
 } from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createDeal } from "@/services/dealService";
-import { useCompanies } from "@/services/companyService"; // Importado para buscar clientes
+import { useCompanies } from "@/services/companyService";
 import { toast } from "sonner";
 import { PlayerSelect } from "@/components/PlayerSelect";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { OPERATION_LABELS, OperationType, STAGE_LABELS, PlayerStage } from "@/lib/types";
-import { Briefcase, Buildings, Coins, User } from "@phosphor-icons/react"; // Ícones para UI
+import { Briefcase, Buildings, Coins } from "@phosphor-icons/react";
 
 // Schema de validação
 const formSchema = z.object({
   title: z.string().min(1, "O nome do deal é obrigatório"),
   description: z.string().optional(),
   operationType: z.string().min(1, "O tipo de operação é obrigatório"),
-  companyId: z.string().min(1, "O cliente é obrigatório"), // Novo campo obrigatório
+  companyId: z.string().min(1, "O cliente é obrigatório"),
   amount: z.string().transform((val) => {
     if (!val) return 0;
-    const number = parseFloat(val.replace(/[^\d.,]/g, "").replace(",", "."));
+    // Remove pontos de milhar e substitui vírgula decimal por ponto para converter
+    // Ex: "1.250,50" -> "1250.50"
+    const cleanValue = val.replace(/\./g, "").replace(",", ".");
+    const number = parseFloat(cleanValue);
     return isNaN(number) ? 0 : number;
   }),
   stage: z.string().min(1, "A fase é obrigatória"),
@@ -72,7 +75,6 @@ export function CreateDealDialog({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   
-  // Hook para buscar empresas (Clientes)
   const { data: companies } = useCompanies();
   
   const isControlled = controlledOpen !== undefined;
@@ -86,11 +88,35 @@ export function CreateDealDialog({
       description: "",
       operationType: "ccb",
       companyId: "",
-      amount: "0",
+      amount: "0,00",
       stage: defaultStage,
       player_id: "", 
     },
   });
+
+  // Função para aplicar máscara de moeda
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Remove tudo que não é dígito
+    value = value.replace(/\D/g, "");
+    
+    if (value === "") {
+      form.setValue("amount", "");
+      return;
+    }
+
+    // Converte para float (dividir por 100 para centavos)
+    const floatValue = parseFloat(value) / 100;
+
+    // Formata para BRL
+    const formatted = new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(floatValue);
+
+    form.setValue("amount", formatted);
+  };
 
   const createDealMutation = useMutation({
     mutationFn: createDeal,
@@ -121,7 +147,7 @@ export function CreateDealDialog({
       operationType: values.operationType as OperationType,
       initialStage: values.stage,
       playerId: values.player_id && values.player_id.length > 0 ? values.player_id : undefined,
-      companyId: values.companyId, // Enviando o ID da empresa
+      companyId: values.companyId,
       status: 'active'
     });
   }
@@ -161,7 +187,7 @@ export function CreateDealDialog({
                     <FormItem className="col-span-2">
                       <FormLabel>Nome do Deal <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: CRI Corporativo - Grupo Alpha" {...field} />
+                        <Input placeholder="Ex: Venda Hospital Santa Clara" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -253,14 +279,13 @@ export function CreateDealDialog({
                   )}
                 />
 
+                {/* Correção de Alinhamento e Label */}
                 <FormField
                   control={form.control}
                   name="player_id"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between">
-                        <FormLabel>Player / Lead (Opcional)</FormLabel>
-                      </div>
+                      <FormLabel>Player (Opcional)</FormLabel>
                       <FormControl>
                         <PlayerSelect 
                           value={field.value || ""} 
@@ -295,8 +320,8 @@ export function CreateDealDialog({
                       <FormControl>
                         <Input 
                           placeholder="0,00" 
-                          {...field} 
-                          onChange={(e) => field.onChange(e)}
+                          {...field}
+                          onChange={handleAmountChange} // Máscara aplicada aqui
                           className="font-mono"
                         />
                       </FormControl>
