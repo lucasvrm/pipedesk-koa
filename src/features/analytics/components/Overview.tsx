@@ -1,4 +1,3 @@
-// src/features/analytics/components/Overview.tsx
 import { useState } from 'react'
 import { useDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
@@ -66,7 +65,7 @@ export default function Overview() {
             icon={<RocketLaunch size={64} weight="duotone" />}
             title="Bem-vindo ao PipeDesk!"
             description="Você ainda não tem nenhum negócio. Comece criando seu primeiro Master Deal."
-            actionLabel="Criar Primeiro Negócio"
+            actionLabel="Criar Primeiro Deal"
             onAction={() => setCreateDealOpen(true)}
           />
         </div>
@@ -75,7 +74,7 @@ export default function Overview() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Negócios Ativos</CardTitle>
+                <CardTitle className="text-sm font-medium">Deals Ativos</CardTitle>
                 <TrendUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
               <CardContent>
@@ -129,7 +128,7 @@ export default function Overview() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Negócios por Status</CardTitle>
+                <CardTitle>Deals por Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -184,7 +183,7 @@ export default function Overview() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Negócios Recentes</CardTitle>
+              <CardTitle>Deals Recentes</CardTitle>
             </CardHeader>
             <CardContent>
               <DealsList deals={(masterDeals || []).slice(0, 5)} compact />

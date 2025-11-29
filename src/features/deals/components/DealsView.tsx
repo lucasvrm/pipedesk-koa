@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeals, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
 import { useUsers } from '@/services/userService'
+import { useTracks } from '@/services/trackService' // IMPORTADO
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -21,18 +22,17 @@ import {
 } from "@/components/ui/alert-dialog"
 import { 
   MagnifyingGlass, Trash, Kanban, CaretUp, CaretDown, CaretUpDown, 
-  CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, X, Tag as TagIcon
+  CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, X, Tag as TagIcon, TrendUp
 } from '@phosphor-icons/react'
-import { DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType, MasterDeal } from '@/lib/types'
+import { DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType, MasterDeal, PlayerStage, STAGE_LABELS, PlayerTrack } from '@/lib/types'
 import { formatCurrency, getInitials } from '@/lib/helpers'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { EditDealDialog } from './EditDealDialog' // Importado
-import { DealTagsDialog } from './DealTagsDialog' // Importado
+import { EditDealDialog } from './EditDealDialog'
+import { DealTagsDialog } from './DealTagsDialog'
 
-// Tipos
-type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType';
+type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -54,6 +54,14 @@ const INITIAL_FILTERS: FilterState = {
   responsible: 'all',
   minVolume: '',
   maxVolume: ''
+}
+
+const STAGE_WEIGHTS: Record<PlayerStage, number> = {
+  nda: 1,
+  analysis: 2,
+  proposal: 3,
+  negotiation: 4,
+  closing: 5
 }
 
 const getOperationBadgeColor = (type: OperationType) => {
@@ -85,9 +93,12 @@ const getOperationBadgeColor = (type: OperationType) => {
 
 export default function DealsView() {
   const navigate = useNavigate()
-  const { data: masterDeals, isLoading } = useDeals()
+  const { data: masterDeals, isLoading: dealsLoading } = useDeals()
+  const { data: allTracks, isLoading: tracksLoading } = useTracks() // Buscar Tracks
   const { data: users } = useUsers()
   
+  const isLoading = dealsLoading || tracksLoading
+
   const deleteSingleMutation = useDeleteDeal()
   const deleteBulkMutation = useDeleteDeals()
 
@@ -111,6 +122,41 @@ export default function DealsView() {
   const [editDealOpen, setEditDealOpen] = useState(false)
   const [tagsDealOpen, setTagsDealOpen] = useState(false)
   const [selectedDeal, setSelectedDeal] = useState<MasterDeal | null>(null)
+
+  // --- Helpers de Tracks ---
+  const tracksByDealId = useMemo(() => {
+    if (!allTracks) return {} as Record<string, PlayerTrack[]>;
+    return allTracks.reduce((acc, track) => {
+      if (!acc[track.masterDealId]) {
+        acc[track.masterDealId] = []
+      }
+      if (track.status === 'active') {
+        acc[track.masterDealId].push(track)
+      }
+      return acc
+    }, {} as Record<string, PlayerTrack[]>)
+  }, [allTracks])
+
+  const getAdvancedTrackInfo = (dealId: string) => {
+    const tracks = tracksByDealId[dealId] || []
+    if (tracks.length === 0) return null
+
+    const sorted = [...tracks].sort((a, b) => {
+      const weightA = STAGE_WEIGHTS[a.currentStage] || 0
+      const weightB = STAGE_WEIGHTS[b.currentStage] || 0
+      return weightB - weightA
+    })
+
+    const bestTrack = sorted[0]
+    const extraCount = tracks.length - 1
+
+    return {
+      bestTrack,
+      extraCount,
+      stageLabel: STAGE_LABELS[bestTrack.currentStage],
+      playerName: bestTrack.playerName
+    }
+  }
 
   // --- Helpers de Filtros Ativos ---
   const activeFilterCount = useMemo(() => {
@@ -189,6 +235,14 @@ export default function DealsView() {
         case 'volume': aValue = a.volume; bValue = b.volume; break;
         case 'status': aValue = STATUS_LABELS[a.status]; bValue = STATUS_LABELS[b.status]; break;
         case 'operationType': aValue = OPERATION_LABELS[a.operationType]; bValue = OPERATION_LABELS[b.operationType]; break;
+        case 'trackStatus': // Lógica de ordenação por estágio
+            const infoA = getAdvancedTrackInfo(a.id);
+            const infoB = getAdvancedTrackInfo(b.id);
+            const weightA = infoA ? STAGE_WEIGHTS[infoA.bestTrack.currentStage] : -1;
+            const weightB = infoB ? STAGE_WEIGHTS[infoB.bestTrack.currentStage] : -1;
+            aValue = weightA;
+            bValue = weightB;
+            break;
       }
 
       if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -197,7 +251,7 @@ export default function DealsView() {
     });
 
     return result;
-  }, [masterDeals, searchQuery, filters, sortConfig]);
+  }, [masterDeals, searchQuery, filters, sortConfig, tracksByDealId]); // Adicionado tracksByDealId
 
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -282,8 +336,11 @@ export default function DealsView() {
 
       <Card>
         <CardHeader className="pb-4 space-y-4">
+          
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
+            
             <div className="flex flex-1 flex-col md:flex-row gap-3 w-full items-center">
+              
               <div className="relative w-full md:w-96">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -307,8 +364,8 @@ export default function DealsView() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-4" align="start">
-                   {/* Conteúdo do Popover de Filtros (Mantido igual) */}
-                   <div className="space-y-4">
+                  <div className="space-y-4">
+                    {/* Conteúdo dos Filtros (Mantido) */}
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium leading-none">Filtros Avançados</h4>
                       {activeFilterCount > 0 && (
@@ -330,7 +387,7 @@ export default function DealsView() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {/* ... Outros filtros ... */}
+                    {/* ... Outros Filtros (Tipo, Resp, Volume) ... */}
                     <Button className="w-full" size="sm" onClick={applyFilters}>
                       Aplicar Filtros
                     </Button>
@@ -338,10 +395,10 @@ export default function DealsView() {
                 </PopoverContent>
               </Popover>
 
-              {/* Badges de Filtros Ativos (Mantido) */}
               {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* ... Badges ... */}
+                  <Separator orientation="vertical" className="h-6" />
+                  {/* Badges de filtros... (Mantido) */}
                   <Button variant="ghost" size="sm" onClick={resetAllFilters} className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive">
                     Limpar tudo
                   </Button>
@@ -360,6 +417,7 @@ export default function DealsView() {
                   <Trash className="mr-2" /> Excluir ({selectedIds.length})
                 </Button>
               )}
+
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground hidden sm:inline">Linhas:</span>
                 <Select 
@@ -393,30 +451,47 @@ export default function DealsView() {
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
+                      
                       <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('companyName')}>
                         <div className="flex items-center">Empresa <SortIcon columnKey="companyName" /></div>
                       </TableHead>
+
                       <TableHead className="cursor-pointer hover:bg-muted/50 w-[25%]" onClick={() => handleSort('clientName')}>
                         <div className="flex items-center">Deal <SortIcon columnKey="clientName" /></div>
                       </TableHead>
+                      
+                      {/* NOVA COLUNA TRACK STATUS REINTEGRADA */}
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('trackStatus')}>
+                         <div className="flex items-center gap-1">
+                           <TrendUp className="h-4 w-4 text-muted-foreground" />
+                           Estágio <SortIcon columnKey="trackStatus" />
+                         </div>
+                      </TableHead>
+
                       <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('operationType')}>
                         <div className="flex items-center">Tipo <SortIcon columnKey="operationType" /></div>
                       </TableHead>
+
                       <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleSort('volume')}>
                         <div className="flex items-center justify-end">Volume <SortIcon columnKey="volume" /></div>
                       </TableHead>
+
                       <TableHead className="cursor-pointer hover:bg-muted/50 text-center" onClick={() => handleSort('status')}>
                         <div className="flex items-center justify-center">Status <SortIcon columnKey="status" /></div>
                       </TableHead>
+
                       <TableHead className="cursor-pointer hover:bg-muted/50">
                         <div className="flex items-center justify-center">Responsável</div>
                       </TableHead>
+
                       <TableHead className="text-right w-[110px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {currentDeals.length > 0 ? currentDeals.map((deal) => {
                       const isSelected = selectedIds.includes(deal.id)
+                      const advancedTrack = getAdvancedTrackInfo(deal.id) // DADOS DO TRACK
+
                       return (
                         <TableRow 
                           key={deal.id} 
@@ -426,6 +501,7 @@ export default function DealsView() {
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox checked={isSelected} onCheckedChange={() => toggleSelectOne(deal.id)} />
                           </TableCell>
+                          
                           <TableCell>
                             {deal.company ? (
                               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -434,18 +510,14 @@ export default function DealsView() {
                               </div>
                             ) : <span className="text-xs text-muted-foreground italic">-</span>}
                           </TableCell>
+
                           <TableCell className="font-medium">
                             <div className="flex flex-col gap-1">
                               <span>{deal.clientName}</span>
-                              {/* TAGS NA LISTAGEM */}
                               {deal.tags && deal.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {deal.tags.map(tag => (
-                                    <Badge 
-                                      key={tag.id} 
-                                      variant="outline" 
-                                      style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40', fontSize: '10px', height: '18px', padding: '0 6px' }}
-                                    >
+                                    <Badge key={tag.id} variant="outline" style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40', fontSize: '10px', height: '18px', padding: '0 6px' }}>
                                       {tag.name}
                                     </Badge>
                                   ))}
@@ -453,15 +525,42 @@ export default function DealsView() {
                               )}
                             </div>
                           </TableCell>
+
+                          {/* CÉLULA TRACK STATUS */}
+                          <TableCell>
+                            {advancedTrack ? (
+                              <div className="flex flex-col items-start gap-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap">
+                                    {advancedTrack.stageLabel}
+                                  </Badge>
+                                  {advancedTrack.extraCount > 0 && (
+                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-muted" title={`+${advancedTrack.extraCount} outros players ativos`}>
+                                      +{advancedTrack.extraCount}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground truncate max-w-[140px]" title={advancedTrack.playerName}>
+                                  {advancedTrack.playerName}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">Sem players ativos</span>
+                            )}
+                          </TableCell>
+
                           <TableCell>
                             <Badge variant="outline" className={`font-normal whitespace-nowrap border ${getOperationBadgeColor(deal.operationType)}`}>
                               {OPERATION_LABELS[deal.operationType] || deal.operationType || '-'}
                             </Badge>
                           </TableCell>
+
                           <TableCell className="text-right font-medium">{formatCurrency(deal.volume)}</TableCell>
+
                           <TableCell className="text-center">
                             <Badge className={`${getStatusBadge(deal.status)} font-normal`}>{STATUS_LABELS[deal.status]}</Badge>
                           </TableCell>
+
                           <TableCell>
                             <div className="flex -space-x-2 overflow-hidden justify-center">
                               {deal.responsibles && deal.responsibles.length > 0 ? (
@@ -474,56 +573,18 @@ export default function DealsView() {
                               ) : <span className="text-xs text-muted-foreground">-</span>}
                             </div>
                           </TableCell>
+
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              {/* Botão de Tags na Linha */}
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                title="Gerenciar Tags"
-                                className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedDeal(deal);
-                                  setTagsDealOpen(true);
-                                }}
-                              >
-                                <TagIcon className="h-4 w-4" />
-                              </Button>
-                              
-                              {/* Botão de Editar Corrigido */}
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                title="Editar"
-                                className="h-8 w-8"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedDeal(deal);
-                                  setEditDealOpen(true);
-                                }}
-                              >
-                                <PencilSimple className="h-4 w-4" />
-                              </Button>
-                              
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                disabled={!isSelected} 
-                                className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  confirmDelete(deal.id);
-                                }}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setTagsDealOpen(true); }}><TagIcon className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setEditDealOpen(true); }}><PencilSimple className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" disabled={!isSelected} className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}`} onClick={(e) => { e.stopPropagation(); confirmDelete(deal.id); }}><Trash className="h-4 w-4" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       )
                     }) : (
-                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum deal encontrado.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum deal encontrado.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -531,9 +592,7 @@ export default function DealsView() {
 
               {processedDeals.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
-                  <div className="text-sm text-muted-foreground">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals
-                  </div>
+                  <div className="text-sm text-muted-foreground">Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals</div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => { const newPage = currentPage - 1; if (newPage >= 1) setCurrentPage(newPage); }} disabled={currentPage === 1}><CaretLeft className="mr-2 h-4 w-4" /> Anterior</Button>
                     <Button variant="outline" size="sm" onClick={() => { const newPage = currentPage + 1; if (newPage <= totalPages) setCurrentPage(newPage); }} disabled={currentPage === totalPages}>Próximo <CaretRight className="ml-2 h-4 w-4" /></Button>
@@ -562,19 +621,10 @@ export default function DealsView() {
 
       {selectedDeal && (
         <>
-          <EditDealDialog 
-            deal={selectedDeal} 
-            open={editDealOpen} 
-            onOpenChange={setEditDealOpen} 
-          />
-          <DealTagsDialog 
-            deal={selectedDeal} 
-            open={tagsDealOpen} 
-            onOpenChange={setTagsDealOpen} 
-          />
+          <EditDealDialog deal={selectedDeal} open={editDealOpen} onOpenChange={setEditDealOpen} />
+          <DealTagsDialog deal={selectedDeal} open={tagsDealOpen} onOpenChange={setTagsDealOpen} />
         </>
       )}
-
     </div>
   )
 }
