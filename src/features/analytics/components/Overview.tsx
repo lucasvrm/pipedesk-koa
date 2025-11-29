@@ -12,14 +12,14 @@ import {
 } from '@phosphor-icons/react'
 import { PlayerStage, STAGE_PROBABILITIES } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
-import DealsList from '@/features/deals/components/DealsList'
+import DealsList from '@/features/deals/components/DealsList' // Componente atualizado
 import DealsByStageChart from '@/features/deals/components/DealsByStageChart'
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
 import { toast } from 'sonner'
 
 export default function Overview() {
   const { data: masterDeals } = useDeals()
-  const { data: playerTracks } = useTracks()
+  const { data: playerTracks } = useTracks() // Pegando os tracks
   const [stageFilter, setStageFilter] = useState<PlayerStage | null>(null)
   const [createDealOpen, setCreateDealOpen] = useState(false)
 
@@ -64,7 +64,7 @@ export default function Overview() {
           <EmptyState
             icon={<RocketLaunch size={64} weight="duotone" />}
             title="Bem-vindo ao PipeDesk!"
-            description="Você ainda não tem nenhum negócio. Comece criando seu primeiro Master Deal."
+            description="Você ainda não tem nenhum deal. Comece criando seu primeiro Master Deal."
             actionLabel="Criar Primeiro Deal"
             onAction={() => setCreateDealOpen(true)}
           />
@@ -186,7 +186,12 @@ export default function Overview() {
               <CardTitle>Deals Recentes</CardTitle>
             </CardHeader>
             <CardContent>
-              <DealsList deals={(masterDeals || []).slice(0, 5)} compact />
+              {/* PASSANDO OS PLAYER TRACKS AQUI */}
+              <DealsList 
+                deals={(masterDeals || []).slice(0, 5)} 
+                playerTracks={playerTracks || []} 
+                compact 
+              />
             </CardContent>
           </Card>
         </div>

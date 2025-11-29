@@ -1,191 +1,156 @@
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { useState, useMemo } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { MasterDeal, STATUS_LABELS, OPERATION_LABELS, PlayerTrack, STAGE_LABELS, PlayerStage } from '@/lib/types'
+import { formatCurrency, formatDate, isOverdue, getDaysUntil } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
-import { MasterDeal, STATUS_LABELS, OPERATION_LABELS, PlayerStage, STAGE_LABELS } from '@/lib/types'
-import { formatCurrency, formatDate } from '@/lib/helpers'
-import { Eye, PencilSimple, Trash, Users } from '@phosphor-icons/react'
-import { usePlayerTracks } from '@/features/deals/hooks/usePlayerTracks' // Hook necessário
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/EmptyState'
+import { Eye, WarningCircle, Briefcase, TrendUp } from '@phosphor-icons/react'
+import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
+
+// Configuração de Pesos dos Estágios (para determinar o mais avançado)
+const STAGE_WEIGHTS: Record<PlayerStage, number> = {
+  nda: 1,
+  analysis: 2,
+  proposal: 3,
+  negotiation: 4,
+  closing: 5
+}
 
 interface DealsListProps {
   deals: MasterDeal[]
-  onEdit: (deal: MasterDeal) => void
-  onDelete: (dealId: string) => void
-  onView: (dealId: string) => void
-  canEdit: boolean
-  canDelete: boolean
+  playerTracks?: PlayerTrack[] // Novo Prop Opcional
+  compact?: boolean
+  bulkMode?: boolean
 }
 
-// Mapa de peso dos estágios para ordenação
-const STAGE_WEIGHTS: Record<PlayerStage, number> = {
-  closing: 5,
-  negotiation: 4,
-  proposal: 3,
-  analysis: 2,
-  nda: 1
-}
+export default function DealsList({ deals, playerTracks = [], compact = false, bulkMode = false }: DealsListProps) {
+  const navigate = useNavigate()
 
-export default function DealsList({ 
-  deals, 
-  onEdit, 
-  onDelete, 
-  onView,
-  canEdit, 
-  canDelete 
-}: DealsListProps) {
-  // Buscamos todos os tracks para calcular o status mais avançado
-  // (Em produção com muitos dados, isso deveria vir calculado do backend/view sql)
-  const { data: allTracks } = usePlayerTracks()
+  // Agrupamento de Tracks por Deal
+  const tracksByDealId = useMemo(() => {
+    if (!playerTracks) return {} as Record<string, PlayerTrack[]>;
+    return playerTracks.reduce((acc, track) => {
+      if (!acc[track.masterDealId]) acc[track.masterDealId] = []
+      if (track.status === 'active') acc[track.masterDealId].push(track)
+      return acc
+    }, {} as Record<string, PlayerTrack[]>)
+  }, [playerTracks])
 
-  const getBestTrackStatus = (dealId: string) => {
-    if (!allTracks) return null
+  // Helper para pegar o melhor track
+  const getAdvancedTrackInfo = (dealId: string) => {
+    const tracks = tracksByDealId[dealId] || []
+    if (tracks.length === 0) return null
 
-    // 1. Filtra tracks deste deal (apenas ativos)
-    const dealTracks = allTracks.filter(t => t.masterDealId === dealId && t.status !== 'cancelled')
-
-    if (dealTracks.length === 0) return null
-
-    // 2. Ordena pelo estágio mais avançado (peso maior primeiro)
-    dealTracks.sort((a, b) => {
+    const sorted = [...tracks].sort((a, b) => {
       const weightA = STAGE_WEIGHTS[a.currentStage] || 0
       const weightB = STAGE_WEIGHTS[b.currentStage] || 0
-      return weightB - weightA // Decrescente
+      return weightB - weightA
     })
 
-    const bestTrack = dealTracks[0]
-    const bestStage = bestTrack.currentStage
-    
-    // 3. Conta quantos estão nesse mesmo estágio "topo"
-    const countAtBestStage = dealTracks.filter(t => t.currentStage === bestStage).length
+    const bestTrack = sorted[0]
+    const extraCount = tracks.length - 1
 
     return {
-      stage: bestStage,
+      stageLabel: STAGE_LABELS[bestTrack.currentStage],
       playerName: bestTrack.playerName,
-      count: countAtBestStage,
-      totalActive: dealTracks.length
+      extraCount
     }
   }
 
-  const getStageColorBadge = (stage: PlayerStage) => {
-    switch (stage) {
-      case 'nda': return 'bg-slate-100 text-slate-700 border-slate-200'
-      case 'analysis': return 'bg-blue-50 text-blue-700 border-blue-200'
-      case 'proposal': return 'bg-amber-50 text-amber-700 border-amber-200'
-      case 'negotiation': return 'bg-purple-50 text-purple-700 border-purple-200'
-      case 'closing': return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      default: return 'outline'
+  const handleDealClick = (deal: MasterDeal) => {
+    if (!bulkMode) {
+      navigate(`/deals/${deal.id}`)
     }
   }
 
   if (deals.length === 0) {
     return (
-      <div className="text-center py-12 border-2 border-dashed rounded-lg">
-        <p className="text-muted-foreground">Nenhum negócio encontrado.</p>
-      </div>
+      <EmptyState
+        icon={<Briefcase size={64} weight="duotone" />}
+        title="Nenhum deal encontrado"
+        description="Não há deals correspondentes aos seus critérios."
+      />
     )
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Operação</TableHead>
-            <TableHead>Track Status</TableHead> {/* NOVA COLUNA */}
-            <TableHead>Volume</TableHead>
-            <TableHead>Prazo</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {deals.map((deal) => {
-            const bestTrack = getBestTrackStatus(deal.id)
+    <div className="space-y-3">
+      {deals.map((deal) => {
+        const overdue = isOverdue(deal.deadline)
+        const statusClass = deal.status === 'active' ? 'status-active' :
+                           deal.status === 'on_hold' ? 'bg-amber-100 text-amber-700' : '';
+        
+        const trackInfo = getAdvancedTrackInfo(deal.id)
 
-            return (
-              <TableRow key={deal.id}>
-                <TableCell className="font-medium">
-                  <div>
+        return (
+          <div
+            key={deal.id}
+            className={cn(
+              "flex flex-col gap-2 p-4 rounded-lg border border-border bg-card transition-all",
+              !bulkMode && "hover:bg-secondary/30 cursor-pointer hover:border-primary/20",
+              compact && "p-3"
+            )}
+            onClick={() => handleDealClick(deal)}
+          >
+            {/* Linha 1: Título e Status */}
+            <div className="flex items-center justify-between">
+               <div className="flex items-center gap-2 min-w-0">
+                  <h3 className={cn("font-semibold truncate text-foreground", compact ? "text-sm" : "text-base")}>
                     {deal.clientName}
-                    {deal.company && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        {deal.company.name}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-normal text-xs">
-                    {OPERATION_LABELS[deal.operationType]}
-                  </Badge>
-                </TableCell>
-                
-                {/* CÉLULA: TRACK STATUS */}
-                <TableCell>
-                  {bestTrack ? (
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-[10px] px-1.5 h-5 ${getStageColorBadge(bestTrack.stage)}`}>
-                          {STAGE_LABELS[bestTrack.stage]}
-                        </Badge>
-                        {bestTrack.count > 1 && (
-                          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1 rounded" title={`${bestTrack.count} players nesta fase`}>
-                            +{bestTrack.count - 1}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[140px]" title={bestTrack.playerName}>
-                        {bestTrack.playerName}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground italic">-</span>
+                  </h3>
+                  {!compact && (
+                    <Badge variant="secondary" className={cn("text-[10px] h-5 px-1.5", statusClass)}>
+                      {STATUS_LABELS[deal.status]}
+                    </Badge>
                   )}
-                </TableCell>
+               </div>
+               {!compact && !bulkMode && (
+                 <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                   <Eye size={14} />
+                 </Button>
+               )}
+            </div>
 
-                <TableCell>{formatCurrency(deal.volume)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(deal.deadline)}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={deal.status === 'active' ? 'default' : 'secondary'}>
-                    {STATUS_LABELS[deal.status]}
+            {/* Linha 2: Detalhes (Valor, Tipo, Data) */}
+            <div className={cn("flex flex-wrap items-center gap-3 text-muted-foreground", compact ? "text-xs" : "text-sm")}>
+              <span className="font-medium text-foreground">{formatCurrency(deal.volume)}</span>
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <span>{OPERATION_LABELS[deal.operationType]}</span>
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <span className={cn("flex items-center gap-1", overdue && "text-destructive font-medium")}>
+                {formatDate(deal.deadline)}
+                {overdue && <WarningCircle weight="fill" />}
+              </span>
+            </div>
+
+            {/* Linha 3: Track Status (NOVIDADE) */}
+            <div className="pt-2 mt-1 border-t border-border/50 flex items-center gap-2">
+              {trackInfo ? (
+                <>
+                  <Badge variant="outline" className="text-[10px] px-1.5 h-5 bg-primary/5 border-primary/20 text-primary gap-1">
+                    <TrendUp className="w-3 h-3" />
+                    {trackInfo.stageLabel}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => onView(deal.id)}>
-                      <Eye size={16} />
-                    </Button>
-                    {canEdit && (
-                      <Button variant="ghost" size="icon" onClick={() => onEdit(deal)}>
-                        <PencilSimple size={16} />
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive hover:text-destructive/90"
-                        onClick={() => onDelete(deal.id)}
-                      >
-                        <Trash size={16} />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+                  <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                    {trackInfo.playerName}
+                  </span>
+                  {trackInfo.extraCount > 0 && (
+                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 rounded-sm">
+                      +{trackInfo.extraCount}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-[11px] text-muted-foreground/70 italic">
+                  Sem players ativos
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
