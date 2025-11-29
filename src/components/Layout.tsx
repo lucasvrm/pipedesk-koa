@@ -27,7 +27,8 @@ import {
   Buildings,
   Briefcase,
   Eye,
-  EyeSlash
+  EyeSlash,
+  Tag
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -43,7 +44,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
-// Componentes e Dialogs
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog'
 import { SLAConfigManager } from '@/components/SLAConfigManager'
@@ -97,7 +97,6 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* HEADER (Sticky) */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-6">
           
@@ -109,7 +108,6 @@ export function Layout({ children }: LayoutProps) {
               PipeDesk
             </h1>
 
-            {/* MENU PRINCIPAL DESKTOP - REORDENADO */}
             <nav className="hidden md:flex items-center gap-2">
               <Button
                 variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
@@ -131,7 +129,7 @@ export function Layout({ children }: LayoutProps) {
               >
                 <Link to="/deals">
                   <Kanban className="mr-2" />
-                  Negócios
+                  Deals
                 </Link>
               </Button>
 
@@ -200,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
               data-tour="new-deal-button"
             >
               <Plus className="mr-2" />
-              Novo Negócio
+              Novo Deal
             </Button>
 
             <Button
@@ -284,6 +282,11 @@ export function Layout({ children }: LayoutProps) {
                       <Gear className="mr-2" />
                       Campos Customizados
                     </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => navigate('/settings/tags')}>
+                      <Tag className="mr-2" />
+                      Tags
+                    </DropdownMenuItem>
                     
                     <DropdownMenuItem onClick={() => navigate('/settings/phase-validation')}>
                       <GitBranch className="mr-2" />
@@ -355,12 +358,10 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      {/* ÁREA PRINCIPAL */}
       <main className="flex-1">
         {children}
       </main>
 
-      {/* COMPONENTES GLOBAIS */}
       <GlobalSearch
         open={searchOpen}
         onOpenChange={setSearchOpen}
@@ -392,7 +393,7 @@ export function Layout({ children }: LayoutProps) {
       <SLAMonitoringService />
       <OnboardingTour />
 
-      {/* BOTTOM BAR (MOBILE) */}
+      {/* BOTTOM BAR */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
         <Button
           variant={isActive('/dashboard') ? 'secondary' : 'ghost'}

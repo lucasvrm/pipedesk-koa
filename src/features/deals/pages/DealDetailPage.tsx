@@ -9,6 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -76,7 +79,7 @@ export default function DealDetailPage() {
   if (!deal) {
     return (
       <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold mb-2">Negócio não encontrado</h2>
+        <h2 className="text-2xl font-bold mb-2">Deal não encontrado</h2>
         <Button onClick={() => navigate('/deals')}>Voltar para Lista</Button>
       </div>
     )
@@ -100,7 +103,7 @@ export default function DealDetailPage() {
         updates: { status: newStatus }
       }, {
         onSuccess: () => {
-          toast.success('Negócio cancelado e players atualizados.')
+          toast.success('Deal cancelado e players atualizados.')
           if (currentUser) logActivity(deal.id, 'deal', `Status alterado para ${STATUS_LABELS[newStatus]}`, currentUser.id)
         },
         onError: () => toast.error('Erro ao atualizar status')
@@ -144,7 +147,7 @@ export default function DealDetailPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/deals">Negócios</Link>
+              <Link to="/deals">Deals</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -184,9 +187,6 @@ export default function DealDetailPage() {
           
           <div className="flex gap-2 items-center">
             
-            {/* IMPORTANTE: O DocumentGenerator fica FORA do DropdownMenu 
-                para evitar conflitos de overlay e pointer-events.
-            */}
             <DocumentGenerator 
               deal={deal} 
               playerTracks={activeTracks} 
@@ -194,7 +194,7 @@ export default function DealDetailPage() {
               onOpenChange={setDocGeneratorOpen} 
             />
 
-            {/* Menu de Ações (3 Pontinhos) */}
+            {/* Menu de Ações */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9 data-[state=open]:bg-muted">
@@ -202,13 +202,12 @@ export default function DealDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Ações do Negócio</DropdownMenuLabel>
+                <DropdownMenuLabel>Ações do Deal</DropdownMenuLabel>
                 
                 <DropdownMenuItem onClick={() => setEditDealOpen(true)}>
                   <PencilSimple className="mr-2 h-4 w-4" /> Editar Informações
                 </DropdownMenuItem>
 
-                {/* Usamos onSelect para garantir o fechamento limpo do menu antes de abrir o modal */}
                 <DropdownMenuItem onSelect={() => setDocGeneratorOpen(true)}>
                   <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
                 </DropdownMenuItem>
@@ -248,9 +247,8 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      {/* Cards de Métricas (Padronizados) */}
+      {/* Cards de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {/* Card 1: Volume (Azul) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Wallet className="h-3.5 w-3.5 text-blue-500" /> Volume Total
@@ -260,7 +258,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 2: Fee Estimado (Emerald/Verde) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Sparkle className="h-3.5 w-3.5 text-emerald-500" /> Fee Estimado
@@ -270,7 +267,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 3: Players Ativos (Amber/Laranja) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-amber-500" /> Players Ativos
@@ -280,7 +276,6 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
-        {/* Card 4: Prazo (Condicional) */}
         <Card className={`p-4 flex flex-col justify-between gap-1 border-l-4 ${deadlineColorClass} shadow-sm hover:shadow-md transition-shadow`}>
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             {isDeadlineOverdue ? (

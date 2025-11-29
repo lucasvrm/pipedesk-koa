@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Trash, PencilSimple, Plus, Tag as TagIcon } from '@phosphor-icons/react'
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Trash, PencilSimple, Plus, Tag as TagIcon, Kanban, Target } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { Tag } from '@/lib/types'
 
@@ -34,6 +35,7 @@ export default function TagsSettingsPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
+  const [activeTab, setActiveTab] = useState<'deal' | 'track'>('deal')
   
   const [formData, setFormData] = useState({
     name: '',
@@ -41,9 +43,11 @@ export default function TagsSettingsPage() {
     entityType: 'deal' as 'deal' | 'track'
   })
 
+  const filteredTags = tags?.filter(t => t.entityType === activeTab) || []
+
   const handleCreate = () => {
     setEditingTag(null)
-    setFormData({ name: '', color: '#64748b', entityType: 'deal' })
+    setFormData({ name: '', color: '#64748b', entityType: activeTab })
     setIsDialogOpen(true)
   }
 
@@ -96,109 +100,76 @@ export default function TagsSettingsPage() {
           </h1>
           <p className="text-muted-foreground">Crie etiquetas para organizar Deals e Tracks.</p>
         </div>
-        <Button onClick={handleCreate}><Plus className="mr-2" /> Nova Tag</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* COLUNA DEALS */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tags de Negócios (Deals)</CardTitle>
-            <CardDescription>Aplicáveis a oportunidades macro.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tag</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tags?.filter(t => t.entityType === 'deal').map(tag => (
-                    <TableRow key={tag.id}>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color }}
-                        >
-                          {tag.name}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(tag)}>
-                            <PencilSimple />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(tag.id)}>
-                            <Trash />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {tags?.filter(t => t.entityType === 'deal').length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-center py-4 text-muted-foreground">Nenhuma tag criada.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* COLUNA TRACKS */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tags de Acompanhamento (Tracks)</CardTitle>
-            <CardDescription>Aplicáveis a negociações com players.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tag</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tags?.filter(t => t.entityType === 'track').map(tag => (
-                    <TableRow key={tag.id}>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color }}
-                        >
-                          {tag.name}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(tag)}>
-                            <PencilSimple />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(tag.id)}>
-                            <Trash />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {tags?.filter(t => t.entityType === 'track').length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-center py-4 text-muted-foreground">Nenhuma tag criada.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+      {/* TOGGLE DE VISUALIZAÇÃO */}
+      <div className="flex justify-center">
+        <ToggleGroup type="single" value={activeTab} onValueChange={(v) => v && setActiveTab(v as any)}>
+          <ToggleGroupItem value="deal" className="px-4 py-2 gap-2">
+            <Kanban size={18} /> Deals
+          </ToggleGroupItem>
+          <ToggleGroupItem value="track" className="px-4 py-2 gap-2">
+            <Target size={18} /> Tracks
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Tags de {activeTab === 'deal' ? 'Deals' : 'Tracks'}</CardTitle>
+            <CardDescription>
+              {activeTab === 'deal' 
+                ? 'Aplicáveis aos Master Deals (Oportunidades Macro).' 
+                : 'Aplicáveis aos Tracks (Negociações com Players).'}
+            </CardDescription>
+          </div>
+          <Button onClick={handleCreate} size="sm"><Plus className="mr-2" /> Nova Tag</Button>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tag</TableHead>
+                  <TableHead className="w-[100px] text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTags.map(tag => (
+                  <TableRow key={tag.id}>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color }}
+                      >
+                        {tag.name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(tag)}>
+                          <PencilSimple />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(tag.id)}>
+                          <Trash />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredTags.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                      Nenhuma tag criada para {activeTab === 'deal' ? 'Deals' : 'Tracks'}.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
@@ -232,12 +203,12 @@ export default function TagsSettingsPage() {
               <Select 
                 value={formData.entityType} 
                 onValueChange={v => setFormData({...formData, entityType: v as 'deal' | 'track'})}
-                disabled={!!editingTag} // Não mudar tipo ao editar
+                disabled={!!editingTag}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="deal">Negócios (Deals)</SelectItem>
-                  <SelectItem value="track">Acompanhamento (Tracks)</SelectItem>
+                  <SelectItem value="deal">Deals</SelectItem>
+                  <SelectItem value="track">Tracks</SelectItem>
                 </SelectContent>
               </Select>
             </div>

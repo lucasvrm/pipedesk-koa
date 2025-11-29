@@ -87,10 +87,10 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
         logActivity(deal.id, 'deal', 'Edição de Propriedades', user.id, values)
       }
 
-      toast.success('Negócio atualizado com sucesso!')
+      toast.success('Deal atualizado com sucesso!')
       onOpenChange(false)
     } catch (error) {
-      toast.error('Erro ao atualizar negócio')
+      toast.error('Erro ao atualizar deal')
       console.error(error)
     }
   }
@@ -99,7 +99,7 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Negócio</DialogTitle>
+          <DialogTitle>Editar Deal</DialogTitle>
           <DialogDescription>Atualize as informações do mandato.</DialogDescription>
         </DialogHeader>
 
@@ -110,7 +110,7 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
               name="clientName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Cliente / Negócio</FormLabel>
+                  <FormLabel>Nome do Cliente / Deal</FormLabel>
                   <FormControl><Input placeholder="Ex: Grupo XYZ" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>

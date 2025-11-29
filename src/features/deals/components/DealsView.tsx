@@ -29,7 +29,6 @@ import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 
-// Tipos
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType';
 type SortDirection = 'asc' | 'desc';
 
@@ -54,7 +53,6 @@ const INITIAL_FILTERS: FilterState = {
   maxVolume: ''
 }
 
-// --- HELPER DE CORES PARA OPERAÇÕES ---
 const getOperationBadgeColor = (type: OperationType) => {
   switch (type) {
     case 'ccb':
@@ -90,23 +88,19 @@ export default function DealsView() {
   const deleteSingleMutation = useDeleteDeal()
   const deleteBulkMutation = useDeleteDeals()
 
-  // Estados de Controle
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'clientName', direction: 'asc' })
 
-  // Estado Unificado de Filtros
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
   const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS) 
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
-  // Modais
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
 
-  // --- Helpers de Filtros Ativos ---
   const activeFilterCount = useMemo(() => {
     let count = 0
     if (filters.status !== 'all') count++
@@ -144,11 +138,9 @@ export default function DealsView() {
     setCurrentPage(1)
   }
 
-  // --- Processamento de Dados ---
   const processedDeals = useMemo(() => {
     if (!masterDeals) return []
 
-    // 1. Filtragem
     let result = masterDeals.filter(deal => {
       if (searchQuery) {
         const companyName = deal.company?.name?.toLowerCase() || ''
@@ -174,32 +166,16 @@ export default function DealsView() {
       return true
     })
 
-    // 2. Ordenação
     result.sort((a, b) => {
       let aValue: any = '';
       let bValue: any = '';
 
       switch (sortConfig.key) {
-        case 'clientName':
-          aValue = a.clientName.toLowerCase();
-          bValue = b.clientName.toLowerCase();
-          break;
-        case 'companyName':
-          aValue = (a.company?.name || '').toLowerCase();
-          bValue = (b.company?.name || '').toLowerCase();
-          break;
-        case 'volume':
-          aValue = a.volume;
-          bValue = b.volume;
-          break;
-        case 'status':
-          aValue = STATUS_LABELS[a.status];
-          bValue = STATUS_LABELS[b.status];
-          break;
-        case 'operationType':
-          aValue = OPERATION_LABELS[a.operationType];
-          bValue = OPERATION_LABELS[b.operationType];
-          break;
+        case 'clientName': aValue = a.clientName.toLowerCase(); bValue = b.clientName.toLowerCase(); break;
+        case 'companyName': aValue = (a.company?.name || '').toLowerCase(); bValue = (b.company?.name || '').toLowerCase(); break;
+        case 'volume': aValue = a.volume; bValue = b.volume; break;
+        case 'status': aValue = STATUS_LABELS[a.status]; bValue = STATUS_LABELS[b.status]; break;
+        case 'operationType': aValue = OPERATION_LABELS[a.operationType]; bValue = OPERATION_LABELS[b.operationType]; break;
       }
 
       if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -210,13 +186,11 @@ export default function DealsView() {
     return result;
   }, [masterDeals, searchQuery, filters, sortConfig]);
 
-  // --- Paginação ---
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentDeals = processedDeals.slice(startIndex, endIndex)
 
-  // --- Handlers ---
   const handleSort = (key: SortKey) => {
     setSortConfig(current => ({
       key,
@@ -248,11 +222,11 @@ export default function DealsView() {
     try {
       if (itemToDelete === 'bulk') {
         await deleteBulkMutation.mutateAsync(selectedIds)
-        toast.success(`${selectedIds.length} negócios excluídos`)
+        toast.success(`${selectedIds.length} deals excluídos`)
         setSelectedIds([])
       } else {
         await deleteSingleMutation.mutateAsync(itemToDelete)
-        toast.success('Negócio excluído')
+        toast.success('Deal excluído')
         setSelectedIds(prev => prev.filter(id => id !== itemToDelete))
       }
     } catch (error) {
@@ -470,7 +444,7 @@ export default function DealsView() {
 
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">Carregando negócios...</div>
+            <div className="text-center py-12 text-muted-foreground">Carregando deals...</div>
           ) : (
             <>
               <div className="rounded-md border">
@@ -495,7 +469,7 @@ export default function DealsView() {
                         className="cursor-pointer hover:bg-muted/50 w-[25%]" 
                         onClick={() => handleSort('clientName')}
                       >
-                        <div className="flex items-center">Negócio <SortIcon columnKey="clientName" /></div>
+                        <div className="flex items-center">Deal <SortIcon columnKey="clientName" /></div>
                       </TableHead>
 
                       <TableHead 
@@ -554,7 +528,30 @@ export default function DealsView() {
                           </TableCell>
 
                           <TableCell className="font-medium">
-                            {deal.clientName}
+                            <div className="flex flex-col gap-1">
+                              <span>{deal.clientName}</span>
+                              {/* Renderização das Tags */}
+                              {deal.tags && deal.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {deal.tags.map(tag => (
+                                    <Badge 
+                                      key={tag.id} 
+                                      variant="outline" 
+                                      style={{ 
+                                        backgroundColor: tag.color + '20', 
+                                        color: tag.color, 
+                                        borderColor: tag.color + '40',
+                                        fontSize: '10px',
+                                        height: '18px',
+                                        padding: '0 6px'
+                                      }}
+                                    >
+                                      {tag.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
 
                           <TableCell>
@@ -634,7 +631,7 @@ export default function DealsView() {
                     }) : (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          Nenhum negócio encontrado com os filtros atuais.
+                          Nenhum deal encontrado com os filtros atuais.
                         </TableCell>
                       </TableRow>
                     )}
@@ -645,9 +642,8 @@ export default function DealsView() {
               {processedDeals.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} negócios
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals
                   </div>
-                  {/* CORREÇÃO DO ALINHAMENTO AQUI */}
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -688,8 +684,8 @@ export default function DealsView() {
             <AlertDialogDescription>
               Esta ação não pode ser desfeita. 
               {itemToDelete === 'bulk' 
-                ? ` Você está prestes a excluir permanentemente ${selectedIds.length} negócios selecionados.`
-                : " Você está prestes a excluir este negócio permanentemente."
+                ? ` Você está prestes a excluir permanentemente ${selectedIds.length} deals selecionados.`
+                : " Você está prestes a excluir este deal permanentemente."
               }
               <br /><br />
               O histórico de interações com players vinculado a este deal também será perdido (Soft Delete).
