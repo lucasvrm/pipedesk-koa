@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Checkbox } from '@/components/ui/checkbox' // Importado Checkbox
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -34,12 +35,13 @@ import {
   Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, 
   MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown,
   User as UserIcon, IdentificationCard, Wallet, FileText, Lightning,
-  CaretLeft, CaretRight
+  CaretLeft, CaretRight, UserList, ShieldCheck
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
+import RolesManager from '@/features/rbac/components/RolesManager'
 
 // Tipos para Ordenação
 type SortKey = 'name' | 'email' | 'role' | 'clientEntity';
@@ -95,10 +97,10 @@ export default function UserManagementPage() {
     direction: 'asc' 
   })
 
-  // Estados de Deleção e Seleção (Atualizado para Single Selection)
+  // Estados de Deleção e Seleção
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null) // Apenas um ID
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (!currentUser || !hasPermission(currentUser.role, 'MANAGE_USERS')) {
     return <div className="p-8">Acesso negado.</div>
@@ -240,16 +242,14 @@ export default function UserManagementPage() {
     }
   }
 
-  // Seleção Única
   const handleSelect = (id: string) => {
     if (selectedId === id) {
-      setSelectedId(null) // Desmarca se já estiver selecionado
+      setSelectedId(null)
     } else {
-      setSelectedId(id) // Seleciona o novo e desmarca o anterior automaticamente
+      setSelectedId(id)
     }
   }
 
-  // Dispara modal de deleção
   const triggerDelete = () => {
     if (!selectedId) return
     confirmDelete(selectedId)
@@ -270,7 +270,7 @@ export default function UserManagementPage() {
     try {
       await deleteUserMutation.mutateAsync(userToDelete)
       toast.success('Usuário excluído com sucesso')
-      setSelectedId(null) // Limpa seleção após deletar
+      setSelectedId(null)
     } catch (error: any) {
       console.error('Erro ao excluir:', error)
       toast.error(error.message || 'Erro ao excluir usuário')
@@ -300,292 +300,367 @@ export default function UserManagementPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl space-y-6">
       
-      {/* Cabeçalho com Dropdown de Ações */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Cabeçalho */}
+      <div className="flex items-center gap-4 mb-2">
         <div>
-          <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
-          <p className="text-muted-foreground">Controle de acesso e permissões do sistema</p>
+          <h1 className="text-3xl font-bold">Gerenciar Acessos</h1>
+          <p className="text-muted-foreground">Controle de usuários, funções e permissões do sistema</p>
         </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="default" className="gap-2">
-              <Lightning className="h-4 w-4" />
-              Ações Rápidas
-              <CaretDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Ações Disponíveis</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setInviteDialogOpen(true)}>
-              <EnvelopeSimple className="mr-2 h-4 w-4" /> Enviar Convite
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setMagicLinksDialogOpen(true)}>
-              <LinkIcon className="mr-2 h-4 w-4" /> Ver Links Mágicos
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleCreate}>
-              <UserPlus className="mr-2 h-4 w-4" /> Criar Manualmente
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
-      <div className="grid gap-6">
-        
-        {/* Formulário de Criação/Edição */}
-        {isCreating && (
-          <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
-            <CardHeader>
-              <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Campos do formulário (mantidos) */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
-                  <UserIcon className="h-5 w-5" /> Dados de Acesso e Perfil
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Nome Completo *</Label>
-                    <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email *</Label>
-                    <Input 
-                      type="email" 
-                      value={formData.email} 
-                      onChange={e => setFormData({...formData, email: e.target.value})} 
-                      disabled={!!editingUser} 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Função</Label>
-                    <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="analyst">Analista</SelectItem>
-                        <SelectItem value="newbusiness">New Business</SelectItem>
-                        <SelectItem value="client">Cliente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Empresa / Entidade (Opcional)</Label>
-                    <Input value={formData.clientEntity} onChange={e => setFormData({...formData, clientEntity: e.target.value})} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>URL da Foto (Avatar)</Label>
-                    <Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} placeholder="https://..." />
-                  </div>
-                </div>
-              </div>
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="users" className="text-base px-4 py-2"><UserList className="mr-2 h-4 w-4"/> Usuários</TabsTrigger>
+          <TabsTrigger value="roles" className="text-base px-4 py-2"><ShieldCheck className="mr-2 h-4 w-4"/> Funções e Permissões</TabsTrigger>
+        </TabsList>
 
-              {/* Demais campos do formulário... */}
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsCreating(false)}
-                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                >
-                  Cancelar
+        <TabsContent value="users" className="space-y-6">
+          
+          {/* Header da Aba Usuários */}
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" className="gap-2">
+                  <Lightning className="h-4 w-4" />
+                  Ações Rápidas
+                  <CaretDown className="h-4 w-4 opacity-50" />
                 </Button>
-                <Button 
-                  onClick={handleSave}
-                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                >
-                  {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Ações Disponíveis</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setInviteDialogOpen(true)}>
+                  <EnvelopeSimple className="mr-2 h-4 w-4" /> Enviar Convite
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMagicLinksDialogOpen(true)}>
+                  <LinkIcon className="mr-2 h-4 w-4" /> Ver Links Mágicos
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleCreate}>
+                  <UserPlus className="mr-2 h-4 w-4" /> Criar Manualmente
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-        {/* Barra de Filtros, Busca e Ação de Deleção */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
-          <div className="flex flex-1 flex-col md:flex-row gap-4 w-full items-center">
-            
-            {/* Pesquisa */}
-            <div className="relative w-full md:w-80">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar por nome, email ou telefone..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              />
-            </div>
-
-            {/* Filtros */}
-            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap w-full md:w-auto">
-              <div className="w-full md:w-[180px] shrink-0">
-                <Select value={roleFilter} onValueChange={v => { setRoleFilter(v as UserRole | 'all'); setCurrentPage(1); }}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Funnel className="h-4 w-4" />
-                      <SelectValue placeholder="Função" />
+          {/* Formulário de Criação/Edição */}
+          {isCreating && (
+            <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
+              <CardHeader>
+                <CardTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Grupo: Perfil Básico */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                    <UserIcon className="h-5 w-5" /> Dados de Acesso e Perfil
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome Completo *</Label>
+                      <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                     </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as Funções</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="analyst">Analista</SelectItem>
-                    <SelectItem value="newbusiness">New Business</SelectItem>
-                    <SelectItem value="client">Cliente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input 
+                        type="email" 
+                        value={formData.email} 
+                        onChange={e => setFormData({...formData, email: e.target.value})} 
+                        disabled={!!editingUser} 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Função</Label>
+                      <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="analyst">Analista</SelectItem>
+                          <SelectItem value="newbusiness">New Business</SelectItem>
+                          <SelectItem value="client">Cliente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Empresa / Entidade (Opcional)</Label>
+                      <Input value={formData.clientEntity} onChange={e => setFormData({...formData, clientEntity: e.target.value})} />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>URL da Foto (Avatar)</Label>
+                      <Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} placeholder="https://..." />
+                    </div>
+                  </div>
+                </div>
 
-              <div className="w-full md:w-[200px] shrink-0">
-                <Input 
-                  placeholder="Filtrar empresa..." 
-                  value={companyFilter}
-                  onChange={e => { setCompanyFilter(e.target.value); setCurrentPage(1); }}
+                {/* Grupo: Dados Pessoais */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                    <IdentificationCard className="h-5 w-5" /> Dados Pessoais
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>CPF</Label>
+                      <Input value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>RG</Label>
+                      <Input value={formData.rg} onChange={e => setFormData({...formData, rg: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Celular</Label>
+                      <Input value={formData.cellphone} onChange={e => setFormData({...formData, cellphone: e.target.value})} />
+                    </div>
+                    <div className="space-y-2 md:col-span-3">
+                      <Label>Endereço Completo</Label>
+                      <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grupo: Financeiro */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                    <Wallet className="h-5 w-5" /> Dados Financeiros
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Chave PIX (PJ)</Label>
+                      <Input value={formData.pixKeyPJ} onChange={e => setFormData({...formData, pixKeyPJ: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Chave PIX (PF)</Label>
+                      <Input value={formData.pixKeyPF} onChange={e => setFormData({...formData, pixKeyPF: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grupo: Documentos */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                    <FileText className="h-5 w-5" /> URLs de Documentos
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label>Link do Documento de Identidade</Label>
+                      <Input value={formData.docIdentityUrl} onChange={e => setFormData({...formData, docIdentityUrl: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Link do Contrato Social</Label>
+                      <Input value={formData.docSocialContractUrl} onChange={e => setFormData({...formData, docSocialContractUrl: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Link do Contrato de Prestação de Serviços</Label>
+                      <Input value={formData.docServiceAgreementUrl} onChange={e => setFormData({...formData, docServiceAgreementUrl: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsCreating(false)}
+                    disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleSave}
+                    disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                  >
+                    {createUserMutation.isPending || updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Barra de Filtros, Busca e Ação de Deleção */}
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
+            <div className="flex flex-1 flex-col md:flex-row gap-4 w-full items-center">
+              
+              {/* Pesquisa */}
+              <div className="relative w-full md:w-80">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar por nome, email ou telefone..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 />
               </div>
-            </div>
 
-            {/* Botão de Excluir (Aparece somente quando há seleção) */}
-            {selectedId && (
-              <Button 
-                variant="destructive" 
-                size="sm"
-                className="animate-in fade-in slide-in-from-right-5"
-                onClick={triggerDelete}
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Excluir Usuário
-              </Button>
-            )}
-          </div>
-          
-          {/* Paginação e Contador */}
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="text-sm text-muted-foreground whitespace-nowrap hidden md:block">
-              {processedUsers.length} usuários
+              {/* Filtros */}
+              <div className="flex items-center gap-4 flex-wrap md:flex-nowrap w-full md:w-auto">
+                <div className="w-full md:w-[180px] shrink-0">
+                  <Select value={roleFilter} onValueChange={v => { setRoleFilter(v as UserRole | 'all'); setCurrentPage(1); }}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Funnel className="h-4 w-4" />
+                        <SelectValue placeholder="Função" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as Funções</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="analyst">Analista</SelectItem>
+                      <SelectItem value="newbusiness">New Business</SelectItem>
+                      <SelectItem value="client">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-full md:w-[200px] shrink-0">
+                  <Input 
+                    placeholder="Filtrar empresa..." 
+                    value={companyFilter}
+                    onChange={e => { setCompanyFilter(e.target.value); setCurrentPage(1); }}
+                  />
+                </div>
+              </div>
+
+              {/* Botão de Excluir (Aparece somente quando há seleção) */}
+              {selectedId && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  className="animate-in fade-in slide-in-from-right-5"
+                  onClick={triggerDelete}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Excluir Usuário
+                </Button>
+              )}
             </div>
             
-            {processedUsers.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <CaretLeft className="mr-2 h-4 w-4" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Próximo
-                  <CaretRight className="ml-2 h-4 w-4" />
-                </Button>
+            {/* Paginação e Contador */}
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="text-sm text-muted-foreground whitespace-nowrap hidden md:block">
+                {processedUsers.length} usuários
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tabela de Usuários */}
-        <div className="rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40px]"></TableHead> {/* Coluna do Checkbox */}
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
-                  <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('email')}>
-                  <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('role')}>
-                  <div className="flex items-center gap-1">Função <SortIcon columnKey="role" /></div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientEntity')}>
-                  <div className="flex items-center gap-1">Empresa <SortIcon columnKey="clientEntity" /></div>
-                </TableHead>
-                <TableHead className="w-24 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">Carregando...</TableCell>
-                </TableRow>
-              ) : currentUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Nenhum usuário encontrado com os filtros atuais.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                currentUsers.map((user) => (
-                  <TableRow 
-                    key={user.id} 
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleEdit(user)}
+              
+              {processedUsers.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
                   >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox 
-                        checked={selectedId === user.id}
-                        onCheckedChange={() => handleSelect(user.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(user.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
-                        >
-                          <PencilSimple />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          disabled={!selectedId || selectedId !== user.id || user.id === currentUser.id}
-                          className={`
-                            ${selectedId === user.id ? 'text-destructive hover:text-destructive/90 hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}
-                          `}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDelete(user.id);
-                          }}
-                        >
-                          <Trash />
-                        </Button>
-                      </div>
+                    <CaretLeft className="mr-2 h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próximo
+                    <CaretRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tabela de Usuários */}
+          <div className="rounded-md border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40px]"></TableHead> {/* Coluna do Checkbox */}
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-1">Usuário <SortIcon columnKey="name" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('email')}>
+                    <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('role')}>
+                    <div className="flex items-center gap-1">Função <SortIcon columnKey="role" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientEntity')}>
+                    <div className="flex items-center gap-1">Empresa <SortIcon columnKey="clientEntity" /></div>
+                  </TableHead>
+                  <TableHead className="w-24 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">Carregando...</TableCell>
+                  </TableRow>
+                ) : currentUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Nenhum usuário encontrado com os filtros atuais.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+                ) : (
+                  currentUsers.map((user) => (
+                    <TableRow 
+                      key={user.id} 
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleEdit(user)}
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={selectedId === user.id}
+                          onCheckedChange={() => handleSelect(user.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {getInitials(user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
+                          >
+                            <PencilSimple />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            disabled={!selectedId || selectedId !== user.id || user.id === currentUser.id}
+                            className={`
+                              ${selectedId === user.id ? 'text-destructive hover:text-destructive/90 hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}
+                            `}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete(user.id);
+                            }}
+                          >
+                            <Trash />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RolesManager />
+        </TabsContent>
+      </Tabs>
 
       {/* Modais */}
       <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} currentUser={currentUser} />

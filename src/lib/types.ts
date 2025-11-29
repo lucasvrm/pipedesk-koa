@@ -522,6 +522,20 @@ export interface Company {
   primaryContactName?: string;
 }
 
+export interface Permission {
+  id: string;
+  code: string;
+  description: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  isSystem: boolean;
+  permissions?: Permission[]; // Opcional, vindo de joins
+}
+
 export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
   incorporadora: 'Incorporadora',
   construtora: 'Construtora',
