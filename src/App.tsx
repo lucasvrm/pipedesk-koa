@@ -19,6 +19,7 @@ const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
 const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
+const PipelineSettingsPage = lazy(() => import('@/pages/settings/PipelineSettingsPage'))
 
 // IMPORTS PARA PLAYERS
 const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
@@ -109,7 +110,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+            <Route path="/settings/pipeline" element={<PipelineSettingsPage />} />
             <Route path="/rbac" element={
                 <ProtectedRoute requiredRole={['admin']}>
                   {profile ? <RBACDemo currentUser={profile} /> : <div>Carregando...</div>}

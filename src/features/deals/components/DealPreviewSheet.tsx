@@ -29,7 +29,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useComments } from '@/hooks/useComments' 
+import { useComments } from '@/services/commentService' 
 
 interface DealPreviewSheetProps {
   deal: MasterDeal | null
@@ -50,6 +50,8 @@ const getStageColor = (stage: PlayerStage) => {
 
 export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: DealPreviewSheetProps) {
   const navigate = useNavigate()
+  
+  // Hook de comentários usando o service correto
   const { data: comments, isLoading: isLoadingComments } = useComments(deal?.id, 'deal')
 
   if (!deal) return null
@@ -65,6 +67,20 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
   const handleOpenFullDetails = () => {
     onClose()
     navigate(`/deals/${deal.id}`)
+  }
+
+  // Navegação para Empresa
+  const handleCompanyClick = () => {
+    if (deal.company?.id) {
+        onClose()
+        navigate(`/companies/${deal.company.id}`)
+    }
+  }
+
+  // Navegação para Track
+  const handleTrackClick = (trackId: string) => {
+      onClose()
+      navigate(`/tracks/${trackId}`)
   }
 
   return (
@@ -96,7 +112,17 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
               </SheetTitle>
               <SheetDescription className="flex items-center gap-2 text-base font-medium text-muted-foreground">
                 <Buildings className="h-4 w-4 shrink-0" />
-                <span className="truncate">{deal.company?.name || 'Empresa não vinculada'}</span>
+                {/* 1. NOME DO CLIENTE CLICÁVEL */}
+                <span 
+                    className={cn(
+                        "truncate transition-colors", 
+                        deal.company?.id ? "cursor-pointer hover:text-primary hover:underline" : ""
+                    )}
+                    onClick={handleCompanyClick}
+                    title={deal.company?.id ? "Ver detalhes da empresa" : ""}
+                >
+                    {deal.company?.name || 'Empresa não vinculada'}
+                </span>
               </SheetDescription>
             </div>
           </div>
@@ -105,6 +131,7 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
         <ScrollArea className="flex-1">
           <div className="flex flex-col gap-6 p-6">
             
+            {/* GRID FINANCEIRO */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
@@ -146,7 +173,6 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                {/* ALTERAÇÃO: Mudado de "Equipa" para "Equipe" (embora aqui só mostremos players, se houver aba de time futuramente, o termo correto é Equipe) */}
                 <TabsTrigger value="players">Players ({activeTracks.length})</TabsTrigger>
               </TabsList>
 
@@ -175,6 +201,18 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* 3. BOTÕES REPOSICIONADOS (Abaixo da descrição, acima dos comentários) */}
+                <div className="grid grid-cols-2 gap-3 py-2">
+                    <Button variant="outline" onClick={() => onEdit(deal)} className="w-full h-9">
+                    <PencilSimple className="mr-2 h-4 w-4" />
+                    Editar
+                    </Button>
+                    <Button onClick={handleOpenFullDetails} className="w-full h-9">
+                    Ver Detalhes
+                    <ArrowSquareOut className="ml-2 h-4 w-4" />
+                    </Button>
                 </div>
 
                 <Separator />
@@ -225,7 +263,9 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                     {sortedTracks.map(track => (
                       <div 
                         key={track.id} 
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors"
+                        // 2b. TRACK CLICÁVEL
+                        onClick={() => handleTrackClick(track.id)}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
                           <Avatar className="h-8 w-8 border bg-muted">
@@ -234,7 +274,7 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium truncate" title={track.playerName}>
+                            <span className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={track.playerName}>
                               {track.playerName}
                             </span>
                             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
@@ -259,19 +299,6 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
             </Tabs>
           </div>
         </ScrollArea>
-
-        <div className="p-6 border-t bg-background mt-auto">
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => onEdit(deal)} className="w-full">
-              <PencilSimple className="mr-2 h-4 w-4" />
-              Editar
-            </Button>
-            <Button onClick={handleOpenFullDetails} className="w-full">
-              Ver Detalhes
-              <ArrowSquareOut className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
       </SheetContent>
     </Sheet>
   )

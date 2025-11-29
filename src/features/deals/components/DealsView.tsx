@@ -3,35 +3,36 @@ import { useNavigate } from 'react-router-dom'
 import { useDeals, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
 import { useUsers } from '@/services/userService'
-import { MasterDeal, DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType, PlayerStage, STAGE_LABELS } from '@/lib/types'
-import { formatCurrency, getInitials } from '@/lib/helpers'
-import { toast } from 'sonner'
+import { useStages } from '@/services/pipelineService' // Hook dinâmico
 
-// UI Components
+// Componentes UI
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 
-// Icons
-import { MagnifyingGlass, Trash, CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, X, ListDashes, SquaresFour, Plus, Tag as TagIcon, Eye } from '@phosphor-icons/react'
+// Ícones
+import { MagnifyingGlass, Trash, CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, Funnel, PencilSimple, Buildings, ListDashes, SquaresFour, Plus, Tag as TagIcon, Eye } from '@phosphor-icons/react'
 
-// Custom Components
+// Types e Helpers
+import { DealStatus, STATUS_LABELS, OPERATION_LABELS, OperationType, MasterDeal, PipelineStage } from '@/lib/types'
+import { formatCurrency } from '@/lib/helpers'
+import { toast } from 'sonner'
+
+// Componentes Internos
 import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { EditDealDialog } from './EditDealDialog'
 import { CreateDealDialog } from './CreateDealDialog'
 import { DealsMetrics } from './DealsMetrics'
 import { DealPreviewSheet } from './DealPreviewSheet'
-import { DealsGrid } from './DealsGrid'
+import DealsList from './DealsList' // Componente de Grade
 
 // --- Tipos Locais ---
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
@@ -54,12 +55,6 @@ const INITIAL_FILTERS: FilterState = {
   status: 'all', type: 'all', responsible: 'all', minVolume: '', maxVolume: ''
 }
 
-// Helpers
-const STAGE_WEIGHTS: Record<PlayerStage, number> = { nda: 1, analysis: 2, proposal: 3, negotiation: 4, closing: 5 }
-const getStageProgress = (stage: PlayerStage) => {
-  const map: Record<PlayerStage, number> = { nda: 15, analysis: 35, proposal: 60, negotiation: 85, closing: 100 }
-  return map[stage] || 0
-}
 const getStatusBadgeClass = (status: DealStatus) => {
     switch (status) {
         case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
@@ -73,17 +68,18 @@ const getStatusBadgeClass = (status: DealStatus) => {
 export default function DealsView() {
   const navigate = useNavigate()
   
-  // Data Hooks
+  // Hooks de Dados
   const { data: masterDeals, isLoading: dealsLoading } = useDeals()
   const { data: allTracks, isLoading: tracksLoading } = useTracks()
   const { data: users } = useUsers()
+  const { data: stages = [] } = useStages() // Busca estágios do banco
   
   const deleteSingleMutation = useDeleteDeal()
   const deleteBulkMutation = useDeleteDeals()
 
   const isLoading = dealsLoading || tracksLoading
 
-  // Estados de Controle de UI
+  // Estados de UI
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -91,7 +87,6 @@ export default function DealsView() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'clientName', direction: 'asc' })
   
-  // Estados de Filtros
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
   const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS) 
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -107,8 +102,17 @@ export default function DealsView() {
   const [editDealOpen, setEditDealOpen] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
 
-  // --- Lógica de Dados ---
+  // --- Lógica Dinâmica de Estágios ---
+  // Função para encontrar as informações do estágio (nome, prob, cor) baseado no ID ou slug
+  const getStageInfo = (stageKey: string): PipelineStage | undefined => {
+    if (!stageKey) return undefined;
+    // Tenta encontrar por ID exato, ou pelo nome normalizado (para compatibilidade legada)
+    return stages.find(s => s.id === stageKey) || 
+           stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === stageKey) ||
+           stages.find(s => s.isDefault);
+  }
 
+  // Agrupa tracks por deal para acesso rápido
   const tracksByDealId = useMemo(() => {
     if (!allTracks) return {} as Record<string, any[]>;
     return allTracks.reduce((acc, track) => {
@@ -118,38 +122,37 @@ export default function DealsView() {
     }, {} as Record<string, any[]>)
   }, [allTracks])
 
+  // Calcula o progresso visual baseado no "Melhor Track" do deal
   const getAdvancedTrackInfo = (dealId: string) => {
     const tracks = tracksByDealId[dealId] || []
     if (tracks.length === 0) return null
+    
+    // Ordena tracks: quem tem o estágio com maior 'stageOrder' ganha
     const sorted = [...tracks].sort((a, b) => {
-      const weightA = STAGE_WEIGHTS[a.currentStage as PlayerStage] || 0
-      const weightB = STAGE_WEIGHTS[b.currentStage as PlayerStage] || 0
-      return weightB - weightA
+      const stageA = getStageInfo(a.currentStage);
+      const stageB = getStageInfo(b.currentStage);
+      const orderA = stageA ? stageA.stageOrder : -1;
+      const orderB = stageB ? stageB.stageOrder : -1;
+      return orderB - orderA; // Descendente (maior ordem primeiro)
     })
+    
     const bestTrack = sorted[0]
+    const bestStage = getStageInfo(bestTrack.currentStage)
+
     return {
       bestTrack,
       extraCount: tracks.length - 1,
-      stageLabel: STAGE_LABELS[bestTrack.currentStage as PlayerStage],
+      stageLabel: bestStage ? bestStage.name : bestTrack.currentStage, // Nome vindo do banco
+      stageColor: bestStage ? bestStage.color : '#64748b',
       playerName: bestTrack.playerName,
-      progress: getStageProgress(bestTrack.currentStage as PlayerStage)
+      progress: bestStage ? bestStage.probability : 0 // Probabilidade vinda do banco
     }
   }
 
-  // Filtros e Processamento
-  const activeFilterCount = useMemo(() => {
-    let count = 0
-    if (filters.status !== 'all') count++
-    if (filters.type !== 'all') count++
-    if (filters.responsible !== 'all') count++
-    if (filters.minVolume || filters.maxVolume) count++
-    return count
-  }, [filters])
-
+  // Lógica de Filtragem e Ordenação
   const processedDeals = useMemo(() => {
     if (!masterDeals) return []
     
-    // 1. Filtragem
     let result = masterDeals.filter(deal => {
       if (searchQuery) {
         const term = searchQuery.toLowerCase()
@@ -167,7 +170,6 @@ export default function DealsView() {
       return true
     })
 
-    // 2. Ordenação
     result.sort((a, b) => {
       let aValue: any = '', bValue: any = ''
       switch (sortConfig.key) {
@@ -187,7 +189,16 @@ export default function DealsView() {
     })
 
     return result
-  }, [masterDeals, searchQuery, filters, sortConfig, tracksByDealId])
+  }, [masterDeals, searchQuery, filters, sortConfig, tracksByDealId, stages]) // Depende de 'stages'
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (filters.status !== 'all') count++
+    if (filters.type !== 'all') count++
+    if (filters.responsible !== 'all') count++
+    if (filters.minVolume || filters.maxVolume) count++
+    return count
+  }, [filters])
 
   // Paginação
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
@@ -203,7 +214,7 @@ export default function DealsView() {
 
   const handleEdit = (deal: MasterDeal) => {
     setSelectedDeal(deal)
-    setIsPreviewOpen(false) // Fecha o preview se estiver aberto
+    setIsPreviewOpen(false) 
     setEditDealOpen(true)
   }
 
@@ -234,7 +245,7 @@ export default function DealsView() {
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto pb-24 md:pb-6">
       
-      {/* 1. Header & Actions */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
@@ -245,15 +256,14 @@ export default function DealsView() {
         </Button>
       </div>
 
-      {/* 2. Top KPIs */}
+      {/* KPIs */}
       {!isLoading && masterDeals && <DealsMetrics deals={masterDeals} tracks={allTracks || []} />}
 
-      {/* 3. Main Content Card */}
+      {/* CONTEÚDO PRINCIPAL */}
       <Card>
         <CardHeader className="pb-4 space-y-4">
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
             
-            {/* Toolbar Left */}
             <div className="flex flex-1 flex-col md:flex-row gap-3 w-full items-center">
               <div className="relative w-full md:w-80">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -303,7 +313,6 @@ export default function DealsView() {
                  </PopoverContent>
               </Popover>
 
-              {/* View Toggle */}
               <div className="flex items-center bg-muted p-1 rounded-md border">
                 <Button 
                     variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
@@ -324,7 +333,6 @@ export default function DealsView() {
               </div>
             </div>
 
-            {/* Toolbar Right */}
             <div className="flex items-center gap-3 shrink-0">
                {selectedIds.length > 0 && (
                  <Button variant="destructive" size="sm" onClick={() => { setItemToDelete('bulk'); setDeleteDialogOpen(true); }}>
@@ -339,9 +347,15 @@ export default function DealsView() {
           {isLoading ? (
             <div className="text-center py-20 text-muted-foreground">Carregando dados...</div>
           ) : viewMode === 'grid' ? (
-             <DealsGrid deals={currentDeals} tracks={allTracks || []} onDealClick={handlePreview} />
+             /* MODO GRID (DealsList) - Passamos 'stages' para ele usar a mesma lógica */
+             <DealsList 
+                deals={currentDeals} 
+                tracks={allTracks || []} 
+                stages={stages} // PROPS NOVA
+                onDealClick={handlePreview} 
+             />
           ) : (
-            /* TABLE MODE */
+            /* MODO TABELA */
             <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -478,9 +492,7 @@ export default function DealsView() {
         </CardContent>
       </Card>
 
-      {/* --- MODAIS AUXILIARES --- */}
-      
-      {/* 1. Preview Drawer */}
+      {/* Modais */}
       <DealPreviewSheet 
         deal={selectedDeal}
         tracks={allTracks || []}
@@ -489,10 +501,8 @@ export default function DealsView() {
         onEdit={handleEdit}
       />
 
-      {/* 2. Create Dialog */}
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
 
-      {/* 3. Edit Dialog */}
       {selectedDeal && (
         <EditDealDialog 
           deal={selectedDeal}
@@ -501,7 +511,6 @@ export default function DealsView() {
         />
       )}
 
-      {/* 4. Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
            <AlertDialogHeader>
@@ -519,7 +528,6 @@ export default function DealsView() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 5. Tags */}
       {selectedDeal && (
          <SmartTagSelector 
             entityType="deal"

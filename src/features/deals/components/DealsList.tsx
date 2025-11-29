@@ -1,191 +1,140 @@
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS, PipelineStage } from '@/lib/types'
+import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
-import { MasterDeal, STATUS_LABELS, OPERATION_LABELS, PlayerStage, STAGE_LABELS } from '@/lib/types'
-import { formatCurrency, formatDate } from '@/lib/helpers'
-import { Eye, PencilSimple, Trash, Users } from '@phosphor-icons/react'
-import { usePlayerTracks } from '@/features/deals/hooks/usePlayerTracks' // Hook necessário
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Progress } from '@/components/ui/progress'
+import { WarningCircle, TrendUp, Buildings, CalendarBlank } from '@phosphor-icons/react'
+import { cn } from '@/lib/utils'
 
 interface DealsListProps {
   deals: MasterDeal[]
-  onEdit: (deal: MasterDeal) => void
-  onDelete: (dealId: string) => void
-  onView: (dealId: string) => void
-  canEdit: boolean
-  canDelete: boolean
+  tracks: PlayerTrack[]
+  stages: PipelineStage[] // Recebe estágios dinâmicos
+  onDealClick: (deal: MasterDeal) => void
 }
 
-// Mapa de peso dos estágios para ordenação
-const STAGE_WEIGHTS: Record<PlayerStage, number> = {
-  closing: 5,
-  negotiation: 4,
-  proposal: 3,
-  analysis: 2,
-  nda: 1
-}
-
-export default function DealsList({ 
-  deals, 
-  onEdit, 
-  onDelete, 
-  onView,
-  canEdit, 
-  canDelete 
-}: DealsListProps) {
-  // Buscamos todos os tracks para calcular o status mais avançado
-  // (Em produção com muitos dados, isso deveria vir calculado do backend/view sql)
-  const { data: allTracks } = usePlayerTracks()
-
-  const getBestTrackStatus = (dealId: string) => {
-    if (!allTracks) return null
-
-    // 1. Filtra tracks deste deal (apenas ativos)
-    const dealTracks = allTracks.filter(t => t.masterDealId === dealId && t.status !== 'cancelled')
-
-    if (dealTracks.length === 0) return null
-
-    // 2. Ordena pelo estágio mais avançado (peso maior primeiro)
-    dealTracks.sort((a, b) => {
-      const weightA = STAGE_WEIGHTS[a.currentStage] || 0
-      const weightB = STAGE_WEIGHTS[b.currentStage] || 0
-      return weightB - weightA // Decrescente
-    })
-
-    const bestTrack = dealTracks[0]
-    const bestStage = bestTrack.currentStage
-    
-    // 3. Conta quantos estão nesse mesmo estágio "topo"
-    const countAtBestStage = dealTracks.filter(t => t.currentStage === bestStage).length
-
-    return {
-      stage: bestStage,
-      playerName: bestTrack.playerName,
-      count: countAtBestStage,
-      totalActive: dealTracks.length
-    }
+export default function DealsList({ deals, tracks, stages, onDealClick }: DealsListProps) {
+  
+  // Helper para buscar informações do estágio (ID ou Slug)
+  const getStageInfo = (stageKey: string): PipelineStage | undefined => {
+    if (!stageKey) return undefined;
+    return stages.find(s => s.id === stageKey) || 
+           stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === stageKey) ||
+           stages.find(s => s.isDefault);
   }
 
-  const getStageColorBadge = (stage: PlayerStage) => {
-    switch (stage) {
-      case 'nda': return 'bg-slate-100 text-slate-700 border-slate-200'
-      case 'analysis': return 'bg-blue-50 text-blue-700 border-blue-200'
-      case 'proposal': return 'bg-amber-50 text-amber-700 border-amber-200'
-      case 'negotiation': return 'bg-purple-50 text-purple-700 border-purple-200'
-      case 'closing': return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      default: return 'outline'
+  // Helper para obter destaques do deal (melhor track)
+  const getDealHighlights = (dealId: string) => {
+    const dealTracks = tracks.filter(t => t.masterDealId === dealId && t.status === 'active')
+    if (dealTracks.length === 0) return null
+
+    // Ordena pelo stageOrder do estágio associado
+    const bestTrack = [...dealTracks].sort((a, b) => {
+      const stageA = getStageInfo(a.currentStage);
+      const stageB = getStageInfo(b.currentStage);
+      const orderA = stageA ? stageA.stageOrder : -1;
+      const orderB = stageB ? stageB.stageOrder : -1;
+      return orderB - orderA; // Maior ordem primeiro
+    })[0]
+
+    const stageInfo = getStageInfo(bestTrack.currentStage);
+
+    return {
+      bestTrack,
+      totalTracks: dealTracks.length,
+      stageLabel: stageInfo ? stageInfo.name : bestTrack.currentStage,
+      progress: stageInfo ? stageInfo.probability : 0
     }
   }
 
   if (deals.length === 0) {
-    return (
-      <div className="text-center py-12 border-2 border-dashed rounded-lg">
-        <p className="text-muted-foreground">Nenhum negócio encontrado.</p>
-      </div>
-    )
+     return <div className="text-center py-12 text-muted-foreground">Nenhum negócio encontrado.</div>
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Operação</TableHead>
-            <TableHead>Track Status</TableHead> {/* NOVA COLUNA */}
-            <TableHead>Volume</TableHead>
-            <TableHead>Prazo</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {deals.map((deal) => {
-            const bestTrack = getBestTrackStatus(deal.id)
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-in fade-in duration-500">
+      {deals.map(deal => {
+        const highlights = getDealHighlights(deal.id)
+        const overdue = isOverdue(deal.deadline)
 
-            return (
-              <TableRow key={deal.id}>
-                <TableCell className="font-medium">
-                  <div>
-                    {deal.clientName}
-                    {deal.company && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        {deal.company.name}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-normal text-xs">
+        return (
+          <Card 
+            key={deal.id} 
+            className="group cursor-pointer hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between"
+            onClick={() => onDealClick(deal)}
+          >
+            <CardHeader className="p-4 pb-2 space-y-3">
+              <div className="flex justify-between items-start">
+                 <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-slate-200">
                     {OPERATION_LABELS[deal.operationType]}
-                  </Badge>
-                </TableCell>
-                
-                {/* CÉLULA: TRACK STATUS */}
-                <TableCell>
-                  {bestTrack ? (
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-[10px] px-1.5 h-5 ${getStageColorBadge(bestTrack.stage)}`}>
-                          {STAGE_LABELS[bestTrack.stage]}
-                        </Badge>
-                        {bestTrack.count > 1 && (
-                          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1 rounded" title={`${bestTrack.count} players nesta fase`}>
-                            +{bestTrack.count - 1}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[140px]" title={bestTrack.playerName}>
-                        {bestTrack.playerName}
-                      </div>
+                 </Badge>
+                 <Badge variant={deal.status === 'active' ? 'default' : 'secondary'} className="text-[10px] h-5">
+                    {STATUS_LABELS[deal.status]}
+                 </Badge>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                    {deal.clientName}
+                </h3>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Buildings className="shrink-0" />
+                    <span className="truncate">{deal.company?.name || 'Sem empresa'}</span>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 pt-0">
+               <div className="mb-4">
+                  <span className="text-lg font-bold text-slate-700 dark:text-slate-200 block">
+                    {formatCurrency(deal.volume)}
+                  </span>
+               </div>
+
+               {/* Seção Visual de Progresso */}
+               <div className="bg-muted/30 p-2 rounded-lg border border-border/40">
+                  {highlights ? (
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px]">
+                            <span className="font-medium text-primary flex items-center gap-1">
+                                <TrendUp /> {highlights.stageLabel}
+                            </span>
+                            <span className="text-muted-foreground font-mono">{highlights.progress}%</span>
+                        </div>
+                        <Progress value={highlights.progress} className="h-1.5" />
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground pt-1">
+                            <span className="truncate max-w-[120px]">{highlights.bestTrack.playerName}</span>
+                            {highlights.totalTracks > 1 && <span className="bg-muted px-1 rounded">+{highlights.totalTracks - 1}</span>}
+                        </div>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground italic">-</span>
+                    <div className="text-[10px] text-muted-foreground italic py-2 text-center">
+                        Sem players ativos
+                    </div>
                   )}
-                </TableCell>
+               </div>
+            </CardContent>
 
-                <TableCell>{formatCurrency(deal.volume)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(deal.deadline)}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={deal.status === 'active' ? 'default' : 'secondary'}>
-                    {STATUS_LABELS[deal.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => onView(deal.id)}>
-                      <Eye size={16} />
-                    </Button>
-                    {canEdit && (
-                      <Button variant="ghost" size="icon" onClick={() => onEdit(deal)}>
-                        <PencilSimple size={16} />
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive hover:text-destructive/90"
-                        onClick={() => onDelete(deal.id)}
-                      >
-                        <Trash size={16} />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+            <CardFooter className="p-3 border-t bg-muted/5 flex justify-between items-center">
+                <div className={cn("text-[10px] flex items-center gap-1.5 font-medium", overdue ? "text-destructive" : "text-muted-foreground")}>
+                    <CalendarBlank />
+                    {formatDate(deal.deadline)}
+                    {overdue && <WarningCircle weight="fill" />}
+                </div>
+
+                <div className="flex -space-x-1.5">
+                    {deal.responsibles?.slice(0, 3).map((u, i) => (
+                        <Avatar key={i} className="h-5 w-5 ring-1 ring-background">
+                            <AvatarImage src={u.avatar} />
+                            <AvatarFallback className="text-[8px]">{u.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    ))}
+                </div>
+            </CardFooter>
+          </Card>
+        )
+      })}
     </div>
   )
 }

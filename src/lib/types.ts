@@ -1,16 +1,10 @@
 export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
 
-// Atualizado com status 'on_hold'
 export type DealStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
 
-export type PlayerStage =
-  | 'nda'
-  | 'analysis'
-  | 'proposal'
-  | 'negotiation'
-  | 'closing'
+// ALTERAÇÃO: Agora é string para suportar estágios dinâmicos do banco
+export type PlayerStage = string
 
-// 1. Definição dos Tipos de Operação (Novos)
 export type OperationType =
   | 'ccb'
   | 'cri_land'
@@ -40,26 +34,26 @@ export interface User {
   has_completed_onboarding?: boolean
   createdAt?: string
   updatedAt?: string
-  // Novos Campos
   address?: string
-  cellphone?: string // Novo campo
+  cellphone?: string
   pixKeyPJ?: string
   pixKeyPF?: string
   rg?: string
   cpf?: string
   secondaryEmail?: string
-  // URLs dos Documentos
   docIdentityUrl?: string
   docSocialContractUrl?: string
   docServiceAgreementUrl?: string
 }
 
+// ALTERAÇÃO: Adicionado campo probability
 export interface PipelineStage {
   id: string
   pipelineId: string | null
   name: string
   color: string
   stageOrder: number
+  probability: number // Novo campo
   isDefault: boolean
   createdAt: string
   updatedAt: string
@@ -91,6 +85,7 @@ export interface MasterDeal {
   company?: Company;
 
   responsibles?: User[];
+  tags?: Tag[];
 }
 
 export interface PlayerTrack {
@@ -105,16 +100,16 @@ export interface PlayerTrack {
   createdAt: string
   updatedAt: string
   notes: string
+  tags?: Tag[];
 }
 
-// Adicione isto ao seu src/lib/types.ts se não existir
 export interface Tag {
   id: string;
   name: string;
   color: string;
   entity_type?: 'deal' | 'track';
-  created_at?: string;
-  created_by?: string;
+  createdAt?: string;
+  createdBy?: string;
 }
 
 export interface Task {
@@ -130,7 +125,6 @@ export interface Task {
   createdAt: string
   updatedAt: string
   position: number
-  // ATUALIZADO: Novos status adicionados
   status?: 'todo' | 'in_progress' | 'waiting_third_party' | 'blocked' | 'completed' | 'cancelled'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
 }
@@ -156,13 +150,7 @@ export interface Notification {
   createdAt: string
 }
 
-export const STAGE_PROBABILITIES: Record<PlayerStage, number> = {
-  nda: 10,
-  analysis: 25,
-  proposal: 50,
-  negotiation: 75,
-  closing: 90,
-}
+// REMOVIDO: STAGE_PROBABILITIES (Agora vem do banco na interface PipelineStage)
 
 export interface StageHistory {
   id: string
@@ -241,13 +229,7 @@ export interface CalendarEvent {
   createdAt: string
 }
 
-export const STAGE_LABELS: Record<PlayerStage, string> = {
-  nda: 'NDA',
-  analysis: 'Análise',
-  proposal: 'Proposta',
-  negotiation: 'Negociação',
-  closing: 'Fechamento',
-}
+// REMOVIDO: STAGE_LABELS (O label é o próprio nome do estágio no banco)
 
 export const STATUS_LABELS: Record<DealStatus, string> = {
   active: 'Ativo',
@@ -256,7 +238,6 @@ export const STATUS_LABELS: Record<DealStatus, string> = {
   on_hold: 'Em Espera'
 }
 
-// 2. Tradução dos Tipos de Operação (Novos)
 export const OPERATION_LABELS: Record<OperationType, string> = {
   ccb: 'CCB',
   cri_land: 'CRI Terreno',
@@ -275,9 +256,6 @@ export const OPERATION_LABELS: Record<OperationType, string> = {
   hybrid_swap: 'Permuta Híbrida'
 }
 
-// ============================================================================
-// TRADUÇÃO DE ROLES
-// ============================================================================
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
   analyst: 'Analista',

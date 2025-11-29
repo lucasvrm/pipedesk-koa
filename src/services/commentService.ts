@@ -4,7 +4,6 @@ import { Comment } from '@/lib/types'
 import { createNotification } from '@/services/notificationService' 
 
 export async function getComments(entityId: string, entityType: string): Promise<Comment[]> {
-  // Ajuste na query para garantir o JOIN correto com profiles
   const { data, error } = await supabase
     .from('comments')
     .select(`
@@ -22,7 +21,7 @@ export async function getComments(entityId: string, entityType: string): Promise
     entityId: item.entity_id,
     entityType: item.entity_type,
     authorId: item.author_id,
-    author: item.author, // O objeto author deve vir preenchido aqui
+    author: item.author,
     content: item.content,
     createdAt: item.created_at,
     mentions: item.mentions || []
@@ -46,7 +45,7 @@ export async function createComment(data: {
       author_id: data.authorId,
       mentions: data.mentions
     })
-    .select('*, author:profiles!comments_author_id_fkey(name, avatar_url)') // JOIN imediato para retorno
+    .select('*, author:profiles!comments_author_id_fkey(name, avatar_url)')
     .single()
 
   if (error) throw error
@@ -77,11 +76,13 @@ export async function deleteComment(commentId: string) {
   if (error) throw error
 }
 
-// Hooks
-export function useComments(entityId: string, entityType: 'deal' | 'track' | 'task') {
+// --- Hooks ---
+
+export function useComments(entityId: string | undefined, entityType: 'deal' | 'track' | 'task') {
   return useQuery({
     queryKey: ['comments', entityId],
-    queryFn: () => getComments(entityId, entityType)
+    queryFn: () => getComments(entityId!, entityType),
+    enabled: !!entityId // Só busca se houver ID, evita erros e loops
   })
 }
 
