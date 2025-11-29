@@ -48,13 +48,12 @@ import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
-import { TrackTagsDialog } from '../components/TrackTagsDialog' // Componente Novo
+import { TrackTagsPopover } from '../components/TrackTagsPopover' // POPOVER IMPORTADO
 
 export default function TrackDetailPage() {
   const { id } = useParams()
   const { profile: currentUser } = useAuth()
   
-  // Data Fetching
   const { data: track, isLoading: trackLoading } = useTrack(id || null)
   const { data: deal } = useDeal(track?.masterDealId || null)
   const { data: tasks } = useTasks(id)
@@ -63,10 +62,8 @@ export default function TrackDetailPage() {
   const updateTrack = useUpdateTrack()
   const updateTask = useUpdateTask()
 
-  // UI States
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
   const [editTrackOpen, setEditTrackOpen] = useState(false)
-  const [tagsTrackOpen, setTagsTrackOpen] = useState(false) // Estado para Tags
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   
   if (trackLoading || !track) {
@@ -76,8 +73,6 @@ export default function TrackDetailPage() {
       </div>
     )
   }
-
-  // --- Handlers ---
 
   const handleStageChange = (newStage: PlayerStage) => {
     updateTrack.mutate({
@@ -102,8 +97,6 @@ export default function TrackDetailPage() {
     })
   }
 
-  // --- Helpers ---
-
   const getTrackInfo = (trackId: string) => {
     if (track && track.id === trackId) {
        return { track, deal }
@@ -126,7 +119,6 @@ export default function TrackDetailPage() {
     return new Date(task.dueDate) < today
   }
 
-  // Helper de Cores
   const getStatusColor = (status: PlayerTrackStatus) => {
     switch (status) {
       case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
@@ -137,7 +129,6 @@ export default function TrackDetailPage() {
     }
   }
 
-  // Cálculo do Fee do Track
   const trackFee = deal?.feePercentage 
     ? (track.trackVolume * (deal.feePercentage / 100)) 
     : 0
@@ -145,7 +136,6 @@ export default function TrackDetailPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       
-      {/* Breadcrumbs */}
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -170,7 +160,6 @@ export default function TrackDetailPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Cabeçalho */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
@@ -212,7 +201,7 @@ export default function TrackDetailPage() {
               </div>
             )}
 
-            {/* TAGS VISUAIS NO CABEÇALHO */}
+            {/* TAGS */}
             {track.tags && track.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {track.tags.map(tag => (
@@ -248,7 +237,9 @@ export default function TrackDetailPage() {
                     </Select>
                 </div>
                 
-                {/* Menu de Ações Secundárias */}
+                {/* Botão de Tags (Via Popover) */}
+                <TrackTagsPopover track={track} />
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon" className="h-9 w-9">
@@ -261,12 +252,6 @@ export default function TrackDetailPage() {
                         <DropdownMenuItem onClick={() => setEditTrackOpen(true)}>
                             <PencilSimple className="mr-2 h-4 w-4" /> Editar Track
                         </DropdownMenuItem>
-                        
-                        {/* NOVA OPÇÃO DE TAGS */}
-                        <DropdownMenuItem onClick={() => setTagsTrackOpen(true)}>
-                          <TagIcon className="mr-2 h-4 w-4" /> Gerenciar Tags
-                        </DropdownMenuItem>
-
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -280,9 +265,7 @@ export default function TrackDetailPage() {
         </div>
       </div>
 
-      {/* Cards de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {/* Card 1: Volume */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Wallet className="h-3.5 w-3.5 text-blue-500" /> Volume (Track)
@@ -292,7 +275,6 @@ export default function TrackDetailPage() {
           </p>
         </Card>
 
-        {/* Card 2: Fee */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Percent className="h-3.5 w-3.5 text-emerald-500" /> Fee Estimado
@@ -307,7 +289,6 @@ export default function TrackDetailPage() {
           </div>
         </Card>
 
-        {/* Card 3: Tarefas */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <CheckSquare className="h-3.5 w-3.5 text-amber-500" /> Tarefas Pendentes
@@ -317,7 +298,6 @@ export default function TrackDetailPage() {
           </p>
         </Card>
 
-        {/* Card 4: Atualizado em */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <CalendarBlank className="h-3.5 w-3.5 text-purple-500" /> Atualizado em
@@ -328,7 +308,6 @@ export default function TrackDetailPage() {
         </Card>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="tasks" className="w-full space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
           <TabsTrigger value="tasks" className="py-2 px-4"><CheckSquare className="mr-2 h-4 w-4" /> Tarefas</TabsTrigger>
@@ -385,7 +364,6 @@ export default function TrackDetailPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
       <CreateTaskDialog 
         playerTrackId={track.id}
         open={createTaskOpen} 
@@ -396,12 +374,6 @@ export default function TrackDetailPage() {
         track={track}
         open={editTrackOpen}
         onOpenChange={setEditTrackOpen}
-      />
-
-      <TrackTagsDialog 
-        track={track}
-        open={tagsTrackOpen}
-        onOpenChange={setTagsTrackOpen}
       />
 
       {selectedTask && currentUser && (

@@ -30,7 +30,7 @@ import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { EditDealDialog } from './EditDealDialog'
-import { DealTagsDialog } from './DealTagsDialog'
+import { DealTagsPopover } from './DealTagsPopover' // USANDO O POPOVER
 
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
 type SortDirection = 'asc' | 'desc';
@@ -118,12 +118,11 @@ export default function DealsView() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | 'bulk' | null>(null)
   
-  // Estados de Edição e Tags
+  // Estados de Edição
   const [editDealOpen, setEditDealOpen] = useState(false)
-  const [tagsDealOpen, setTagsDealOpen] = useState(false)
   const [selectedDeal, setSelectedDeal] = useState<MasterDeal | null>(null)
 
-  // --- Helpers de Tracks ---
+  // --- Helpers de Tracks (INTEGRADO NO SEU CÓDIGO) ---
   const tracksByDealId = useMemo(() => {
     if (!allTracks) return {} as Record<string, PlayerTrack[]>;
     return allTracks.reduce((acc, track) => {
@@ -365,7 +364,6 @@ export default function DealsView() {
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-4" align="start">
                   <div className="space-y-4">
-                    {/* Conteúdo dos Filtros (Mantido) */}
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium leading-none">Filtros Avançados</h4>
                       {activeFilterCount > 0 && (
@@ -374,6 +372,7 @@ export default function DealsView() {
                         </Button>
                       )}
                     </div>
+                    
                     <div className="space-y-2">
                       <Label className="text-xs">Status</Label>
                       <Select value={tempFilters.status} onValueChange={(v) => setTempFilters({...tempFilters, status: v as DealStatus | 'all'})}>
@@ -387,7 +386,50 @@ export default function DealsView() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {/* ... Outros Filtros (Tipo, Resp, Volume) ... */}
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tipo de Operação</Label>
+                      <Select value={tempFilters.type} onValueChange={(v) => setTempFilters({...tempFilters, type: v as OperationType | 'all'})}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          {Object.entries(OPERATION_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Responsável</Label>
+                      <Select value={tempFilters.responsible} onValueChange={(v) => setTempFilters({...tempFilters, responsible: v})}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          {(users || []).map(user => (
+                            <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Volume (R$)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          placeholder="Min" className="h-8 text-xs" type="number"
+                          value={tempFilters.minVolume} 
+                          onChange={e => setTempFilters({...tempFilters, minVolume: e.target.value})}
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <Input 
+                          placeholder="Max" className="h-8 text-xs" type="number"
+                          value={tempFilters.maxVolume} 
+                          onChange={e => setTempFilters({...tempFilters, maxVolume: e.target.value})}
+                        />
+                      </div>
+                    </div>
+
                     <Button className="w-full" size="sm" onClick={applyFilters}>
                       Aplicar Filtros
                     </Button>
@@ -398,7 +440,35 @@ export default function DealsView() {
               {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
                   <Separator orientation="vertical" className="h-6" />
-                  {/* Badges de filtros... (Mantido) */}
+                  
+                  {filters.status !== 'all' && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Status: {STATUS_LABELS[filters.status]}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('status')} />
+                    </Badge>
+                  )}
+                  
+                  {filters.type !== 'all' && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Tipo: {OPERATION_LABELS[filters.type]}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('type')} />
+                    </Badge>
+                  )}
+
+                  {filters.responsible !== 'all' && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Resp: {users?.find(u => u.id === filters.responsible)?.name.split(' ')[0]}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('responsible')} />
+                    </Badge>
+                  )}
+
+                  {(filters.minVolume || filters.maxVolume) && (
+                    <Badge variant="secondary" className="rounded-sm px-2 font-normal gap-1">
+                      Vol: {filters.minVolume || '0'} - {filters.maxVolume || '∞'}
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => clearFilter('minVolume')} />
+                    </Badge>
+                  )}
+
                   <Button variant="ghost" size="sm" onClick={resetAllFilters} className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive">
                     Limpar tudo
                   </Button>
@@ -460,7 +530,7 @@ export default function DealsView() {
                         <div className="flex items-center">Deal <SortIcon columnKey="clientName" /></div>
                       </TableHead>
                       
-                      {/* NOVA COLUNA TRACK STATUS REINTEGRADA */}
+                      {/* COLUNA TRACK STATUS REINTEGRADA */}
                       <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('trackStatus')}>
                          <div className="flex items-center gap-1">
                            <TrendUp className="h-4 w-4 text-muted-foreground" />
@@ -490,7 +560,7 @@ export default function DealsView() {
                   <TableBody>
                     {currentDeals.length > 0 ? currentDeals.map((deal) => {
                       const isSelected = selectedIds.includes(deal.id)
-                      const advancedTrack = getAdvancedTrackInfo(deal.id) // DADOS DO TRACK
+                      const advancedTrack = getAdvancedTrackInfo(deal.id)
 
                       return (
                         <TableRow 
@@ -514,10 +584,15 @@ export default function DealsView() {
                           <TableCell className="font-medium">
                             <div className="flex flex-col gap-1">
                               <span>{deal.clientName}</span>
+                              {/* RENDERIZAÇÃO DE TAGS */}
                               {deal.tags && deal.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {deal.tags.map(tag => (
-                                    <Badge key={tag.id} variant="outline" style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40', fontSize: '10px', height: '18px', padding: '0 6px' }}>
+                                    <Badge 
+                                      key={tag.id} 
+                                      variant="outline" 
+                                      style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40', fontSize: '10px', height: '18px', padding: '0 6px' }}
+                                    >
                                       {tag.name}
                                     </Badge>
                                   ))}
@@ -576,31 +651,37 @@ export default function DealsView() {
 
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setTagsDealOpen(true); }}><TagIcon className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setEditDealOpen(true); }}><PencilSimple className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" disabled={!isSelected} className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}`} onClick={(e) => { e.stopPropagation(); confirmDelete(deal.id); }}><Trash className="h-4 w-4" /></Button>
+                              {/* USO DO POPOVER DE TAGS */}
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <DealTagsPopover deal={deal} />
+                              </div>
+
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                title="Editar" 
+                                className="h-8 w-8" 
+                                onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setEditDealOpen(true); }}
+                              >
+                                <PencilSimple className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                disabled={!isSelected} 
+                                className={`h-8 w-8 ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30 cursor-not-allowed'}`} 
+                                onClick={(e) => { e.stopPropagation(); confirmDelete(deal.id); }}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       )
-                    }) : (
-                      <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum deal encontrado.</TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {processedDeals.length > 0 && (
-                <div className="flex items-center justify-between space-x-2 py-4">
-                  <div className="text-sm text-muted-foreground">Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals</div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { const newPage = currentPage - 1; if (newPage >= 1) setCurrentPage(newPage); }} disabled={currentPage === 1}><CaretLeft className="mr-2 h-4 w-4" /> Anterior</Button>
-                    <Button variant="outline" size="sm" onClick={() => { const newPage = currentPage + 1; if (newPage <= totalPages) setCurrentPage(newPage); }} disabled={currentPage === totalPages}>Próximo <CaretRight className="ml-2 h-4 w-4" /></Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+                    }) : <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum deal encontrado.</TableCell></TableRow>}
+                  </TableBody></Table></div>
+              {processedDeals.length > 0 && (<div className="flex items-center justify-between space-x-2 py-4"><div className="text-sm text-muted-foreground">Mostrando {startIndex + 1} a {Math.min(endIndex, processedDeals.length)} de {processedDeals.length} deals</div><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => { const newPage = currentPage - 1; if (newPage >= 1) setCurrentPage(newPage); }} disabled={currentPage === 1}><CaretLeft className="mr-2 h-4 w-4" /> Anterior</Button><Button variant="outline" size="sm" onClick={() => { const newPage = currentPage + 1; if (newPage <= totalPages) setCurrentPage(newPage); }} disabled={currentPage === totalPages}>Próximo <CaretRight className="ml-2 h-4 w-4" /></Button></div></div>)}</>
+          }
         </CardContent>
       </Card>
 
@@ -620,10 +701,7 @@ export default function DealsView() {
       </AlertDialog>
 
       {selectedDeal && (
-        <>
-          <EditDealDialog deal={selectedDeal} open={editDealOpen} onOpenChange={setEditDealOpen} />
-          <DealTagsDialog deal={selectedDeal} open={tagsDealOpen} onOpenChange={setTagsDealOpen} />
-        </>
+        <EditDealDialog deal={selectedDeal} open={editDealOpen} onOpenChange={setEditDealOpen} />
       )}
     </div>
   )
