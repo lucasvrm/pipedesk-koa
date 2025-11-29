@@ -107,6 +107,16 @@ export interface PlayerTrack {
   notes: string
 }
 
+// Adicione isto ao seu src/lib/types.ts se não existir
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  entity_type?: 'deal' | 'track';
+  created_at?: string;
+  created_by?: string;
+}
+
 export interface Task {
   id: string
   playerTrackId: string
