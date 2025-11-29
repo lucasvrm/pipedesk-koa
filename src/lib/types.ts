@@ -236,7 +236,7 @@ export const STAGE_LABELS: Record<PlayerStage, string> = {
   analysis: 'Análise',
   proposal: 'Proposta',
   negotiation: 'Negociação',
-  closing: 'Liquidação',
+  closing: 'Fechamento',
 }
 
 export const STATUS_LABELS: Record<DealStatus, string> = {
@@ -265,6 +265,9 @@ export const OPERATION_LABELS: Record<OperationType, string> = {
   hybrid_swap: 'Permuta Híbrida'
 }
 
+// ============================================================================
+// TRADUÇÃO DE ROLES
+// ============================================================================
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
   analyst: 'Analista',
@@ -522,6 +525,16 @@ export interface Company {
   primaryContactName?: string;
 }
 
+export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  incorporadora: 'Incorporadora',
+  construtora: 'Construtora',
+  assessor_juridico: 'Assessor Jurídico',
+  agente_fiduciario: 'Agente Fiduciário',
+  servicer: 'Servicer',
+  outros: 'Outros'
+};
+
+// -- Permissões e Roles (RBAC Dinâmico) --
 export interface Permission {
   id: string;
   code: string;
@@ -533,14 +546,5 @@ export interface Role {
   name: string;
   description: string;
   isSystem: boolean;
-  permissions?: Permission[]; // Opcional, vindo de joins
+  permissions?: Permission[]; 
 }
-
-export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
-  incorporadora: 'Incorporadora',
-  construtora: 'Construtora',
-  assessor_juridico: 'Assessor Jurídico',
-  agente_fiduciario: 'Agente Fiduciário',
-  servicer: 'Servicer',
-  outros: 'Outros'
-};

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService'
-import { User, UserRole } from '@/lib/types'
+import { User, UserRole, ROLE_LABELS } from '@/lib/types' // IMPORTADO ROLE_LABELS
 import { hasPermission } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -150,8 +150,9 @@ export default function UserManagementPage() {
           bValue = b.email.toLowerCase()
           break
         case 'role':
-          aValue = a.role
-          bValue = b.role
+          // Ordena pelo Label Traduzido
+          aValue = ROLE_LABELS[a.role].toLowerCase()
+          bValue = ROLE_LABELS[b.role].toLowerCase()
           break
         case 'clientEntity':
           aValue = (a.clientEntity || '').toLowerCase()
@@ -280,6 +281,11 @@ export default function UserManagementPage() {
     }
   }
 
+  // Helper para renderizar nomes traduzidos no Badge
+  const getRoleLabel = (role: UserRole) => {
+    return ROLE_LABELS[role] || role;
+  }
+
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case 'admin': return 'default'
@@ -374,10 +380,10 @@ export default function UserManagementPage() {
                       <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="analyst">Analista</SelectItem>
-                          <SelectItem value="newbusiness">New Business</SelectItem>
-                          <SelectItem value="client">Cliente</SelectItem>
+                          {/* Uso do Object.entries para popular o select automaticamente */}
+                          {Object.entries(ROLE_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -392,7 +398,9 @@ export default function UserManagementPage() {
                   </div>
                 </div>
 
-                {/* Grupo: Dados Pessoais */}
+                {/* Demais Grupos (Dados Pessoais, Financeiro, Docs) - Mantidos */}
+                {/* ... (código repetido omitido para focar na mudança, mas deve ser mantido igual ao anterior) ... */}
+                {/* Para garantir que o código esteja completo, repetirei os blocos */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
                     <IdentificationCard className="h-5 w-5" /> Dados Pessoais
@@ -417,7 +425,6 @@ export default function UserManagementPage() {
                   </div>
                 </div>
 
-                {/* Grupo: Financeiro */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
                     <Wallet className="h-5 w-5" /> Dados Financeiros
@@ -434,7 +441,6 @@ export default function UserManagementPage() {
                   </div>
                 </div>
 
-                {/* Grupo: Documentos */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
                     <FileText className="h-5 w-5" /> URLs de Documentos
@@ -501,10 +507,9 @@ export default function UserManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as Funções</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="analyst">Analista</SelectItem>
-                      <SelectItem value="newbusiness">New Business</SelectItem>
-                      <SelectItem value="client">Cliente</SelectItem>
+                      {Object.entries(ROLE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -621,7 +626,10 @@ export default function UserManagementPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role.toUpperCase()}</Badge>
+                        {/* USO DO LABEL TRADUZIDO AQUI */}
+                        <Badge variant={getRoleBadgeVariant(user.role)}>
+                          {getRoleLabel(user.role)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{user.clientEntity || '-'}</TableCell>
                       <TableCell className="text-right">
