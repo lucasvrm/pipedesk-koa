@@ -44,7 +44,8 @@ import {
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
 import { DroppedPlayersList } from '../components/DroppedPlayersList'
-import CreatePlayerDialog from '../components/CreatePlayerDialog'
+// ALTERADO: Importação agora é nomeada (com chaves) para corresponder ao arquivo exportado
+import { CreatePlayerDialog } from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
@@ -194,7 +195,7 @@ export default function DealDetailPage() {
               onOpenChange={setDocGeneratorOpen} 
             />
 
-            {/* Menu de Ações */}
+            {/* Menu de Ações (3 Pontinhos) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9 data-[state=open]:bg-muted">
@@ -249,6 +250,7 @@ export default function DealDetailPage() {
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Volume (Azul) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Wallet className="h-3.5 w-3.5 text-blue-500" /> Volume Total
@@ -258,6 +260,7 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
+        {/* Card 2: Fee Estimado (Emerald/Verde) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Sparkle className="h-3.5 w-3.5 text-emerald-500" /> Fee Estimado
@@ -267,6 +270,7 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
+        {/* Card 3: Players Ativos (Amber/Laranja) */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-amber-500" /> Players Ativos
@@ -276,6 +280,7 @@ export default function DealDetailPage() {
           </p>
         </Card>
 
+        {/* Card 4: Prazo (Condicional) */}
         <Card className={`p-4 flex flex-col justify-between gap-1 border-l-4 ${deadlineColorClass} shadow-sm hover:shadow-md transition-shadow`}>
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             {isDeadlineOverdue ? (
