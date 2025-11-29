@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import Profile from '@/pages/Profile'
 
 // Lazy loads (Carregamento sob demanda)
-const Dashboard = lazy(() => import('@/features/analytics/components/Dashboard'))
+const Dashboard = lazy(() => import('@/pages/DashboardPage'))
 const DealsView = lazy(() => import('@/features/deals/components/DealsView'))
 const DealDetailPage = lazy(() => import('@/features/deals/pages/DealDetailPage'))
 const AnalyticsDashboard = lazy(() => import('@/features/analytics/components/AnalyticsDashboard'))
