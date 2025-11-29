@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { PlayerTrack } from '@/lib/types'
+import { PlayerTrack, PipelineStage } from '@/lib/types' // Importando tipos corretos
 import { formatCurrency, formatDate } from '@/lib/helpers'
-import { useStages } from '@/services/pipelineService' // Hook Dinâmico
+import { useStages } from '@/services/pipelineService'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -33,24 +33,26 @@ interface DealPlayersKanbanProps {
 export default function DealPlayersKanban({ tracks, currentUser: propsUser }: DealPlayersKanbanProps) {
   const updateTrack = useUpdateTrack()
   const { profile: currentUser } = useAuth()
-  const { data: stages = [] } = useStages() // Estágios dinâmicos
+  const { data: stages = [] } = useStages() // Hook Dinâmico
   
   const [draggedTrack, setDraggedTrack] = useState<PlayerTrack | null>(null)
   const [dragOverStage, setDragOverStage] = useState<string | null>(null)
   const [trackToCancel, setTrackToCancel] = useState<PlayerTrack | null>(null)
 
-  // Helper para normalizar o estágio do track para o ID do estágio do banco
+  // Helper para identificar o ID do estágio (normaliza dados legados)
   const getStageId = (trackStage: string) => {
+    if (!trackStage) return 'unknown';
     const stage = stages.find(s => s.id === trackStage) || 
                   stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === trackStage) ||
                   stages.find(s => s.isDefault);
     return stage ? stage.id : 'unknown';
   }
 
+  // Agrupa tracks nas colunas baseadas nos estágios do banco
   const columns = useMemo(() => {
     const cols: Record<string, PlayerTrack[]> = {}
     
-    // Inicializa colunas com os IDs dos estágios
+    // Inicializa colunas com IDs
     stages.forEach(s => cols[s.id] = [])
 
     // Distribui tracks
@@ -104,13 +106,12 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
     const currentStageId = getStageId(draggedTrack.currentStage)
     if (currentStageId === targetStageId) return
 
-    // Encontra nomes para o log
     const oldStageName = stages.find(s => s.id === currentStageId)?.name || draggedTrack.currentStage
     const newStageName = stages.find(s => s.id === targetStageId)?.name || targetStageId
 
     updateTrack.mutate({
       trackId: draggedTrack.id,
-      updates: { currentStage: targetStageId } // Salva o ID do novo estágio
+      updates: { currentStage: targetStageId } // Salva o ID
     }, {
       onSuccess: () => {
         toast.success(`Movido para ${newStageName}`)
@@ -129,7 +130,8 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
     setDraggedTrack(null)
   }
 
-  if (stages.length === 0) return <div className="text-center p-4">Carregando pipeline...</div>
+  // Loading state se não tiver estágios ainda
+  if (stages.length === 0) return <div className="p-8 text-center text-muted-foreground">Carregando pipeline...</div>
 
   return (
     <>
@@ -147,7 +149,7 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
                 onDragLeave={handleDragLeave}
                 onDrop={() => handleDrop(stage.id)}
                 className={cn(
-                  "flex flex-col flex-1 min-w-[250px] rounded-lg border transition-colors duration-200",
+                  "flex flex-col flex-1 min-w-[260px] rounded-lg border transition-colors duration-200",
                   isDragOver ? "bg-primary/10 border-primary border-dashed" : "bg-muted/30 border-border/50"
                 )}
               >

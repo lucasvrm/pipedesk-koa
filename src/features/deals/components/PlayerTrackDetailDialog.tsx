@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { useDeals } from '@/services/dealService'
+import { useStages } from '@/services/pipelineService' // NOVO: Hook Dinâmico
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
+import { PlayerTrack, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
 import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Clock } from '@phosphor-icons/react'
 import TaskList from '@/features/tasks/components/TaskList'
@@ -32,7 +33,6 @@ import DocumentManager from '@/components/DocumentManager'
 import ActivityHistory from '@/components/ActivityHistory'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import PhaseValidationDialog from '@/components/PhaseValidationDialog'
-// REMOVIDO: import QAPanel from '@/components/QAPanel'
 import { ActivitySummarizer } from '@/components/ActivitySummarizer'
 import { SLAIndicator } from '@/components/SLAIndicator'
 import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
@@ -47,6 +47,7 @@ interface PlayerTrackDetailDialogProps {
 
 export default function PlayerTrackDetailDialog({ track, open, onOpenChange, currentUser }: PlayerTrackDetailDialogProps) {
   const { data: playerTracks } = useTracks()
+  const { data: stages = [] } = useStages() // NOVO: Busca estágios do banco
   const updateTrack = useUpdateTrack()
   const { data: deals } = useDeals()
   const [trackViewPreferences, setTrackViewPreferences] = useState<Record<string, ViewType>>({})
@@ -71,23 +72,36 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
     }
   }, [open, track.id])
 
-  const probability = STAGE_PROBABILITIES[track.currentStage]
+  // --- LÓGICA DINÂMICA ---
+  
+  // Helper para buscar informações do estágio (ID ou Slug legado)
+  const getStageInfo = (stageKey: string) => {
+    return stages.find(s => s.id === stageKey) || 
+           stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === stageKey) ||
+           stages.find(s => s.isDefault);
+  }
+
+  const currentStageInfo = getStageInfo(track.currentStage);
+  const probability = track.probability || currentStageInfo?.probability || 0;
+  const stageName = currentStageInfo?.name || track.currentStage;
+
   const weighted = calculateWeightedVolume(track.trackVolume, probability)
   const masterDeal = (deals || []).find(d => d.id === track.masterDealId)
 
-  const performStageChange = (newStage: PlayerStage) => {
+  const performStageChange = (newStageId: PlayerStage) => {
     const oldStage = track.currentStage
+    const newStageInfo = getStageInfo(newStageId);
 
-    trackStageChange(track.id, newStage, oldStage)
+    trackStageChange(track.id, newStageId, oldStage)
 
     updateTrack.mutate({
       trackId: track.id,
       updates: {
-        currentStage: newStage,
-        probability: STAGE_PROBABILITIES[newStage],
+        currentStage: newStageId,
+        probability: newStageInfo?.probability || 0, // Atualiza probabilidade baseada no novo estágio
       }
     }, {
-      onSuccess: () => toast.success(`Estágio atualizado para ${STAGE_LABELS[newStage]}`),
+      onSuccess: () => toast.success(`Estágio atualizado para ${newStageInfo?.name || newStageId}`),
       onError: () => toast.error('Erro ao atualizar estágio')
     })
   }
@@ -160,7 +174,10 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
                   >
                     {STATUS_LABELS[track.status]}
                   </Badge>
-                  <Badge variant="outline">{STAGE_LABELS[track.currentStage]}</Badge>
+                  {/* Badge Dinâmica */}
+                  <Badge variant="outline" style={{ borderColor: currentStageInfo?.color, color: currentStageInfo?.color }}>
+                    {stageName}
+                  </Badge>
                 </div>
               </DialogDescription>
             </div>
@@ -210,11 +227,12 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="nda">{STAGE_LABELS.nda}</SelectItem>
-                <SelectItem value="analysis">{STAGE_LABELS.analysis}</SelectItem>
-                <SelectItem value="proposal">{STAGE_LABELS.proposal}</SelectItem>
-                <SelectItem value="negotiation">{STAGE_LABELS.negotiation}</SelectItem>
-                <SelectItem value="closing">{STAGE_LABELS.closing}</SelectItem>
+                {/* Renderização Dinâmica dos Estágios */}
+                {stages.map((stage) => (
+                  <SelectItem key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -277,7 +295,6 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
               <ClockCounterClockwise className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Sumário</span>
             </TabsTrigger>
-            {/* REMOVIDO: Trigger Q&A */}
             <TabsTrigger value="comments">
               <ChatCircle className="mr-0 md:mr-2" />
               <span className="hidden md:inline">Comentários</span>
@@ -340,8 +357,6 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
               entityType="track"
             />
           </TabsContent>
-
-          {/* REMOVIDO: TabsContent Q&A */}
 
           <TabsContent value="comments" className="space-y-4">
             {currentUser && (

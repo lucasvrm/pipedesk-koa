@@ -17,22 +17,21 @@ export async function getAnalyticsSummary(
     typeFilter: string = 'all'
 ): Promise<AnalyticsMetrics> {
     try {
-        // 0. Fetch Pipeline Stages for Probabilities & SLA
+        // 0. Fetch Pipeline Stages for Probabilities
+        // Precisamos disto para calcular o "Weighted Pipeline" dinamicamente
         const { data: stagesData } = await supabase
             .from('pipeline_stages')
             .select('id, name, probability');
         
-        // Mapa de probabilidades (ID -> Prob e Slug -> Prob para retrocompatibilidade)
+        // Mapa de probabilidades (ID -> Probabilidade)
+        // Também mapeamos o "slug" (nome minúsculo) para suportar dados antigos
         const probabilityMap: Record<string, number> = {};
-        const stageNames: Record<string, string> = {};
         
         stagesData?.forEach(s => {
             probabilityMap[s.id] = s.probability || 0;
-            // Fallback para dados antigos salvos como 'nda', 'analysis'
-            probabilityMap[s.name.toLowerCase().replace(/\s/g, '_')] = s.probability || 0;
-            
-            stageNames[s.id] = s.name;
-            stageNames[s.name.toLowerCase().replace(/\s/g, '_')] = s.name;
+            if (s.name) {
+                probabilityMap[s.name.toLowerCase().replace(/\s/g, '_')] = s.probability || 0;
+            }
         });
 
         // 1. Calculate date range
@@ -61,7 +60,7 @@ export async function getAnalyticsSummary(
         const { data: tracks, error: tracksError } = await tracksQuery;
         if (tracksError) throw tracksError;
 
-        // Filter tracks by team if needed (client-side filter for array column)
+        // Filter tracks by team if needed
         const filteredTracks = teamFilter === 'all'
             ? tracks
             : tracks.filter(t => t.responsibles && t.responsibles.includes(teamFilter));
@@ -78,11 +77,11 @@ export async function getAnalyticsSummary(
         const concludedDeals = deals.filter(d => d.status === 'concluded').length;
         const cancelledDeals = deals.filter(d => d.status === 'cancelled').length;
 
-        // Weighted Pipeline
+        // Weighted Pipeline Calculation
         const weightedPipeline = filteredTracks
             .filter(t => t.status === 'active')
             .reduce((sum, t) => {
-                // Tenta pegar a probabilidade do track, ou do mapa dinâmico
+                // Prioridade: Probabilidade salva no track > Probabilidade do estágio > 0
                 const stageProb = probabilityMap[t.current_stage] || 0;
                 const prob = t.probability || stageProb;
                 return sum + (t.track_volume || 0) * (prob / 100);
@@ -92,7 +91,7 @@ export async function getAnalyticsSummary(
         const totalClosed = concludedDeals + cancelledDeals;
         const conversionRate = totalClosed > 0 ? (concludedDeals / totalClosed) * 100 : 0;
 
-        // SLA Breaches (Simplificado por enquanto, usando contagem fixa ou do banco futuramente)
+        // SLA Breaches (Simplificado)
         const breachesByStage: Record<string, number> = {};
         let totalBreaches = 0;
 
@@ -106,7 +105,7 @@ export async function getAnalyticsSummary(
             }
         });
 
-        // Team Workload
+        // Team Workload - Fetch Profiles
         const { data: users } = await supabase.from('profiles').select('id, name, role');
 
         const teamWorkload = (users || [])
