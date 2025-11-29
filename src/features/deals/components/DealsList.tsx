@@ -9,7 +9,7 @@ import { Eye, WarningCircle, Briefcase, TrendUp } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 
-// Configuração de Pesos dos Estágios (para determinar o mais avançado)
+// Configuração de Pesos dos Estágios
 const STAGE_WEIGHTS: Record<PlayerStage, number> = {
   nda: 1,
   analysis: 2,
@@ -20,15 +20,21 @@ const STAGE_WEIGHTS: Record<PlayerStage, number> = {
 
 interface DealsListProps {
   deals: MasterDeal[]
-  playerTracks?: PlayerTrack[] // Novo Prop Opcional
+  playerTracks?: PlayerTrack[]
   compact?: boolean
   bulkMode?: boolean
+  viewMode?: 'list' | 'grid' // Novo modo de visualização
 }
 
-export default function DealsList({ deals, playerTracks = [], compact = false, bulkMode = false }: DealsListProps) {
+export default function DealsList({ 
+  deals, 
+  playerTracks = [], 
+  compact = false, 
+  bulkMode = false,
+  viewMode = 'list' // Padrão lista
+}: DealsListProps) {
   const navigate = useNavigate()
 
-  // Agrupamento de Tracks por Deal
   const tracksByDealId = useMemo(() => {
     if (!playerTracks) return {} as Record<string, PlayerTrack[]>;
     return playerTracks.reduce((acc, track) => {
@@ -38,7 +44,6 @@ export default function DealsList({ deals, playerTracks = [], compact = false, b
     }, {} as Record<string, PlayerTrack[]>)
   }, [playerTracks])
 
-  // Helper para pegar o melhor track
   const getAdvancedTrackInfo = (dealId: string) => {
     const tracks = tracksByDealId[dealId] || []
     if (tracks.length === 0) return null
@@ -67,14 +72,91 @@ export default function DealsList({ deals, playerTracks = [], compact = false, b
 
   if (deals.length === 0) {
     return (
-      <EmptyState
-        icon={<Briefcase size={64} weight="duotone" />}
-        title="Nenhum deal encontrado"
-        description="Não há deals correspondentes aos seus critérios."
-      />
+      <div className="py-8">
+        <EmptyState
+          icon={<Briefcase size={48} weight="duotone" className="opacity-50" />}
+          title="Nenhum deal encontrado"
+          description="Não há deals recentes para exibir."
+        />
+      </div>
     )
   }
 
+  const GridCard = ({ deal, trackInfo }: { deal: MasterDeal, trackInfo: any }) => {
+    const overdue = isOverdue(deal.deadline)
+    
+    return (
+      <div 
+        onClick={() => handleDealClick(deal)}
+        className="group relative flex flex-col justify-between p-4 rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full"
+      >
+        <div>
+          <div className="flex justify-between items-start mb-2">
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-normal">
+              {OPERATION_LABELS[deal.operationType]}
+            </Badge>
+            <Badge variant={deal.status === 'active' ? 'default' : 'secondary'} className="text-[10px] h-5">
+              {STATUS_LABELS[deal.status]}
+            </Badge>
+          </div>
+          
+          <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+            {deal.clientName}
+          </h3>
+          
+          <div className="text-xs text-muted-foreground mb-3">
+             {deal.company?.name || 'Sem empresa'}
+          </div>
+
+          <div className="text-lg font-bold text-foreground mb-3">
+            {formatCurrency(deal.volume)}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {/* Track Info */}
+          <div className="p-2 bg-muted/30 rounded-md border border-border/50 min-h-[42px] flex items-center">
+            {trackInfo ? (
+              <div className="flex items-center gap-2 w-full">
+                 <Badge variant="secondary" className="text-[9px] h-5 px-1 bg-white shadow-sm border-0">
+                    {trackInfo.stageLabel}
+                 </Badge>
+                 <span className="text-[10px] text-muted-foreground truncate flex-1" title={trackInfo.playerName}>
+                    {trackInfo.playerName}
+                 </span>
+                 {trackInfo.extraCount > 0 && (
+                    <span className="text-[9px] font-bold text-muted-foreground bg-muted px-1 rounded">
+                      +{trackInfo.extraCount}
+                    </span>
+                 )}
+              </div>
+            ) : (
+              <span className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                <TrendUp className="w-3 h-3" /> Sem players ativos
+              </span>
+            )}
+          </div>
+
+          <div className={cn("flex items-center justify-between text-[10px] font-medium pt-2 border-t", overdue ? "text-destructive" : "text-muted-foreground")}>
+            <span>Prazo: {formatDate(deal.deadline)}</span>
+            {overdue && <WarningCircle weight="fill" className="w-3 h-3" />}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (viewMode === 'grid') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {deals.map(deal => (
+          <GridCard key={deal.id} deal={deal} trackInfo={getAdvancedTrackInfo(deal.id)} />
+        ))}
+      </div>
+    )
+  }
+
+  // MODO LISTA (Original)
   return (
     <div className="space-y-3">
       {deals.map((deal) => {
@@ -113,7 +195,7 @@ export default function DealsList({ deals, playerTracks = [], compact = false, b
                )}
             </div>
 
-            {/* Linha 2: Detalhes (Valor, Tipo, Data) */}
+            {/* Linha 2: Detalhes */}
             <div className={cn("flex flex-wrap items-center gap-3 text-muted-foreground", compact ? "text-xs" : "text-sm")}>
               <span className="font-medium text-foreground">{formatCurrency(deal.volume)}</span>
               <span className="w-1 h-1 rounded-full bg-border" />
@@ -125,7 +207,7 @@ export default function DealsList({ deals, playerTracks = [], compact = false, b
               </span>
             </div>
 
-            {/* Linha 3: Track Status (NOVIDADE) */}
+            {/* Linha 3: Track Status */}
             <div className="pt-2 mt-1 border-t border-border/50 flex items-center gap-2">
               {trackInfo ? (
                 <>
