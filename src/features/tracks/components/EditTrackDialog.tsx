@@ -1,21 +1,20 @@
 import { useState, useEffect } from 'react'
+import { PlayerTrack } from '@/lib/types'
 import { useUpdateTrack } from '@/services/trackService'
-import { useAuth } from '@/contexts/AuthContext'
-import { logActivity } from '@/services/activityService'
+import { useAssignTag, useRemoveTag } from '@/services/tagService'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { PlayerTrack } from '@/lib/types'
 import { toast } from 'sonner'
+import TagSelector from '@/components/TagSelector'
 
 interface EditTrackDialogProps {
   track: PlayerTrack
@@ -23,95 +22,83 @@ interface EditTrackDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-// ATENÇÃO: Deve ser "export function" (Exportação Nomeada) e NÃO "export default"
 export function EditTrackDialog({ track, open, onOpenChange }: EditTrackDialogProps) {
-  const { profile: currentUser } = useAuth()
   const updateTrack = useUpdateTrack()
+  const assignTagMutation = useAssignTag()
+  const removeTagMutation = useRemoveTag()
 
   const [formData, setFormData] = useState({
-    trackVolume: '',
-    probability: '',
-    notes: ''
+    trackVolume: track.trackVolume,
+    probability: track.probability,
+    notes: track.notes || ''
   })
 
-  // Carrega os dados atuais quando o modal abre
   useEffect(() => {
-    if (track && open) {
+    if (open) {
       setFormData({
-        trackVolume: track.trackVolume?.toString() || '0',
-        probability: track.probability?.toString() || '0',
+        trackVolume: track.trackVolume,
+        probability: track.probability,
         notes: track.notes || ''
       })
     }
   }, [track, open])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!formData.trackVolume) {
-      toast.error('O volume é obrigatório')
-      return
-    }
-
+  const handleSave = async () => {
     try {
       await updateTrack.mutateAsync({
         trackId: track.id,
         updates: {
-          trackVolume: parseFloat(formData.trackVolume),
-          probability: parseInt(formData.probability) || 0,
+          trackVolume: Number(formData.trackVolume),
+          probability: Number(formData.probability),
           notes: formData.notes
         }
       })
-
-      // Log de atividade
-      if (currentUser) {
-        logActivity(
-          track.masterDealId,
-          'track',
-          `Editou informações do track de ${track.playerName}`,
-          currentUser.id,
-          { 
-            volume_old: track.trackVolume,
-            volume_new: formData.trackVolume,
-            prob_old: track.probability,
-            prob_new: formData.probability
-          }
-        )
-      }
-
       toast.success('Track atualizado com sucesso!')
       onOpenChange(false)
     } catch (error) {
-      console.error(error)
       toast.error('Erro ao atualizar track')
     }
+  }
+
+  const handleAddTag = (tagId: string) => {
+    assignTagMutation.mutate({ tagId, entityId: track.id, entityType: 'track' })
+  }
+
+  const handleRemoveTag = (tagId: string) => {
+    removeTagMutation.mutate({ tagId, entityId: track.id, entityType: 'track' })
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Track</DialogTitle>
-          <DialogDescription>
-            Atualize as informações principais deste track.
-          </DialogDescription>
+          <DialogTitle>Editar Track - {track.playerName}</DialogTitle>
         </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          
+          {/* Seletor de Tags */}
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <TagSelector 
+              entityType="track"
+              selectedTagIds={track.tags?.map(t => t.id) || []}
+              onSelectTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+            />
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="trackVolume">Volume (R$)</Label>
               <Input
                 id="trackVolume"
                 type="number"
-                step="0.01"
                 value={formData.trackVolume}
-                onChange={(e) => setFormData({ ...formData, trackVolume: e.target.value })}
-                placeholder="0.00"
+                onChange={(e) => setFormData({ ...formData, trackVolume: Number(e.target.value) })}
               />
             </div>
-
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="probability">Probabilidade (%)</Label>
               <Input
                 id="probability"
@@ -119,32 +106,30 @@ export function EditTrackDialog({ track, open, onOpenChange }: EditTrackDialogPr
                 min="0"
                 max="100"
                 value={formData.probability}
-                onChange={(e) => setFormData({ ...formData, probability: e.target.value })}
-                placeholder="0-100"
+                onChange={(e) => setFormData({ ...formData, probability: Number(e.target.value) })}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="notes">Notas / Observações</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Informações adicionais..."
-              className="h-32 resize-none"
+              rows={4}
             />
           </div>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={updateTrack.isPending}>
-              {updateTrack.isPending ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>
+            Salvar Alterações
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

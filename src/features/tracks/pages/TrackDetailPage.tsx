@@ -33,7 +33,7 @@ import {
 import { 
   CheckSquare, ChatCircle, ClockCounterClockwise, 
   FileText, Buildings, CalendarBlank, Wallet, Percent, PresentationChart, PencilSimple,
-  DotsThreeOutline
+  DotsThreeOutline, Tag as TagIcon
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -48,6 +48,7 @@ import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
+import { TrackTagsDialog } from '../components/TrackTagsDialog' // Componente Novo
 
 export default function TrackDetailPage() {
   const { id } = useParams()
@@ -65,6 +66,7 @@ export default function TrackDetailPage() {
   // UI States
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
   const [editTrackOpen, setEditTrackOpen] = useState(false)
+  const [tagsTrackOpen, setTagsTrackOpen] = useState(false) // Estado para Tags
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   
   if (trackLoading || !track) {
@@ -148,7 +150,7 @@ export default function TrackDetailPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/deals">Negócios</Link>
+              <Link to="/deals">Deals</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -209,6 +211,25 @@ export default function TrackDetailPage() {
                 )}
               </div>
             )}
+
+            {/* TAGS VISUAIS NO CABEÇALHO */}
+            {track.tags && track.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {track.tags.map(tag => (
+                  <Badge 
+                    key={tag.id} 
+                    variant="outline" 
+                    style={{ 
+                      backgroundColor: tag.color + '20', 
+                      color: tag.color, 
+                      borderColor: tag.color + '40' 
+                    }}
+                  >
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="flex flex-col items-end gap-2">
@@ -240,6 +261,12 @@ export default function TrackDetailPage() {
                         <DropdownMenuItem onClick={() => setEditTrackOpen(true)}>
                             <PencilSimple className="mr-2 h-4 w-4" /> Editar Track
                         </DropdownMenuItem>
+                        
+                        {/* NOVA OPÇÃO DE TAGS */}
+                        <DropdownMenuItem onClick={() => setTagsTrackOpen(true)}>
+                          <TagIcon className="mr-2 h-4 w-4" /> Gerenciar Tags
+                        </DropdownMenuItem>
+
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -369,6 +396,12 @@ export default function TrackDetailPage() {
         track={track}
         open={editTrackOpen}
         onOpenChange={setEditTrackOpen}
+      />
+
+      <TrackTagsDialog 
+        track={track}
+        open={tagsTrackOpen}
+        onOpenChange={setTagsTrackOpen}
       />
 
       {selectedTask && currentUser && (
