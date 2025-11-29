@@ -5,13 +5,17 @@ on:
     branches:
       - main
       - develop
-      - feature/**
-      - fix/**
+      - "feature/**"
+      - "fix/**"
   pull_request:
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    # Força o npm a ignorar peer deps em todo o job (além do flag no comando)
+    env:
+      NPM_CONFIG_LEGACY_PEER_DEPS: "true"
 
     steps:
       - name: Checkout repository
@@ -20,17 +24,26 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # ajuste para a versão que você realmente usa
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      # Garante config no runner (redundante de propósito)
+      - name: Configure npm to ignore peer deps
+        run: |
+          npm config set legacy-peer-deps true
+          npm config set fund false
+          npm config set audit false
+          npm config list
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
 
-      - name: Lint (se existir)
+      - name: Lint (if present)
         run: npm run lint --if-present
 
-      - name: Tests (se existir)
+      - name: Tests (if present)
         run: npm test --if-present
 
-      - name: Build (se fizer sentido)
+      - name: Build (if present)
         run: npm run build --if-present
