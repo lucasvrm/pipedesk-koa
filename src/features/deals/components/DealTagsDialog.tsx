@@ -6,28 +6,29 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import TagSelector from "@/components/TagSelector"
-import { MasterDeal } from "@/lib/types"
 import { useAssignTag, useRemoveTag } from "@/services/tagService"
+import { useDeal } from "@/services/dealService"
 import { Tag } from "@phosphor-icons/react"
 
 interface DealTagsDialogProps {
-  deal: MasterDeal | null
+  dealId: string | null 
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function DealTagsDialog({ deal, open, onOpenChange }: DealTagsDialogProps) {
+export function DealTagsDialog({ dealId, open, onOpenChange }: DealTagsDialogProps) {
   const assignTagMutation = useAssignTag()
   const removeTagMutation = useRemoveTag()
+  const { data: deal, isLoading } = useDeal(dealId)
 
-  if (!deal) return null
+  if (!dealId) return null
 
   const handleAddTag = (tagId: string) => {
-    assignTagMutation.mutate({ tagId, entityId: deal.id, entityType: 'deal' })
+    assignTagMutation.mutate({ tagId, entityId: dealId, entityType: 'deal' })
   }
 
   const handleRemoveTag = (tagId: string) => {
-    removeTagMutation.mutate({ tagId, entityId: deal.id, entityType: 'deal' })
+    removeTagMutation.mutate({ tagId, entityId: dealId, entityType: 'deal' })
   }
 
   return (
@@ -41,21 +42,23 @@ export function DealTagsDialog({ deal, open, onOpenChange }: DealTagsDialogProps
             <div>
               <DialogTitle>Gerenciar Tags</DialogTitle>
               <DialogDescription className="mt-1">
-                Deal: <span className="font-medium text-foreground">{deal.clientName}</span>
+                {isLoading ? "Carregando..." : <>Deal: <span className="font-medium text-foreground">{deal?.clientName}</span></>}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
         
-        <div className="py-2">
-          <TagSelector 
-            variant="inline"
-            entityType="deal"
-            selectedTagIds={deal.tags?.map(t => t.id) || []}
-            onSelectTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-          />
-        </div>
+        {!isLoading && deal && (
+          <div className="py-2">
+            <TagSelector 
+              variant="inline"
+              entityType="deal"
+              selectedTagIds={deal.tags?.map(t => t.id) || []}
+              onSelectTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

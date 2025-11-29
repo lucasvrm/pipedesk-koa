@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // --- API ---
 
-// Buscar tags (filtrando por tipo de entidade opcionalmente)
 export async function getTags(entityType?: 'deal' | 'track'): Promise<Tag[]> {
   let query = supabase.from('tags').select('*').order('name');
   
@@ -56,17 +55,21 @@ export async function deleteTag(id: string) {
   if (error) throw error;
 }
 
-// Associar Tag a Entidade
+// Associar Tag
 export async function assignTag(tagId: string, entityId: string, entityType: 'deal' | 'track') {
   const { error } = await supabase.from('entity_tags').insert({
     tag_id: tagId,
     entity_id: entityId,
     entity_type: entityType
   });
-  if (error) throw error;
+  if (error) {
+    // Ignora erro de duplicidade (se já estiver associado)
+    if (error.code === '23505') return; 
+    throw error;
+  }
 }
 
-// Remover Tag de Entidade
+// Remover Tag
 export async function removeTag(tagId: string, entityId: string) {
   const { error } = await supabase
     .from('entity_tags')
@@ -116,8 +119,14 @@ export function useAssignTag() {
     mutationFn: (vars: { tagId: string, entityId: string, entityType: 'deal' | 'track' }) => 
       assignTag(vars.tagId, vars.entityId, vars.entityType),
     onSuccess: (_, vars) => {
-      // Invalida a entidade para atualizar a lista de tags exibida
-      queryClient.invalidateQueries({ queryKey: [vars.entityType === 'deal' ? 'deals' : 'tracks'] });
+      // Invalidações amplas para garantir update da UI
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['tracks'] });
+      if (vars.entityType === 'deal') {
+        queryClient.invalidateQueries({ queryKey: ['deals', vars.entityId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['track', vars.entityId] });
+      }
     }
   });
 }
@@ -128,7 +137,13 @@ export function useRemoveTag() {
     mutationFn: (vars: { tagId: string, entityId: string, entityType: 'deal' | 'track' }) => 
       removeTag(vars.tagId, vars.entityId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: [vars.entityType === 'deal' ? 'deals' : 'tracks'] });
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['tracks'] });
+      if (vars.entityType === 'deal') {
+        queryClient.invalidateQueries({ queryKey: ['deals', vars.entityId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['track', vars.entityId] });
+      }
     }
   });
 }
