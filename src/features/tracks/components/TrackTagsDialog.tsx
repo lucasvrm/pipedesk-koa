@@ -48,7 +48,6 @@ export function TrackTagsDialog({ track, open, onOpenChange }: TrackTagsDialogPr
         </DialogHeader>
         
         <div className="py-2">
-          {/* Uso do Modo Inline */}
           <TagSelector 
             variant="inline"
             entityType="track"

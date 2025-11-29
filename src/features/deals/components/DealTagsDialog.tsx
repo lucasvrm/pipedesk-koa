@@ -48,7 +48,6 @@ export function DealTagsDialog({ deal, open, onOpenChange }: DealTagsDialogProps
         </DialogHeader>
         
         <div className="py-2">
-          {/* Uso do Modo Inline para melhor UX em modais */}
           <TagSelector 
             variant="inline"
             entityType="deal"
