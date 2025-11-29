@@ -34,21 +34,23 @@ export function DealTagsDialog({ deal, open, onOpenChange }: DealTagsDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2">
             <div className="p-2 bg-primary/10 rounded-full text-primary">
-              <Tag size={20} />
+              <Tag size={20} weight="bold" />
             </div>
             <div>
               <DialogTitle>Gerenciar Tags</DialogTitle>
               <DialogDescription className="mt-1">
-                Classifique o deal <strong>{deal.clientName}</strong>
+                Deal: <span className="font-medium text-foreground">{deal.clientName}</span>
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
         
-        <div className="py-4">
+        <div className="py-2">
+          {/* Uso do Modo Inline para melhor UX em modais */}
           <TagSelector 
+            variant="inline"
             entityType="deal"
             selectedTagIds={deal.tags?.map(t => t.id) || []}
             onSelectTag={handleAddTag}
