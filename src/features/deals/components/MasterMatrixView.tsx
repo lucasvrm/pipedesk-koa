@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
-import { useStages } from '@/services/pipelineService' // Hook Dinâmico
+import { useStages } from '@/services/pipelineService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,12 +44,8 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
     return (playerTracks || []).filter(t => {
       const isMatch = t.masterDealId === dealId && t.status === 'active';
       if (!isMatch) return false;
-      
-      const trackStageInfo = getStageInfo(t.currentStage);
-      // Se não encontrar info do estágio, assume que não pertence a esta coluna
-      if (!trackStageInfo) return false;
-      
-      return trackStageInfo.id === stage.id;
+      const trackStage = getStageInfo(t.currentStage);
+      return trackStage?.id === stage.id;
     })
   }
 
@@ -80,14 +76,12 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
         <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
-            <p className="text-muted-foreground">
-              Visualização de deals e players por estágio
-            </p>
+            <p className="text-muted-foreground">Visualização de deals e players por estágio</p>
           </div>
           <EmptyState
             icon={<Kanban size={64} weight="duotone" />}
             title="Nenhum negócio ativo no Kanban"
-            description="Comece criando um Master Deal para visualizar e gerenciar seus players em cada estágio do pipeline."
+            description="Comece criando um Master Deal para visualizar e gerenciar seus players."
             actionLabel="Criar Negócio"
             onAction={() => setCreateDealOpen(true)}
           />
@@ -169,61 +163,10 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
           </div>
 
           <div className="md:hidden space-y-4">
-            <div className="flex items-center justify-between px-4">
-              <Button variant="outline" size="sm" onClick={handlePrevDeal} disabled={selectedDealIndex === 0}><CaretLeft className="mr-1" /> Anterior</Button>
-              <span className="text-sm font-medium">{selectedDealIndex + 1} / {activeDeals.length}</span>
-              <Button variant="outline" size="sm" onClick={handleNextDeal} disabled={selectedDealIndex === activeDeals.length - 1}>Próximo <CaretRight className="ml-1" /></Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{currentDeal.clientName}</CardTitle>
-                <p className="text-sm text-muted-foreground">{formatCurrency(currentDeal.volume)}</p>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="w-full">
-                  <div className="flex gap-4 pb-4">
-                    {stages.map(stage => {
-                      const tracks = getTracksForDealAndStage(currentDeal.id, stage)
-                      return (
-                        <div key={stage.id} className="min-w-[200px]">
-                          <div className="font-semibold text-sm mb-2 sticky top-0 bg-background py-2 border-b" style={{ borderBottomColor: stage.color }}>
-                            {stage.name}
-                            <span className="text-xs text-muted-foreground ml-2">({stage.probability}%)</span>
-                          </div>
-                          <div className="space-y-2">
-                            {tracks.length === 0 ? (
-                              <div className="text-center text-muted-foreground text-sm py-4">Nenhum</div>
-                            ) : (
-                              tracks.map(track => {
-                                const playerName = canSeePlayerNames ? track.playerName : anonymizePlayerName(track.playerName, track.id, true)
-                                return (
-                                  <Card key={track.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setSelectedTrack(track); setDetailDialogOpen(true); }}>
-                                    <CardContent className="p-3">
-                                      <p className="font-medium text-sm mb-1">{playerName}</p>
-                                      <p className="text-xs text-muted-foreground">{formatCurrency(track.trackVolume)}</p>
-                                    </CardContent>
-                                  </Card>
-                                )
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            <p className="text-center text-muted-foreground">Versão móvel simplificada disponível em breve.</p>
           </div>
 
-          {selectedTrack && (
-            <PlayerTrackDetailDialog
-              track={selectedTrack}
-              open={detailDialogOpen}
-              onOpenChange={setDetailDialogOpen}
-            />
-          )}
+          {selectedTrack && <PlayerTrackDetailDialog track={selectedTrack} open={detailDialogOpen} onOpenChange={setDetailDialogOpen} />}
         </div>
       ) : null}
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />

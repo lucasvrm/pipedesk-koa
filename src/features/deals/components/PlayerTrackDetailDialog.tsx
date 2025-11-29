@@ -33,6 +33,7 @@ import DocumentManager from '@/components/DocumentManager'
 import ActivityHistory from '@/components/ActivityHistory'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import PhaseValidationDialog from '@/components/PhaseValidationDialog'
+// REMOVIDO: import QAPanel from '@/components/QAPanel' (Já estava comentado no seu código)
 import { ActivitySummarizer } from '@/components/ActivitySummarizer'
 import { SLAIndicator } from '@/components/SLAIndicator'
 import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
@@ -72,7 +73,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
     }
   }, [open, track.id])
 
-  // --- LÓGICA DINÂMICA ---
+  // --- LÓGICA DINÂMICA (SUBSTITUIÇÃO DE CONSTANTES) ---
   
   // Helper para buscar informações do estágio (ID ou Slug legado)
   const getStageInfo = (stageKey: string) => {
@@ -82,7 +83,11 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
   }
 
   const currentStageInfo = getStageInfo(track.currentStage);
+  
+  // Probabilidade: Usa a do track se existir, senão a do estágio, senão 0
   const probability = track.probability || currentStageInfo?.probability || 0;
+  
+  // Nome do Estágio: Usa o nome do estágio do banco, ou o ID como fallback
   const stageName = currentStageInfo?.name || track.currentStage;
 
   const weighted = calculateWeightedVolume(track.trackVolume, probability)

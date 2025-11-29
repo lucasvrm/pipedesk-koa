@@ -17,24 +17,22 @@ export async function getAnalyticsSummary(
     typeFilter: string = 'all'
 ): Promise<AnalyticsMetrics> {
     try {
-        // 0. Fetch Pipeline Stages for Probabilities
-        // Precisamos disto para calcular o "Weighted Pipeline" dinamicamente
+        // 0. Buscar Estágios Dinâmicos para Probabilidades e Labels
         const { data: stagesData } = await supabase
             .from('pipeline_stages')
             .select('id, name, probability');
         
-        // Mapa de probabilidades (ID -> Probabilidade)
-        // Também mapeamos o "slug" (nome minúsculo) para suportar dados antigos
         const probabilityMap: Record<string, number> = {};
         
         stagesData?.forEach(s => {
             probabilityMap[s.id] = s.probability || 0;
+            // Fallback para dados legados (slug)
             if (s.name) {
                 probabilityMap[s.name.toLowerCase().replace(/\s/g, '_')] = s.probability || 0;
             }
         });
 
-        // 1. Calculate date range
+        // 1. Calcular Range de Data
         let startDate: Date | null = null;
         if (dateFilter !== 'all') {
             const now = new Date();
@@ -43,16 +41,14 @@ export async function getAnalyticsSummary(
             else if (dateFilter === '1y') startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         }
 
-        // 2. Build queries
+        // 2. Construir Queries
         let dealsQuery = supabase.from('master_deals').select('*');
         if (startDate) dealsQuery = dealsQuery.gte('created_at', startDate.toISOString());
         if (typeFilter !== 'all') dealsQuery = dealsQuery.eq('operation_type', typeFilter);
 
-        // Fetch deals
         const { data: deals, error: dealsError } = await dealsQuery;
         if (dealsError) throw dealsError;
 
-        // Fetch tracks (related to these deals)
         const dealIds = deals.map(d => d.id);
         let tracksQuery = supabase.from('player_tracks').select('*');
         if (dealIds.length > 0) tracksQuery = tracksQuery.in('master_deal_id', dealIds);
@@ -60,34 +56,33 @@ export async function getAnalyticsSummary(
         const { data: tracks, error: tracksError } = await tracksQuery;
         if (tracksError) throw tracksError;
 
-        // Filter tracks by team if needed
+        // Filtro de Time (Client-side para arrays)
         const filteredTracks = teamFilter === 'all'
             ? tracks
             : tracks.filter(t => t.responsibles && t.responsibles.includes(teamFilter));
 
-        // Fetch tasks for workload
-        const { data: tasks, error: tasksError } = await supabase
-            .from('tasks')
-            .select('*')
-            .eq('completed', false);
+        // Busca Tarefas e Histórico (SLA)
+        const { data: history, error: historyError } = await supabase.from('stage_history').select('*');
+        if (historyError) throw historyError;
+
+        const { data: tasks, error: tasksError } = await supabase.from('tasks').select('*').eq('completed', false);
         if (tasksError) throw tasksError;
 
-        // 3. Calculate Metrics
+        // 3. Calcular Métricas
         const activeDeals = deals.filter(d => d.status === 'active').length;
         const concludedDeals = deals.filter(d => d.status === 'concluded').length;
         const cancelledDeals = deals.filter(d => d.status === 'cancelled').length;
 
-        // Weighted Pipeline Calculation
+        // Pipeline Ponderado Dinâmico
         const weightedPipeline = filteredTracks
             .filter(t => t.status === 'active')
             .reduce((sum, t) => {
-                // Prioridade: Probabilidade salva no track > Probabilidade do estágio > 0
                 const stageProb = probabilityMap[t.current_stage] || 0;
                 const prob = t.probability || stageProb;
                 return sum + (t.track_volume || 0) * (prob / 100);
             }, 0);
 
-        // Conversion Rate
+        // Taxa de Conversão
         const totalClosed = concludedDeals + cancelledDeals;
         const conversionRate = totalClosed > 0 ? (concludedDeals / totalClosed) * 100 : 0;
 
@@ -95,7 +90,7 @@ export async function getAnalyticsSummary(
         const breachesByStage: Record<string, number> = {};
         let totalBreaches = 0;
 
-        // Deals by Stage
+        // Deals por Estágio
         const dealsByStage: Record<string, number> = {};
         filteredTracks.forEach(t => {
             if (t.status === 'active') {
@@ -105,11 +100,11 @@ export async function getAnalyticsSummary(
             }
         });
 
-        // Team Workload - Fetch Profiles
+        // Carga de Trabalho da Equipe
         const { data: users } = await supabase.from('profiles').select('id, name, role');
 
         const teamWorkload = (users || [])
-            .filter(u => u.role === 'analyst' || u.role === 'admin' || u.role === 'newbusiness')
+            .filter(u => ['analyst', 'admin', 'newbusiness'].includes(u.role))
             .map(user => {
                 const userTracks = filteredTracks.filter(t =>
                     t.status === 'active' && t.responsibles && t.responsibles.includes(user.id)
@@ -127,13 +122,13 @@ export async function getAnalyticsSummary(
                 };
             });
 
-        // Conversion Trend (Last 6 months)
+        // Tendência de Conversão (Últimos 6 meses)
         const conversionTrend: { period: string; concluded: number; cancelled: number; conversionRate: number }[] = [];
         const now = new Date();
 
         for (let i = 5; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
+            const monthKey = date.toISOString().slice(0, 7);
             const monthLabel = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
 
             const monthDeals = deals.filter(d => d.created_at && d.created_at.startsWith(monthKey));
@@ -173,10 +168,7 @@ export async function getAnalyticsSummary(
     }
 }
 
-// ============================================================================
-// React Query Hooks
-// ============================================================================
-
+// React Query Hook
 export function useAnalytics(
     dateFilter: 'all' | '30d' | '90d' | '1y',
     teamFilter: string,
@@ -185,6 +177,6 @@ export function useAnalytics(
     return useQuery({
         queryKey: ['analytics', dateFilter, teamFilter, typeFilter],
         queryFn: () => getAnalyticsSummary(dateFilter, teamFilter, typeFilter),
-        staleTime: 1000 * 60 * 10 // 10 minutos
+        staleTime: 1000 * 60 * 10 
     });
 }
