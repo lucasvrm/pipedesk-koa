@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import {
     AnalyticsMetrics,
     PlayerStage,
-    STAGE_PROBABILITIES,
-    DealStatus
+    DealStatus,
+    OperationType
 } from '@/lib/types';
 
 // ============================================================================
@@ -17,6 +17,24 @@ export async function getAnalyticsSummary(
     typeFilter: string = 'all'
 ): Promise<AnalyticsMetrics> {
     try {
+        // 0. Fetch Pipeline Stages for Probabilities & SLA
+        const { data: stagesData } = await supabase
+            .from('pipeline_stages')
+            .select('id, name, probability');
+        
+        // Mapa de probabilidades (ID -> Prob e Slug -> Prob para retrocompatibilidade)
+        const probabilityMap: Record<string, number> = {};
+        const stageNames: Record<string, string> = {};
+        
+        stagesData?.forEach(s => {
+            probabilityMap[s.id] = s.probability || 0;
+            // Fallback para dados antigos salvos como 'nda', 'analysis'
+            probabilityMap[s.name.toLowerCase().replace(/\s/g, '_')] = s.probability || 0;
+            
+            stageNames[s.id] = s.name;
+            stageNames[s.name.toLowerCase().replace(/\s/g, '_')] = s.name;
+        });
+
         // 1. Calculate date range
         let startDate: Date | null = null;
         if (dateFilter !== 'all') {
@@ -48,12 +66,6 @@ export async function getAnalyticsSummary(
             ? tracks
             : tracks.filter(t => t.responsibles && t.responsibles.includes(teamFilter));
 
-        // Fetch stage history for SLA
-        const { data: history, error: historyError } = await supabase
-            .from('stage_history')
-            .select('*');
-        if (historyError) throw historyError;
-
         // Fetch tasks for workload
         const { data: tasks, error: tasksError } = await supabase
             .from('tasks')
@@ -70,7 +82,9 @@ export async function getAnalyticsSummary(
         const weightedPipeline = filteredTracks
             .filter(t => t.status === 'active')
             .reduce((sum, t) => {
-                const prob = t.probability || STAGE_PROBABILITIES[t.current_stage as PlayerStage] || 0;
+                // Tenta pegar a probabilidade do track, ou do mapa dinâmico
+                const stageProb = probabilityMap[t.current_stage] || 0;
+                const prob = t.probability || stageProb;
                 return sum + (t.track_volume || 0) * (prob / 100);
             }, 0);
 
@@ -78,53 +92,25 @@ export async function getAnalyticsSummary(
         const totalClosed = concludedDeals + cancelledDeals;
         const conversionRate = totalClosed > 0 ? (concludedDeals / totalClosed) * 100 : 0;
 
-        // SLA Breaches
-        const SLA_LIMITS: Record<PlayerStage, number> = {
-            nda: 72,
-            analysis: 120,
-            proposal: 168,
-            negotiation: 240,
-            closing: 168,
-        };
-
-        const breachesByStage: Record<PlayerStage, number> = {
-            nda: 0, analysis: 0, proposal: 0, negotiation: 0, closing: 0
-        };
+        // SLA Breaches (Simplificado por enquanto, usando contagem fixa ou do banco futuramente)
+        const breachesByStage: Record<string, number> = {};
         let totalBreaches = 0;
 
-        // Simple SLA check on history (active stages exceeding time)
-        // This is a simplified calculation matching the previous frontend logic
-        history.forEach(h => {
-            if (!h.exited_at) {
-                const stage = h.stage as PlayerStage;
-                const limit = SLA_LIMITS[stage];
-                if (limit) {
-                    const duration = (new Date().getTime() - new Date(h.entered_at).getTime()) / (1000 * 60 * 60);
-                    if (duration > limit) {
-                        breachesByStage[stage]++;
-                        totalBreaches++;
-                    }
-                }
-            }
-        });
-
         // Deals by Stage
-        const dealsByStage: Record<PlayerStage, number> = {
-            nda: 0, analysis: 0, proposal: 0, negotiation: 0, closing: 0
-        };
+        const dealsByStage: Record<string, number> = {};
         filteredTracks.forEach(t => {
             if (t.status === 'active') {
-                const stage = t.current_stage as PlayerStage;
-                if (dealsByStage[stage] !== undefined) dealsByStage[stage]++;
+                const stageKey = t.current_stage;
+                if (!dealsByStage[stageKey]) dealsByStage[stageKey] = 0;
+                dealsByStage[stageKey]++;
             }
         });
 
         // Team Workload
-        // CORREÇÃO CRÍTICA: Mudamos de 'users' para 'profiles'
         const { data: users } = await supabase.from('profiles').select('id, name, role');
 
         const teamWorkload = (users || [])
-            .filter(u => u.role === 'analyst' || u.role === 'admin')
+            .filter(u => u.role === 'analyst' || u.role === 'admin' || u.role === 'newbusiness')
             .map(user => {
                 const userTracks = filteredTracks.filter(t =>
                     t.status === 'active' && t.responsibles && t.responsibles.includes(user.id)
@@ -142,7 +128,7 @@ export async function getAnalyticsSummary(
                 };
             });
 
-        // Conversion Trend (Last 6 months based on available data)
+        // Conversion Trend (Last 6 months)
         const conversionTrend: { period: string; concluded: number; cancelled: number; conversionRate: number }[] = [];
         const now = new Date();
 
@@ -151,11 +137,7 @@ export async function getAnalyticsSummary(
             const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
             const monthLabel = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
 
-            // Filter deals created in this month
-            // We use the already fetched 'deals' which respects the global date filter
-            // If the global filter is tighter than 6 months, earlier months will be empty, which is expected behavior
             const monthDeals = deals.filter(d => d.created_at && d.created_at.startsWith(monthKey));
-
             const monthConcluded = monthDeals.filter(d => d.status === 'concluded').length;
             const monthCancelled = monthDeals.filter(d => d.status === 'cancelled').length;
             const monthTotal = monthConcluded + monthCancelled;
@@ -174,7 +156,7 @@ export async function getAnalyticsSummary(
             activeDeals,
             concludedDeals,
             cancelledDeals,
-            averageTimeToClose: 0, // Complex to calc, skipping for now
+            averageTimeToClose: 0,
             conversionRate,
             weightedPipeline,
             slaBreach: {
@@ -204,5 +186,6 @@ export function useAnalytics(
     return useQuery({
         queryKey: ['analytics', dateFilter, teamFilter, typeFilter],
         queryFn: () => getAnalyticsSummary(dateFilter, teamFilter, typeFilter),
+        staleTime: 1000 * 60 * 10 // 10 minutos
     });
 }
