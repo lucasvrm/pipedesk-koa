@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Download, ChartLine, Target, Users, Funnel, ChartLineUp, PresentationChart, Strategy, Handshake } from '@phosphor-icons/react'
+// CORREÇÃO: Adicionado 'Clock' aos imports abaixo
+import { Download, ChartLine, Target, Users, Funnel, ChartLineUp, PresentationChart, Strategy, Handshake, Clock } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 // IMPORTS DOS NOVOS GRÁFICOS
