@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlayerTrack, STAGE_LABELS, STAGE_PROBABILITIES, User } from '@/lib/types'
+import { PlayerTrack, User } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { SLAStatusBadge } from '@/components/SLAIndicator'
@@ -7,6 +7,7 @@ import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
 import { canViewPlayerName } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
+import { useStages } from '@/services/pipelineService'
 
 interface PlayerTracksListProps {
   tracks: PlayerTrack[]
@@ -15,6 +16,7 @@ interface PlayerTracksListProps {
 
 export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksListProps) {
   const [selectedTrack, setSelectedTrack] = useState<PlayerTrack | null>(null)
+  const { data: stages = [] } = useStages()
 
   const canViewRealNames = currentUser ? canViewPlayerName(currentUser.role) : true
 
@@ -25,11 +27,17 @@ export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksLi
     return `Player ${String.fromCharCode(65 + index)}`
   }
 
+  // Helper para dados do estágio
+  const getStageInfo = (stageId: string) => {
+    return stages.find(s => s.id === stageId) || { name: stageId, probability: 0, color: '#94a3b8' }
+  }
+
   return (
     <>
       <div className="space-y-3">
         {tracks.map((track, index) => {
-          const probability = STAGE_PROBABILITIES[track.currentStage]
+          const stageInfo = getStageInfo(track.currentStage)
+          const probability = track.probability || stageInfo.probability || 0
           const weighted = calculateWeightedVolume(track.trackVolume, probability)
           const displayName = getDisplayName(track, index)
 
@@ -52,8 +60,9 @@ export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksLi
                         track.status === 'cancelled' && 'status-cancelled',
                         track.status === 'concluded' && 'status-concluded'
                       )}
+                      style={track.status === 'active' ? { backgroundColor: `${stageInfo.color}20`, color: stageInfo.color } : {}}
                     >
-                      {STAGE_LABELS[track.currentStage]}
+                      {stageInfo.name}
                     </Badge>
                     {track.status === 'active' && (
                       <SLAStatusBadge 

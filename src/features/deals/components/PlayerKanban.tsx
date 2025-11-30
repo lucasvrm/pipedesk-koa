@@ -1,51 +1,73 @@
 import { useTasks } from '@/services/taskService'
 import { useTracks } from '@/services/trackService'
-import { Task, PlayerStage, STAGE_LABELS } from '@/lib/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Task, PlayerStage } from '@/lib/types'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Flag, Calendar, LinkSimple, Warning } from '@phosphor-icons/react'
 import { formatDate } from '@/lib/helpers'
 import { toast } from 'sonner'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import CreateTaskDialog from '@/features/tasks/components/CreateTaskDialog'
+import { useStages } from '@/services/pipelineService'
 
 interface PlayerKanbanProps {
   playerTrackId: string
 }
 
-const KANBAN_STAGES: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing']
-
-const DEFAULT_WIP_LIMITS: Record<PlayerStage, number> = {
-  nda: 5,
-  analysis: 4,
-  proposal: 3,
-  negotiation: 3,
-  closing: 2,
-}
+const DEFAULT_WIP_LIMIT = 5
 
 export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
   const { data: tasks } = useTasks()
   const { data: playerTracks } = useTracks()
-  const [wipLimits, setWipLimits] = useState<Record<string, Record<PlayerStage, number>>>({})
+  const { data: stages = [] } = useStages()
+
+  const [wipLimits, setWipLimits] = useState<Record<string, Record<string, number>>>({})
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [editWipMode, setEditWipMode] = useState(false)
 
   const currentTrack = (playerTracks || []).find(t => t.id === playerTrackId)
-  const trackWipLimits = (wipLimits || {})[playerTrackId] || DEFAULT_WIP_LIMITS
+  
+  // Limites WIP por track
+  const trackWipLimits = (wipLimits || {})[playerTrackId] || {}
 
   const trackTasks = (tasks || []).filter(t => t.playerTrackId === playerTrackId)
 
-  const getTaskStage = (task: Task): PlayerStage => {
-    if (!currentTrack) return 'nda'
-    const currentStageIndex = KANBAN_STAGES.indexOf(currentTrack.currentStage)
-    return KANBAN_STAGES[Math.min(currentStageIndex, KANBAN_STAGES.length - 1)]
+  // O "Task Stage" aqui é uma inferência baseada na ordem dos estágios do pipeline
+  // Se a lógica anterior agrupava tarefas por fase do pipeline, precisamos saber a "fase" da tarefa.
+  // Como Task não tem fase, assumiremos que tarefas incompletas seguem o estágio atual do Track?
+  // Ou que este Kanban na verdade serve para visualizar tarefas AGRUPADAS pela fase em que o track estava?
+  // Sem histórico de "em qual fase a tarefa foi criada", a lógica original parecia arbitraria ou baseada no índice.
+  // Vou manter a lógica de distribuir tarefas nas colunas, mas como não temos metadados, 
+  // assumiremos que todas as tarefas "pertencem" ao estágio atual para fins de Kanban se não houver lógica melhor.
+  // CORREÇÃO: A lógica original `getTaskStage` parecia truncar tarefas em colunas futuras.
+  // Vou simplificar para: Tarefas não têm estágio, então este Kanban é visualmente estranho se as colunas forem PipelineStages.
+  // Mas para respeitar o pedido de "não quebrar", vou adaptar a lógica anterior usando os estágios dinâmicos.
+  
+  const getTaskStageId = (task: Task): string => {
+    if (!currentTrack || stages.length === 0) return 'unknown'
+    // Encontrar índice do estágio atual
+    const currentStageIndex = stages.findIndex(s => s.id === currentTrack.currentStage)
+    if (currentStageIndex === -1) return stages[0]?.id
+
+    // Lógica original: tarefas ficam limitadas visualmente até o estágio atual
+    // Como não podemos saber a qual estágio a tarefa "pertence", vamos colocá-las no estágio atual do Track
+    return currentTrack.currentStage
   }
 
-  const tasksByStage = (stageName: PlayerStage) => {
-    return trackTasks.filter(t => !t.completed && getTaskStage(t) === stageName)
+  // Filtrar tarefas por ID do estágio
+  const tasksByStage = (stageId: string) => {
+    // A lógica original era muito específica. Para um Kanban de Tarefas útil, 
+    // normalmente queremos colunas "Todo", "Doing", "Done".
+    // Se o usuário quer colunas baseadas nos Estágios do Pipeline, isso implica que tarefas são vinculadas a fases.
+    // Como não são, vou renderizar as colunas do pipeline, mas as tarefas ficarão todas na coluna do estágio atual do track.
+    if (!currentTrack) return []
+    if (stageId === currentTrack.currentStage) {
+        return trackTasks.filter(t => !t.completed)
+    }
+    return []
   }
 
   const completedTasks = trackTasks.filter(t => t.completed)
@@ -58,46 +80,31 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
     e.preventDefault()
   }
 
-  const handleDrop = (targetStage: PlayerStage) => {
+  const handleDrop = (targetStageId: string) => {
     if (!draggedTask || !currentTrack) return
-
-    const targetTasks = tasksByStage(targetStage)
-    const wipLimit = trackWipLimits[targetStage]
-
-    if (targetTasks.length >= wipLimit && getTaskStage(draggedTask) !== targetStage) {
-      toast.error(`Limite WIP atingido para ${STAGE_LABELS[targetStage]} (${wipLimit} tarefas)`)
-      setDraggedTask(null)
-      return
-    }
-
-    const targetStageIndex = KANBAN_STAGES.indexOf(targetStage)
-    const currentStageIndex = KANBAN_STAGES.indexOf(currentTrack.currentStage)
-
-    if (targetStageIndex > currentStageIndex) {
-      toast.error('Não é possível mover tarefas para estágios futuros')
-      setDraggedTask(null)
-      return
-    }
-
-    toast.success(`Tarefa movida para ${STAGE_LABELS[targetStage]}`)
+    // Como tasks não têm estágio, mover elas no Kanban de PipelineStages não faz sentido persistente.
+    // Apenas emitimos o toast como na versão original.
+    toast.error('Tarefas são vinculadas ao estágio atual do Player e não podem ser movidas entre fases retroativas/futuras manualmente.')
     setDraggedTask(null)
   }
 
-  const updateWipLimit = (stage: PlayerStage, limit: number) => {
+  const updateWipLimit = (stageId: string, limit: number) => {
     const newLimits = {
       ...(wipLimits || {}),
       [playerTrackId]: {
         ...trackWipLimits,
-        [stage]: Math.max(1, limit),
+        [stageId]: Math.max(1, limit),
       },
     }
     setWipLimits(newLimits)
   }
 
+  if (stages.length === 0) return <div>Carregando...</div>
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Kanban de Tarefas</h3>
+        <h3 className="text-lg font-semibold">Kanban de Tarefas (Por Fase)</h3>
         <div className="flex items-center gap-2">
           <Button
             variant={editWipMode ? 'secondary' : 'ghost'}
@@ -114,29 +121,30 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {KANBAN_STAGES.map((stage) => {
-          const stageTasks = tasksByStage(stage)
-          const wipLimit = trackWipLimits[stage]
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+        {stages.map((stage) => {
+          const stageTasks = tasksByStage(stage.id)
+          const wipLimit = trackWipLimits[stage.id] || DEFAULT_WIP_LIMIT
           const isOverLimit = stageTasks.length > wipLimit
           const isNearLimit = stageTasks.length >= wipLimit * 0.8
+          const isCurrentStage = currentTrack?.currentStage === stage.id
 
           return (
             <div
-              key={stage}
-              className="flex flex-col gap-3"
+              key={stage.id}
+              className={cn("flex flex-col gap-3 min-w-[200px]", !isCurrentStage && "opacity-50")}
               onDragOver={handleDragOver}
-              onDrop={() => handleDrop(stage)}
+              onDrop={() => handleDrop(stage.id)}
             >
               <div className="flex items-center justify-between px-2">
-                <h4 className="font-semibold text-sm">{STAGE_LABELS[stage]}</h4>
+                <h4 className="font-semibold text-sm truncate" title={stage.name}>{stage.name}</h4>
                 <div className="flex items-center gap-2">
                   {editWipMode ? (
                     <Input
                       type="number"
                       min="1"
                       value={wipLimit}
-                      onChange={(e) => updateWipLimit(stage, parseInt(e.target.value))}
+                      onChange={(e) => updateWipLimit(stage.id, parseInt(e.target.value))}
                       className="w-12 h-6 text-xs text-center p-1"
                     />
                   ) : (
@@ -152,13 +160,13 @@ export default function PlayerKanban({ playerTrackId }: PlayerKanbanProps) {
 
               <div className={`space-y-2 min-h-[200px] p-2 rounded-lg border ${isOverLimit
                   ? 'bg-destructive/5 border-destructive'
-                  : draggedTask && stageTasks.length < wipLimit
+                  : draggedTask && stageTasks.length < wipLimit && isCurrentStage
                     ? 'bg-primary/5 border-primary border-dashed'
                     : 'bg-muted/30 border-dashed'
                 }`}>
                 {stageTasks.length === 0 ? (
                   <div className="text-center py-8 text-xs text-muted-foreground">
-                    Nenhuma tarefa
+                    {isCurrentStage ? "Nenhuma tarefa ativa" : "—"}
                   </div>
                 ) : (
                   stageTasks.map((task) => {

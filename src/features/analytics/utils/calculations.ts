@@ -1,4 +1,4 @@
-import { MasterDeal, PlayerTrack, STAGE_PROBABILITIES, PlayerStage } from '@/lib/types'
+import { MasterDeal, PlayerTrack, PlayerStage } from '@/lib/types'
 import { calculateWeightedVolume } from '@/lib/helpers'
 
 /**
@@ -12,12 +12,13 @@ export function calculatePipelineValue(tracks: PlayerTrack[]): number {
 
 /**
  * Calculate weighted pipeline (sum of weighted forecast for all active tracks)
+ * Uses the probability stored in the track snapshot
  */
 export function calculateWeightedPipeline(tracks: PlayerTrack[]): number {
   return tracks
     .filter(track => track.status === 'active')
     .reduce((sum, track) => {
-      return sum + calculateWeightedVolume(track.trackVolume, track.probability)
+      return sum + calculateWeightedVolume(track.trackVolume, track.probability || 0)
     }, 0)
 }
 
@@ -33,20 +34,16 @@ export function calculateConversionRate(deals: MasterDeal[]): number {
 
 /**
  * Group tracks by stage
+ * Dynamically counts based on stages present in tracks
  */
 export function groupTracksByStage(tracks: PlayerTrack[]): Record<PlayerStage, number> {
-  const result: Record<PlayerStage, number> = {
-    nda: 0,
-    analysis: 0,
-    proposal: 0,
-    negotiation: 0,
-    closing: 0,
-  }
+  const result: Record<string, number> = {}
 
   tracks
     .filter(track => track.status === 'active')
     .forEach(track => {
-      result[track.currentStage]++
+      const stage = track.currentStage || 'unknown'
+      result[stage] = (result[stage] || 0) + 1
     })
 
   return result
@@ -72,6 +69,7 @@ export function calculateAverageTimeToClose(deals: MasterDeal[]): number {
 
 /**
  * Calculate forecast for a specific stage
+ * Uses the probability stored in the track snapshot
  */
 export function calculateStageForecast(
   tracks: PlayerTrack[],
@@ -80,8 +78,8 @@ export function calculateStageForecast(
   return tracks
     .filter(track => track.status === 'active' && track.currentStage === stage)
     .reduce((sum, track) => {
-      const probability = STAGE_PROBABILITIES[stage]
-      return sum + calculateWeightedVolume(track.trackVolume, probability)
+      // Usamos a probabilidade do snapshot do track, que é atualizada quando muda de estágio
+      return sum + calculateWeightedVolume(track.trackVolume, track.probability || 0)
     }, 0)
 }
 

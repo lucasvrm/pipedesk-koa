@@ -5,39 +5,29 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/helpers'
 import { useTracks } from '@/services/trackService'
-import { PlayerStage } from '@/lib/types'
-
-const FUNNEL_COLORS = ['#94a3b8', '#60a5fa', '#f59e0b', '#a855f7', '#10b981'];
-
-// Definição local dos labels para corrigir erro de importação
-const STAGE_LABELS: Record<string, string> = {
-  nda: 'NDA',
-  analysis: 'Análise',
-  proposal: 'Proposta',
-  negotiation: 'Negociação',
-  closing: 'Fechamento'
-};
+import { useStages } from '@/services/pipelineService'
 
 export function ConversionFunnel() {
   const { data: tracks } = useTracks()
+  const { data: stages = [] } = useStages()
 
   const data = useMemo(() => {
-    if (!tracks) return [];
+    if (!tracks || !stages.length) return [];
 
-    const stages: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'];
-    
-    return stages.map((stage, index) => {
-      const stageTracks = tracks.filter(t => t.currentStage === stage && t.status === 'active');
+    // Mapeia os estágios definidos no banco, respeitando a ordem
+    return stages.map((stage) => {
+      const stageTracks = tracks.filter(t => t.currentStage === stage.id && t.status === 'active');
       const volume = stageTracks.reduce((sum, t) => sum + (t.trackVolume || 0), 0);
 
       return {
-        stage: STAGE_LABELS[stage] || stage,
+        stage: stage.name, // Nome dinâmico
+        stageId: stage.id,
         volume,
         count: stageTracks.length,
-        fill: FUNNEL_COLORS[index]
+        fill: stage.color || '#94a3b8' // Cor dinâmica do banco
       };
     });
-  }, [tracks]);
+  }, [tracks, stages]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

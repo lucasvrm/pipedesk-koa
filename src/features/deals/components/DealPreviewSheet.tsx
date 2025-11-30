@@ -7,10 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
   MasterDeal, 
   PlayerTrack, 
-  STAGE_LABELS, 
   OPERATION_LABELS, 
-  STATUS_LABELS, 
-  PlayerStage 
+  STATUS_LABELS 
 } from '@/lib/types'
 import { formatCurrency, formatDate, getInitials } from '@/lib/helpers'
 import { 
@@ -18,7 +16,6 @@ import {
   PencilSimple, 
   Buildings, 
   CalendarBlank, 
-  Tag as TagIcon, 
   Money, 
   TrendUp,
   X,
@@ -30,6 +27,7 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useComments } from '@/services/commentService' 
+import { useStages } from '@/services/pipelineService'
 
 interface DealPreviewSheetProps {
   deal: MasterDeal | null
@@ -39,20 +37,10 @@ interface DealPreviewSheetProps {
   onEdit: (deal: MasterDeal) => void
 }
 
-const getStageColor = (stage: PlayerStage) => {
-  switch (stage) {
-    case 'closing': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-    case 'negotiation': return 'text-amber-600 bg-amber-50 border-amber-200';
-    case 'proposal': return 'text-blue-600 bg-blue-50 border-blue-200';
-    default: return 'text-slate-600 bg-slate-50 border-slate-200';
-  }
-}
-
 export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: DealPreviewSheetProps) {
   const navigate = useNavigate()
-  
-  // Hook de comentários usando o service correto
   const { data: comments, isLoading: isLoadingComments } = useComments(deal?.id, 'deal')
+  const { data: stages = [] } = useStages()
 
   if (!deal) return null
 
@@ -69,7 +57,6 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
     navigate(`/deals/${deal.id}`)
   }
 
-  // Navegação para Empresa
   const handleCompanyClick = () => {
     if (deal.company?.id) {
         onClose()
@@ -77,10 +64,14 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
     }
   }
 
-  // Navegação para Track
   const handleTrackClick = (trackId: string) => {
       onClose()
       navigate(`/tracks/${trackId}`)
+  }
+
+  // Helper para recuperar nome e cor do estágio
+  const getStageInfo = (stageId: string) => {
+    return stages.find(s => s.id === stageId) || { name: stageId, color: '#94a3b8' }
   }
 
   return (
@@ -112,7 +103,6 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
               </SheetTitle>
               <SheetDescription className="flex items-center gap-2 text-base font-medium text-muted-foreground">
                 <Buildings className="h-4 w-4 shrink-0" />
-                {/* 1. NOME DO CLIENTE CLICÁVEL */}
                 <span 
                     className={cn(
                         "truncate transition-colors", 
@@ -131,7 +121,6 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
         <ScrollArea className="flex-1">
           <div className="flex flex-col gap-6 p-6">
             
-            {/* GRID FINANCEIRO */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
@@ -203,7 +192,6 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                   )}
                 </div>
 
-                {/* 3. BOTÕES REPOSICIONADOS (Abaixo da descrição, acima dos comentários) */}
                 <div className="grid grid-cols-2 gap-3 py-2">
                     <Button variant="outline" onClick={() => onEdit(deal)} className="w-full h-9">
                     <PencilSimple className="mr-2 h-4 w-4" />
@@ -260,35 +248,37 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
               <TabsContent value="players" className="mt-4 space-y-3">
                 {sortedTracks.length > 0 ? (
                   <div className="flex flex-col gap-2">
-                    {sortedTracks.map(track => (
-                      <div 
-                        key={track.id} 
-                        // 2b. TRACK CLICÁVEL
-                        onClick={() => handleTrackClick(track.id)}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <Avatar className="h-8 w-8 border bg-muted">
-                            <AvatarFallback className="text-xs font-bold text-muted-foreground">
-                              {getInitials(track.playerName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={track.playerName}>
-                              {track.playerName}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <TrendUp size={10} />
-                              {track.probability}% Probabilidade
-                            </span>
+                    {sortedTracks.map(track => {
+                      const stageInfo = getStageInfo(track.currentStage);
+                      return (
+                        <div 
+                          key={track.id} 
+                          onClick={() => handleTrackClick(track.id)}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <Avatar className="h-8 w-8 border bg-muted">
+                              <AvatarFallback className="text-xs font-bold text-muted-foreground">
+                                {getInitials(track.playerName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={track.playerName}>
+                                {track.playerName}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <TrendUp size={10} />
+                                {track.probability || stageInfo.probability || 0}% Probabilidade
+                              </span>
+                            </div>
                           </div>
-                        </div>
 
-                        <Badge variant="outline" className={cn("text-[10px] font-medium border capitalize whitespace-nowrap", getStageColor(track.currentStage))}>
-                          {STAGE_LABELS[track.currentStage]}
-                        </Badge>
-                      </div>
-                    ))}
+                          <Badge variant="outline" className="text-[10px] font-medium border capitalize whitespace-nowrap" style={{ borderColor: stageInfo.color, color: stageInfo.color }}>
+                            {stageInfo.name}
+                          </Badge>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-12 border-2 border-dashed rounded-lg bg-slate-50/50">

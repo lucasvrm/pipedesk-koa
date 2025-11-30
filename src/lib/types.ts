@@ -2,7 +2,6 @@ export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
 
 export type DealStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
 
-// ALTERAÇÃO: Agora é string para suportar estágios dinâmicos do banco
 export type PlayerStage = string
 
 export type OperationType =
@@ -46,14 +45,13 @@ export interface User {
   docServiceAgreementUrl?: string
 }
 
-// ALTERAÇÃO: Adicionado campo probability
 export interface PipelineStage {
   id: string
   pipelineId: string | null
   name: string
   color: string
   stageOrder: number
-  probability: number // Novo campo
+  probability: number
   isDefault: boolean
   createdAt: string
   updatedAt: string
@@ -150,8 +148,6 @@ export interface Notification {
   createdAt: string
 }
 
-// REMOVIDO: STAGE_PROBABILITIES (Agora vem do banco na interface PipelineStage)
-
 export interface StageHistory {
   id: string
   playerTrackId: string
@@ -228,8 +224,6 @@ export interface CalendarEvent {
   synced: boolean
   createdAt: string
 }
-
-// REMOVIDO: STAGE_LABELS (O label é o próprio nome do estágio no banco)
 
 export const STATUS_LABELS: Record<DealStatus, string> = {
   active: 'Ativo',

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
+import { ChartContainer } from '@/components/ui/chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PlayerStage } from '@/lib/types'
+import { useStages } from '@/services/pipelineService'
 
 interface DealsByStageChartProps {
   data: {
@@ -19,16 +20,9 @@ interface ChartDataItem {
   count: number
 }
 
-const STAGE_COLORS: Record<PlayerStage, string> = {
-  nda: 'hsl(var(--chart-1))',
-  analysis: 'hsl(var(--chart-2))',
-  proposal: 'hsl(var(--chart-3))',
-  negotiation: 'hsl(var(--chart-4))',
-  closing: 'hsl(var(--chart-5))',
-}
-
 export default function DealsByStageChart({ data, onStageClick }: DealsByStageChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const { data: stages = [] } = useStages()
 
   const handleBarClick = (entry: ChartDataItem) => {
     if (onStageClick && entry.stage) {
@@ -48,6 +42,12 @@ export default function DealsByStageChart({ data, onStageClick }: DealsByStageCh
     count: {
       label: 'Quantidade',
     },
+  }
+
+  // Helper para cor
+  const getStageColor = (stageId: string) => {
+    const stage = stages.find(s => s.id === stageId)
+    return stage?.color || 'hsl(var(--primary))'
   }
 
   return (
@@ -102,7 +102,7 @@ export default function DealsByStageChart({ data, onStageClick }: DealsByStageCh
                 {data.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={STAGE_COLORS[entry.stage]}
+                    fill={getStageColor(entry.stage)}
                     opacity={activeIndex === null || activeIndex === index ? 1 : 0.6}
                   />
                 ))}

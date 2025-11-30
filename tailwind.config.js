@@ -18,8 +18,7 @@ const defaultTheme = {
     padding: "2rem",
   },
   extend: {
-    // REMOVIDO: screens customizados com 'raw' removidos pois quebram a geração automática 
-    // da classe .container (causando erro "Unexpected token ParenthesisBlock")
+    // CORREÇÃO: 'screens' removido. O uso de 'raw' estava quebrando o processamento CSS no build.
     colors: {
       neutral: {
         1: "var(--color-neutral-1)",
