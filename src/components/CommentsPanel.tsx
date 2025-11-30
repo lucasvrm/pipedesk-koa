@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 
 interface CommentsPanelProps {
   entityId: string
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead' | 'company'
   currentUser: any
 }
 

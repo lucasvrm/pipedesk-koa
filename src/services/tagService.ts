@@ -150,7 +150,7 @@ export async function getEntityTags(entityId: string): Promise<Tag[]> {
 
 // --- Hooks React Query ---
 
-export function useTags(entityType?: 'deal' | 'track' | 'global') {
+export function useTags(entityType?: 'deal' | 'track' | 'global' | 'lead') {
   return useQuery({
     queryKey: ['tags', entityType],
     queryFn: () => getTags(entityType),

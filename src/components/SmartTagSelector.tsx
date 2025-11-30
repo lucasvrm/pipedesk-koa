@@ -21,7 +21,7 @@ import { useTags, useTagOperations, TAG_COLORS } from "@/services/tagService"
 import { toast } from "sonner"
 
 interface SmartTagSelectorProps {
-  entityType: 'deal' | 'track'
+  entityType: 'deal' | 'track' | 'lead'
   entityId: string
   selectedTagIds: string[]
   open: boolean
