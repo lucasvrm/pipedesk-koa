@@ -30,11 +30,6 @@ export interface ContactWithCompany extends Contact {
 // ============================================================================
 
 function mapContactFromDB(item: any): ContactWithCompany {
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function mapContactFromDB(item: any): Contact {
   return {
     id: item.id,
     companyId: item.company_id,
@@ -65,17 +60,6 @@ export async function getContacts(companyId?: string): Promise<ContactWithCompan
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
-  if (error) throw error;
-
-
-export async function getContacts(companyId?: string): Promise<Contact[]> {
-  let query = supabase.from('contacts').select('*');
-
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
-
-  const { data, error } = await query.order('name');
   if (error) throw error;
 
   return data.map(mapContactFromDB);
@@ -146,16 +130,6 @@ export async function deleteContact(id: string) {
 // ============================================================================
 // Hooks
 // ============================================================================
-
-export function useContacts(companyId?: string) {
-  return useQuery({
-    queryKey: ['contacts', companyId],
-    queryFn: () => getContacts(companyId)
-  });
-}
-
-export function useContact(id?: string) {
-  return useQuery({
 
 export function useContacts(companyId?: string) {
   return useQuery({

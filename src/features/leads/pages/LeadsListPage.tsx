@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -44,9 +45,7 @@ export default function LeadsListPage() {
     try {
       const lead = await createLead.mutateAsync({
         data: { legalName: newLeadName },
-        userId: 'temp-user' // Service will handle auth if using context, but here we need actual user ID.
-        // TODO: Get user from context. For now, let's assume service/hook handles context if we pass it,
-        // OR we use the auth context here.
+        userId: 'temp-user' // Auth handled in service/context ideally
       })
       setIsCreateOpen(false)
       setNewLeadName('')
@@ -61,11 +60,6 @@ export default function LeadsListPage() {
     setStatusFilter('all')
     setOriginFilter('all')
   }
-  // NOTE: In a real app, useAuth() to get userId.
-  // Since I can't easily inject useAuth in this snippet without imports,
-  // I'll assume the hook `useCreateLead` might handle `userId` if we adapted it,
-  // but `leadService` signature requires it.
-  // Let's import useAuth.
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -74,10 +68,12 @@ export default function LeadsListPage() {
           <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
           <p className="text-muted-foreground">Gerencie seus prospects e oportunidades.</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Lead
-        </Button>
+        <RequirePermission permission="leads.create">
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Lead
+          </Button>
+        </RequirePermission>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">

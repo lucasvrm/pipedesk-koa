@@ -97,8 +97,6 @@ function mapLeadFromDB(item: any): Lead {
 
 export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
   let query = supabase
-export async function getLeads(): Promise<Lead[]> {
-  const { data, error } = await supabase
     .from('leads')
     .select(`
       *,
@@ -125,8 +123,6 @@ export async function getLeads(): Promise<Lead[]> {
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data.map(mapLeadFromDB);
@@ -259,8 +255,6 @@ export function useLeads(filters?: LeadFilters) {
     queryKey: ['leads', filters],
     queryFn: () => getLeads(filters)
   });
-export function useLeads() {
-  return useQuery({ queryKey: ['leads'], queryFn: getLeads });
 }
 
 export function useLead(id: string) {

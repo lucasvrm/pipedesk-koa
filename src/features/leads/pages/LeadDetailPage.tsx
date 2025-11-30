@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, CheckCircle, XCircle, User, Building, Phone, Envelope } from '@phosphor-icons/react'
 import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS } from '@/lib/types'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
+import CommentsPanel from '@/components/CommentsPanel'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -53,14 +55,18 @@ export default function LeadDetailPage() {
         <div className="flex items-center gap-2">
           {lead.status === 'new' || lead.status === 'contacted' ? (
             <>
-              <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleDisqualify}>
-                <XCircle className="mr-2 h-4 w-4" />
-                Desqualificar
-              </Button>
-              <Button onClick={() => setQualifyOpen(true)} className="bg-green-600 hover:bg-green-700">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Qualificar
-              </Button>
+              <RequirePermission permission="leads.update">
+                <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleDisqualify}>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Desqualificar
+                </Button>
+              </RequirePermission>
+              <RequirePermission permission="leads.qualify">
+                <Button onClick={() => setQualifyOpen(true)} className="bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Qualificar
+                </Button>
+              </RequirePermission>
             </>
           ) : lead.status === 'qualified' ? (
              <Button variant="outline" onClick={() => navigate(`/companies/${lead.qualifiedCompanyId}`)}>
@@ -110,16 +116,16 @@ export default function LeadDetailPage() {
                </CardContent>
              </Card>
 
-             <Tabs defaultValue="activity">
+             <Tabs defaultValue="comments">
                <TabsList>
+                 <TabsTrigger value="comments">Comentários</TabsTrigger>
                  <TabsTrigger value="activity">Atividades</TabsTrigger>
-                 <TabsTrigger value="notes">Notas</TabsTrigger>
                </TabsList>
+               <TabsContent value="comments" className="space-y-4">
+                 {user && <CommentsPanel entityId={lead.id} entityType="lead" currentUser={user} />}
+               </TabsContent>
                <TabsContent value="activity" className="p-4 border rounded-md bg-card min-h-[200px]">
                  <p className="text-muted-foreground text-center">Timeline de atividades (Em breve)</p>
-               </TabsContent>
-               <TabsContent value="notes" className="p-4 border rounded-md bg-card min-h-[200px]">
-                 <p className="text-muted-foreground text-center">Notas (Em breve)</p>
                </TabsContent>
              </Tabs>
           </div>
