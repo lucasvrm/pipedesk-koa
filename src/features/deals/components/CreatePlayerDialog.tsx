@@ -1,18 +1,16 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useCreateTrack } from '@/services/trackService'
-import { useStages } from '@/services/pipelineService'
-import { usePlayers } from '@/services/playerService'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -20,163 +18,188 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { MasterDeal, PlayerStage } from '@/lib/types'
-import { toast } from 'sonner'
-import { ArrowLeft, Plus } from '@phosphor-icons/react'
-import PlayerSelect from '@/components/PlayerSelect' // Importação Default agora funciona
-import { formatCurrency } from '@/lib/helpers'
+} from "@/components/ui/select";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createDeal } from "@/services/dealService";
+import { toast } from "sonner";
+import PlayerSelect from "@/components/PlayerSelect"; // CORRIGIDO: Importação Default
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext"; // Importando contexto de autenticação
 
-// --- SCHEMA ---
+// Schema de validação
 const formSchema = z.object({
-  playerName: z.string().min(1, 'O nome é obrigatório'),
-  playerId: z.string().optional(),
-  trackVolume: z.string().optional(), // String para lidar com a máscara
-  currentStage: z.string().min(1, 'Selecione um estágio'),
-  notes: z.string().optional(),
-})
+  title: z.string().min(1, "O título é obrigatório"), // Mapeia para clientName
+  description: z.string().optional(), // Mapeia para observations
+  amount: z.string().transform((val) => {
+    if (!val) return 0;
+    // Remove R$, espaços e converte vírgula para ponto
+    const number = parseFloat(val.replace(/[^\d.,]/g, "").replace(",", "."));
+    return isNaN(number) ? 0 : number;
+  }), // Mapeia para volume
+  stage: z.string().min(1, "A fase é obrigatória"),
+  player_id: z.string().optional(), // Opcional: só cria track se preenchido
+});
 
-type FormValues = z.infer<typeof formSchema>
-
-interface CreatePlayerDialogProps {
-  masterDeal: MasterDeal
-  open: boolean
-  onOpenChange: (open: boolean) => void
+interface CreateDealDialogProps {
+  children?: React.ReactNode;
+  defaultStage?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const maskCurrencyInput = (value: string) => {
-  const cleanValue = value.replace(/\D/g, '')
-  const numberValue = Number(cleanValue) / 100
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numberValue)
-}
+export function CreateDealDialog({ 
+  children, 
+  defaultStage = "prospect",
+  open: controlledOpen,
+  onOpenChange: setControlledOpen
+}: CreateDealDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth(); // Obtendo usuário logado
+  
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? setControlledOpen : setInternalOpen;
 
-export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: CreatePlayerDialogProps) {
-  const createTrackMutation = useCreateTrack()
-  const { data: stages = [], isLoading: isLoadingStages } = useStages()
-  const { data: players } = usePlayers()
-
-  const form = useForm<FormValues>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      playerName: '',
-      playerId: undefined,
-      trackVolume: masterDeal.volume ? maskCurrencyInput(masterDeal.volume.toString()) : '',
-      currentStage: stages.find(s => s.isDefault)?.id || stages[0]?.id || '',
-      notes: '',
+      title: "",
+      description: "",
+      amount: "0",
+      stage: defaultStage,
+      player_id: "", 
     },
-  })
+  });
 
-  useEffect(() => {
-    if (stages.length > 0 && form.formState.isDirty === false) {
-        const defaultStageId = stages.find(s => s.isDefault)?.id || stages[0]?.id
-        form.setValue('currentStage', defaultStageId || '')
+  const createDealMutation = useMutation({
+    mutationFn: createDeal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deals"] });
+      // Invalida tracks também, caso um tenha sido criado
+      queryClient.invalidateQueries({ queryKey: ["player-tracks"] });
+      toast.success("Negócio criado com sucesso!");
+      setOpen(false);
+      form.reset();
+    },
+    onError: (error) => {
+      console.error("Erro ao criar negócio:", error);
+      toast.error("Erro ao criar negócio. Tente novamente.");
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user?.id) {
+      toast.error("Erro de autenticação. Recarregue a página.");
+      return;
     }
-  }, [stages, form])
 
-  const onSubmit = async (values: FormValues) => {
-    const rawVolume = values.trackVolume
-      ? parseFloat(values.trackVolume.replace(/[^\d,]/g, '').replace(',', '.'))
-      : masterDeal.volume || 0
+    // Mapeamento dos campos do formulário para o formato esperado pelo serviço (DealInput)
+    createDealMutation.mutate({
+      clientName: values.title,      // title -> clientName
+      observations: values.description, // description -> observations
+      volume: values.amount,         // amount -> volume
+      createdBy: user.id,            // ID do usuário logado
       
-    const selectedStage = stages.find(s => s.id === values.currentStage)
-    const probability = selectedStage?.probability || 0
-
-    try {
-      await createTrackMutation.mutateAsync({
-        masterDealId: masterDeal.id,
-        playerName: values.playerName,
-        playerId: values.playerId,
-        trackVolume: rawVolume,
-        currentStage: values.currentStage,
-        probability: probability,
-        notes: values.notes,
-        status: 'active',
-        responsibles: masterDeal.responsibles?.map(u => u.id) || []
-      })
-
-      toast.success('Novo player adicionado com sucesso!')
-      form.reset()
-      onOpenChange(false)
-    } catch (error) {
-      toast.error('Erro ao adicionar novo player')
-    }
+      // Campos específicos da nova lógica
+      initialStage: values.stage,
+      playerId: values.player_id && values.player_id.length > 0 ? values.player_id : undefined,
+      
+      // Valores padrão obrigatórios
+      operationType: 'acquisition', // Pode virar campo no form futuramente
+      status: 'active'
+    });
   }
 
-  const handlePlayerSelect = (player) => {
-    form.setValue('playerName', player.name, { shouldValidate: true, shouldDirty: true })
-    form.setValue('playerId', player.id, { shouldValidate: true, shouldDirty: true })
-  }
-
-  const handlePlayerDeselect = () => {
-    form.setValue('playerName', '', { shouldValidate: true, shouldDirty: true })
-    form.setValue('playerId', undefined, { shouldValidate: true, shouldDirty: true })
-  }
-
+  const handleCreateNewPlayer = () => {
+    setOpen(false);
+    navigate("/players"); 
+    toast.info("Crie o player na aba de Players e retorne para vincular.");
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Adicionar Novo Player</DialogTitle>
+          <DialogTitle>Novo Negócio (Master Deal)</DialogTitle>
+          <DialogDescription>
+            Cadastre um novo ativo ou projeto. Se já houver um investidor líder, selecione-o abaixo.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             
-            <div className="text-sm text-muted-foreground border-b pb-3">
-              Deal: <span className="font-semibold text-foreground">{masterDeal.clientName} ({formatCurrency(masterDeal.volume)})</span>
-            </div>
-
-            {/* SELEÇÃO DE PLAYER EXISTENTE */}
-            <PlayerSelect
-                label="Vincular a um Player existente"
-                players={players || []}
-                selectedPlayerId={form.watch('playerId')}
-                onSelect={handlePlayerSelect}
-                onDeselect={handlePlayerDeselect}
-                disabled={form.formState.isSubmitting}
-            />
-
-            {/* NOME DO PLAYER (manual ou preenchido) */}
+            {/* Título do Negócio */}
             <FormField
               control={form.control}
-              name="playerName"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Player</FormLabel>
+                  <FormLabel>Título do Projeto / Ativo <span className="text-red-500">*</span></FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Fundo X" {...field} />
+                    <Input placeholder="Ex: Venda Hospital Santa Clara" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* VOLUME */}
+            {/* Seletor de Player (Opcional) */}
+            <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
               <FormField
                 control={form.control}
-                name="trackVolume"
+                name="player_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Volume (R$)</FormLabel>
+                    <div className="flex items-center justify-between mb-1">
+                      <FormLabel className="font-semibold text-primary">Lead Investor (Opcional)</FormLabel>
+                      <span className="text-[11px] text-muted-foreground bg-background px-2 py-0.5 rounded border">
+                        Cria Track Automático
+                      </span>
+                    </div>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="R$ 0,00"
-                        onChange={(e) => {
-                          const masked = maskCurrencyInput(e.target.value)
-                          field.onChange(masked)
-                        }}
+                      <PlayerSelect 
+                        value={field.value || ""} 
+                        onChange={field.onChange}
+                        onCheckNew={handleCreateNewPlayer}
+                      />
+                    </FormControl>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      Deixe vazio se estiver apenas cadastrando o ativo para prospecção futura.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Grid de Valor e Fase */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor Estimado (R$)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="0,00" 
+                        {...field} 
+                        // Pequeno hack para permitir digitar livremente e só formatar no submit
+                        onChange={(e) => field.onChange(e)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -184,29 +207,24 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
                 )}
               />
 
-              {/* ESTÁGIO DINÂMICO */}
               <FormField
                 control={form.control}
-                name="currentStage"
+                name="stage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estágio Inicial</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Fase Inicial <span className="text-red-500">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger disabled={isLoadingStages}>
-                          <SelectValue placeholder="Selecione o estágio" />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a fase" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {stages.length === 0 ? (
-                            <div className="p-2 text-center text-muted-foreground text-xs">Carregando estágios...</div>
-                        ) : (
-                            stages.map((stage) => (
-                                <SelectItem key={stage.id} value={stage.id}>
-                                    {stage.name} ({stage.probability}%)
-                                </SelectItem>
-                            ))
-                        )}
+                        <SelectItem value="prospect">Prospecção / NDA</SelectItem>
+                        <SelectItem value="active">Em Análise (Active)</SelectItem>
+                        <SelectItem value="proposal">Proposta (NBO)</SelectItem>
+                        <SelectItem value="negotiation">Negociação (Binding)</SelectItem>
+                        <SelectItem value="closing">Fechamento / Assinatura</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -215,32 +233,40 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
               />
             </div>
 
+            {/* Descrição */}
             <FormField
               control={form.control}
-              name="notes"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notas Iniciais</FormLabel>
+                  <FormLabel>Descrição e Observações</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Observações sobre o player..." {...field} />
+                    <Textarea
+                      placeholder="Detalhes importantes, teses de investimento ou notas iniciais..."
+                      className="resize-none min-h-[100px]"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createTrackMutation.isPending || isLoadingStages}>
-                <Plus className="mr-2 h-4 w-4" />
-                {createTrackMutation.isPending ? 'Adicionando...' : 'Criar Player'}
+              <Button type="submit" disabled={createDealMutation.isPending}>
+                {createDealMutation.isPending ? "Processando..." : "Criar Master Deal"}
               </Button>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
