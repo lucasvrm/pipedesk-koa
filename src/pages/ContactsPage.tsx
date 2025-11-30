@@ -160,6 +160,9 @@ export default function ContactsPage() {
         {(companyFilter !== 'all' || search) && (
            <Button variant="ghost" onClick={() => { setSearch(''); setCompanyFilter('all'); }}>Limpar</Button>
         )}
+        <Button variant="outline" size="icon">
+          <Funnel className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="border rounded-md bg-card">
@@ -172,24 +175,30 @@ export default function ContactsPage() {
               <TableHead>Contato</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead className="text-right">Ações</TableHead>
+              <TableHead>Cargo/Empresa</TableHead>
+              <TableHead>Contato</TableHead>
+              <TableHead>Origem</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : filteredContacts?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   Nenhum contato encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               filteredContacts?.map((contact) => (
                 <TableRow key={contact.id} className="hover:bg-muted/50 group">
+                <TableRow key={contact.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell>
                     <div className="font-medium flex items-center gap-2">
                        <User /> {contact.name}
@@ -210,6 +219,13 @@ export default function ContactsPage() {
                     {contact.companyType ? (
                       <Badge variant="outline">{COMPANY_TYPE_LABELS[contact.companyType as CompanyType] || contact.companyType}</Badge>
                     ) : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">{contact.role || '-'}</div>
+                    <div className="text-xs text-muted-foreground">
+                       {/* Ideally we would resolve company name here, but contact object only has companyId unless we join */}
+                       {/* For now, generic list */}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1 text-sm">
