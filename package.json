@@ -12,6 +12,7 @@
         "test": "vitest",
         "test:ui": "vitest --ui",
         "test:run": "vitest run",
+        "test:e2e": "playwright test",
         "optimize": "vite optimize",
         "preview": "vite preview",
         "generate-data": "tsx scripts/generate-synthetic-data.ts"
@@ -95,6 +96,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.21.0",
+        "@playwright/test": "^1.57.0",
         "@tailwindcss/postcss": "^4.1.8",
         "@testing-library/dom": "^10.4.1",
         "@testing-library/jest-dom": "^6.9.1",

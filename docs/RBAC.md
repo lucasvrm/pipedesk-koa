@@ -1,29 +1,56 @@
 # RBAC & Permissions Guide
 
-## Roles
-- **admin**: Full system access.
-- **analyst**: Can view and edit deals/tracks, but cannot manage system settings.
-- **newbusiness**: Can view deals/tracks and analytics.
-- **client**: Restricted access to their own data.
+## RBAC Contract (Governance)
+This section defines the **desired state** of the permissions system. All development must adhere to these rules.
 
-## Permissions
-Access is controlled via permissions linked to roles in the `role_permissions` table.
+### Permissions List
+| Module | Permission | Description |
+|--------|------------|-------------|
+| **Tracks** | `tracks.view` | View tracks and track details. |
+| | `tracks.create` | Create new tracks. |
+| | `tracks.update` | Update existing tracks. |
+| | `tracks.manage` | Full administration of tracks (includes delete/settings). |
+| **Pipeline** | `pipeline.manage` | Access Pipeline Settings page (`/admin/pipeline`). |
+| | `pipeline.update` | Update stages, SLAs, and transitions. |
+| **Tags** | `tags.manage` | Access Tag Settings page (`/admin/tags`). |
+| | `tags.update` | Create/Edit/Delete global tags. |
+| **Custom Fields**| `custom_fields.manage` | Access Custom Fields Settings page (`/custom-fields`). |
+| **RBAC** | `rbac.manage` | Manage Roles and Permissions (`/rbac` or `/admin/users`). |
+| **Leads** | `leads.view` | View leads list and details. |
+| | `leads.create` | Create new leads. |
+| | `leads.update` | Edit lead details. |
+| | `leads.qualify` | Execute lead qualification (convert to Deal). |
+| | `leads.manage` | Delete leads or manage configurations. |
+| **Contacts** | `contacts.view` | View contacts list and details. |
+| | `contacts.create` | Create new contacts. |
+| | `contacts.update` | Edit contact details. |
+| | `contacts.manage` | Delete contacts. |
 
-| Permission Code | Description | Default Roles |
-|-----------------|-------------|---------------|
-| `pipeline.manage` | Access to Pipeline Settings page (Admin UI). | admin |
-| `pipeline.update` | Ability to update stages, SLAs, and transitions. | admin |
-| `tags.manage` | Access to Tag Settings page (Admin UI). | admin |
-| `tags.update` | Ability to create/edit/delete global tags. | admin |
+---
 
-## Frontend Enforcement
-Use the `RequirePermission` component to protect routes or UI elements:
+## Implementation Coverage (Status)
+Current status of enforcement in the codebase.
 
-```tsx
-<RequirePermission permission="pipeline.manage" fallback={<Unauthorized />}>
-  <PipelineSettingsPage />
-</RequirePermission>
-```
+| Permission | Backend Enforcement (RLS/Service) | Frontend Guard (Route/UI) | Observations |
+|------------|-----------------------------------|---------------------------|--------------|
+| `tracks.*` | ✅ Enforced in DB | ❌ **Missing** | Route `/tracks/:id` has no check. |
+| `pipeline.*` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role) | |
+| `tags.*` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role) | |
+| `custom_fields.*`| ❌ **Missing** | ❌ **Missing** | |
+| `rbac.manage` | ⚠️ Assumed via `admin` role | ⚠️ Partial (`admin` Role) | |
+| `leads.*` | ✅ Enforced in DB (007) | ❌ **Pending UI** | New module. |
+| `contacts.*` | ✅ Enforced in DB (007) | ❌ **Pending UI** | New module. |
 
-## Backend Enforcement
-RLS policies and Service logic should enforce these constraints. Currently, most admin operations rely on the `admin` role check or the bound permissions.
+> **Key**:
+> - ✅ = Fully implemented and verified.
+> - ⚠️ = Implemented via "Role" check (Legacy) instead of granular Permission check.
+> - ❌ = Not enforced.
+
+---
+
+## Gaps (Backlog)
+The following items are required to reach full compliance with the RBAC Contract:
+
+1.  **Tracks**: Add `RequirePermission` guards to `TrackDetailPage` and `TracksList`.
+2.  **Custom Fields**: Seed `custom_fields.manage` permission and bind to admin.
+3.  **Leads/Contacts**: Ensure UI checks permissions before showing "Qualify" button or "Edit" forms.
