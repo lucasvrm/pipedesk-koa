@@ -666,6 +666,8 @@ export interface Lead {
   addressState?: string;
   description?: string;
 
+  operationType?: OperationType;
+
   status: LeadStatus;
   origin: LeadOrigin;
   ownerUserId?: string;
