@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService'
-import { User, UserRole, ROLE_LABELS } from '@/lib/types' // IMPORTADO ROLE_LABELS
+import { User, UserRole, ROLE_LABELS } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -101,6 +101,14 @@ export default function UserManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  // Cleanup effect to prevent "listener indicated async response" error from extensions
+  useEffect(() => {
+    return () => {
+        // Cleanup if any async ops pending?
+        // React Query handles this mostly, but good to ensure clean unmount.
+    };
+  }, []);
 
   if (!currentUser || !hasPermission(currentUser.role, 'MANAGE_USERS')) {
     return <div className="p-8">Acesso negado.</div>

@@ -16,7 +16,7 @@ const TABLE_MAP = {
   player_categories: 'player_categories',
   holidays: 'holidays',
   communication_templates: 'communication_templates',
-  app_settings: 'app_settings'
+  // REMOVED app_settings, managed via systemSettingsService or specifically below
 }
 
 type SettingType = keyof typeof TABLE_MAP
@@ -104,18 +104,18 @@ export const settingsService = {
   }
 }
 
-// --- FUNÇÕES DE AUTH SETTINGS (LEGADO/ESPECÍFICO) ---
+// --- FUNÇÕES DE AUTH SETTINGS (MIGRADO PARA SYSTEM_SETTINGS) ---
 
 export async function getAuthSettings(): Promise<AuthSettings> {
   try {
     const { data, error } = await supabase
-      .from('app_settings')
+      .from('system_settings') // FIX: Changed from app_settings
       .select('value')
       .eq('key', 'auth_config')
       .single()
 
     if (error) {
-      console.warn('Configurações de Auth não encontradas, usando padrão.')
+      console.warn('Configurações de Auth não encontradas em system_settings, usando padrão.')
       return { enableMagicLinks: true, restrictDomain: false }
     }
 
@@ -128,12 +128,16 @@ export async function getAuthSettings(): Promise<AuthSettings> {
 
 export async function updateAuthSettings(settings: AuthSettings): Promise<void> {
   try {
+    const { data: userData } = await supabase.auth.getUser();
+
     const { error } = await supabase
-      .from('app_settings')
+      .from('system_settings') // FIX: Changed from app_settings
       .upsert({
         key: 'auth_config',
         value: settings,
-        updated_at: new Date().toISOString()
+        description: 'Authentication settings',
+        updated_at: new Date().toISOString(),
+        updated_by: userData.user?.id
       })
 
     if (error) throw error

@@ -191,22 +191,45 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
-    if (error) {
-      if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
-        console.warn("Tabela deal_members não encontrada. Usando fallback.");
-        return getDealsFallback();
+    query = withoutDeleted(query);
+
+    // Filter by tags if provided
+    if (tagIds && tagIds.length > 0) {
+      const { data: matchingIds, error: matchError } = await supabase
+        .from('entity_tags')
+        .select('entity_id')
+        .eq('entity_type', 'deal')
+        .in('tag_id', tagIds);
+
+      if (matchError) throw matchError;
+
+      const ids = matchingIds.map((r: any) => r.entity_id);
+      if (ids.length > 0) {
+        query = query.in('id', ids);
+      } else {
+        return []; // No deals match
       }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    // Fallback removed/simplified because deal_members is now created by 006
+    if (error) {
+      console.error('Error in getDeals query:', error);
       throw error;
     }
 
     return (data || []).map((item: any) => mapDealFromDB(item));
   } catch (error) {
     console.error('Error fetching deals (with members):', error);
-    return getDealsFallback();
+    // Try basic fetch if join fails heavily?
+    // We assume 006 fixes the missing table, so standard error handling is preferred.
+    throw error;
   }
 }
 
 async function getDealsFallback(): Promise<Deal[]> {
+  // Keeping fallback for reference but ideally unreachable if 006 ran
   const { data, error } = await withoutDeleted(
     supabase
       .from('master_deals')
@@ -304,7 +327,8 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
           deal_id: masterDealData.id,
           user_id: deal.createdBy
         });
-      if (memberError) console.warn("Could not add creator to deal_members (migration missing?)", memberError.message);
+      // Now that deal_members exists, this should succeed. Log if not.
+      if (memberError) console.warn("Could not add creator to deal_members:", memberError.message);
     }
 
     if (deal.playerId) {
