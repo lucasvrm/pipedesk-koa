@@ -32,10 +32,10 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
 
   const getStageId = (trackStage: string) => {
     if (!trackStage) return 'unknown';
+    // Match by ID first, then slug, then fallback (though fallback might put things in wrong column if not careful)
     const stage = stages.find(s => s.id === trackStage) || 
-                  stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === trackStage) ||
-                  stages.find(s => s.isDefault);
-    return stage ? stage.id : 'unknown';
+                  stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === trackStage);
+    return stage ? stage.id : (stages.find(s => s.isDefault)?.id || 'unknown');
   }
 
   const columns = useMemo(() => {
@@ -45,6 +45,11 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
       if (track.status !== 'cancelled') {
         const stageId = getStageId(track.currentStage)
         if (cols[stageId]) cols[stageId].push(track)
+        else {
+            // Fallback: put in first column if stage mismatch
+            const first = stages[0]?.id;
+            if (first) cols[first].push(track);
+        }
       }
     })
     return cols
@@ -82,7 +87,7 @@ export default function DealPlayersKanban({ tracks, currentUser: propsUser }: De
         toast.success(`Movido para ${targetStageName}`)
         if (currentUser) logActivity(draggedTrack.masterDealId, 'track', `Movido para ${targetStageName}`, currentUser.id)
       },
-      onError: () => toast.error("Erro ao mover")
+      // Error is handled in the mutation hook (toast.error) but we can add specific handling here too
     })
     setDraggedTrack(null)
   }

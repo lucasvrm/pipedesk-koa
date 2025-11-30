@@ -45,7 +45,6 @@ import {
 import { toast } from 'sonner'
 
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
-// REMOVIDO: Import do antigo modal de Pipeline
 import { SLAConfigManager } from '@/components/SLAConfigManager'
 import GlobalSearch from '@/components/GlobalSearch'
 import InboxPanel from '@/features/inbox/components/InboxPanel'
@@ -62,14 +61,11 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  console.log("👤 [Layout] Renderizou. Profile ID:", profile?.id);
-
   useRealtimeNotifications(profile?.id);
 
   const [inboxOpen, setInboxOpen] = useState(false)
   const [createDealOpen, setCreateDealOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  // REMOVIDO: Estado do antigo modal de pipeline
   const [slaConfigOpen, setSlaConfigOpen] = useState(false)
   const [compactMode, setCompactMode] = useState(false)
 
@@ -202,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
             </Button>
 
             <Button
-              variant="ghost"
+              variant={ghost}
               size="icon"
               className="relative"
               onClick={() => setInboxOpen(true)}
@@ -283,25 +279,14 @@ export function Layout({ children }: LayoutProps) {
                       Campos Customizados
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/settings/tags')}>
+                    <DropdownMenuItem onClick={() => navigate('/admin/tags')}>
                       <Tag className="mr-2" />
                       Tags
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem onClick={() => navigate('/settings/phase-validation')}>
-                      <GitBranch className="mr-2" />
-                      Validação de Fases
-                    </DropdownMenuItem>
-                    
-                    {/* ATUALIZAÇÃO: Link direto para a nova página de Pipeline */}
-                    <DropdownMenuItem onClick={() => navigate('/settings/pipeline')}>
+                    <DropdownMenuItem onClick={() => navigate('/admin/pipeline')}>
                       <FlowArrow className="mr-2" />
-                      Pipeline
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuItem onClick={() => setSlaConfigOpen(true)}>
-                      <Clock className="mr-2" />
-                      SLA
+                      Pipeline & Fases
                     </DropdownMenuItem>
                   </>
                 )}
@@ -315,40 +300,6 @@ export function Layout({ children }: LayoutProps) {
                 
                 <DropdownMenuSeparator />
                 
-                {currentUser.role === 'admin' && (
-                  <div className="px-2 py-2 flex items-center justify-between hover:bg-accent rounded-sm transition-colors">
-                    <div className="flex items-center gap-2">
-                        {isImpersonating ? (
-                            <EyeSlash className="text-muted-foreground" size={16} />
-                        ) : (
-                            <Eye className="text-muted-foreground" size={16} />
-                        )}
-                        <Label htmlFor="impersonation-mode" className="text-sm font-normal cursor-pointer">
-                            Modo Cliente
-                        </Label>
-                    </div>
-                    <Switch
-                        id="impersonation-mode"
-                        checked={isImpersonating}
-                        onCheckedChange={setIsImpersonating}
-                    />
-                  </div>
-                )}
-
-                <div className="px-2 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="compact-mode" className="text-sm font-normal cursor-pointer">
-                      Visão Compacta
-                    </Label>
-                    <Switch
-                      id="compact-mode"
-                      checked={compactMode}
-                      onCheckedChange={setCompactMode}
-                    />
-                  </div>
-                </div>
-                
-                <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleSignOut}>
                   <SignOut className="mr-2" />
                   Sair
@@ -371,8 +322,7 @@ export function Layout({ children }: LayoutProps) {
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
 
-      {/* REMOVIDO: O PipelineSettingsDialog foi substituído pela página */}
-
+      {/* SLA Modal Legacy - Kept for backup access if page fails, but menu links to page now */}
       {canManageSettings && (
         <div className={slaConfigOpen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6 animate-in fade-in duration-200' : 'hidden'}>
           <div className="max-w-5xl mx-auto">
@@ -390,62 +340,21 @@ export function Layout({ children }: LayoutProps) {
       <SLAMonitoringService />
       <OnboardingTour />
 
-      {/* BOTTOM BAR */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
-        <Button
-          variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
-          size="sm"
-          asChild
-          className="flex-col h-full py-1 px-2 rounded-none flex-1"
-        >
-          <Link to="/dashboard">
-            <ChartBar className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Dash</span>
-          </Link>
+        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
+          <Link to="/dashboard"><ChartBar className="mb-1 h-5 w-5"/><span className="text-[10px]">Dash</span></Link>
         </Button>
-        
-        <Button
-          variant={isActive('/deals') ? 'secondary' : 'ghost'}
-          size="sm"
-          asChild
-          className="flex-col h-full py-1 px-2 rounded-none flex-1"
-        >
-          <Link to="/deals">
-            <Kanban className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Deals</span>
-          </Link>
+        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
+          <Link to="/deals"><Kanban className="mb-1 h-5 w-5"/><span className="text-[10px]">Deals</span></Link>
         </Button>
-
-        <Button
-          size="sm"
-          onClick={() => setCreateDealOpen(true)}
-          className="flex-col h-12 w-12 rounded-full -mt-6 shadow-lg bg-primary text-primary-foreground border-4 border-background hover:bg-primary/90"
-        >
+        <Button size="sm" onClick={() => setCreateDealOpen(true)} className="flex-col h-12 w-12 rounded-full -mt-6 shadow-lg bg-primary text-primary-foreground border-4 border-background hover:bg-primary/90">
           <Plus className="h-6 w-6" />
         </Button>
-
-        <Button
-          variant={isActive('/companies') ? 'secondary' : 'ghost'}
-          size="sm"
-          asChild
-          className="flex-col h-full py-1 px-2 rounded-none flex-1"
-        >
-          <Link to="/companies">
-            <Briefcase className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Empresas</span>
-          </Link>
+        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
+          <Link to="/companies"><Briefcase className="mb-1 h-5 w-5"/><span className="text-[10px]">Empresas</span></Link>
         </Button>
-
-        <Button
-          variant={isActive('/players') ? 'secondary' : 'ghost'}
-          size="sm"
-          asChild
-          className="flex-col h-full py-1 px-2 rounded-none flex-1"
-        >
-          <Link to="/players">
-            <Buildings className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Players</span>
-          </Link>
+        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
+          <Link to="/players"><Buildings className="mb-1 h-5 w-5"/><span className="text-[10px]">Players</span></Link>
         </Button>
       </div>
     </div>

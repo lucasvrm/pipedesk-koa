@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MasterDeal, OperationType, DealStatus, Company, User } from '@/lib/types';
+import { MasterDeal, OperationType, DealStatus, Company, User, Tag } from '@/lib/types';
 
 // ============================================================================
 // Query Helpers
@@ -23,6 +23,7 @@ export interface Deal extends MasterDeal {
   };
   company?: Company;
   responsibles?: User[];
+  tags?: Tag[]; // Added tags to deal type
 }
 
 export interface DealInput {
@@ -37,7 +38,7 @@ export interface DealInput {
   playerId?: string;
   initialStage?: string; 
   companyId?: string;
-  dealProduct?: string; // ADICIONADO
+  dealProduct?: string;
 }
 
 export interface DealUpdate {
@@ -49,7 +50,7 @@ export interface DealUpdate {
   status?: DealStatus;
   feePercentage?: number;
   companyId?: string;
-  dealProduct?: string; // ADICIONADO
+  dealProduct?: string;
 }
 
 // ============================================================================
@@ -77,6 +78,9 @@ function mapDealFromDB(item: any): Deal {
     } as User);
   }
 
+  // Map tags from join
+  const tags: Tag[] = item.entity_tags?.map((et: any) => et.tags) || [];
+
   return {
     id: item.id,
     clientName: item.client_name,
@@ -90,7 +94,7 @@ function mapDealFromDB(item: any): Deal {
     updatedAt: item.updated_at,
     createdBy: item.created_by,
     deletedAt: item.deleted_at || undefined,
-    dealProduct: item.deal_product, // ADICIONADO NO MAPPER
+    dealProduct: item.deal_product,
     
     companyId: item.company_id || undefined,
     
@@ -108,7 +112,8 @@ function mapDealFromDB(item: any): Deal {
       avatar: profile.avatar_url 
     } : undefined,
 
-    responsibles: responsibles
+    responsibles: responsibles,
+    tags: tags // Added tags
   };
 }
 
@@ -116,10 +121,9 @@ function mapDealFromDB(item: any): Deal {
 // Service Functions
 // ============================================================================
 
-export async function getDeals(): Promise<Deal[]> {
+export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
   try {
-    const { data, error } = await withoutDeleted(
-      supabase
+    let query = supabase
         .from('master_deals')
         .select(`
           *,
@@ -127,26 +131,51 @@ export async function getDeals(): Promise<Deal[]> {
           company:companies(id, name, type, site),
           deal_members(
             user:profiles(*)
+          ),
+          entity_tags!left(
+            tags(*)
           )
-        `)
-    ).order('created_at', { ascending: false });
+        `);
 
-    if (error) {
-      if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
-        console.warn("Tabela deal_members não encontrada. Usando fallback.");
-        return getDealsFallback();
+    query = withoutDeleted(query);
+
+    // Filter by tags if provided
+    if (tagIds && tagIds.length > 0) {
+      const { data: matchingIds, error: matchError } = await supabase
+        .from('entity_tags')
+        .select('entity_id')
+        .eq('entity_type', 'deal')
+        .in('tag_id', tagIds);
+
+      if (matchError) throw matchError;
+
+      const ids = matchingIds.map((r: any) => r.entity_id);
+      if (ids.length > 0) {
+        query = query.in('id', ids);
+      } else {
+        return []; // No deals match
       }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    // Fallback removed/simplified because deal_members is now created by 006
+    if (error) {
+      console.error('Error in getDeals query:', error);
       throw error;
     }
 
     return (data || []).map((item: any) => mapDealFromDB(item));
   } catch (error) {
     console.error('Error fetching deals (with members):', error);
-    return getDealsFallback();
+    // Try basic fetch if join fails heavily?
+    // We assume 006 fixes the missing table, so standard error handling is preferred.
+    throw error;
   }
 }
 
 async function getDealsFallback(): Promise<Deal[]> {
+  // Keeping fallback for reference but ideally unreachable if 006 ran
   const { data, error } = await withoutDeleted(
     supabase
       .from('master_deals')
@@ -189,25 +218,22 @@ export async function getDeal(dealId: string): Promise<Deal> {
           company:companies(id, name, type, site),
           deal_members(
             user:profiles(*)
+          ),
+          entity_tags!left(
+            tags(*)
           )
         `)
         .eq('id', dealId)
     ).single();
 
     if (error) {
-      // FIX: Tratamento de erro similar ao getDeals
-      if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
-         console.warn("Tabela deal_members não encontrada no getDeal. Usando fallback.");
-         return getDealFallback(dealId);
-      }
-      throw error; 
+        console.error("Error fetching deal details:", error);
+        return getDealFallback(dealId);
     }
 
     return mapDealFromDB(data);
   } catch (error) {
     console.error('Error fetching deal:', error);
-    // Tenta fallback em caso de erro genérico se for seguro, ou relança
-    // Aqui vamos tentar o fallback para garantir que o usuário veja o deal se existir
     return getDealFallback(dealId);
   }
 }
@@ -244,7 +270,8 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
           deal_id: masterDealData.id,
           user_id: deal.createdBy
         });
-      if (memberError) console.warn("Could not add creator to deal_members (migration missing?)", memberError.message);
+      // Now that deal_members exists, this should succeed. Log if not.
+      if (memberError) console.warn("Could not add creator to deal_members:", memberError.message);
     }
 
     if (deal.playerId) {
@@ -341,8 +368,12 @@ export async function deleteDeals(ids: string[]): Promise<void> {
   }
 }
 
-export function useDeals() {
-  return useQuery({ queryKey: ['deals'], queryFn: getDeals });
+// Hook with filter support
+export function useDeals(tagIds?: string[]) {
+  return useQuery({
+    queryKey: ['deals', tagIds],
+    queryFn: () => getDeals(tagIds)
+  });
 }
 
 export function useDeal(dealId: string | null) {

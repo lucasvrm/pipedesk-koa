@@ -7,7 +7,7 @@ import { PipelineStage } from '@/lib/types';
 // ============================================================================
 
 export interface StageInput {
-  pipelineId: string | null;
+  pipelineId?: string | null;
   name: string;
   color?: string;
   stageOrder: number;
@@ -21,6 +21,7 @@ export interface StageUpdate {
   stageOrder?: number;
   probability?: number;
   isDefault?: boolean;
+  active?: boolean; // NEW
 }
 
 // ============================================================================
@@ -30,7 +31,7 @@ export interface StageUpdate {
 /**
  * Busca todos os estágios ordenados pela ordem definida
  */
-export async function getStages(pipelineId: string | null = null): Promise<PipelineStage[]> {
+export async function getStages(pipelineId: string | null = null, includeInactive = true): Promise<PipelineStage[]> {
   let query = supabase
     .from('pipeline_stages')
     .select('*')
@@ -40,6 +41,10 @@ export async function getStages(pipelineId: string | null = null): Promise<Pipel
     query = query.eq('pipeline_id', pipelineId);
   } else {
     query = query.is('pipeline_id', null);
+  }
+
+  if (!includeInactive) {
+    query = query.eq('active', true);
   }
 
   const { data, error } = await query;
@@ -54,6 +59,7 @@ export async function getStages(pipelineId: string | null = null): Promise<Pipel
     stageOrder: item.stage_order,
     probability: item.probability || 0,
     isDefault: item.is_default,
+    active: item.active !== false, // Default to true if null
     createdAt: item.created_at,
     updatedAt: item.updated_at,
   }));
@@ -66,12 +72,13 @@ export async function createStage(stage: StageInput): Promise<PipelineStage> {
   const { data, error } = await supabase
     .from('pipeline_stages')
     .insert({
-      pipeline_id: stage.pipelineId,
+      pipeline_id: stage.pipelineId || null,
       name: stage.name,
       color: stage.color || '#64748b',
       stage_order: stage.stageOrder,
       probability: stage.probability,
       is_default: stage.isDefault || false,
+      active: true
     })
     .select()
     .single();
@@ -86,6 +93,7 @@ export async function createStage(stage: StageInput): Promise<PipelineStage> {
     stageOrder: data.stage_order,
     probability: data.probability || 0,
     isDefault: data.is_default,
+    active: data.active,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
@@ -104,6 +112,7 @@ export async function updateStage({ stageId, updates }: { stageId: string; updat
   if (updates.stageOrder !== undefined) updateData.stage_order = updates.stageOrder;
   if (updates.probability !== undefined) updateData.probability = updates.probability;
   if (updates.isDefault !== undefined) updateData.is_default = updates.isDefault;
+  if (updates.active !== undefined) updateData.active = updates.active;
 
   const { data, error } = await supabase
     .from('pipeline_stages')
@@ -122,15 +131,32 @@ export async function updateStage({ stageId, updates }: { stageId: string; updat
     stageOrder: data.stage_order,
     probability: data.probability || 0,
     isDefault: data.is_default,
+    active: data.active,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
 }
 
 /**
- * Exclui um estágio
+ * Exclui um estágio com verificação de integridade
  */
 export async function deleteStage(stageId: string): Promise<void> {
+  // Check usage
+  // Note: Since current_stage might be ID or slug, this is tricky.
+  // We check exact match for now as we are moving towards IDs.
+  // Ideally, we'd also check if any slug matches this stage's name, but let's stick to ID integrity for new system.
+
+  const { count, error: countError } = await supabase
+    .from('player_tracks')
+    .select('*', { count: 'exact', head: true })
+    .eq('current_stage', stageId); // Check ID match
+
+  if (countError) throw countError;
+
+  if (count && count > 0) {
+    throw new Error(`Não é possível excluir: existem ${count} tracks neste estágio. Desative-o.`);
+  }
+
   const { error } = await supabase
     .from('pipeline_stages')
     .delete()
@@ -160,11 +186,11 @@ export async function reorderStages(stages: Array<{ id: string; stageOrder: numb
 // React Query Hooks
 // ============================================================================
 
-export function useStages(pipelineId: string | null = null) {
+export function useStages(pipelineId: string | null = null, includeInactive = true) {
   return useQuery({
-    queryKey: ['stages', pipelineId],
-    queryFn: () => getStages(pipelineId),
-    staleTime: 1000 * 60 * 5, // Cache de 5 minutos
+    queryKey: ['stages', pipelineId, includeInactive],
+    queryFn: () => getStages(pipelineId, includeInactive),
+    staleTime: 1000 * 60 * 5,
   });
 }
 

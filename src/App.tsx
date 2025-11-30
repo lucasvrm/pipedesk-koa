@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
 import LoginView from '@/features/rbac/components/LoginView'
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
+import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { useAuth } from '@/contexts/AuthContext'
 import Profile from '@/pages/Profile'
 
@@ -19,30 +20,25 @@ const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
 const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
-const PipelineSettingsPage = lazy(() => import('@/pages/settings/PipelineSettingsPage'))
 
-// IMPORTS PARA PLAYERS
-const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
-const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetailPage'))
-
-// IMPORTS PARA TRACKS
-const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPage'))
-
-// IMPORTS PARA EMPRESAS
-const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
-const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
-
-// IMPORTS PARA CONTATOS (NOVO)
-const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
-
-// Pages de Admin/Settings
+// Admin & Settings Pages
+const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings'))
+const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings'))
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
-const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage')) // NOVO
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'))
 const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
-const PhaseValidationPage = lazy(() => import('@/pages/settings/PhaseValidationPage'))
+// REMOVED PhaseValidationPage
 const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
 const HelpCenterPage = lazy(() => import('@/pages/HelpCenterPage'))
+
+// Features Pages
+const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
+const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetailPage'))
+const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPage'))
+const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
+const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
+const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -53,6 +49,8 @@ const PageLoader = () => (
   </div>
 )
 
+const Unauthorized = () => <div className="p-8 text-center text-muted-foreground">Acesso não autorizado.</div>;
+
 function App() {
   const { user, profile } = useAuth()
 
@@ -60,34 +58,29 @@ function App() {
     <>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Rota Pública de Login */}
+          {/* Public Routes */}
           <Route path="/login" element={!user ? <LoginView /> : <Navigate to="/dashboard" replace />} />
 
-          {/* Rotas Protegidas (Exigem Login) */}
+          {/* Protected Routes */}
           <Route element={<ProtectedRoute><Layout><Outlet /></Layout></ProtectedRoute>}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             
-            {/* Rotas de Negócios */}
+            {/* Core Modules */}
             <Route path="/deals" element={<DealsView />} />
             <Route path="/deals/:id" element={<DealDetailPage />} />
             <Route path="/deals/comparison" element={<DealComparison />} />
             
-            {/* ROTAS DE PLAYERS */}
             <Route path="/players" element={<PlayersListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
 
-            {/* ROTA DE TRACKS */}
             <Route path="/tracks/:id" element={<TrackDetailPage />} />
 
-            {/* ROTAS DE EMPRESAS */}
             <Route path="/companies" element={<CompaniesListPage />} />
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
-
-            {/* ROTAS DE CONTATOS (NOVA) */}
             <Route path="/contacts/company/:id" element={<CompanyContactDetailPage />} />
 
-            {/* Rotas de Funcionalidades */}
+            {/* Tools */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
             <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
             
@@ -99,12 +92,28 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/help" element={<HelpCenterPage />} />
 
-            {/* Rotas de Admin */}
+            {/* Admin & Settings Routes */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} /> {/* NOVA ROTA */}
+            <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
+
+            {/* Settings Sub-pages */}
             <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
-            <Route path="/settings/phase-validation" element={<PhaseValidationPage />} />
+            <Route path="/settings/phase-validation" element={<Navigate to="/admin/pipeline" replace />} /> {/* Redirect old route */}
+            <Route path="/settings/tags" element={<Navigate to="/admin/tags" replace />} /> {/* Redirect old route */}
+            <Route path="/settings/pipeline" element={<Navigate to="/admin/pipeline" replace />} /> {/* Redirect old route */}
+
+            {/* RBAC Protected Admin Routes */}
+            <Route path="/admin/pipeline" element={
+                <RequirePermission permission="pipeline.manage" fallback={<Unauthorized />}>
+                    <PipelineSettingsPage />
+                </RequirePermission>
+            } />
+            <Route path="/admin/tags" element={
+                <RequirePermission permission="tags.manage" fallback={<Unauthorized />}>
+                    <TagSettingsPage />
+                </RequirePermission>
+            } />
 
             <Route path="/analytics" element={
                 <ProtectedRoute requiredRole={['admin', 'analyst', 'newbusiness']}>
@@ -112,7 +121,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/settings/pipeline" element={<PipelineSettingsPage />} />
             <Route path="/rbac" element={
                 <ProtectedRoute requiredRole={['admin']}>
                   {profile ? <RBACDemo currentUser={profile} /> : <div>Carregando...</div>}
@@ -121,7 +129,7 @@ function App() {
             />
           </Route>
 
-          {/* Fallback para 404 - Redireciona para Login */}
+          {/* 404 Fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Suspense>

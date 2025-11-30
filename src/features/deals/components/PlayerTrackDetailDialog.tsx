@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { useDeals } from '@/services/dealService'
-import { useStages } from '@/services/pipelineService' // NOVO: Hook Dinâmico
+import { useStages } from '@/services/pipelineService'
+import { useTags, useTagOperations, useEntityTags } from '@/services/tagService'
+import { useSettings } from '@/services/systemSettingsService'
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -20,9 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PlayerTrack, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User } from '@/lib/types'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { PlayerTrack, PlayerStage, DealStatus, STATUS_LABELS, ViewType, User, Tag } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume, trackStageChange } from '@/lib/helpers'
-import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag, Clock } from '@phosphor-icons/react'
+import { ListChecks, Kanban as KanbanIcon, ChartLine, CalendarBlank, ChatCircle, Sparkle, FileText, ClockCounterClockwise, Tag as TagIcon, Clock, Plus, X } from '@phosphor-icons/react'
 import TaskList from '@/features/tasks/components/TaskList'
 import PlayerKanban from './PlayerKanban'
 import PlayerGantt from './PlayerGantt'
@@ -30,12 +39,10 @@ import PlayerCalendar from './PlayerCalendar'
 import CommentsPanel from '@/components/CommentsPanel'
 import AINextSteps from '@/components/AINextSteps'
 import DocumentManager from '@/components/DocumentManager'
-import ActivityHistory from '@/components/ActivityHistory'
-import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
-import PhaseValidationDialog from '@/components/PhaseValidationDialog'
-// REMOVIDO: import QAPanel from '@/components/QAPanel' (Já estava comentado no seu código)
 import { ActivitySummarizer } from '@/components/ActivitySummarizer'
 import { SLAIndicator } from '@/components/SLAIndicator'
+import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
+import PhaseValidationDialog from '@/components/PhaseValidationDialog'
 import { validatePhaseTransition, PhaseTransitionRule, ValidationResult } from '@/lib/phaseValidation'
 import { toast } from 'sonner'
 
@@ -48,9 +55,14 @@ interface PlayerTrackDetailDialogProps {
 
 export default function PlayerTrackDetailDialog({ track, open, onOpenChange, currentUser }: PlayerTrackDetailDialogProps) {
   const { data: playerTracks } = useTracks()
-  const { data: stages = [] } = useStages() // NOVO: Busca estágios do banco
+  const { data: stages = [] } = useStages()
+  const { data: trackTags = [] } = useEntityTags(track.id)
+  const { data: availableTags = [] } = useTags('track')
+  const { data: settings } = useSettings()
   const updateTrack = useUpdateTrack()
   const { data: deals } = useDeals()
+  const tagOps = useTagOperations()
+
   const [trackViewPreferences, setTrackViewPreferences] = useState<Record<string, ViewType>>({})
   const [phaseRules] = useState<PhaseTransitionRule[]>([])
 
@@ -59,6 +71,10 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
 
   const currentView = (trackViewPreferences || {})[track.id] || 'list'
+
+  // Feature Flag Logic
+  const tagsConfig = settings?.find(s => s.key === 'tags_config')?.value;
+  const tagsEnabled = tagsConfig?.global && tagsConfig?.modules?.tracks !== false;
 
   const setCurrentView = (view: ViewType) => {
     setTrackViewPreferences((prefs) => ({
@@ -73,9 +89,6 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
     }
   }, [open, track.id])
 
-  // --- LÓGICA DINÂMICA (SUBSTITUIÇÃO DE CONSTANTES) ---
-  
-  // Helper para buscar informações do estágio (ID ou Slug legado)
   const getStageInfo = (stageKey: string) => {
     return stages.find(s => s.id === stageKey) || 
            stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === stageKey) ||
@@ -83,13 +96,8 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
   }
 
   const currentStageInfo = getStageInfo(track.currentStage);
-  
-  // Probabilidade: Usa a do track se existir, senão a do estágio, senão 0
   const probability = track.probability || currentStageInfo?.probability || 0;
-  
-  // Nome do Estágio: Usa o nome do estágio do banco, ou o ID como fallback
   const stageName = currentStageInfo?.name || track.currentStage;
-
   const weighted = calculateWeightedVolume(track.trackVolume, probability)
   const masterDeal = (deals || []).find(d => d.id === track.masterDealId)
 
@@ -103,7 +111,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
       trackId: track.id,
       updates: {
         currentStage: newStageId,
-        probability: newStageInfo?.probability || 0, // Atualiza probabilidade baseada no novo estágio
+        probability: newStageInfo?.probability || 0,
       }
     }, {
       onSuccess: () => toast.success(`Estágio atualizado para ${newStageInfo?.name || newStageId}`),
@@ -113,9 +121,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
   const handleStageChange = (newStage: PlayerStage) => {
     if (newStage === track.currentStage) return
-
     const validation = validatePhaseTransition(track, masterDeal, newStage, phaseRules || [])
-
     setValidationResult(validation)
     setPendingStageChange(newStage)
     setValidationDialogOpen(true)
@@ -134,21 +140,10 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
       const siblingTracks = (playerTracks || []).filter(
         t => t.masterDealId === track.masterDealId && t.id !== track.id && t.status === 'active'
       )
-
-      // Update current track
-      updateTrack.mutate({
-        trackId: track.id,
-        updates: { status: newStatus }
-      })
-
-      // Cancel sibling tracks
+      updateTrack.mutate({ trackId: track.id, updates: { status: newStatus } })
       siblingTracks.forEach(sibling => {
-        updateTrack.mutate({
-          trackId: sibling.id,
-          updates: { status: 'cancelled' }
-        })
+        updateTrack.mutate({ trackId: sibling.id, updates: { status: 'cancelled' } })
       })
-
       toast.success(`Player concluído! ${siblingTracks.length} players concorrentes foram cancelados.`)
     } else {
       updateTrack.mutate({
@@ -161,6 +156,23 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
     }
   }
 
+  // Tag Handlers
+  const handleAddTag = async (tag: Tag) => {
+    try {
+        await tagOps.assign.mutateAsync({ tagId: tag.id, entityId: track.id, entityType: 'track' });
+        toast.success(`Tag ${tag.name} adicionada`);
+    } catch (e) { toast.error('Erro ao adicionar tag'); }
+  }
+
+  const handleRemoveTag = async (tag: Tag) => {
+    try {
+        await tagOps.unassign.mutateAsync({ tagId: tag.id, entityId: track.id, entityType: 'track' });
+        toast.success(`Tag ${tag.name} removida`);
+    } catch (e) { toast.error('Erro ao remover tag'); }
+  }
+
+  const unassignedTags = availableTags.filter(t => !trackTags.find(tt => tt.id === t.id));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -168,18 +180,49 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <DialogTitle className="text-2xl mb-2">{track.playerName}</DialogTitle>
+
+              {tagsEnabled && (
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                    {trackTags.map(tag => (
+                        <Badge
+                            key={tag.id}
+                            style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40' }}
+                            variant="outline"
+                            className="flex items-center gap-1 pl-2 pr-1 h-5 text-[10px]"
+                        >
+                            {tag.name}
+                            <button onClick={() => handleRemoveTag(tag)} className="hover:bg-black/10 rounded-full p-0.5">
+                                <X size={8} />
+                            </button>
+                        </Badge>
+                    ))}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full border border-dashed">
+                                <Plus size={10} />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            {unassignedTags.length === 0 ? (
+                                <div className="p-2 text-xs text-muted-foreground">Sem tags disponíveis</div>
+                            ) : (
+                                unassignedTags.map(tag => (
+                                    <DropdownMenuItem key={tag.id} onClick={() => handleAddTag(tag)}>
+                                        <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
+                                        {tag.name}
+                                    </DropdownMenuItem>
+                                ))
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+              )}
+
               <DialogDescription className="space-y-1">
                 <div className="flex items-center gap-3 text-sm flex-wrap">
-                  <Badge
-                    className={
-                      track.status === 'active' ? 'status-active' :
-                        track.status === 'cancelled' ? 'status-cancelled' :
-                          'status-concluded'
-                    }
-                  >
+                  <Badge className={track.status === 'active' ? 'status-active' : track.status === 'cancelled' ? 'status-cancelled' : 'status-concluded'}>
                     {STATUS_LABELS[track.status]}
                   </Badge>
-                  {/* Badge Dinâmica */}
                   <Badge variant="outline" style={{ borderColor: currentStageInfo?.color, color: currentStageInfo?.color }}>
                     {stageName}
                   </Badge>
@@ -232,8 +275,7 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {/* Renderização Dinâmica dos Estágios */}
-                {stages.map((stage) => (
+                {stages.filter(s => s.active || s.id === track.currentStage).map((stage) => (
                   <SelectItem key={stage.id} value={stage.id}>
                     {stage.name}
                   </SelectItem>
@@ -268,121 +310,32 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as ViewType)} className="w-full">
           <TabsList className="grid w-full grid-cols-4 md:grid-cols-6 lg:grid-cols-10 overflow-x-auto">
-            <TabsTrigger value="list">
-              <ListChecks className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Lista</span>
-            </TabsTrigger>
-            <TabsTrigger value="kanban">
-              <KanbanIcon className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Kanban</span>
-            </TabsTrigger>
-            <TabsTrigger value="gantt">
-              <ChartLine className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Gantt</span>
-            </TabsTrigger>
-            <TabsTrigger value="calendar">
-              <CalendarBlank className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Calendário</span>
-            </TabsTrigger>
-            <TabsTrigger value="fields">
-              <Tag className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Campos</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai">
-              <Sparkle className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">IA</span>
-            </TabsTrigger>
-            <TabsTrigger value="sla">
-              <Clock className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">SLA</span>
-            </TabsTrigger>
-            <TabsTrigger value="summary">
-              <ClockCounterClockwise className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Sumário</span>
-            </TabsTrigger>
-            <TabsTrigger value="comments">
-              <ChatCircle className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Comentários</span>
-            </TabsTrigger>
-            <TabsTrigger value="documents">
-              <FileText className="mr-0 md:mr-2" />
-              <span className="hidden md:inline">Docs</span>
-            </TabsTrigger>
+            <TabsTrigger value="list"><ListChecks className="mr-0 md:mr-2" /><span className="hidden md:inline">Lista</span></TabsTrigger>
+            <TabsTrigger value="kanban"><KanbanIcon className="mr-0 md:mr-2" /><span className="hidden md:inline">Kanban</span></TabsTrigger>
+            <TabsTrigger value="gantt"><ChartLine className="mr-0 md:mr-2" /><span className="hidden md:inline">Gantt</span></TabsTrigger>
+            <TabsTrigger value="calendar"><CalendarBlank className="mr-0 md:mr-2" /><span className="hidden md:inline">Calendário</span></TabsTrigger>
+            <TabsTrigger value="fields"><TagIcon className="mr-0 md:mr-2" /><span className="hidden md:inline">Campos</span></TabsTrigger>
+            <TabsTrigger value="ai"><Sparkle className="mr-0 md:mr-2" /><span className="hidden md:inline">IA</span></TabsTrigger>
+            <TabsTrigger value="sla"><Clock className="mr-0 md:mr-2" /><span className="hidden md:inline">SLA</span></TabsTrigger>
+            <TabsTrigger value="summary"><ClockCounterClockwise className="mr-0 md:mr-2" /><span className="hidden md:inline">Sumário</span></TabsTrigger>
+            <TabsTrigger value="comments"><ChatCircle className="mr-0 md:mr-2" /><span className="hidden md:inline">Comentários</span></TabsTrigger>
+            <TabsTrigger value="documents"><FileText className="mr-0 md:mr-2" /><span className="hidden md:inline">Docs</span></TabsTrigger>
           </TabsList>
 
-          <TabsContent value="list" className="mt-4">
-            <TaskList playerTrackId={track.id} />
-          </TabsContent>
-
-          <TabsContent value="kanban" className="mt-4">
-            <PlayerKanban playerTrackId={track.id} />
-          </TabsContent>
-
-          <TabsContent value="gantt" className="mt-4">
-            <PlayerGantt playerTrackId={track.id} />
-          </TabsContent>
-
-          <TabsContent value="calendar" className="mt-4">
-            <PlayerCalendar playerTrackId={track.id} />
-          </TabsContent>
-
+          <TabsContent value="list" className="mt-4"><TaskList playerTrackId={track.id} /></TabsContent>
+          <TabsContent value="kanban" className="mt-4"><PlayerKanban playerTrackId={track.id} /></TabsContent>
+          <TabsContent value="gantt" className="mt-4"><PlayerGantt playerTrackId={track.id} /></TabsContent>
+          <TabsContent value="calendar" className="mt-4"><PlayerCalendar playerTrackId={track.id} /></TabsContent>
           <TabsContent value="fields" className="space-y-4">
-            {currentUser && (
-              <CustomFieldsRenderer
-                entityId={track.id}
-                entityType="track"
-                currentUser={currentUser}
-                mode="edit"
-              />
-            )}
+            {currentUser && <CustomFieldsRenderer entityId={track.id} entityType="track" currentUser={currentUser} mode="edit" />}
           </TabsContent>
-
-          <TabsContent value="ai" className="space-y-4">
-            <AINextSteps trackId={track.id} currentStage={track.currentStage} />
-          </TabsContent>
-
+          <TabsContent value="ai" className="space-y-4"><AINextSteps trackId={track.id} currentStage={track.currentStage} /></TabsContent>
           <TabsContent value="sla" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monitoramento de SLA</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SLAIndicator
-                  playerTrackId={track.id}
-                  currentStage={track.currentStage}
-                  compact={false}
-                />
-              </CardContent>
-            </Card>
+            <Card><CardHeader><CardTitle>Monitoramento de SLA</CardTitle></CardHeader><CardContent><SLAIndicator playerTrackId={track.id} currentStage={track.currentStage} compact={false} /></CardContent></Card>
           </TabsContent>
-
-          <TabsContent value="summary" className="space-y-4">
-            <ActivitySummarizer
-              entityId={track.id}
-              entityType="track"
-            />
-          </TabsContent>
-
-          <TabsContent value="comments" className="space-y-4">
-            {currentUser && (
-              <CommentsPanel
-                entityId={track.id}
-                entityType="track"
-                currentUser={currentUser}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="documents" className="space-y-4">
-            {currentUser && (
-              <DocumentManager
-                entityId={track.id}
-                entityType="track"
-                currentUser={currentUser}
-                entityName={track.playerName}
-              />
-            )}
-          </TabsContent>
+          <TabsContent value="summary" className="space-y-4"><ActivitySummarizer entityId={track.id} entityType="track" /></TabsContent>
+          <TabsContent value="comments" className="space-y-4">{currentUser && <CommentsPanel entityId={track.id} entityType="track" currentUser={currentUser} />}</TabsContent>
+          <TabsContent value="documents" className="space-y-4">{currentUser && <DocumentManager entityId={track.id} entityType="track" currentUser={currentUser} entityName={track.playerName} />}</TabsContent>
         </Tabs>
       </DialogContent>
 
