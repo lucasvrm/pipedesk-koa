@@ -1,11 +1,10 @@
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { ErrorBoundary } from "react-error-boundary";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import App from './App.tsx'
-import ErrorFallback from './ErrorFallback.tsx'
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ImpersonationProvider } from './contexts/ImpersonationContext.tsx'
 
@@ -13,18 +12,27 @@ import "./main.css"
 import "./styles/theme.css"
 import "./index.css"
 
-// --- CORREÇÃO CRÍTICA: REMOVEDOR DE SERVICE WORKER ---
-// Remove quaisquer service workers antigos (do Spark ou versões anteriores)
-// que possam estar interceptando requisições e travando o app.
+// --- GLOBAL ERROR HANDLERS ---
+window.onerror = (message, source, lineno, colno, error) => {
+  console.error('[Global Error]', { message, source, lineno, colno, error });
+  // Prevent default handler if needed, but usually we want to let it propagate to console
+  return false;
+};
+
+window.onunhandledrejection = (event) => {
+  console.warn('[Unhandled Rejection]', event.reason);
+  // Prevent app crash on unhandled promise rejections (though browsers usually don't crash the whole page)
+  event.preventDefault();
+};
+
+// --- SERVICE WORKER CLEANUP ---
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (const registration of registrations) {
-      console.log('Unregistering Service Worker:', registration);
       registration.unregister();
     }
   });
 }
-// -----------------------------------------------------
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,7 +45,7 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById('root')!).render(
-  <ErrorBoundary FallbackComponent={ErrorFallback}>
+  <GlobalErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
@@ -48,5 +56,5 @@ createRoot(document.getElementById('root')!).render(
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
-  </ErrorBoundary>
+  </GlobalErrorBoundary>
 )

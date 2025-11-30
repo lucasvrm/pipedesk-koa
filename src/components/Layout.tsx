@@ -198,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
             </Button>
 
             <Button
-              variant={ghost}
+              variant="ghost"
               size="icon"
               className="relative"
               onClick={() => setInboxOpen(true)}
