@@ -16,6 +16,7 @@ export interface LeadInput {
   addressState?: string;
   description?: string;
   origin?: string;
+  operationType?: string;
   ownerUserId?: string;
 }
 
@@ -56,6 +57,7 @@ function mapLeadFromDB(item: any): Lead {
     description: item.description,
     status: item.status,
     origin: item.origin,
+    operationType: item.operation_type,
     ownerUserId: item.owner_user_id,
 
     qualifiedAt: item.qualified_at,
@@ -101,7 +103,8 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
     .select(`
       *,
       lead_contacts(is_primary, contacts(*)),
-      lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url))
+      lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url)),
+      owner:profiles!leads_owner_user_id_fkey(id, name, email, avatar_url)
     `)
     .is('deleted_at', null);
 
@@ -156,6 +159,7 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
       address_state: lead.addressState,
       description: lead.description,
       origin: lead.origin || 'outbound',
+      operation_type: lead.operationType,
       owner_user_id: lead.ownerUserId || userId, // Default owner is creator
       created_by: userId
     })
@@ -187,6 +191,7 @@ export async function updateLead(id: string, updates: LeadUpdate) {
   if (updates.description !== undefined) updateData.description = updates.description;
   if (updates.status !== undefined) updateData.status = updates.status;
   if (updates.origin !== undefined) updateData.origin = updates.origin;
+  if (updates.operationType !== undefined) updateData.operation_type = updates.operationType;
   if (updates.ownerUserId !== undefined) updateData.owner_user_id = updates.ownerUserId;
 
   const { data, error } = await supabase.from('leads').update(updateData).eq('id', id).select().single();
