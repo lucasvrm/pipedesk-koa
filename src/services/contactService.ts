@@ -1,144 +1,173 @@
 import { supabase } from '@/lib/supabaseClient'
-import { PlayerContact } from '@/lib/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Contact } from '@/lib/types'
 
-// --- Helpers ---
+// ============================================================================
+// Types
+// ============================================================================
 
-function mapContactFromDB(item: any): PlayerContact {
+export interface ContactInput {
+  companyId?: string | null;
+  name: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  department?: string;
+  linkedin?: string;
+  notes?: string;
+  isPrimary?: boolean;
+}
+
+export interface ContactUpdate extends Partial<ContactInput> {}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function mapContactFromDB(item: any): Contact {
   return {
     id: item.id,
-    playerId: item.player_id,
+    companyId: item.company_id,
     name: item.name,
-    role: item.role || '',
     email: item.email || '',
     phone: item.phone || '',
+    role: item.role || '',
+    department: item.department || '',
+    linkedin: item.linkedin || '',
+    notes: item.notes || '',
     isPrimary: item.is_primary || false,
     createdAt: item.created_at,
     createdBy: item.created_by
   }
 }
 
-// --- API Functions ---
+// ============================================================================
+// API Functions
+// ============================================================================
 
-export async function getContactsByPlayer(playerId: string): Promise<PlayerContact[]> {
-  const { data, error } = await supabase
-    .from('player_contacts')
-    .select('*')
-    .eq('player_id', playerId)
-    .order('is_primary', { ascending: false }) // Primários primeiro
-    .order('name', { ascending: true })
+export async function getContacts(companyId?: string): Promise<Contact[]> {
+  let query = supabase.from('contacts').select('*');
 
-  if (error) throw error
-  return data.map(mapContactFromDB)
-}
-
-export async function createContact(contact: Partial<PlayerContact>, userId: string) {
-  // Se este for marcado como primário, desmarcar outros do mesmo player (opcional, mas boa prática)
-  if (contact.isPrimary && contact.playerId) {
-    await supabase
-      .from('player_contacts')
-      .update({ is_primary: false })
-      .eq('player_id', contact.playerId)
+  if (companyId) {
+    query = query.eq('company_id', companyId);
   }
 
-  const { data, error } = await supabase
-    .from('player_contacts')
-    .insert({
-      player_id: contact.playerId,
-      name: contact.name,
-      role: contact.role,
-      email: contact.email,
-      phone: contact.phone,
-      is_primary: contact.isPrimary || false,
-      created_by: userId,
-      updated_by: userId
-    })
-    .select()
-    .single()
+  const { data, error } = await query.order('name');
+  if (error) throw error;
 
-  if (error) throw error
-  return mapContactFromDB(data)
+  return data.map(mapContactFromDB);
 }
 
-export async function updateContact(id: string, updates: Partial<PlayerContact>, userId: string) {
-  if (updates.isPrimary && updates.playerId) {
-    await supabase
-      .from('player_contacts')
-      .update({ is_primary: false })
-      .eq('player_id', updates.playerId)
+export async function getContact(id: string): Promise<Contact> {
+  const { data, error } = await supabase.from('contacts').select('*').eq('id', id).single();
+  if (error) throw error;
+  return mapContactFromDB(data);
+}
+
+export async function createContact(contact: ContactInput, userId: string): Promise<Contact> {
+  // Logic: enforce 1 primary per company
+  if (contact.isPrimary && contact.companyId) {
+    await supabase.from('contacts').update({ is_primary: false }).eq('company_id', contact.companyId);
   }
 
-  const { data, error } = await supabase
-    .from('player_contacts')
-    .update({
-      name: updates.name,
-      role: updates.role,
-      email: updates.email,
-      phone: updates.phone,
-      is_primary: updates.isPrimary,
-      updated_at: new Date().toISOString(),
-      updated_by: userId
-    })
-    .eq('id', id)
-    .select()
-    .single()
+  const { data, error } = await supabase.from('contacts').insert({
+    company_id: contact.companyId,
+    name: contact.name,
+    email: contact.email,
+    phone: contact.phone,
+    role: contact.role,
+    department: contact.department,
+    linkedin: contact.linkedin,
+    notes: contact.notes,
+    is_primary: contact.isPrimary,
+    created_by: userId,
+    updated_by: userId
+  }).select().single();
 
-  if (error) throw error
-  return mapContactFromDB(data)
+  if (error) throw error;
+  return mapContactFromDB(data);
+}
+
+export async function updateContact(id: string, updates: ContactUpdate) {
+  const updateData: any = { updated_at: new Date().toISOString() };
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.email !== undefined) updateData.email = updates.email;
+  if (updates.phone !== undefined) updateData.phone = updates.phone;
+  if (updates.role !== undefined) updateData.role = updates.role;
+  if (updates.department !== undefined) updateData.department = updates.department;
+  if (updates.linkedin !== undefined) updateData.linkedin = updates.linkedin;
+  if (updates.notes !== undefined) updateData.notes = updates.notes;
+  if (updates.isPrimary !== undefined) updateData.is_primary = updates.isPrimary;
+
+  // Logic: enforce 1 primary per company
+  // Need to know current companyId if not updated, or new one
+  if (updates.isPrimary) {
+     const { data: current } = await supabase.from('contacts').select('company_id').eq('id', id).single();
+     const targetCompanyId = updates.companyId !== undefined ? updates.companyId : current?.company_id;
+
+     if (targetCompanyId) {
+        await supabase.from('contacts').update({ is_primary: false }).eq('company_id', targetCompanyId);
+     }
+  }
+
+  const { data, error } = await supabase.from('contacts').update(updateData).eq('id', id).select().single();
+  if (error) throw error;
+  return mapContactFromDB(data);
 }
 
 export async function deleteContact(id: string) {
-  const { error } = await supabase
-    .from('player_contacts')
-    .delete()
-    .eq('id', id)
-
-  if (error) throw error
+  const { error } = await supabase.from('contacts').delete().eq('id', id);
+  if (error) throw error;
 }
 
-// --- Hooks ---
+// ============================================================================
+// Hooks
+// ============================================================================
 
-export function useContacts(playerId: string) {
+export function useContacts(companyId?: string) {
   return useQuery({
-    queryKey: ['contacts', playerId],
-    queryFn: () => getContactsByPlayer(playerId),
-    enabled: !!playerId
-  })
+    queryKey: ['contacts', companyId],
+    queryFn: () => getContacts(companyId)
+  });
+}
+
+export function useContact(id?: string) {
+  return useQuery({
+    queryKey: ['contacts', id],
+    queryFn: () => getContact(id!),
+    enabled: !!id
+  });
 }
 
 export function useCreateContact() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ contact, userId }: { contact: Partial<PlayerContact>, userId: string }) => 
-      createContact(contact, userId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['contacts', variables.contact.playerId] })
-      queryClient.invalidateQueries({ queryKey: ['players', variables.contact.playerId] }) // Atualiza o player pai também
+    mutationFn: ({ data, userId }: { data: ContactInput, userId: string }) => createContact(data, userId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      if (data.companyId) queryClient.invalidateQueries({ queryKey: ['companies', data.companyId] });
     }
-  })
+  });
 }
 
 export function useUpdateContact() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, updates, userId }: { id: string, updates: Partial<PlayerContact>, userId: string }) => 
-      updateContact(id, updates, userId),
+    mutationFn: ({ id, data }: { id: string, data: ContactUpdate }) => updateContact(id, data),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['contacts', data.playerId] })
-      queryClient.invalidateQueries({ queryKey: ['players', data.playerId] })
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', data.id] });
+      if (data.companyId) queryClient.invalidateQueries({ queryKey: ['companies', data.companyId] });
     }
-  })
+  });
 }
 
 export function useDeleteContact() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteContact(id),
+    mutationFn: deleteContact,
     onSuccess: () => {
-      // A estratégia de invalidação aqui é um pouco mais genérica pois não temos o playerId no retorno do delete
-      // Poderíamos invalidar tudo de 'players' ou passar o playerId como argumento extra
-      queryClient.invalidateQueries({ queryKey: ['contacts'] }) 
-      queryClient.invalidateQueries({ queryKey: ['players'] })
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
     }
-  })
+  });
 }

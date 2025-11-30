@@ -78,6 +78,11 @@ function App() {
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
             <Route path="/contacts/company/:id" element={<CompanyContactDetailPage />} />
 
+            {/* Leads & Contacts Modules */}
+            <Route path="/leads" element={<LeadsListPage />} />
+            <Route path="/leads/:id" element={<LeadDetailPage />} />
+            <Route path="/contacts" element={<ContactsPage />} />
+
             {/* Tools */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
             <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />

@@ -28,7 +28,9 @@ import {
   Briefcase,
   Eye,
   EyeSlash,
-  Tag
+  Tag,
+  Funnel,
+  AddressBook
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -137,6 +139,28 @@ export function Layout({ children }: LayoutProps) {
                 <Link to="/companies">
                   <Briefcase className="mr-2" />
                   Empresas
+                </Link>
+              </Button>
+
+              <Button
+                variant={isActive('/leads') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/leads">
+                  <Funnel className="mr-2" />
+                  Leads
+                </Link>
+              </Button>
+
+              <Button
+                variant={isActive('/contacts') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/contacts">
+                  <AddressBook className="mr-2" />
+                  Contatos
                 </Link>
               </Button>
 
