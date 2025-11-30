@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTags, useTagOperations, TAG_COLORS } from '@/services/tagService';
 import { useSettings, useUpdateSetting } from '@/services/systemSettingsService';
 import { Tag } from '@/lib/types';
@@ -10,19 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PencilSimple, Trash, Plus, Tag as TagIcon, Gear } from '@phosphor-icons/react';
+import { PencilSimple, Trash, Plus, Tag as TagIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
-interface TagConfig {
-  global: boolean;
-  modules: {
-    deals: boolean;
-    tracks: boolean;
-  };
-}
-
 export default function TagSettings() {
-  const { data: tags = [], isLoading: tagsLoading } = useTags('global');
+  const { data: tags = [], isLoading: tagsLoading } = useTags('global'); // Fetch all/global tags
   const { data: settings } = useSettings();
   const { create, update, remove } = useTagOperations();
   const updateSetting = useUpdateSetting();
@@ -35,37 +27,20 @@ export default function TagSettings() {
   const [tagColor, setTagColor] = useState(TAG_COLORS[0]);
   const [tagType, setTagType] = useState<'global' | 'deal' | 'track'>('global');
 
-  // Config State
-  const [config, setConfig] = useState<TagConfig>({ global: true, modules: { deals: true, tracks: true } });
+  // Feature Flags
+  const tagsEnabled = settings?.find(s => s.key === 'feature_tags_enabled')?.value ?? true;
 
-  useEffect(() => {
-    const remoteConfig = settings?.find(s => s.key === 'tags_config')?.value;
-    if (remoteConfig) {
-      setConfig(remoteConfig);
-    }
-  }, [settings]);
-
-  const updateConfig = async (newConfig: TagConfig) => {
-    setConfig(newConfig); // Optimistic
+  const toggleFeature = async (enabled: boolean) => {
     try {
       await updateSetting.mutateAsync({
-        key: 'tags_config',
-        value: newConfig,
-        description: 'Habilita o sistema de tags globalmente e por módulo'
+        key: 'feature_tags_enabled',
+        value: enabled,
+        description: 'Habilita o sistema de tags globalmente'
       });
-      toast.success('Configuração atualizada.');
+      toast.success(`Sistema de tags ${enabled ? 'ativado' : 'desativado'}.`);
     } catch (e) {
-      toast.error('Erro ao salvar configuração.');
+      toast.error('Erro ao atualizar configuração.');
     }
-  };
-
-  const toggleGlobal = (checked: boolean) => updateConfig({ ...config, global: checked });
-
-  const toggleModule = (module: 'deals' | 'tracks', checked: boolean) => {
-    updateConfig({
-      ...config,
-      modules: { ...config.modules, [module]: checked }
-    });
   };
 
   const openCreate = () => {
@@ -122,46 +97,31 @@ export default function TagSettings() {
   if (tagsLoading) return <div>Carregando tags...</div>;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Gerenciador de Tags</h3>
-          <p className="text-sm text-muted-foreground">Configure etiquetas globais e disponibilidade.</p>
+          <p className="text-sm text-muted-foreground">Crie etiquetas para categorizar Deals e Tracks.</p>
         </div>
-
-        <div className="flex items-center gap-4 bg-muted/20 p-2 rounded-lg border">
-            <div className="flex items-center gap-2 px-2">
-                <Switch checked={config.global} onCheckedChange={toggleGlobal} id="global-toggle" />
-                <Label htmlFor="global-toggle" className="text-sm cursor-pointer font-medium">Sistema Ativo</Label>
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 border px-3 py-1.5 rounded-md bg-background">
+                <Switch checked={tagsEnabled} onCheckedChange={toggleFeature} id="tags-toggle" />
+                <Label htmlFor="tags-toggle" className="text-sm cursor-pointer">Módulo Ativo</Label>
             </div>
-            <div className="h-6 w-px bg-border mx-2" />
-            <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                    <Switch checked={config.modules.deals} onCheckedChange={(c) => toggleModule('deals', c)} id="deals-toggle" disabled={!config.global} className="scale-75" />
-                    <Label htmlFor="deals-toggle" className={`cursor-pointer ${!config.global ? 'opacity-50' : ''}`}>Deals</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Switch checked={config.modules.tracks} onCheckedChange={(c) => toggleModule('tracks', c)} id="tracks-toggle" disabled={!config.global} className="scale-75" />
-                    <Label htmlFor="tracks-toggle" className={`cursor-pointer ${!config.global ? 'opacity-50' : ''}`}>Tracks</Label>
-                </div>
-            </div>
+            <Button onClick={openCreate} disabled={!tagsEnabled}><Plus className="mr-2" /> Nova Tag</Button>
         </div>
       </div>
 
-      {!config.global && (
+      {!tagsEnabled && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-md flex items-center gap-2">
             <WarningCircle size={20} />
-            <span>O sistema de tags está completamente desativado.</span>
+            <span>O sistema de tags está desativado globalmente. Ative para utilizar.</span>
         </div>
       )}
 
-      <div className="flex justify-end">
-         <Button onClick={openCreate} disabled={!config.global}><Plus className="mr-2" /> Nova Tag</Button>
-      </div>
-
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${!config.global ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
         {tags.map(tag => (
-          <Card key={tag.id} className="group relative hover:border-primary/50 transition-colors">
+          <Card key={tag.id} className="group relative">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div

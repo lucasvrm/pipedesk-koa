@@ -20,6 +20,8 @@ const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
 const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
+const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings')) // Updated path
+const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings')) // New
 
 // Admin & Settings Pages
 const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings'))
@@ -39,6 +41,14 @@ const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPa
 const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
 const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
+
+// Pages de Admin/Settings
+const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
+const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'))
+const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
+const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
+const HelpCenterPage = lazy(() => import('@/pages/HelpCenterPage'))
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -96,24 +106,9 @@ function App() {
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
-
-            {/* Settings Sub-pages */}
             <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
-            <Route path="/settings/phase-validation" element={<Navigate to="/admin/pipeline" replace />} /> {/* Redirect old route */}
-            <Route path="/settings/tags" element={<Navigate to="/admin/tags" replace />} /> {/* Redirect old route */}
-            <Route path="/settings/pipeline" element={<Navigate to="/admin/pipeline" replace />} /> {/* Redirect old route */}
-
-            {/* RBAC Protected Admin Routes */}
-            <Route path="/admin/pipeline" element={
-                <RequirePermission permission="pipeline.manage" fallback={<Unauthorized />}>
-                    <PipelineSettingsPage />
-                </RequirePermission>
-            } />
-            <Route path="/admin/tags" element={
-                <RequirePermission permission="tags.manage" fallback={<Unauthorized />}>
-                    <TagSettingsPage />
-                </RequirePermission>
-            } />
+            <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
 
             <Route path="/analytics" element={
                 <ProtectedRoute requiredRole={['admin', 'analyst', 'newbusiness']}>
