@@ -1,357 +1,228 @@
 import { useState, useEffect } from 'react'
-import { 
-  DndContext, 
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Plus, X, DotsSixVertical, Palette } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { toast } from 'sonner'
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Slider } from '@/components/ui/slider'
+import { Checkbox } from '@/components/ui/checkbox'
 import { PipelineStage } from '@/lib/types'
+import { useCreateStage, useUpdateStage } from '@/services/pipelineService'
+import { toast } from 'sonner'
+import { PaintBucket, Trash } from '@phosphor-icons/react'
+
+const formSchema = z.object({
+  name: z.string().min(1, 'O nome do estágio é obrigatório'),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i, 'Cor inválida (Use formato #FFFFFF)'),
+  probability: z.number().min(0).max(100),
+  isDefault: z.boolean(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 interface PipelineSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  pipelineId: string | null  // null for global default stages
-}
-
-const STAGE_COLORS = [
-  { name: 'Azul', value: '#3B82F6' },
-  { name: 'Verde', value: '#10B981' },
-  { name: 'Amarelo', value: '#F59E0B' },
-  { name: 'Laranja', value: '#F97316' },
-  { name: 'Vermelho', value: '#EF4444' },
-  { name: 'Roxo', value: '#8B5CF6' },
-  { name: 'Rosa', value: '#EC4899' },
-  { name: 'Cinza', value: '#6B7280' },
-]
-
-interface SortableStageItemProps {
-  stage: PipelineStage
-  onUpdate: (stage: PipelineStage) => void
-  onDelete: (id: string) => void
-}
-
-function SortableStageItem({ stage, onUpdate, onDelete }: SortableStageItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: stage.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
-    >
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-        <DotsSixVertical className="text-muted-foreground" size={20} />
-      </div>
-
-      <div className="flex-1 grid grid-cols-2 gap-3">
-        <div>
-          <Input
-            value={stage.name}
-            onChange={(e) => onUpdate({ ...stage, name: e.target.value })}
-            placeholder="Nome da fase"
-            className="h-9"
-          />
-        </div>
-        <div>
-          <Select
-            value={stage.color}
-            onValueChange={(color) => onUpdate({ ...stage, color })}
-          >
-            <SelectTrigger className="h-9">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: stage.color }}
-                />
-                <SelectValue />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {STAGE_COLORS.map((color) => (
-                <SelectItem key={color.value} value={color.value}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: color.value }}
-                    />
-                    {color.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onDelete(stage.id)}
-        disabled={stage.isDefault}
-        title={stage.isDefault ? 'Não é possível excluir fase padrão' : 'Excluir fase'}
-      >
-        <X size={18} />
-      </Button>
-    </div>
-  )
+  stageToEdit?: PipelineStage | null // Se for edição
+  onStageDeleted?: () => void
+  pipelineId?: string | null // Para suportar múltiplos pipelines (se aplicável)
+  stageOrder: number // Para setar o valor de ordem no caso de criação
 }
 
 export function PipelineSettingsDialog({
   open,
   onOpenChange,
-  pipelineId,
+  stageToEdit,
+  pipelineId = null,
+  stageOrder,
 }: PipelineSettingsDialogProps) {
-  const [stages, setStages] = useState<PipelineStage[]>([])
-  const [loading, setLoading] = useState(false)
+  const isEdit = !!stageToEdit
+  const createMutation = useCreateStage()
+  const updateMutation = useUpdateStage()
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      color: '#0070f3',
+      probability: 0,
+      isDefault: false,
+    },
+  })
 
   useEffect(() => {
-    if (open) {
-      loadStages()
-    }
-  }, [open, pipelineId])
-
-  const loadStages = async () => {
-    // TODO: Implement Supabase integration when backend is ready
-    // Example implementation:
-    // const { data, error } = await supabase
-    //   .from('pipeline_stages')
-    //   .select('*')
-    //   .eq('pipeline_id', pipelineId)
-    //   .order('stage_order')
-    
-    // For MVP, use default stages as a working placeholder
-    const defaultStages: PipelineStage[] = [
-      {
-        id: '1',
-        pipelineId,
-        name: 'NDA',
-        color: '#6B7280',
-        stageOrder: 0,
-        isDefault: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        pipelineId,
-        name: 'Análise',
-        color: '#3B82F6',
-        stageOrder: 1,
+    if (stageToEdit && open) {
+      form.reset({
+        name: stageToEdit.name,
+        color: stageToEdit.color,
+        probability: stageToEdit.probability,
+        isDefault: stageToEdit.isDefault,
+      })
+    } else if (open) {
+      // Valores default para criação
+      form.reset({
+        name: '',
+        color: '#0070f3',
+        probability: 0,
         isDefault: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        pipelineId,
-        name: 'Proposta',
-        color: '#F59E0B',
-        stageOrder: 2,
-        isDefault: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '4',
-        pipelineId,
-        name: 'Negociação',
-        color: '#8B5CF6',
-        stageOrder: 3,
-        isDefault: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '5',
-        pipelineId,
-        name: 'Fechamento',
-        color: '#10B981',
-        stageOrder: 4,
-        isDefault: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ]
-    setStages(defaultStages)
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (over && active.id !== over.id) {
-      setStages((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id)
-        const newIndex = items.findIndex((item) => item.id === over.id)
-
-        const newItems = arrayMove(items, oldIndex, newIndex)
-        // Update stage orders
-        return newItems.map((item, index) => ({
-          ...item,
-          stageOrder: index,
-        }))
       })
     }
-  }
+  }, [stageToEdit, open, form])
 
-  const handleAddStage = () => {
-    const newStage: PipelineStage = {
-      id: `temp-${Date.now()}`,
-      pipelineId,
-      name: 'Nova Fase',
-      color: '#6366F1',
-      stageOrder: stages.length,
-      isDefault: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    setStages([...stages, newStage])
-  }
-
-  const handleUpdateStage = (updatedStage: PipelineStage) => {
-    setStages((current) =>
-      current.map((stage) =>
-        stage.id === updatedStage.id ? updatedStage : stage
-      )
-    )
-  }
-
-  const handleDeleteStage = (id: string) => {
-    if (stages.length <= 1) {
-      toast.error('Você deve manter pelo menos uma fase')
-      return
-    }
-    setStages((current) => current.filter((stage) => stage.id !== id))
-  }
-
-  const handleSave = async () => {
-    setLoading(true)
+  const onSubmit = async (values: FormValues) => {
     try {
-      // TODO: Implement Supabase integration when backend is ready
-      // Example implementation:
-      // const { error } = await supabase
-      //   .from('pipeline_stages')
-      //   .upsert(stages.map(stage => ({
-      //     id: stage.id.startsWith('temp-') ? undefined : stage.id,
-      //     pipeline_id: pipelineId,
-      //     name: stage.name,
-      //     color: stage.color,
-      //     stage_order: stage.stageOrder,
-      //     is_default: stage.isDefault,
-      //   })))
-      // if (error) throw error
-      
-      // For MVP: Simulate successful save
-      console.log('Pipeline stages to save:', stages)
-      toast.success('Configurações salvas com sucesso!')
+      if (isEdit && stageToEdit) {
+        await updateMutation.mutateAsync({
+          stageId: stageToEdit.id,
+          updates: {
+            name: values.name,
+            color: values.color,
+            probability: values.probability,
+            isDefault: values.isDefault,
+          },
+        })
+        toast.success(`Estágio "${values.name}" atualizado!`)
+      } else {
+        await createMutation.mutateAsync({
+          pipelineId: pipelineId,
+          name: values.name,
+          color: values.color,
+          probability: values.probability,
+          isDefault: values.isDefault,
+          stageOrder: stageOrder, // Usa a ordem da última posição
+        })
+        toast.success(`Estágio "${values.name}" criado com sucesso!`)
+      }
+
       onOpenChange(false)
+      form.reset()
     } catch (error) {
-      toast.error('Erro ao salvar configurações')
-      console.error('Error saving pipeline stages:', error)
-    } finally {
-      setLoading(false)
+      console.error(error)
+      toast.error(`Erro ao ${isEdit ? 'atualizar' : 'criar'} estágio.`)
     }
   }
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Configurações do Pipeline</DialogTitle>
-          <DialogDescription>
-            Personalize as fases do seu pipeline. Arraste para reordenar.
-          </DialogDescription>
+          <DialogTitle>{isEdit ? 'Editar Estágio' : 'Criar Novo Estágio'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={stages.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-2">
-                {stages.map((stage) => (
-                  <SortableStageItem
-                    key={stage.id}
-                    stage={stage}
-                    onUpdate={handleUpdateStage}
-                    onDelete={handleDeleteStage}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome do Estágio</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Análise de Crédito" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Button
-            variant="outline"
-            onClick={handleAddStage}
-            className="w-full"
-          >
-            <Plus className="mr-2" />
-            Adicionar Fase
-          </Button>
-        </div>
+            <div className="flex justify-between items-end gap-4">
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel className="flex items-center gap-2">
+                        Cor de Destaque <PaintBucket className="h-4 w-4" style={{ color: field.value }} />
+                    </FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                          <Input type="color" className="w-12 h-8 p-1 cursor-pointer" {...field} />
+                          <Input placeholder="#FFFFFF" className="flex-1" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="isDefault"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0 p-2 border rounded-md h-12">
+                      <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} id="is-default-checkbox" />
+                      </FormControl>
+                      <FormLabel htmlFor="is-default-checkbox" className="text-sm font-medium pt-1">
+                          Padrão
+                      </FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? 'Salvando...' : 'Salvar Alterações'}
-          </Button>
-        </DialogFooter>
+            <FormField
+              control={form.control}
+              name="probability"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Probabilidade (%)</FormLabel>
+                  <FormControl>
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Slider
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[field.value]}
+                            onValueChange={(val) => field.onChange(val[0])}
+                            className="flex-1"
+                        />
+                        <span className="w-10 text-right font-semibold text-lg">{field.value}%</span>
+                      </div>
+                      <Input 
+                        type="number"
+                        min={0}
+                        max={100}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        value={field.value}
+                        className="sr-only"
+                      />
+                    </>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Salvando...' : (isEdit ? 'Salvar Edição' : 'Criar Estágio')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )

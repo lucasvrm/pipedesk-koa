@@ -1,180 +1,327 @@
-import { useState } from 'react'
-import { useStages, useCreateStage, useUpdateStage, useDeleteStage, useReorderStages } from '@/services/pipelineService'
+import { useState, useMemo } from 'react'
+import {
+  useStages,
+  useReorderStages,
+  useDeleteStage,
+} from '@/services/pipelineService'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Plus, PencilSimple, Trash, ArrowUp, ArrowDown, FloppyDisk } from '@phosphor-icons/react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  ListChecks,
+  Plus,
+  Trash,
+  PencilSimple,
+  ArrowSquareUpRight,
+  FloppyDisk,
+  WarningCircle,
+  ArrowsVertical,
+} from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { PipelineStage } from '@/lib/types'
+import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog' // Importa o novo componente
+import { DndContext, closestCenter, useSensor, useMouseSensor, useTouchSensor, DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { arrayMove } from '@dnd-kit/sortable'
+import { cn } from '@/lib/utils'
+
+// Componente para um item da lista que pode ser reordenado
+function SortableStageRow({ stage, onEdit, onDelete }: { stage: PipelineStage; onEdit: () => void; onDelete: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: stage.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <TableRow 
+        ref={setNodeRef} 
+        style={style}
+        className={cn(
+            "cursor-default transition-transform duration-200 ease-in-out",
+            isDragging && "z-10 shadow-xl bg-primary/10"
+        )}
+    >
+      <TableCell className="w-[50px] cursor-grab" {...listeners} {...attributes}>
+        <ArrowsVertical className="h-4 w-4 text-muted-foreground" />
+      </TableCell>
+      <TableCell className="font-medium flex items-center gap-3">
+        <div style={{ backgroundColor: stage.color }} className="h-3 w-3 rounded-full shrink-0" />
+        {stage.name}
+      </TableCell>
+      <TableCell className="w-[100px] text-center font-semibold">
+        {stage.probability}%
+      </TableCell>
+      <TableCell className="w-[100px] text-center">
+        {stage.isDefault && (
+          <Badge variant="outline" className="text-[10px] bg-sky-50 text-sky-600 border-sky-200">
+            Padrão
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell className="w-[100px] text-right">
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+            <PencilSimple className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={onDelete}>
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 
 export default function PipelineSettingsPage() {
-  const { data: stages = [], isLoading } = useStages()
-  const createStage = useCreateStage()
-  const updateStage = useUpdateStage()
-  const deleteStage = useDeleteStage()
-  const reorderStages = useReorderStages()
+  const { data: fetchedStages, isLoading, refetch } = useStages()
+  const reorderStagesMutation = useReorderStages()
+  const deleteStageMutation = useDeleteStage()
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingStage, setEditingStage] = useState<PipelineStage | null>(null)
+  // Estado da lista que pode ser reordenada
+  const [stages, setStages] = useState<PipelineStage[]>([])
   
-  // Form State
-  const [name, setName] = useState('')
-  const [probability, setProbability] = useState(0)
-  const [color, setColor] = useState('#64748b')
+  // Estado para edição/criação
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [stageToEdit, setStageToEdit] = useState<PipelineStage | null>(null)
 
-  const handleOpenDialog = (stage?: PipelineStage) => {
-    if (stage) {
-      setEditingStage(stage)
-      setName(stage.name)
-      setProbability(stage.probability)
-      setColor(stage.color)
-    } else {
-      setEditingStage(null)
-      setName('')
-      setProbability(10)
-      setColor('#64748b')
+  // Estado para exclusão
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [stageToDelete, setStageToDelete] = useState<PipelineStage | null>(null)
+
+  // Sincroniza dados do hook com o estado local para reordenação
+  useMemo(() => {
+    if (fetchedStages) {
+        setStages(fetchedStages);
     }
+  }, [fetchedStages])
+  
+  // DRAG AND DROP SENSORS
+  const mouseSensor = useSensor(useMouseSensor)
+  const touchSensor = useSensor(useTouchSensor)
+  const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
+
+
+  // --- Handlers de Ação ---
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setStages((currentStages) => {
+        const oldIndex = currentStages.findIndex((stage) => stage.id === active.id);
+        const newIndex = currentStages.findIndex((stage) => stage.id === over?.id);
+        return arrayMove(currentStages, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    const reorderData = stages.map((stage, index) => ({
+      id: stage.id,
+      stageOrder: index, // A ordem é o índice na lista atual
+    }));
+
+    try {
+      await reorderStagesMutation.mutateAsync(reorderData)
+      toast.success('Ordem do pipeline salva com sucesso!')
+      refetch()
+    } catch (error) {
+      toast.error('Erro ao salvar a ordem do pipeline.')
+    }
+  }
+
+  const handleOpenEdit = (stage: PipelineStage) => {
+    setStageToEdit(stage)
     setIsDialogOpen(true)
   }
 
-  const handleSave = async () => {
+  const handleOpenCreate = () => {
+    setStageToEdit(null)
+    setIsDialogOpen(true)
+  }
+
+  const handleOpenDelete = (stage: PipelineStage) => {
+    setStageToDelete(stage)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!stageToDelete) return
+
     try {
-      if (editingStage) {
-        await updateStage.mutateAsync({
-          stageId: editingStage.id,
-          updates: { name, probability, color }
-        })
-        toast.success('Estágio atualizado!')
-      } else {
-        const maxOrder = Math.max(...stages.map(s => s.stageOrder), 0)
-        await createStage.mutateAsync({
-          pipelineId: null, // Global
-          name,
-          probability,
-          color,
-          stageOrder: maxOrder + 1,
-          isDefault: false
-        })
-        toast.success('Estágio criado!')
-      }
-      setIsDialogOpen(false)
+      await deleteStageMutation.mutateAsync(stageToDelete.id)
+      toast.success(`Estágio "${stageToDelete.name}" excluído!`)
+      setIsDeleteDialogOpen(false)
+      setStageToDelete(null)
+      refetch()
     } catch (error) {
-      toast.error('Erro ao salvar estágio')
+        if (error instanceof Error && error.message.includes('foreign key constraint')) {
+            toast.error('Não é possível excluir este estágio.', {
+                description: 'Existem players (tracks) ativos vinculados a este estágio. Realoque-os antes de excluir.'
+            });
+        } else {
+            toast.error('Erro ao excluir estágio.');
+        }
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza? Tracks nesta fase ficarão órfãos ou invisíveis.')) {
-      await deleteStage.mutateAsync(id)
-      toast.success('Estágio removido')
-    }
-  }
+  // Se a ordem em stages for diferente de fetchedStages, mostra o botão "Salvar Ordem"
+  const orderChanged = useMemo(() => {
+    if (!fetchedStages) return false;
+    if (stages.length !== fetchedStages.length) return true;
+    return stages.some((stage, index) => stage.id !== fetchedStages[index].id);
+  }, [stages, fetchedStages]);
 
-  const handleMove = async (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return
-    if (direction === 'down' && index === stages.length - 1) return
-
-    const newStages = [...stages]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    
-    // Swap
-    const temp = newStages[index]
-    newStages[index] = newStages[targetIndex]
-    newStages[targetIndex] = temp
-
-    // Update orders locally then save
-    const updates = newStages.map((s, i) => ({ id: s.id, stageOrder: i + 1 }))
-    
-    // Otimista (opcional) ou espera
-    await reorderStages.mutateAsync(updates)
-  }
+  // --- Renderização ---
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Pipeline de Tracks</h1>
-          <p className="text-muted-foreground">Gerencie as fases do funil de investidores (Tracks).</p>
+    <div className="container mx-auto p-6 max-w-7xl pb-24">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <ListChecks className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold tracking-tight">
+            Gerenciamento do Pipeline
+          </h1>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2" /> Novo Estágio
-        </Button>
+        <div className="flex gap-3">
+          {orderChanged && (
+            <Button 
+                variant="default" 
+                onClick={handleSaveOrder} 
+                disabled={reorderStagesMutation.isPending}
+            >
+              <FloppyDisk className="mr-2 h-4 w-4" />
+              {reorderStagesMutation.isPending ? 'Salvando...' : 'Salvar Ordem'}
+            </Button>
+          )}
+          <Button onClick={handleOpenCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Estágio
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="text-center py-12">Carregando configurações...</div>
-        ) : (
-          stages.map((stage, index) => (
-            <Card key={stage.id} className="flex items-center p-4 gap-4">
-              <div className="flex flex-col gap-1">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMove(index, 'up')} disabled={index === 0}>
-                  <ArrowUp size={14} />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMove(index, 'down')} disabled={index === stages.length - 1}>
-                  <ArrowDown size={14} />
-                </Button>
-              </div>
-              
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <div className="font-semibold flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: stage.color }} />
-                  {stage.name}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Probabilidade: <Badge variant="secondary">{stage.probability}%</Badge>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Ordem: {stage.stageOrder}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(stage)}>
-                  <PencilSimple size={18} />
-                </Button>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(stage.id)}>
-                  <Trash size={18} />
-                </Button>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingStage ? 'Editar Estágio' : 'Novo Estágio'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Nome da Fase</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Análise Jurídica" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Estágios do Pipeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">Carregando estágios...</div>
+          ) : stages.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20">
+              <WarningCircle className="h-8 w-8 mx-auto mb-2 text-primary/70" />
+              Nenhum estágio encontrado. Clique em "Novo Estágio" para começar.
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Probabilidade (%)</Label>
-                <Input type="number" min="0" max="100" value={probability} onChange={e => setProbability(Number(e.target.value))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Cor (Hex)</Label>
-                <div className="flex gap-2">
-                  <Input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-12 p-1" />
-                  <Input value={color} onChange={e => setColor(e.target.value)} />
-                </div>
-              </div>
+          ) : (
+            <div className="rounded-md border">
+              <ScrollArea className="max-h-[600px]">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">Ordem</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead className="w-[100px] text-center">Probabilidade</TableHead>
+                      <TableHead className="w-[100px] text-center">Tipo</TableHead>
+                      <TableHead className="w-[100px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <SortableContext 
+                        items={stages.map(s => s.id)} 
+                        strategy={verticalListSortingStrategy}
+                    >
+                      {stages.map((stage) => (
+                        <SortableStageRow
+                          key={stage.id}
+                          stage={stage}
+                          onEdit={() => handleOpenEdit(stage)}
+                          onDelete={() => handleOpenDelete(stage)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </TableBody>
+                </Table>
+              </DndContext>
+              </ScrollArea>
+              {orderChanged && (
+                  <div className="p-4 border-t bg-yellow-50/20 text-yellow-800 text-sm flex items-center gap-2">
+                      <WarningCircle className="h-5 w-5 shrink-0" />
+                      A ordem foi alterada. Clique em **"Salvar Ordem"** para aplicar as mudanças permanentemente.
+                  </div>
+              )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}><FloppyDisk className="mr-2" /> Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Diálogo de Criação/Edição */}
+      <PipelineSettingsDialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open)
+          if (!open) setStageToEdit(null)
+          refetch()
+        }}
+        stageToEdit={stageToEdit}
+        stageOrder={stages.length} 
+      />
+
+      {/* Diálogo de Confirmação de Exclusão */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Estágio "{stageToDelete?.name}"</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível e pode causar erros se existirem deals ativos neste estágio. Confirme se deseja prosseguir.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+                onClick={handleConfirmDelete}
+                className="bg-destructive hover:bg-destructive/90"
+                disabled={deleteStageMutation.isPending}
+            >
+              {deleteStageMutation.isPending ? 'Excluindo...' : 'Confirmar Exclusão'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

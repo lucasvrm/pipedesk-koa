@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -31,10 +31,11 @@ import {
 } from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createDeal } from "@/services/dealService";
+import { useStages } from "@/services/pipelineService"; // NOVO: Importa o hook dinâmico
 import { toast } from "sonner";
-import PlayerSelect from "@/components/PlayerSelect"; // CORRIGIDO: Importação DEFAULT
+import PlayerSelect from "@/components/PlayerSelect";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext"; // Importando contexto de autenticação
+import { useAuth } from "@/contexts/AuthContext";
 
 // Schema de validação
 const formSchema = z.object({
@@ -59,18 +60,24 @@ interface CreateDealDialogProps {
 
 export function CreateDealDialog({ 
   children, 
-  defaultStage = "prospect",
+  defaultStage, // Não usado diretamente, será sobrescrito pelo estágio default dinâmico
   open: controlledOpen,
   onOpenChange: setControlledOpen
 }: CreateDealDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Obtendo usuário logado
+  const { user } = useAuth();
   
+  // NOVO: Busca estágios dinâmicos
+  const { data: stages = [], isLoading: isLoadingStages } = useStages();
+
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? setControlledOpen : setInternalOpen;
+
+  // Determina o estágio default para o formulário
+  const defaultStageId = stages.find(s => s.isDefault)?.id || stages[0]?.id || '';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,20 +85,27 @@ export function CreateDealDialog({
       title: "",
       description: "",
       amount: "0",
-      stage: defaultStage,
+      stage: defaultStageId, // Usa o estágio dinâmico
       player_id: "", 
     },
   });
+
+  // Garante que o valor default é setado corretamente após o carregamento dos estágios
+  useEffect(() => {
+    if (open && defaultStageId && form.getValues('stage') !== defaultStageId) {
+        form.setValue('stage', defaultStageId, { shouldValidate: true });
+    }
+  }, [open, defaultStageId, form]);
+
 
   const createDealMutation = useMutation({
     mutationFn: createDeal,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deals"] });
-      // Invalida tracks também, caso um tenha sido criado
       queryClient.invalidateQueries({ queryKey: ["player-tracks"] });
       toast.success("Negócio criado com sucesso!");
       setOpen(false);
-      form.reset();
+      form.reset({ stage: defaultStageId, title: "", description: "", amount: "0", player_id: "" });
     },
     onError: (error) => {
       console.error("Erro ao criar negócio:", error);
@@ -105,19 +119,16 @@ export function CreateDealDialog({
       return;
     }
 
-    // Mapeamento dos campos do formulário para o formato esperado pelo serviço (DealInput)
     createDealMutation.mutate({
-      clientName: values.title,      // title -> clientName
-      observations: values.description, // description -> observations
-      volume: values.amount,         // amount -> volume
-      createdBy: user.id,            // ID do usuário logado
+      clientName: values.title,
+      observations: values.description,
+      volume: values.amount,
+      createdBy: user.id,
       
-      // Campos específicos da nova lógica
       initialStage: values.stage,
       playerId: values.player_id && values.player_id.length > 0 ? values.player_id : undefined,
       
-      // Valores padrão obrigatórios
-      operationType: 'acquisition', // Pode virar campo no form futuramente
+      operationType: 'acquisition',
       status: 'active'
     });
   }
@@ -171,7 +182,6 @@ export function CreateDealDialog({
                       </span>
                     </div>
                     <FormControl>
-                      {/* O componente PlayerSelect deve ser adaptado para a nova interface se a original for apenas {value, onChange, onCheckNew} */}
                       <PlayerSelect 
                         value={field.value || ""} 
                         onChange={field.onChange}
@@ -199,7 +209,6 @@ export function CreateDealDialog({
                       <Input 
                         placeholder="0,00" 
                         {...field} 
-                        // Pequeno hack para permitir digitar livremente e só formatar no submit
                         onChange={(e) => field.onChange(e)}
                       />
                     </FormControl>
@@ -208,24 +217,29 @@ export function CreateDealDialog({
                 )}
               />
 
+              {/* CAMPO DE ESTÁGIO DINÂMICO */}
               <FormField
                 control={form.control}
                 name="stage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fase Inicial <span className="text-red-500">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingStages}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a fase" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="prospect">Prospecção / NDA</SelectItem>
-                        <SelectItem value="active">Em Análise (Active)</SelectItem>
-                        <SelectItem value="proposal">Proposta (NBO)</SelectItem>
-                        <SelectItem value="negotiation">Negociação (Binding)</SelectItem>
-                        <SelectItem value="closing">Fechamento / Assinatura</SelectItem>
+                        {isLoadingStages ? (
+                           <div className="p-2 text-center text-muted-foreground text-xs">Carregando estágios...</div>
+                        ) : (
+                            stages.map((stage) => (
+                                <SelectItem key={stage.id} value={stage.id}>
+                                    {stage.name} ({stage.probability}%)
+                                </SelectItem>
+                            ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -261,7 +275,7 @@ export function CreateDealDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createDealMutation.isPending}>
+              <Button type="submit" disabled={createDealMutation.isPending || isLoadingStages}>
                 {createDealMutation.isPending ? "Processando..." : "Criar Master Deal"}
               </Button>
             </DialogFooter>
