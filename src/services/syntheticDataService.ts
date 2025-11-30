@@ -9,8 +9,20 @@ import {
   RELATIONSHIP_LEVEL_LABELS, 
   CREDIT_SUBTYPE_LABELS, 
   EQUITY_SUBTYPE_LABELS,
-  STAGE_PROBABILITIES // IMPORTANTE: Importar a tabela de regras
+  // REMOVIDO: STAGE_PROBABILITIES
 } from '@/lib/types';
+
+// ============================================================================
+// CONSTANTES DE DADOS SINTÉTICOS (ISOLADAS)
+// ============================================================================
+
+const SYNTHETIC_STAGE_PROBABILITIES: Record<string, number> = {
+  nda: 0,
+  analysis: 10,
+  proposal: 50,
+  negotiation: 80,
+  closing: 100
+}
 
 // ============================================================================
 // Listas Fixas e Helpers de Geração
@@ -205,7 +217,7 @@ export const syntheticDataService = {
 
         // MUDANÇA AQUI: Escolhe a fase e aplica a probabilidade correta
         const stage = faker.helpers.arrayElement(stages);
-        const correctProbability = STAGE_PROBABILITIES[stage];
+        const correctProbability = SYNTHETIC_STAGE_PROBABILITIES[stage];
 
         tracks.push({
           master_deal_id: deal.id,
