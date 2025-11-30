@@ -1,4 +1,3 @@
-import { Shield, Warning, CheckCircle } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -8,11 +7,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { PlayerStage } from '@/lib/types'
+import { XCircle, ArrowRight } from '@phosphor-icons/react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { ValidationResult, formatConditionDescription, getStageLabel } from '@/lib/phaseValidation'
-import { PlayerStage } from '@/lib/types'
+import { ValidationResult, formatConditionDescription } from '@/lib/phaseValidation' // REMOVIDO: getStageLabel
+import { useStages } from '@/services/pipelineService' // NOVO: Hook para estágios dinâmicos
+import { useMemo } from 'react'
+import { cn } from '@/lib/utils'
 
 interface PhaseValidationDialogProps {
   open: boolean
@@ -31,86 +33,76 @@ export default function PhaseValidationDialog({
   validationResult,
   onConfirm,
 }: PhaseValidationDialogProps) {
-  const handleConfirm = () => {
-    if (validationResult.isValid) {
-      onConfirm()
-      onOpenChange(false)
-    }
-  }
+
+  const { data: stages = [] } = useStages()
+
+  // Mapeia estágios para nomes
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [stages]);
+  
+  const currentStageName = stageMap[currentStage] || currentStage
+  const targetStageName = stageMap[targetStage] || targetStage
+  
+  if (!open || validationResult.isValid) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {validationResult.isValid ? (
-              <CheckCircle className="text-success" size={24} />
-            ) : (
-              <Warning className="text-destructive" size={24} />
-            )}
-            {validationResult.isValid ? 'Validação Aprovada' : 'Validação Bloqueada'}
+          <DialogTitle className="text-xl flex items-center gap-2 text-destructive">
+            <XCircle weight="fill" className="h-6 w-6" />
+            Transição Bloqueada
           </DialogTitle>
           <DialogDescription>
-            Transição de <strong>{getStageLabel(currentStage)}</strong> para{' '}
-            <strong>{getStageLabel(targetStage)}</strong>
+            Não é possível avançar de **{currentStageName}** para **{targetStageName}** porque os seguintes requisitos não foram atendidos.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {validationResult.isValid ? (
-            <Alert className="border-success/50 bg-success/5">
-              <Shield className="text-success" />
-              <AlertDescription className="text-success-foreground">
-                Todos os requisitos foram atendidos. Você pode prosseguir com esta transição.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <>
-              <Alert className="border-destructive/50 bg-destructive/5">
-                <Warning className="text-destructive" />
-                <AlertDescription className="text-destructive-foreground">
-                  {validationResult.errorMessage}
-                </AlertDescription>
-              </Alert>
+        <Separator className="my-2" />
 
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Requisitos não atendidos:</h4>
-                  <div className="space-y-2">
-                    {validationResult.failedConditions.map((condition, idx) => (
-                      <div
-                        key={condition.id}
-                        className="flex items-start gap-2 p-3 bg-muted rounded-md text-sm"
-                      >
-                        <Badge variant="destructive" className="mt-0.5 flex-shrink-0">
-                          {idx + 1}
-                        </Badge>
-                        <span className="flex-1">{formatConditionDescription(condition)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="bg-accent/10 border border-accent/20 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Dica:</strong> Preencha os campos obrigatórios antes de tentar avançar para a próxima
-                    fase. Isso garante compliance e evita erros no processo.
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
+        {/* Mensagem de Erro Principal */}
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
+          <AlertDescription className="font-medium">
+            {validationResult.errorMessage || 'Condições de avanço não atendidas.'}
+          </AlertDescription>
+        </Alert>
+        
+        {/* Lista de Condições Falhas */}
+        <div className="space-y-3 p-3 border rounded-lg bg-muted/20 max-h-60 overflow-y-auto">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Requisitos Pendentes:
+          </h3>
+          <ul className="space-y-2">
+            {validationResult.failedConditions.map((condition, index) => (
+              <li key={index} className="flex items-center gap-2 text-sm text-foreground">
+                <Warning className="h-4 w-4 text-destructive shrink-0" />
+                <span className="flex-1">
+                    {formatConditionDescription(condition)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {validationResult.isValid ? 'Cancelar' : 'Fechar'}
+            Entendido
           </Button>
-          {validationResult.isValid && (
-            <Button onClick={handleConfirm}>Confirmar Transição</Button>
-          )}
+          {/* O botão de confirmação é desabilitado neste caso, pois a validação falhou (isValid: false) */}
+          <Button 
+            variant="default" 
+            disabled 
+            className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
+          >
+            <Check className="h-4 w-4" />
+            Corrigir e Tentar Novamente
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
