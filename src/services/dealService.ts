@@ -121,10 +121,9 @@ function mapDealFromDB(item: any): Deal {
 // Service Functions
 // ============================================================================
 
-export async function getDeals(): Promise<Deal[]> {
+export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
   try {
-    const { data, error } = await withoutDeleted(
-      supabase
+    let query = supabase
         .from('master_deals')
         .select(`
           *,
@@ -136,8 +135,61 @@ export async function getDeals(): Promise<Deal[]> {
           entity_tags!left(
             tags(*)
           )
-        `)
-    ).order('created_at', { ascending: false });
+        `);
+
+    query = withoutDeleted(query);
+
+    // Filter by tags if provided
+    if (tagIds && tagIds.length > 0) {
+      // Logic: Deals that have ANY of the tags.
+      // We use !inner join to filter. But Supabase syntax for filtering on joined table is:
+      // .select(..., entity_tags!inner(...))
+      // But we already selected entity_tags!left to show tags even if filter not applied.
+      // If we apply filter, we need to ensure the deal HAS the tag.
+      // Approach: Use a separate query or change !left to !inner conditionally?
+      // Supabase JS allows modifiers in select string.
+      // Or we can filter the main query based on existing relationship.
+
+      // Simpler approach for "Match Any":
+      // Use the 'in' filter on the foreign key if possible, but M2M is hard.
+      // Best approach: Filter logic.
+      // 'entity_tags' table links deal_id -> tag_id.
+      // We want deals where id IN (select entity_id from entity_tags where tag_id in tags)
+
+      // Since supabase-js doesn't support subqueries easily in .in(), we might use .or() or RPC.
+      // Alternatively, we filter on the joined resource.
+      // To filter "deals having specific tags", we need the join to be INNER and satisfy criteria.
+
+      // However, we want to fetch ALL tags for the deal, not just the matching ones?
+      // Standard filter: return deals that match. Then map.
+      // Let's try to modify the query string dynamically.
+
+      // If filtering, we change 'entity_tags!left' to 'entity_tags!inner' AND add filter?
+      // But that would only return the matching tags in the response, hiding others.
+      // We want: Filter Deals by Tag X, but show Tags X, Y, Z.
+      // This usually requires two steps or a smart query.
+      // Given the volume (CRM deals ~hundreds/thousands), client-side filtering might be okay if we fetch everything?
+      // But requirement says "Backend: filtrar deals por tags".
+
+      // Correct approach with Supabase:
+      // Filter deals ID based on tag match.
+      const { data: matchingIds, error: matchError } = await supabase
+        .from('entity_tags')
+        .select('entity_id')
+        .eq('entity_type', 'deal')
+        .in('tag_id', tagIds);
+
+      if (matchError) throw matchError;
+
+      const ids = matchingIds.map((r: any) => r.entity_id);
+      if (ids.length > 0) {
+        query = query.in('id', ids);
+      } else {
+        return []; // No deals match
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
@@ -349,8 +401,12 @@ export async function deleteDeals(ids: string[]): Promise<void> {
   }
 }
 
-export function useDeals() {
-  return useQuery({ queryKey: ['deals'], queryFn: getDeals });
+// Hook with filter support
+export function useDeals(tagIds?: string[]) {
+  return useQuery({
+    queryKey: ['deals', tagIds],
+    queryFn: () => getDeals(tagIds)
+  });
 }
 
 export function useDeal(dealId: string | null) {

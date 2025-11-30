@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { Tag } from '@/lib/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getSetting } from './systemSettingsService';
 
 // Cores profissionais para tags
 export const TAG_COLORS = [
@@ -17,6 +18,16 @@ export const TAG_COLORS = [
   '#f43f5e', // Rose
   '#64748b', // Slate
 ];
+
+// Helper to check feature flag
+async function checkFeatureEnabled(module: 'deals' | 'tracks' | 'global') {
+  const config = await getSetting('tags_config');
+  if (!config) return true; // Default enable if not set? Or false? Let's say true for backwards compat if migration failed.
+
+  if (!config.global) return false;
+  if (module === 'global') return true;
+  return config.modules?.[module] !== false;
+}
 
 // --- API Functions ---
 
@@ -39,6 +50,11 @@ export async function getTags(entityType?: 'deal' | 'track' | 'global'): Promise
 }
 
 export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>) {
+  // Check permission? Usually RLS handles roles.
+  // Check feature flag?
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { data: userData } = await supabase.auth.getUser();
   
   const { data, error } = await supabase
@@ -56,6 +72,9 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
 }
 
 export async function updateTag(id: string, updates: Partial<Tag>) {
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { data, error } = await supabase
     .from('tags')
     .update(updates)
@@ -67,13 +86,20 @@ export async function updateTag(id: string, updates: Partial<Tag>) {
 }
 
 export async function deleteTag(id: string) {
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { error } = await supabase.from('tags').delete().eq('id', id);
   if (error) throw error;
 }
 
 // Associa Tag a Entidade
 export async function assignTagToEntity(tagId: string, entityId: string, entityType: 'deal' | 'track') {
-  // Verifica se já existe para evitar erro 23505 se o frontend falhar a verificação
+  // Fix: Map singular entityType to plural module name
+  const moduleName = entityType === 'deal' ? 'deals' : 'tracks';
+  const enabled = await checkFeatureEnabled(moduleName);
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { data: existing } = await supabase
     .from('entity_tags')
     .select('*')
@@ -94,6 +120,11 @@ export async function assignTagToEntity(tagId: string, entityId: string, entityT
 
 // Desassocia Tag
 export async function removeTagFromEntity(tagId: string, entityId: string) {
+  // Ideally check entity type flag, but we don't have type here.
+  // We strictly require global enabled.
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { error } = await supabase
     .from('entity_tags')
     .delete()
