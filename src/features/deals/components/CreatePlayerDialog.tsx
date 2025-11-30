@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useCreateTrack } from '@/services/trackService'
-import { useStages } from '@/services/pipelineService' // Importação correta do hook dinâmico
+import { useStages } from '@/services/pipelineService'
 import { usePlayers } from '@/services/playerService'
 import {
   Dialog,
@@ -30,10 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, PlayerStage } from '@/lib/types' // Removida a importação de STAGE_LABELS
+import { MasterDeal, PlayerStage } from '@/lib/types'
 import { toast } from 'sonner'
 import { ArrowLeft, Plus } from '@phosphor-icons/react'
-import PlayerSelect from '@/components/PlayerSelect'
+import PlayerSelect from '@/components/PlayerSelect' // Importação Default agora funciona
 import { formatCurrency } from '@/lib/helpers'
 
 // --- SCHEMA ---
@@ -61,7 +61,7 @@ const maskCurrencyInput = (value: string) => {
 
 export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: CreatePlayerDialogProps) {
   const createTrackMutation = useCreateTrack()
-  const { data: stages = [], isLoading: isLoadingStages } = useStages() // Hook Dinâmico
+  const { data: stages = [], isLoading: isLoadingStages } = useStages()
   const { data: players } = usePlayers()
 
   const form = useForm<FormValues>({
@@ -75,7 +75,6 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
     },
   })
 
-  // Reset/Set default stage quando stages carregam
   useEffect(() => {
     if (stages.length > 0 && form.formState.isDirty === false) {
         const defaultStageId = stages.find(s => s.isDefault)?.id || stages[0]?.id
@@ -84,12 +83,10 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
   }, [stages, form])
 
   const onSubmit = async (values: FormValues) => {
-    // 1. Unmask Volume
     const rawVolume = values.trackVolume
       ? parseFloat(values.trackVolume.replace(/[^\d,]/g, '').replace(',', '.'))
       : masterDeal.volume || 0
       
-    // 2. Encontrar probabilidade do estágio selecionado
     const selectedStage = stages.find(s => s.id === values.currentStage)
     const probability = selectedStage?.probability || 0
 
@@ -114,7 +111,6 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
     }
   }
 
-  // Lógica de seleção de Player (Entidade)
   const handlePlayerSelect = (player) => {
     form.setValue('playerName', player.name, { shouldValidate: true, shouldDirty: true })
     form.setValue('playerId', player.id, { shouldValidate: true, shouldDirty: true })

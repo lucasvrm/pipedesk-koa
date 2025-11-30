@@ -22,17 +22,31 @@ interface PlayerSelectProps {
   value?: string;
   onChange: (value: string) => void;
   onCheckNew?: () => void;
+  // Propriedades adicionais do componente CreatePlayerDialog
+  players: any[];
+  selectedPlayerId: string | undefined;
+  onSelect: (player: any) => void;
+  onDeselect: () => void;
+  disabled: boolean;
+  label?: string; // Para manter o contexto dos últimos commits
 }
 
-export function PlayerSelect({ value, onChange, onCheckNew }: PlayerSelectProps) {
+// CORREÇÃO: Exportação alterada para default
+export default function PlayerSelect({ 
+    players, 
+    selectedPlayerId, 
+    onSelect, 
+    onDeselect, 
+    disabled, 
+    label,
+    onCheckNew // Mantido por compatibilidade
+}: PlayerSelectProps) {
   const [open, setOpen] = useState(false);
   
-  const { data: players = [], isLoading } = useQuery({
-    queryKey: ["players"],
-    queryFn: getPlayers,
-  });
-
-  const selectedPlayer = players.find((p) => p.id === value);
+  // Usaremos o players passado por prop (do usePlayers no CreatePlayerDialog)
+  // Removendo o hook interno para evitar duplicação de dados e conflito com a interface anterior
+  // Assumo que a interface PlayerSelectProps acima foi uma fusão de props, vamos usar o formato mais recente (CreatePlayerDialog)
+  const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -41,24 +55,23 @@ export function PlayerSelect({ value, onChange, onCheckNew }: PlayerSelectProps)
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className="w-full justify-between font-normal"
         >
-          {value
+          {selectedPlayerId
             ? selectedPlayer?.name || "Player selecionado"
             : "Selecione um player..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       
-      {/* ALTERAÇÕES AQUI: style={{ zIndex: 9999 }} e onOpenAutoFocus */}
       <PopoverContent 
         className="w-[var(--radix-popover-trigger-width)] p-0" 
         align="start"
         style={{ zIndex: 9999 }} 
-        onOpenAutoFocus={(e) => e.preventDefault()} // Impede que o foco vá para o container, deixa o CommandInput pegar
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <Command>
-          {/* Adicionado autoFocus */}
           <CommandInput placeholder="Buscar player..." autoFocus />
           <CommandList>
             <CommandEmpty>
@@ -81,22 +94,22 @@ export function PlayerSelect({ value, onChange, onCheckNew }: PlayerSelectProps)
               </div>
             </CommandEmpty>
             <CommandGroup heading="Players Disponíveis">
-              {isLoading ? (
-                <div className="p-2 text-sm text-muted-foreground text-center">Carregando...</div>
+              {players.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground text-center">Nenhum player.</div>
               ) : (
                 players.map((player) => (
                   <CommandItem
                     key={player.id}
                     value={player.name}
                     onSelect={() => {
-                      onChange(player.id);
+                      onSelect(player);
                       setOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        value === player.id ? "opacity-100" : "opacity-0"
+                        selectedPlayerId === player.id ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div className="flex flex-col">
