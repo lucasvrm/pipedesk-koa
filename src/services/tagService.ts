@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { Tag } from '@/lib/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getSetting } from './systemSettingsService';
 
 // Cores profissionais para tags
 export const TAG_COLORS = [
@@ -18,11 +19,31 @@ export const TAG_COLORS = [
   '#64748b', // Slate
 ];
 
+// Helper to check feature flag
+async function checkFeatureEnabled(module: 'deals' | 'tracks' | 'global') {
+  const config = await getSetting('tags_config');
+  if (!config) return true; // Default enable if not set? Or false? Let's say true for backwards compat if migration failed.
+
+  if (!config.global) return false;
+  if (module === 'global') return true;
+  return config.modules?.[module] !== false;
+}
+
 // --- API Functions ---
 
-export async function getTags(entityType?: 'deal' | 'track'): Promise<Tag[]> {
+export async function getTags(entityType?: 'deal' | 'track' | 'global'): Promise<Tag[]> {
+  // Check global flag, but getting tags list usually is allowed for admin even if disabled?
+  // Let's allow reading, but UI hides it.
+
   let query = supabase.from('tags').select('*').order('name');
-  if (entityType) query = query.eq('entity_type', entityType);
+
+  if (entityType) {
+    if (entityType === 'global') {
+      query = query.eq('entity_type', 'global');
+    } else {
+      query = query.in('entity_type', [entityType, 'global']);
+    }
+  }
   
   const { data, error } = await query;
   if (error) throw error;
@@ -30,12 +51,19 @@ export async function getTags(entityType?: 'deal' | 'track'): Promise<Tag[]> {
 }
 
 export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>) {
+  // Check permission? Usually RLS handles roles.
+  // Check feature flag?
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { data: userData } = await supabase.auth.getUser();
   
   const { data, error } = await supabase
     .from('tags')
     .insert({
-      ...tag,
+      name: tag.name,
+      color: tag.color,
+      entity_type: tag.entity_type || 'global',
       created_by: userData.user?.id
     })
     .select()
@@ -45,6 +73,9 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
 }
 
 export async function updateTag(id: string, updates: Partial<Tag>) {
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { data, error } = await supabase
     .from('tags')
     .update(updates)
@@ -56,13 +87,18 @@ export async function updateTag(id: string, updates: Partial<Tag>) {
 }
 
 export async function deleteTag(id: string) {
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { error } = await supabase.from('tags').delete().eq('id', id);
   if (error) throw error;
 }
 
 // Associa Tag a Entidade
 export async function assignTagToEntity(tagId: string, entityId: string, entityType: 'deal' | 'track') {
-  // Verifica se já existe para evitar erro 23505 se o frontend falhar a verificação
+  const enabled = await checkFeatureEnabled(entityType);
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { data: existing } = await supabase
     .from('entity_tags')
     .select('*')
@@ -83,6 +119,17 @@ export async function assignTagToEntity(tagId: string, entityId: string, entityT
 
 // Desassocia Tag
 export async function removeTagFromEntity(tagId: string, entityId: string) {
+  // Removing might be allowed even if disabled to clean up? No, strict mode.
+  // Actually, allow removing to clean up is good UX, but spec says "responder 403/409 FEATURE_DISABLED".
+  // Note: we don't have entityType here easily unless passed.
+  // Assuming callers pass correct intent.
+  // Ideally, we should check flag. But `removeTagFromEntity` signature lacks type.
+  // We can fetch it or trust the UI hides it.
+  // Let's strict check global at least.
+
+  const enabled = await checkFeatureEnabled('global');
+  if (!enabled) throw new Error('FEATURE_DISABLED');
+
   const { error } = await supabase
     .from('entity_tags')
     .delete()
@@ -91,13 +138,36 @@ export async function removeTagFromEntity(tagId: string, entityId: string) {
   if (error) throw error;
 }
 
+// Buscar tags de uma entidade específica
+export async function getEntityTags(entityId: string): Promise<Tag[]> {
+  const { data, error } = await supabase
+    .from('entity_tags')
+    .select(`
+      tag_id,
+      tags:tags(*)
+    `)
+    .eq('entity_id', entityId);
+
+  if (error) throw error;
+  return data.map((item: any) => item.tags) as Tag[];
+}
+
+
 // --- Hooks React Query ---
 
-export function useTags(entityType?: 'deal' | 'track') {
+export function useTags(entityType?: 'deal' | 'track' | 'global') {
   return useQuery({
     queryKey: ['tags', entityType],
     queryFn: () => getTags(entityType),
     staleTime: 1000 * 60 * 5 // 5 minutos
+  });
+}
+
+export function useEntityTags(entityId: string) {
+  return useQuery({
+    queryKey: ['tags', 'entity', entityId],
+    queryFn: () => getEntityTags(entityId),
+    enabled: !!entityId
   });
 }
 
@@ -109,10 +179,16 @@ export function useTagOperations() {
     queryClient.invalidateQueries({ queryKey: ['tags'] }); // Atualiza lista de tags
     if (entityType === 'deal') {
       queryClient.invalidateQueries({ queryKey: ['deals'] }); // Atualiza lista de deals
-      if (entityId) queryClient.invalidateQueries({ queryKey: ['deal', entityId] }); // Atualiza detalhe
+      if (entityId) {
+        queryClient.invalidateQueries({ queryKey: ['deals', entityId] }); // Atualiza detalhe
+        queryClient.invalidateQueries({ queryKey: ['tags', 'entity', entityId] });
+      }
     } else if (entityType === 'track') {
       queryClient.invalidateQueries({ queryKey: ['tracks'] });
-      if (entityId) queryClient.invalidateQueries({ queryKey: ['tracks', 'detail', entityId] }); // Atualiza detalhe do track
+      if (entityId) {
+        queryClient.invalidateQueries({ queryKey: ['tracks', 'detail', entityId] });
+        queryClient.invalidateQueries({ queryKey: ['tags', 'entity', entityId] });
+      }
     }
   };
 

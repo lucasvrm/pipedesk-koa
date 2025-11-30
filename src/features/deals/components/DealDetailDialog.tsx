@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { useUpdateDeal } from '@/services/dealService'
+import { useTags, useTagOperations, useEntityTags, TAG_COLORS } from '@/services/tagService'
 import {
   Dialog,
   DialogContent,
@@ -20,9 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, User, STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { MasterDeal, User, STATUS_LABELS, OPERATION_LABELS, DealStatus, Tag } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
-import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle, Tag, Question } from '@phosphor-icons/react'
+import { Plus, Users, ChatCircle, ClockCounterClockwise, FileText, Sparkle, Tag as TagIcon, X } from '@phosphor-icons/react'
 import PlayerTracksList from './PlayerTracksList'
 import CreatePlayerDialog from './CreatePlayerDialog'
 import CommentsPanel from '@/components/CommentsPanel'
@@ -42,8 +49,12 @@ interface DealDetailDialogProps {
 
 export default function DealDetailDialog({ deal, open, onOpenChange, currentUser }: DealDetailDialogProps) {
   const { data: playerTracks } = useTracks()
+  const { data: dealTags = [] } = useEntityTags(deal.id)
+  const { data: availableTags = [] } = useTags('deal')
   const updateDeal = useUpdateDeal()
   const updateTrack = useUpdateTrack()
+  const tagOps = useTagOperations()
+
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
 
   const dealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
@@ -82,6 +93,34 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
     }
   }
 
+  const handleAddTag = async (tag: Tag) => {
+    try {
+        await tagOps.assign.mutateAsync({
+            tagId: tag.id,
+            entityId: deal.id,
+            entityType: 'deal'
+        });
+        toast.success(`Tag ${tag.name} adicionada`);
+    } catch (e) {
+        toast.error('Erro ao adicionar tag');
+    }
+  }
+
+  const handleRemoveTag = async (tag: Tag) => {
+    try {
+        await tagOps.unassign.mutateAsync({
+            tagId: tag.id,
+            entityId: deal.id,
+            entityType: 'deal'
+        });
+        toast.success(`Tag ${tag.name} removida`);
+    } catch (e) {
+        toast.error('Erro ao remover tag');
+    }
+  }
+
+  const unassignedTags = availableTags.filter(t => !dealTags.find(dt => dt.id === t.id));
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,7 +128,44 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
           <DialogHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <DialogTitle className="text-2xl mb-2">{deal.clientName}</DialogTitle>
+                <DialogTitle className="text-2xl mb-2 flex items-center gap-2">
+                    {deal.clientName}
+                </DialogTitle>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                    {dealTags.map(tag => (
+                        <Badge
+                            key={tag.id}
+                            style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40' }}
+                            variant="outline"
+                            className="flex items-center gap-1 pl-2 pr-1 h-5 text-[10px]"
+                        >
+                            {tag.name}
+                            <button onClick={() => handleRemoveTag(tag)} className="hover:bg-black/10 rounded-full p-0.5">
+                                <X size={8} />
+                            </button>
+                        </Badge>
+                    ))}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full border border-dashed">
+                                <Plus size={10} />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            {unassignedTags.length === 0 ? (
+                                <div className="p-2 text-xs text-muted-foreground">Sem tags disponíveis</div>
+                            ) : (
+                                unassignedTags.map(tag => (
+                                    <DropdownMenuItem key={tag.id} onClick={() => handleAddTag(tag)}>
+                                        <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
+                                        {tag.name}
+                                    </DropdownMenuItem>
+                                ))
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
                 <DialogDescription className="space-y-1">
                   <div className="flex items-center gap-3 text-sm">
                     <Badge
@@ -183,7 +259,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                 Players
               </TabsTrigger>
               <TabsTrigger value="fields">
-                <Tag className="mr-2" />
+                <TagIcon className="mr-2" />
                 Campos
               </TabsTrigger>
               <TabsTrigger value="ai">
