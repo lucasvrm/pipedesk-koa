@@ -43,6 +43,7 @@ export interface User {
   docIdentityUrl?: string
   docSocialContractUrl?: string
   docServiceAgreementUrl?: string
+  isSynthetic?: boolean
 }
 
 export interface PipelineStage {
@@ -154,6 +155,7 @@ export interface MasterDeal {
 
   responsibles?: User[];
   tags?: Tag[];
+  isSynthetic?: boolean;
 }
 
 export interface PlayerTrack {
@@ -172,6 +174,7 @@ export interface PlayerTrack {
   notes: string
   tags?: Tag[];
   stageEnteredAt?: string; // New field for SLA
+  isSynthetic?: boolean;
 }
 
 export interface Tag {
@@ -198,6 +201,7 @@ export interface Task {
   position: number
   status?: 'todo' | 'in_progress' | 'waiting_third_party' | 'blocked' | 'completed' | 'cancelled'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
+  isSynthetic?: boolean;
 }
 
 export interface Comment {
@@ -489,6 +493,7 @@ export interface Contact {
   isPrimary: boolean;
   createdAt: string;
   createdBy: string;
+  isSynthetic?: boolean;
 }
 
 // Alias legacy for backward compatibility during refactor
@@ -613,6 +618,7 @@ export interface Company {
   
   dealsCount?: number; 
   primaryContactName?: string;
+  isSynthetic?: boolean;
 }
 
 export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
@@ -674,6 +680,7 @@ export interface Lead {
 
   contacts?: Contact[];
   members?: LeadMember[];
+  isSynthetic?: boolean;
 }
 
 export interface LeadMember {
