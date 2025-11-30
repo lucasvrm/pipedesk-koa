@@ -171,13 +171,14 @@ export interface PlayerTrack {
   updatedAt: string
   notes: string
   tags?: Tag[];
+  stageEnteredAt?: string; // New field for SLA
 }
 
 export interface Tag {
   id: string;
   name: string;
   color: string;
-  entity_type?: 'deal' | 'track';
+  entity_type?: 'deal' | 'track' | 'global';
   createdAt?: string;
   createdBy?: string;
 }
@@ -400,12 +401,12 @@ export interface CustomFieldValue {
 export interface Folder {
   id: string
   name: string
-  description?: string
-  color?: string
-  icon?: string
-  parentId?: string
-  createdAt: string
-  createdBy: string
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentId?: string;
+  createdAt: string;
+  createdBy: string;
   type: 'project' | 'team' | 'sprint' | 'category' | 'custom'
   position: number
 }
@@ -429,7 +430,7 @@ export interface Question {
   entityType: 'deal' | 'track'
   title: string
   content: string
-  category?: string
+  category?: string;
   priority: QuestionPriority
   status: QuestionStatus
   askedBy: string

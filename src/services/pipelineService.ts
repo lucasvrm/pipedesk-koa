@@ -7,7 +7,7 @@ import { PipelineStage } from '@/lib/types';
 // ============================================================================
 
 export interface StageInput {
-  pipelineId: string | null;
+  pipelineId?: string | null;
   name: string;
   color?: string;
   stageOrder: number;
@@ -31,6 +31,9 @@ export interface StageUpdate {
  * Busca todos os estágios ordenados pela ordem definida
  */
 export async function getStages(pipelineId: string | null = null): Promise<PipelineStage[]> {
+  // Agora suportamos apenas pipeline global (pipeline_id IS NULL) ou específico se passado
+  // Mas a migração removeu o default e a FK, então vamos focar no stage_order
+
   let query = supabase
     .from('pipeline_stages')
     .select('*')
@@ -39,6 +42,7 @@ export async function getStages(pipelineId: string | null = null): Promise<Pipel
   if (pipelineId) {
     query = query.eq('pipeline_id', pipelineId);
   } else {
+    // Busca estágios globais (pipeline_id null)
     query = query.is('pipeline_id', null);
   }
 
@@ -66,7 +70,7 @@ export async function createStage(stage: StageInput): Promise<PipelineStage> {
   const { data, error } = await supabase
     .from('pipeline_stages')
     .insert({
-      pipeline_id: stage.pipelineId,
+      pipeline_id: stage.pipelineId || null,
       name: stage.name,
       color: stage.color || '#64748b',
       stage_order: stage.stageOrder,
@@ -143,6 +147,8 @@ export async function deleteStage(stageId: string): Promise<void> {
  * Reordena múltiplos estágios
  */
 export async function reorderStages(stages: Array<{ id: string; stageOrder: number }>): Promise<void> {
+  // Executa em série para evitar problemas de concorrência ou usar procedure se necessário
+  // Para simplicidade, Promise.all com update individual é ok para baixo volume
   const updates = stages.map((stage) =>
     supabase
       .from('pipeline_stages')
