@@ -32,12 +32,11 @@ async function checkFeatureEnabled(module: 'deals' | 'tracks' | 'global') {
 // --- API Functions ---
 
 export async function getTags(entityType?: 'deal' | 'track' | 'global'): Promise<Tag[]> {
-  // Check global flag, but getting tags list usually is allowed for admin even if disabled?
-  // Let's allow reading, but UI hides it.
-
   let query = supabase.from('tags').select('*').order('name');
 
   if (entityType) {
+    // Se solicitou um tipo específico, traz esse tipo E globais
+    // Se solicitou 'global', traz só global
     if (entityType === 'global') {
       query = query.eq('entity_type', 'global');
     } else {

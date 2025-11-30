@@ -20,8 +20,8 @@ const AuditLogView = lazy(() => import('@/components/AuditLogView'))
 const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
 const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
 const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
-const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings'))
-const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings'))
+const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings')) // Updated path
+const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings')) // New
 
 // IMPORTS PARA PLAYERS
 const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
@@ -107,18 +107,8 @@ function App() {
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
             <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
-
-            {/* RBAC Protected Admin Routes */}
-            <Route path="/admin/pipeline" element={
-                <RequirePermission permission="pipeline.manage" fallback={<Unauthorized />}>
-                    <PipelineSettingsPage />
-                </RequirePermission>
-            } />
-            <Route path="/admin/tags" element={
-                <RequirePermission permission="tags.manage" fallback={<Unauthorized />}>
-                    <TagSettingsPage />
-                </RequirePermission>
-            } />
+            <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
 
             <Route path="/analytics" element={
                 <ProtectedRoute requiredRole={['admin', 'analyst', 'newbusiness']}>
