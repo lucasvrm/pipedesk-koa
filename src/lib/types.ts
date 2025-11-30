@@ -57,6 +57,66 @@ export interface PipelineStage {
   updatedAt: string
 }
 
+// === NOVOS TIPOS DE CONFIGURAÇÃO (SETTINGS) ===
+
+export interface LossReason {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  acronym?: string;
+  description?: string;
+  defaultFeePercentage?: number;
+  defaultSlaDays?: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface DealSource {
+  id: string;
+  name: string;
+  type?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PlayerCategory {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Holiday {
+  id: string;
+  date: string; // ISO Date String 'YYYY-MM-DD'
+  name: string;
+  type: 'national' | 'regional';
+  createdAt: string;
+}
+
+export type CommunicationTemplateType = 'email' | 'whatsapp' | 'document';
+
+export interface CommunicationTemplate {
+  id: string;
+  title: string;
+  subject?: string;
+  content: string;
+  type: CommunicationTemplateType;
+  category?: string;
+  variables: string[]; // ex: ['{{client_name}}']
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
 export interface MasterDeal {
   id: string
   clientName: string
@@ -80,7 +140,17 @@ export interface MasterDeal {
   }
 
   companyId?: string;
+  // Fallback para código legado que acessa snake_case direto do banco sem mapeamento
+  company_id?: string;
   company?: Company;
+
+  // NOVOS CAMPOS RELACIONAIS
+  productId?: string;
+  product?: Product;
+  sourceId?: string;
+  source?: DealSource;
+  lossReasonId?: string;
+  lossReason?: LossReason;
 
   responsibles?: User[];
   tags?: Tag[];
@@ -89,6 +159,8 @@ export interface MasterDeal {
 export interface PlayerTrack {
   id: string
   masterDealId: string
+  // Fallback para código legado
+  playerId?: string
   playerName: string
   trackVolume: number
   currentStage: PlayerStage
@@ -132,8 +204,15 @@ export interface Comment {
   entityId: string
   entityType: 'deal' | 'track' | 'task'
   authorId: string
+  // Fallback para código que busca 'author'
+  author?: {
+    name: string
+    avatar?: string
+  }
   content: string
   createdAt: string
+  // Fallback para snake_case
+  created_at?: string
   mentions: string[]
 }
 
@@ -230,6 +309,22 @@ export const STATUS_LABELS: Record<DealStatus, string> = {
   cancelled: 'Cancelado',
   concluded: 'Concluído',
   on_hold: 'Em Espera'
+}
+
+export const STAGE_LABELS: Record<string, string> = {
+  nda: 'NDA',
+  tease: 'Teaser',
+  offer: 'Oferta',
+  diligence: 'Diligência',
+  closing: 'Fechamento'
+}
+
+export const STAGE_PROBABILITIES: Record<string, number> = {
+  nda: 10,
+  tease: 25,
+  offer: 50,
+  diligence: 75,
+  closing: 95
 }
 
 export const OPERATION_LABELS: Record<OperationType, string> = {
@@ -354,7 +449,7 @@ export interface Answer {
 
 // --- TIPOS DO PLAYER ---
 
-export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other';
+export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other' | 'fund';
 
 export type AssetManagerType = 
   | 'fii_tijolo' | 'fii_papel' | 'fii_hibrido' 
@@ -412,6 +507,10 @@ export interface Player {
   deletedAt?: string;
   isSynthetic: boolean;
   
+  // NOVO CAMPO RELACIONAL
+  categoryId?: string;
+  category?: PlayerCategory;
+
   contacts?: PlayerContact[];
   creator?: { name: string };
   primaryContact?: PlayerContact; 
@@ -422,7 +521,8 @@ export const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
   asset_manager: 'Gestora',
   securitizer: 'Securitizadora',
   family_office: 'Family Office',
-  other: 'Outro'
+  other: 'Outro',
+  fund: 'Fundo'
 };
 
 export const ASSET_MANAGER_TYPE_LABELS: Record<AssetManagerType, string> = {

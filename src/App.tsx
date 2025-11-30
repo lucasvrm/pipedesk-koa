@@ -38,6 +38,7 @@ const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/Co
 // Pages de Admin/Settings
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage')) // NOVO
 const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
 const PhaseValidationPage = lazy(() => import('@/pages/settings/PhaseValidationPage'))
 const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
@@ -101,6 +102,7 @@ function App() {
             {/* Rotas de Admin */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} /> {/* NOVA ROTA */}
             <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/settings/phase-validation" element={<PhaseValidationPage />} />
 

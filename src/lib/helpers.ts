@@ -1,3 +1,16 @@
+
+// Definição de tipo para window.spark
+declare global {
+  interface Window {
+    spark?: {
+      kv: {
+        get: <T>(key: string) => Promise<T | null>;
+        set: <T>(key: string, value: T) => Promise<void>;
+      };
+    };
+  }
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -94,7 +107,7 @@ export function trackStageChange(
       const existingHistory = history || []
       
       const openRecord = existingHistory.find(
-        (h) => h.playerTrackId === trackId && h.stage === oldStage && !h.exitedAt
+        (h: any) => h.playerTrackId === trackId && h.stage === oldStage && !h.exitedAt
       )
 
       const now = new Date().toISOString()

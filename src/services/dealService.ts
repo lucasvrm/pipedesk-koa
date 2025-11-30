@@ -37,6 +37,7 @@ export interface DealInput {
   playerId?: string;
   initialStage?: string; 
   companyId?: string;
+  dealProduct?: string; // ADICIONADO
 }
 
 export interface DealUpdate {
@@ -48,6 +49,7 @@ export interface DealUpdate {
   status?: DealStatus;
   feePercentage?: number;
   companyId?: string;
+  dealProduct?: string; // ADICIONADO
 }
 
 // ============================================================================
@@ -88,6 +90,7 @@ function mapDealFromDB(item: any): Deal {
     updatedAt: item.updated_at,
     createdBy: item.created_by,
     deletedAt: item.deleted_at || undefined,
+    dealProduct: item.deal_product, // ADICIONADO NO MAPPER
     
     companyId: item.company_id || undefined,
     
@@ -223,6 +226,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
         fee_percentage: deal.feePercentage,
         created_by: deal.createdBy,
         company_id: deal.companyId,
+        deal_product: deal.dealProduct, // ADICIONADO
       })
       .select(`
         *,
@@ -287,6 +291,7 @@ export async function updateDeal(dealId: string, updates: DealUpdate): Promise<D
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.feePercentage !== undefined) updateData.fee_percentage = updates.feePercentage;
     if (updates.companyId !== undefined) updateData.company_id = updates.companyId;
+    if (updates.dealProduct !== undefined) updateData.deal_product = updates.dealProduct; // ADICIONADO
 
     const { data, error } = await supabase
       .from('master_deals')

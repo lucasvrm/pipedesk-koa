@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Check, ArrowRight, WarningCircle, Code, PencilSimple, X } from '@phosphor-icons/react'
-import { PhaseRuleEditor } from '@/components/PhaseRuleEditor' // Importa o novo editor
+import { Plus, ArrowRight, WarningCircle, Code, PencilSimple } from '@phosphor-icons/react'
+import { PhaseRuleEditor } from '@/components/PhaseRuleEditor'
 import { PhaseTransitionRule } from '@/lib/phaseValidation'
 import { useStages } from '@/services/pipelineService'
 import { toast } from 'sonner'

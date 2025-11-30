@@ -6,10 +6,8 @@ import {
   PlayerType, 
   AssetManagerType, 
   OperationType, 
-  RELATIONSHIP_LEVEL_LABELS, 
   CREDIT_SUBTYPE_LABELS, 
-  EQUITY_SUBTYPE_LABELS,
-  // REMOVIDO: STAGE_PROBABILITIES
+  EQUITY_SUBTYPE_LABELS
 } from '@/lib/types';
 
 // ============================================================================
@@ -47,8 +45,14 @@ const OPERATIONS: OperationType[] = [
 // Status possíveis
 const STATUSES: DealStatus[] = ['active', 'concluded', 'cancelled', 'on_hold'];
 
-const getRandomProducts = () => {
-  let products = { credit: [], equity: [], barter: [] };
+interface Products {
+  credit: string[];
+  equity: string[];
+  barter: string[];
+}
+
+const getRandomProducts = (): Products => {
+  let products: Products = { credit: [], equity: [], barter: [] };
   let hasAny = false;
 
   while (!hasAny) {
@@ -56,9 +60,9 @@ const getRandomProducts = () => {
     const hasEquity = Math.random() > 0.5; 
     const hasBarter = Math.random() > 0.8; 
 
-    if (hasCredit) products.credit = faker.helpers.arrayElements(CREDIT_KEYS, { min: 1, max: 3 }) as any;
-    if (hasEquity) products.equity = faker.helpers.arrayElements(EQUITY_KEYS, { min: 1, max: 2 }) as any;
-    if (hasBarter) products.barter = ['financeira'] as any; 
+    if (hasCredit) products.credit = faker.helpers.arrayElements(CREDIT_KEYS, { min: 1, max: 3 }) as string[];
+    if (hasEquity) products.equity = faker.helpers.arrayElements(EQUITY_KEYS, { min: 1, max: 2 }) as string[];
+    if (hasBarter) products.barter = ['financeira'];
 
     if (products.credit.length > 0 || products.equity.length > 0 || products.barter.length > 0) {
       hasAny = true;
@@ -110,7 +114,7 @@ export const syntheticDataService = {
   // --- 2. PLAYERS ---
   async generatePlayers(count: number, userId: string) {
     console.log(`🎲 Gerando ${count} players ricos...`);
-    const players = [];
+    const players: any[] = [];
 
     for (let i = 0; i < count; i++) {
       const type = getRandomPlayerType();
@@ -142,7 +146,7 @@ export const syntheticDataService = {
   },
 
   async generateContactsForPlayers(players: any[], userId: string) {
-    const contacts = [];
+    const contacts: any[] = [];
     for (const player of players) {
       const contactCount = faker.number.int({ min: 1, max: 3 });
       for (let k = 0; k < contactCount; k++) {
@@ -170,7 +174,7 @@ export const syntheticDataService = {
     const { data: users } = await supabase.from('profiles').select('id');
     if (!users?.length) throw new Error("Sem usuários para atribuir deals.");
 
-    const deals = [];
+    const deals: any[] = [];
 
     for (let i = 0; i < count; i++) {
       const creator = faker.helpers.arrayElement(users).id;
@@ -198,7 +202,7 @@ export const syntheticDataService = {
   },
 
   async generateTracksAndTasks(deals: any[], userIds: string[]) {
-    const tracks = [];
+    const tracks: any[] = [];
     const stages: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'];
     
     const { data: players } = await supabase.from('players').select('id, name').limit(50);
@@ -238,7 +242,7 @@ export const syntheticDataService = {
     const { data: createdTracks } = await supabase.from('player_tracks').insert(tracks).select();
     
     if (createdTracks) {
-      const tasks = [];
+      const tasks: any[] = [];
       for (const track of createdTracks) {
         if (Math.random() > 0.5) {
             tasks.push({

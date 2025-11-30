@@ -57,7 +57,7 @@ describe('Analytics Calculations', () => {
     it('should sum all active track volumes', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda', 1000000),
-        createTrack('2', 'proposal', 2000000),
+        createTrack('2', 'offer', 2000000),
         createTrack('3', 'closing', 500000),
       ]
       
@@ -67,7 +67,7 @@ describe('Analytics Calculations', () => {
     it('should exclude concluded tracks', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda', 1000000, 50, 'active'),
-        createTrack('2', 'proposal', 2000000, 50, 'concluded'),
+        createTrack('2', 'offer', 2000000, 50, 'concluded'),
       ]
       
       expect(calculatePipelineValue(tracks)).toBe(1000000)
@@ -76,7 +76,7 @@ describe('Analytics Calculations', () => {
     it('should exclude cancelled tracks', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda', 1000000, 50, 'active'),
-        createTrack('2', 'proposal', 2000000, 50, 'cancelled'),
+        createTrack('2', 'offer', 2000000, 50, 'cancelled'),
       ]
       
       expect(calculatePipelineValue(tracks)).toBe(1000000)
@@ -89,7 +89,7 @@ describe('Analytics Calculations', () => {
     it('should return 0 when no active tracks', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda', 1000000, 50, 'concluded'),
-        createTrack('2', 'proposal', 2000000, 50, 'cancelled'),
+        createTrack('2', 'offer', 2000000, 50, 'cancelled'),
       ]
       
       expect(calculatePipelineValue(tracks)).toBe(0)
@@ -100,7 +100,7 @@ describe('Analytics Calculations', () => {
     it('should calculate weighted volume for all active tracks', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda', 1000000, 10),     // 100,000
-        createTrack('2', 'proposal', 1000000, 50), // 500,000
+        createTrack('2', 'offer', 1000000, 50),   // 500,000
         createTrack('3', 'closing', 1000000, 90),  // 900,000
       ]
       
@@ -110,7 +110,7 @@ describe('Analytics Calculations', () => {
     it('should exclude non-active tracks', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda', 1000000, 50, 'active'),
-        createTrack('2', 'proposal', 1000000, 50, 'concluded'),
+        createTrack('2', 'offer', 1000000, 50, 'concluded'),
       ]
       
       expect(calculateWeightedPipeline(tracks)).toBe(500000)
@@ -161,15 +161,16 @@ describe('Analytics Calculations', () => {
       const tracks: PlayerTrack[] = [
         createTrack('1', 'nda'),
         createTrack('2', 'nda'),
-        createTrack('3', 'proposal'),
+        createTrack('3', 'offer'),
         createTrack('4', 'closing'),
       ]
       
       const result = groupTracksByStage(tracks)
       expect(result.nda).toBe(2)
-      expect(result.analysis).toBe(0)
-      expect(result.proposal).toBe(1)
-      expect(result.negotiation).toBe(0)
+      // Chaves não presentes retornam undefined
+      expect(result.tease).toBeUndefined()
+      expect(result.offer).toBe(1)
+      expect(result.diligence).toBeUndefined()
       expect(result.closing).toBe(1)
     })
 
@@ -185,11 +186,7 @@ describe('Analytics Calculations', () => {
 
     it('should return all zeros for empty tracks', () => {
       const result = groupTracksByStage([])
-      expect(result.nda).toBe(0)
-      expect(result.analysis).toBe(0)
-      expect(result.proposal).toBe(0)
-      expect(result.negotiation).toBe(0)
-      expect(result.closing).toBe(0)
+      expect(result.nda).toBeUndefined()
     })
   })
 
@@ -245,17 +242,17 @@ describe('Analytics Calculations', () => {
   describe('calculateStageForecast', () => {
     it('should calculate weighted forecast for specific stage', () => {
       const tracks: PlayerTrack[] = [
-        createTrack('1', 'proposal', 1000000), // 50% probability = 500,000
-        createTrack('2', 'proposal', 2000000), // 50% probability = 1,000,000
-        createTrack('3', 'closing', 1000000),  // shouldn't be included
+        createTrack('1', 'offer', 1000000, 50), // 50% probability = 500,000
+        createTrack('2', 'offer', 2000000, 50), // 50% probability = 1,000,000
+        createTrack('3', 'closing', 1000000, 90),  // shouldn't be included
       ]
       
-      expect(calculateStageForecast(tracks, 'proposal')).toBe(1500000)
+      expect(calculateStageForecast(tracks, 'offer')).toBe(1500000)
     })
 
-    it('should use stage-based probability from STAGE_PROBABILITIES', () => {
+    it('should use stage-based probability when provided', () => {
       const tracks: PlayerTrack[] = [
-        createTrack('1', 'nda', 1000000), // 10% = 100,000
+        createTrack('1', 'nda', 1000000, 10), // 10% = 100,000
       ]
       
       expect(calculateStageForecast(tracks, 'nda')).toBe(100000)
@@ -263,16 +260,16 @@ describe('Analytics Calculations', () => {
 
     it('should exclude non-active tracks', () => {
       const tracks: PlayerTrack[] = [
-        createTrack('1', 'proposal', 1000000, 50, 'active'),
-        createTrack('2', 'proposal', 1000000, 50, 'concluded'),
+        createTrack('1', 'offer', 1000000, 50, 'active'),
+        createTrack('2', 'offer', 1000000, 50, 'concluded'),
       ]
       
-      expect(calculateStageForecast(tracks, 'proposal')).toBe(500000)
+      expect(calculateStageForecast(tracks, 'offer')).toBe(500000)
     })
 
     it('should return 0 for stage with no tracks', () => {
       const tracks: PlayerTrack[] = [
-        createTrack('1', 'nda', 1000000),
+        createTrack('1', 'nda', 1000000, 10),
       ]
       
       expect(calculateStageForecast(tracks, 'closing')).toBe(0)
