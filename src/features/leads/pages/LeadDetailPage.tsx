@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, CheckCircle, XCircle, User, Building, Phone, Envelope } from '@phosphor-icons/react'
-import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS } from '@/lib/types'
+import { ArrowLeft, CheckCircle, XCircle, User, Building, Phone, Envelope, Tag, Plus } from '@phosphor-icons/react'
+import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
+import TagSelector from '@/components/TagSelector'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -101,6 +102,10 @@ export default function LeadDetailPage() {
                      <p>{LEAD_ORIGIN_LABELS[lead.origin]}</p>
                    </div>
                    <div>
+                     <span className="text-xs text-muted-foreground uppercase font-bold">Tipo de Operação</span>
+                     <p>{lead.operationType ? (OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType) : '-'}</p>
+                   </div>
+                   <div>
                      <span className="text-xs text-muted-foreground uppercase font-bold">Website</span>
                      <p>{lead.website || '-'}</p>
                    </div>
@@ -108,6 +113,12 @@ export default function LeadDetailPage() {
                  <div>
                    <span className="text-xs text-muted-foreground uppercase font-bold">Endereço</span>
                    <p>{lead.addressCity ? `${lead.addressCity} - ${lead.addressState}` : '-'}</p>
+                 </div>
+                 <div>
+                   <span className="text-xs text-muted-foreground uppercase font-bold">Tags</span>
+                   <div className="mt-1">
+                      <TagSelector entityId={lead.id} entityType="lead" variant="default" />
+                   </div>
                  </div>
                  <div>
                    <span className="text-xs text-muted-foreground uppercase font-bold">Descrição</span>
