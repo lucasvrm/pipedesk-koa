@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTrack, useUpdateTrack } from '@/services/trackService'
 import { useDeal } from '@/services/dealService'
 import { useTasks, useUpdateTask } from '@/services/taskService'
 import { useUsers } from '@/services/userService'
+import { useStages } from '@/services/pipelineService' // NOVO: Importa o hook dinâmico
 import { logActivity } from '@/services/activityService'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -37,7 +38,7 @@ import {
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-import { STATUS_LABELS, Task, STAGE_LABELS, PlayerStage, PlayerTrackStatus } from '@/lib/types'
+import { STATUS_LABELS, Task, PlayerStage, PlayerTrackStatus } from '@/lib/types' // REMOVIDO: STAGE_LABELS
 import { formatCurrency, formatDate } from '@/lib/helpers'
 
 // Components
@@ -58,6 +59,7 @@ export default function TrackDetailPage() {
   const { data: deal } = useDeal(track?.masterDealId || null)
   const { data: tasks } = useTasks(id)
   const { data: users } = useUsers()
+  const { data: stages = [], isLoading: stagesLoading } = useStages() // Hook Dinâmico
   
   const updateTrack = useUpdateTrack()
   const updateTask = useUpdateTask()
@@ -66,8 +68,16 @@ export default function TrackDetailPage() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
   const [editTrackOpen, setEditTrackOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
+  // Memo para obter o nome do estágio a partir dos dados dinâmicos
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [stages]);
   
-  if (trackLoading || !track) {
+  if (trackLoading || !track || stagesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -77,14 +87,21 @@ export default function TrackDetailPage() {
 
   // --- Handlers ---
 
-  const handleStageChange = (newStage: PlayerStage) => {
+  const handleStageChange = (newStageId: PlayerStage) => {
+    // Encontra o estágio para obter a probabilidade dinâmica
+    const stageInfo = stages.find(s => s.id === newStageId);
+
     updateTrack.mutate({
       trackId: track.id,
-      updates: { currentStage: newStage }
+      updates: { 
+        currentStage: newStageId,
+        probability: stageInfo?.probability || 0, // Atualiza probabilidade
+      }
     }, {
       onSuccess: () => {
-        toast.success(`Estágio atualizado para ${STAGE_LABELS[newStage]}`)
-        if (currentUser) logActivity(track.masterDealId, 'track', `Estágio alterado para ${STAGE_LABELS[newStage]}`, currentUser.id)
+        const stageName = stageMap[newStageId] || newStageId;
+        toast.success(`Estágio atualizado para ${stageName}`)
+        if (currentUser) logActivity(track.masterDealId, 'track', `Estágio alterado para ${stageName}`, currentUser.id)
       },
       onError: () => toast.error('Erro ao atualizar estágio')
     })
@@ -215,14 +232,20 @@ export default function TrackDetailPage() {
             <div className="flex gap-2 items-center">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:inline">Fase Atual</span>
-                    <Select value={track.currentStage} onValueChange={(v) => handleStageChange(v as PlayerStage)}>
+                    <Select value={track.currentStage} onValueChange={(v) => handleStageChange(v as PlayerStage)} disabled={stagesLoading}>
                         <SelectTrigger className="w-[180px] h-9">
                             <SelectValue placeholder="Estágio" />
                         </SelectTrigger>
                         <SelectContent>
-                            {Object.entries(STAGE_LABELS).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
-                            ))}
+                            {stages.length === 0 ? (
+                                <div className="p-2 text-center text-muted-foreground text-xs">Carregando estágios...</div>
+                            ) : (
+                                stages.map((stage) => (
+                                <SelectItem key={stage.id} value={stage.id}>
+                                    {stage.name}
+                                </SelectItem>
+                                ))
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
