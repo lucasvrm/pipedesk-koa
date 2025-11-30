@@ -1,337 +1,397 @@
-import { useState, useEffect } from 'react'
-import { Plus, Trash } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useMemo } from 'react'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Plus, Trash, WarningCircle, Check, X, Code } from '@phosphor-icons/react'
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from '@/components/ui/form'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { User, PlayerStage } from '@/lib/types'
-import {
   PhaseTransitionRule,
-  FieldCondition,
   AVAILABLE_FIELDS,
   OPERATORS_BY_TYPE,
   OPERATOR_LABELS,
-  getStageLabel,
+  FieldType,
   ValidationOperator,
 } from '@/lib/phaseValidation'
+import { useStages } from '@/services/pipelineService'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { nanoid } from 'nanoid'
+
+// --- SCHEMAS ---
+
+const conditionSchema = z.object({
+  id: z.string(),
+  fieldName: z.string().min(1, 'Campo obrigatório'),
+  fieldType: z.string() as z.Schema<FieldType>,
+  operator: z.string() as z.Schema<ValidationOperator>,
+  value: z.any().optional(),
+  label: z.string().optional(),
+})
+
+const ruleSchema = z.object({
+  id: z.string().optional(),
+  fromStage: z.string().min(1, 'Estágio de origem é obrigatório'),
+  toStage: z.string().min(1, 'Estágio de destino é obrigatório'),
+  errorMessage: z.string().min(1, 'Mensagem de erro é obrigatória'),
+  requireAll: z.boolean(),
+  enabled: z.boolean(),
+  conditions: z.array(conditionSchema).min(1, 'É necessária pelo menos uma condição'),
+})
+
+type RuleFormValues = z.infer<typeof ruleSchema>
 
 interface PhaseRuleEditorProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  rule: PhaseTransitionRule | null
-  onSave: (rule: PhaseTransitionRule) => void
-  currentUser: User
+  ruleToEdit?: PhaseTransitionRule | null
+  onSave: (rule: PhaseTransitionRule) => Promise<void>
+  onCancel: () => void
+  isSaving: boolean
+  onDelete?: (ruleId: string) => Promise<void>
 }
 
-const STAGES: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing']
+export function PhaseRuleEditor({ ruleToEdit, onSave, onCancel, isSaving, onDelete }: PhaseRuleEditorProps) {
+  const { data: stages = [] } = useStages()
+  const isEdit = !!ruleToEdit
 
-export default function PhaseRuleEditor({
-  open,
-  onOpenChange,
-  rule,
-  onSave,
-  currentUser,
-}: PhaseRuleEditorProps) {
-  const [fromStage, setFromStage] = useState<PlayerStage | 'any'>('any')
-  const [toStage, setToStage] = useState<PlayerStage>('nda')
-  const [requireAll, setRequireAll] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [conditions, setConditions] = useState<FieldCondition[]>([])
+  const form = useForm<RuleFormValues>({
+    resolver: zodResolver(ruleSchema),
+    defaultValues: {
+      id: ruleToEdit?.id,
+      fromStage: ruleToEdit?.fromStage || 'any',
+      toStage: ruleToEdit?.toStage || '',
+      errorMessage: ruleToEdit?.errorMessage || 'Requisitos de avanço não atendidos.',
+      requireAll: ruleToEdit?.requireAll ?? true,
+      enabled: ruleToEdit?.enabled ?? true,
+      conditions: ruleToEdit?.conditions?.length
+        ? ruleToEdit.conditions.map(c => ({ ...c, id: nanoid() }))
+        : [{ id: nanoid(), fieldName: 'track.notes', fieldType: 'text', operator: 'is_empty', value: '', label: 'Observações do Track' }],
+    },
+  })
 
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'conditions',
+  })
+
+  // Sincroniza fieldType e label quando fieldName muda
   useEffect(() => {
-    if (rule) {
-      setFromStage(rule.fromStage)
-      setToStage(rule.toStage)
-      setRequireAll(rule.requireAll)
-      setErrorMessage(rule.errorMessage || '')
-      setConditions(rule.conditions)
-    } else {
-      setFromStage('any')
-      setToStage('nda')
-      setRequireAll(true)
-      setErrorMessage('')
-      setConditions([])
-    }
-  }, [rule])
-
-  const handleAddCondition = () => {
-    const firstField = Object.keys(AVAILABLE_FIELDS)[0]
-    const fieldConfig = AVAILABLE_FIELDS[firstField]
-    const firstOperator = OPERATORS_BY_TYPE[fieldConfig.type][0]
-
-    setConditions([
-      ...conditions,
-      {
-        id: `condition-${Date.now()}`,
-        fieldName: firstField,
-        fieldType: fieldConfig.type,
-        operator: firstOperator,
-        value: '',
-        label: fieldConfig.label,
-      },
-    ])
-  }
-
-  const handleRemoveCondition = (conditionId: string) => {
-    setConditions(conditions.filter(c => c.id !== conditionId))
-  }
-
-  const handleUpdateCondition = (conditionId: string, updates: Partial<FieldCondition>) => {
-    setConditions(
-      conditions.map(c => {
-        if (c.id !== conditionId) return c
-
-        const newCondition = { ...c, ...updates }
-
-        if (updates.fieldName) {
-          const fieldConfig = AVAILABLE_FIELDS[updates.fieldName]
-          newCondition.fieldType = fieldConfig.type
-          newCondition.label = fieldConfig.label
-          newCondition.operator = OPERATORS_BY_TYPE[fieldConfig.type][0]
-          newCondition.value = ''
+    fields.forEach((field, index) => {
+      const fieldName = form.watch(`conditions.${index}.fieldName`)
+      const config = AVAILABLE_FIELDS[fieldName]
+      if (config) {
+        form.setValue(`conditions.${index}.fieldType`, config.type)
+        form.setValue(`conditions.${index}.label`, config.label)
+        // Redefine o operador se for incompatível
+        const currentOperator = form.getValues(`conditions.${index}.operator`)
+        if (!OPERATORS_BY_TYPE[config.type].includes(currentOperator)) {
+          form.setValue(`conditions.${index}.operator`, OPERATORS_BY_TYPE[config.type][0])
+          form.setValue(`conditions.${index}.value`, undefined)
         }
+      }
+    })
+  }, [form.watch, fields, form])
 
-        if (updates.operator) {
-          if (updates.operator === 'is_filled' || updates.operator === 'is_empty') {
-            newCondition.value = undefined
-          }
+  const onSubmit = async (values: RuleFormValues) => {
+    // Limpa a propriedade 'value' se o operador for is_filled ou is_empty
+    const cleanedConditions = values.conditions.map(c => {
+        if (c.operator === 'is_filled' || c.operator === 'is_empty') {
+            return { ...c, value: undefined }
         }
+        return c
+    })
 
-        return newCondition
-      })
-    )
-  }
-
-  const handleSave = () => {
-    if (conditions.length === 0) {
-      return
+    const rule: PhaseTransitionRule = {
+        ...values,
+        conditions: cleanedConditions,
+        id: ruleToEdit?.id || nanoid(),
+        fromStage: values.fromStage as PlayerStage | 'any',
+        toStage: values.toStage as PlayerStage,
     }
-
-    const newRule: PhaseTransitionRule = {
-      id: rule?.id || `rule-${Date.now()}`,
-      fromStage,
-      toStage,
-      conditions,
-      requireAll,
-      errorMessage: errorMessage || 'Requisitos não atendidos para avançar para esta fase',
-      enabled: rule?.enabled ?? true,
-      createdAt: rule?.createdAt || new Date().toISOString(),
-      createdBy: rule?.createdBy || currentUser.id,
-    }
-
-    onSave(newRule)
+    
+    await onSave(rule)
   }
 
-  const needsValue = (operator: ValidationOperator) => {
-    return operator !== 'is_filled' && operator !== 'is_empty'
-  }
+  // Define os estágios disponíveis para a transição
+  const stageOptions = useMemo(() => {
+    return stages.map(s => ({ value: s.id, label: s.name }))
+  }, [stages])
+
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {rule ? 'Editar Regra de Validação' : 'Nova Regra de Validação'}
-          </DialogTitle>
-          <DialogDescription>
-            Configure quando e quais condições devem ser atendidas para permitir a transição entre fases
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Fase de Origem</Label>
-              <Select value={fromStage} onValueChange={(v) => setFromStage(v as PlayerStage | 'any')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Qualquer fase</SelectItem>
-                  {STAGES.map(stage => (
-                    <SelectItem key={stage} value={stage}>
-                      {getStageLabel(stage)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Fase de Destino</Label>
-              <Select value={toStage} onValueChange={(v) => setToStage(v as PlayerStage)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAGES.map(stage => (
-                    <SelectItem key={stage} value={stage}>
-                      {getStageLabel(stage)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Condições</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Configure os requisitos que devem ser atendidos
-                </p>
-              </div>
-              <Button size="sm" variant="outline" onClick={handleAddCondition}>
-                <Plus className="mr-2" size={16} />
-                Adicionar Condição
-              </Button>
-            </div>
-
-            {conditions.length > 0 && (
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <Switch checked={requireAll} onCheckedChange={setRequireAll} id="require-all" />
-                <Label htmlFor="require-all" className="cursor-pointer text-sm">
-                  {requireAll ? 'Todas as condições devem ser atendidas (E)' : 'Qualquer condição pode ser atendida (OU)'}
-                </Label>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {conditions.map((condition, idx) => (
-                <div key={condition.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">Condição {idx + 1}</Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveCondition(condition.id)}
-                    >
-                      <Trash size={16} />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="space-y-2">
-                      <Label>Campo</Label>
-                      <Select
-                        value={condition.fieldName}
-                        onValueChange={(v) => handleUpdateCondition(condition.id, { fieldName: v })}
-                      >
+    <Card className="shadow-none border-0">
+      <CardHeader>
+        <CardTitle className="text-xl">
+          {isEdit ? 'Editar Regra' : 'Nova Regra de Validação'}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Defina as condições que devem ser atendidas para avançar um Track de uma fase para outra.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            
+            {/* ESTÁGIOS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fromStage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>De Estágio (Origem)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Qualquer Estágio" />
                         </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="any">Qualquer Estágio</SelectItem>
                         <SelectContent>
-                          {Object.entries(AVAILABLE_FIELDS).map(([key, field]) => (
-                            <SelectItem key={key} value={key}>
-                              {field.label}
+                          {stageOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
-                      </Select>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="toStage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Para Estágio (Destino)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Estágio de Destino" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {stageOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* CONDIÇÕES */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Code className="h-5 w-5" /> Condições
+                </CardTitle>
+                <div className="flex items-center gap-4">
+                    <FormField
+                        control={form.control}
+                        name="requireAll"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2 space-y-0 p-2 border rounded-md">
+                              <FormControl>
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} id="require-all-switch" />
+                              </FormControl>
+                              <FormLabel htmlFor="require-all-switch" className="text-sm font-medium pt-1">
+                                  Requerer TODAS as condições ({field.value ? 'E/AND' : 'OU/OR'})
+                              </FormLabel>
+                          </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="enabled"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2 space-y-0 p-2 border rounded-md">
+                              <FormControl>
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} id="enabled-switch" />
+                              </FormControl>
+                              <FormLabel htmlFor="enabled-switch" className="text-sm font-medium pt-1">
+                                  Regra Ativa
+                              </FormLabel>
+                          </FormItem>
+                        )}
+                    />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+
+                {fields.map((field, index) => (
+                  <div key={field.id} className="p-3 border rounded-lg bg-muted/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <span className="font-semibold text-xs text-muted-foreground">CONDIÇÃO {index + 1}</span>
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                            onClick={() => remove(index)}
+                            disabled={fields.length === 1}
+                        >
+                            <Trash className="h-3 w-3" />
+                        </Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label>Operador</Label>
-                        <Select
-                          value={condition.operator}
-                          onValueChange={(v) =>
-                            handleUpdateCondition(condition.id, { operator: v as ValidationOperator })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {OPERATORS_BY_TYPE[condition.fieldType].map(op => (
-                              <SelectItem key={op} value={op}>
-                                {OPERATOR_LABELS[op]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {/* Campo */}
+                      <FormField
+                        control={form.control}
+                        name={`conditions.${index}.fieldName`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o Campo" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.entries(AVAILABLE_FIELDS).map(([key, config]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {config.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Operador */}
+                      <FormField
+                        control={form.control}
+                        name={`conditions.${index}.operator`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o Operador" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {OPERATORS_BY_TYPE[form.watch(`conditions.${index}.fieldType`) || 'text']?.map(opKey => (
+                                  <SelectItem key={opKey} value={opKey}>
+                                    {OPERATOR_LABELS[opKey]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                      {needsValue(condition.operator) && (
-                        <div className="space-y-2">
-                          <Label>Valor</Label>
-                          <Input
-                            type={condition.fieldType === 'number' ? 'number' : 'text'}
-                            value={condition.value || ''}
-                            onChange={(e) =>
-                              handleUpdateCondition(condition.id, {
-                                value: condition.fieldType === 'number' ? Number(e.target.value) : e.target.value,
-                              })
-                            }
-                            placeholder="Digite o valor"
-                          />
-                        </div>
+                      {/* Valor (Apenas se não for is_filled/is_empty) */}
+                      {form.watch(`conditions.${index}.operator`) !== 'is_filled' &&
+                       form.watch(`conditions.${index}.operator`) !== 'is_empty' && (
+                        <FormField
+                            control={form.control}
+                            name={`conditions.${index}.value`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Valor esperado"
+                                    type={form.watch(`conditions.${index}.fieldType`) === 'number' ? 'number' : 'text'}
+                                    step={form.watch(`conditions.${index}.fieldType`) === 'number' ? '0.01' : undefined}
+                                    {...field}
+                                    onChange={(e) => {
+                                        const val = form.watch(`conditions.${index}.fieldType`) === 'number' 
+                                            ? parseFloat(e.target.value) 
+                                            : e.target.value;
+                                        field.onChange(val);
+                                    }}
+                                    value={field.value === undefined ? '' : field.value}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                        />
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+                
+                <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full border-dashed"
+                    onClick={() => append({ id: nanoid(), fieldName: 'track.notes', fieldType: 'text', operator: 'is_empty', value: '', label: 'Observações do Track' })}
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Adicionar Condição
+                </Button>
+              </CardContent>
+            </Card>
 
-              {conditions.length === 0 && (
-                <div className="text-center py-8 border border-dashed rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Nenhuma condição adicionada
-                  </p>
-                  <Button size="sm" variant="outline" onClick={handleAddCondition}>
-                    <Plus className="mr-2" size={16} />
-                    Adicionar Primeira Condição
-                  </Button>
-                </div>
+            {/* MENSAGEM DE ERRO */}
+            <FormField
+              control={form.control}
+              name="errorMessage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-destructive">Mensagem de Erro Personalizada</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Ex: Preencha o volume do deal antes de avançar!" 
+                      {...field} 
+                      className="h-16 resize-none"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <Label>Mensagem de Erro Customizada</Label>
-            <Textarea
-              value={errorMessage}
-              onChange={(e) => setErrorMessage(e.target.value)}
-              placeholder="Ex: O campo 'Aprovação de Orçamento' deve estar preenchido e o valor ser menor que R$ 1.000.000"
-              rows={3}
             />
-            <p className="text-xs text-muted-foreground">
-              Esta mensagem será exibida quando a validação falhar
-            </p>
-          </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={conditions.length === 0}>
-            {rule ? 'Salvar Alterações' : 'Criar Regra'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <div className="flex justify-between items-center pt-4">
+                {isEdit && onDelete ? (
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        onClick={() => onDelete(ruleToEdit.id)}
+                        className="text-destructive hover:bg-destructive/10"
+                        disabled={isSaving}
+                    >
+                        <Trash className="mr-2 h-4 w-4" /> Excluir Regra
+                    </Button>
+                ) : <div />}
+                <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={onCancel}>
+                        Cancelar
+                    </Button>
+                    <Button type="submit" disabled={isSaving}>
+                        <Check className="mr-2 h-4 w-4" />
+                        {isSaving ? 'Salvando...' : (isEdit ? 'Salvar Regra' : 'Criar Regra')}
+                    </Button>
+                </div>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   )
 }

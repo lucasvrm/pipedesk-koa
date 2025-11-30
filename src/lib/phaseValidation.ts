@@ -171,17 +171,6 @@ export function validatePhaseTransition(
   }
 }
 
-export function getStageLabel(stage: PlayerStage): string {
-  const labels: Record<PlayerStage, string> = {
-    nda: 'NDA',
-    analysis: 'Análise',
-    proposal: 'Proposta',
-    negotiation: 'Negociação',
-    closing: 'Fechamento',
-  }
-  return labels[stage]
-}
-
 export function formatConditionDescription(condition: FieldCondition): string {
   const field = AVAILABLE_FIELDS[condition.fieldName]
   const operator = OPERATOR_LABELS[condition.operator]
