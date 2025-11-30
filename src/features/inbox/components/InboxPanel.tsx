@@ -30,7 +30,7 @@ import { formatDate } from '@/lib/helpers'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
-interface InboxPanelProps {
+export interface InboxPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }

@@ -80,6 +80,8 @@ export interface MasterDeal {
   }
 
   companyId?: string;
+  // Fallback para código legado que acessa snake_case direto do banco sem mapeamento
+  company_id?: string;
   company?: Company;
 
   responsibles?: User[];
@@ -89,6 +91,8 @@ export interface MasterDeal {
 export interface PlayerTrack {
   id: string
   masterDealId: string
+  // Fallback para código legado
+  playerId?: string
   playerName: string
   trackVolume: number
   currentStage: PlayerStage
@@ -132,8 +136,15 @@ export interface Comment {
   entityId: string
   entityType: 'deal' | 'track' | 'task'
   authorId: string
+  // Fallback para código que busca 'author'
+  author?: {
+    name: string
+    avatar?: string
+  }
   content: string
   createdAt: string
+  // Fallback para snake_case
+  created_at?: string
   mentions: string[]
 }
 
@@ -230,6 +241,22 @@ export const STATUS_LABELS: Record<DealStatus, string> = {
   cancelled: 'Cancelado',
   concluded: 'Concluído',
   on_hold: 'Em Espera'
+}
+
+export const STAGE_LABELS: Record<string, string> = {
+  nda: 'NDA',
+  tease: 'Teaser',
+  offer: 'Oferta',
+  diligence: 'Diligência',
+  closing: 'Fechamento'
+}
+
+export const STAGE_PROBABILITIES: Record<string, number> = {
+  nda: 10,
+  tease: 25,
+  offer: 50,
+  diligence: 75,
+  closing: 95
 }
 
 export const OPERATION_LABELS: Record<OperationType, string> = {
@@ -354,7 +381,7 @@ export interface Answer {
 
 // --- TIPOS DO PLAYER ---
 
-export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other';
+export type PlayerType = 'bank' | 'asset_manager' | 'securitizer' | 'family_office' | 'other' | 'fund';
 
 export type AssetManagerType = 
   | 'fii_tijolo' | 'fii_papel' | 'fii_hibrido' 
@@ -422,7 +449,8 @@ export const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
   asset_manager: 'Gestora',
   securitizer: 'Securitizadora',
   family_office: 'Family Office',
-  other: 'Outro'
+  other: 'Outro',
+  fund: 'Fundo'
 };
 
 export const ASSET_MANAGER_TYPE_LABELS: Record<AssetManagerType, string> = {

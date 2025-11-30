@@ -235,7 +235,7 @@ export default function PlayersListPage() {
       const badge = (
         <Badge variant="outline" className={`${badgeClass} font-normal mr-1 mb-1 cursor-help`}>
           {label}
-          {subtypes.length > 0 && <span className="ml-1 text-[10px] opacity-70">({subtypes.length})</span>}
+          {subtypes && subtypes.length > 0 && <span className="ml-1 text-[10px] opacity-70">({subtypes.length})</span>}
         </Badge>
       );
       if (!subtypes || subtypes.length === 0) return badge;
@@ -254,14 +254,14 @@ export default function PlayersListPage() {
       );
     };
 
-    if (products.credit?.length > 0) {
-      groups.push(renderBadgeWithTooltip('credit', 'Crédito', products.credit, CREDIT_SUBTYPE_LABELS, "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"));
+    if (products.credit && products.credit.length > 0) {
+      groups.push(renderBadgeWithTooltip('credit', 'Crédito', products.credit as string[], CREDIT_SUBTYPE_LABELS, "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"));
     }
-    if (products.equity?.length > 0) {
-      groups.push(renderBadgeWithTooltip('equity', 'Equity', products.equity, EQUITY_SUBTYPE_LABELS, "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"));
+    if (products.equity && products.equity.length > 0) {
+      groups.push(renderBadgeWithTooltip('equity', 'Equity', products.equity as string[], EQUITY_SUBTYPE_LABELS, "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"));
     }
-    if (products.barter?.length > 0) {
-      groups.push(renderBadgeWithTooltip('barter', 'Permuta', products.barter, BARTER_SUBTYPE_LABELS, "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"));
+    if (products.barter && products.barter.length > 0) {
+      groups.push(renderBadgeWithTooltip('barter', 'Permuta', products.barter as string[], BARTER_SUBTYPE_LABELS, "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"));
     }
 
     if (groups.length === 0) return <span className="text-muted-foreground text-xs">Sem produtos</span>;
