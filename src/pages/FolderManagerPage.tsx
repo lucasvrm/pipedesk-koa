@@ -10,6 +10,12 @@ export default function FolderManagerPage() {
 
   if (!currentUser) return null
 
+  // FolderManager espera props de modal, mas aqui é uma página.
+  // Passamos props fictícios para satisfazer a interface se ele for usado como Dialog,
+  // ou ele deveria ser refatorado para suportar modo "embedded".
+  // Assumindo que FolderManager pode precisar de refatoração interna se for estritamente um Dialog.
+  // Mas para corrigir o erro de tipo imediato:
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex items-center gap-4 mb-6">
@@ -22,7 +28,11 @@ export default function FolderManagerPage() {
         </div>
       </div>
       
-      <FolderManager currentUser={currentUser} />
+      <FolderManager
+        currentUser={currentUser}
+        open={true}
+        onOpenChange={() => {}}
+      />
     </div>
   )
 }

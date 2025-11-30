@@ -31,7 +31,6 @@ import DocumentManager from '@/components/DocumentManager'
 import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
-import QAPanel from '@/components/QAPanel'
 import { toast } from 'sonner'
 
 interface DealDetailDialogProps {
@@ -191,10 +190,6 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
                 <Sparkle className="mr-2" />
                 IA
               </TabsTrigger>
-              <TabsTrigger value="qa">
-                <Question className="mr-2" />
-                Q&A
-              </TabsTrigger>
               <TabsTrigger value="comments">
                 <ChatCircle className="mr-2" />
                 Comentários
@@ -250,16 +245,6 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
             <TabsContent value="ai" className="space-y-4">
               {currentUser && (
                 <AINextSteps dealId={deal.id} />
-              )}
-            </TabsContent>
-
-            <TabsContent value="qa" className="space-y-4">
-              {currentUser && (
-                <QAPanel
-                  entityId={deal.id}
-                  entityType="deal"
-                  currentUser={currentUser}
-                />
               )}
             </TabsContent>
 

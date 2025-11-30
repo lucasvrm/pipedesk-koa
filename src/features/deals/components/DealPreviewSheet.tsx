@@ -50,7 +50,12 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
   const feePercentage = deal.feePercentage || 0
   const feeValue = (Number(deal.volume || 0) * feePercentage) / 100
 
-  const recentComments = comments ? [...comments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4) : []
+  // Adaptação para tipos: garantir que data é string para new Date()
+  const recentComments = comments ? [...comments].sort((a, b) => {
+    const dateA = a.created_at || a.createdAt || '';
+    const dateB = b.created_at || b.createdAt || '';
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  }).slice(0, 4) : []
 
   const handleOpenFullDetails = () => {
     onClose()
@@ -71,7 +76,7 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
 
   // Helper para recuperar nome e cor do estágio
   const getStageInfo = (stageId: string) => {
-    return stages.find(s => s.id === stageId) || { name: stageId, color: '#94a3b8' }
+    return stages.find(s => s.id === stageId) || { name: stageId, color: '#94a3b8', probability: 0 }
   }
 
   return (
@@ -182,7 +187,8 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                           style={{ 
                             backgroundColor: `${tag.color}15`, 
                             color: tag.color,
-                            ringColor: `${tag.color}30` 
+                            // @ts-ignore - CSS properties not in React types
+                            '--ring-color': `${tag.color}30`
                           }}
                         >
                           {tag.name}
@@ -220,7 +226,7 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                         <div key={comment.id} className="relative pl-8 text-sm group">
                           <div className="absolute left-0 top-1 w-6 h-6 bg-background border rounded-full flex items-center justify-center z-10">
                             <Avatar className="h-4 w-4">
-                                <AvatarImage src={comment.author?.avatar_url} />
+                                <AvatarImage src={comment.author?.avatar} />
                                 <AvatarFallback className="text-[8px]">{getInitials(comment.author?.name || '?')}</AvatarFallback>
                             </Avatar>
                           </div>
@@ -229,7 +235,7 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                                 <span className="font-semibold text-xs">{comment.author?.name}</span>
                                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                     <Clock size={10} />
-                                    {new Date(comment.created_at).toLocaleDateString()}
+                                    {new Date(comment.created_at || comment.createdAt || '').toLocaleDateString()}
                                 </span>
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-2">{comment.content}</p>

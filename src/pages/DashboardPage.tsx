@@ -12,20 +12,22 @@ import {
   Briefcase 
 } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 
 // Imports dos componentes internos
 import AnalyticsDashboard from '@/features/analytics/components/AnalyticsDashboard'
 import PlayerIntelligenceDashboard from '@/features/analytics/components/PlayerIntelligenceDashboard'
-// CORREÇÃO AQUI: Removidas as chaves { } porque é um export default
 import InboxPanel from '@/features/inbox/components/InboxPanel' 
 import { hasPermission } from '@/lib/permissions'
+import { UserRole } from '@/lib/types'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const [inboxOpen, setInboxOpen] = useState(false)
 
   // Verificação de permissão para exibir abas sensíveis
-  const canViewAnalytics = hasPermission(profile?.role, 'VIEW_ANALYTICS')
+  const canViewAnalytics = hasPermission(profile?.role as UserRole, 'VIEW_ANALYTICS')
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 bg-slate-50/50 dark:bg-background min-h-screen">
@@ -56,7 +58,7 @@ export default function DashboardPage() {
 
       {/* --- CARDS DE RESUMO RÁPIDO (OPERACIONAL) --- */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-primary/5 border-primary/10 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/inbox')}>
+        <Card className="bg-primary/5 border-primary/10 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => setInboxOpen(true)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Notificações</CardTitle>
             <Bell className="h-4 w-4 text-primary" />
@@ -117,8 +119,15 @@ export default function DashboardPage() {
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="h-[400px] overflow-hidden">
                 <CardHeader><CardTitle>Últimas Atualizações</CardTitle></CardHeader>
-                <CardContent className="h-full p-0">
-                  <InboxPanel />
+                <CardContent className="h-full p-0 relative">
+                  {/* InboxPanel is a Sheet, not an inline component, so we trigger it via state */}
+                  <div className="p-4 flex flex-col items-center justify-center h-full text-muted-foreground">
+                      <Bell size={32} className="mb-2 opacity-50" />
+                      <p>Clique no card de notificações para abrir o painel lateral.</p>
+                      <Button variant="outline" size="sm" className="mt-4" onClick={() => setInboxOpen(true)}>
+                          Abrir Notificações
+                      </Button>
+                  </div>
                 </CardContent>
               </Card>
               
@@ -128,6 +137,9 @@ export default function DashboardPage() {
            </div>
         </TabsContent>
       </Tabs>
+
+      {/* Sheet de Notificações */}
+      <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
     </div>
   )
 }

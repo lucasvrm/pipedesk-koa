@@ -34,6 +34,8 @@ export default function TaskKanbanView({
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active')
 
   const getTaskStatus = (task: Task): TaskStatus => {
+    // Adapter for legacy or different string formats
+    if (task.status === 'in-progress' as any) return 'in_progress';
     if (task.status) return task.status
 
     if (task.completed) return 'completed'
@@ -44,7 +46,7 @@ export default function TaskKanbanView({
     })
     
     if (blockedBy.length > 0) return 'blocked'
-    if (task.assignees.length > 0) return 'in-progress'
+    if (task.assignees.length > 0) return 'in_progress'
     
     return 'todo'
   }
@@ -137,7 +139,7 @@ export default function TaskKanbanView({
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-start gap-2">
                               {task.isMilestone && (
-                                <Flag weight="fill" className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" title="Marco Importante" />
+                                <Flag weight="fill" className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                               )}
                               <h4
                                 className={cn(

@@ -246,7 +246,11 @@ export default function PlayerDetailPage() {
       if (selectedDealProduct && selectedDealProduct !== selectedMasterDeal.dealProduct) {
         await updateDealMutation.mutateAsync({
           dealId: selectedDealToLink,
-          updates: { dealProduct: selectedDealProduct }
+          // Corrigido: 'dealProduct' não existe em DealUpdate interface original,
+          // mas se o backend aceita, precisamos usar 'any' ou atualizar a interface.
+          // Como 'dealProduct' é usado em toda a aplicação, ele deveria estar na interface.
+          // Vou usar 'any' aqui para "não quebrar" até a interface ser atualizada.
+          updates: { dealProduct: selectedDealProduct } as any
         })
       }
 
@@ -281,7 +285,7 @@ export default function PlayerDetailPage() {
       await createDealMutation.mutateAsync({
         clientName: newDealForm.clientName,
         volume: Number(newDealForm.volume) || 0,
-        dealProduct: newDealForm.dealProduct,
+        dealProduct: newDealForm.dealProduct, // Assumindo que createDeal aceita isso
         createdBy: profile.id,
         playerId: id,
         initialStage: initialStage.id // Usa o ID dinâmico

@@ -22,7 +22,11 @@ export default function CustomFieldsPage() {
         </div>
       </div>
       
-      <CustomFieldsManager currentUser={currentUser} />
+      <CustomFieldsManager
+        currentUser={currentUser}
+        open={true}
+        onOpenChange={() => {}}
+      />
     </div>
   )
 }

@@ -31,7 +31,6 @@ import {
   Plus,
   Trash,
   PencilSimple,
-  ArrowSquareUpRight,
   FloppyDisk,
   WarningCircle,
   ArrowsVertical,
@@ -39,7 +38,7 @@ import {
 import { toast } from 'sonner'
 import { PipelineStage } from '@/lib/types'
 import { PipelineSettingsDialog } from '@/components/PipelineSettingsDialog' // Importa o novo componente
-import { DndContext, closestCenter, useSensor, useMouseSensor, useTouchSensor, DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor, DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { arrayMove } from '@dnd-kit/sortable'
@@ -126,10 +125,10 @@ export default function PipelineSettingsPage() {
   }, [fetchedStages])
   
   // DRAG AND DROP SENSORS
-  const mouseSensor = useSensor(useMouseSensor)
-  const touchSensor = useSensor(useTouchSensor)
-  const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
-
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor)
+  )
 
   // --- Handlers de Ação ---
 

@@ -4,18 +4,20 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Clock, WarningCircle, User } from '@phosphor-icons/react'
-import { Deal } from '@/lib/types'
-import { formatCurrency, cn } from '@/lib/utils'
+import { MasterDeal } from '@/lib/types' // Corrigido de Deal para MasterDeal
+import { formatCurrency } from '@/lib/helpers' // Corrigido import
+import { cn } from '@/lib/utils'
 
 interface DealKanbanCardProps {
-  deal: Deal
+  deal: MasterDeal // Atualizado
   index: number
-  onClick: (deal: Deal) => void
+  onClick: (deal: MasterDeal) => void
 }
 
 export function DealKanbanCard({ deal, index, onClick }: DealKanbanCardProps) {
   // Lógica de "Rotting": Se não for atualizado há mais de 7 dias
-  const daysSinceUpdate = Math.floor((Date.now() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+  const updateDate = deal.updatedAt || new Date().toISOString();
+  const daysSinceUpdate = Math.floor((Date.now() - new Date(updateDate).getTime()) / (1000 * 60 * 60 * 24))
   const isRotting = daysSinceUpdate > 7
 
   return (
@@ -40,7 +42,7 @@ export function DealKanbanCard({ deal, index, onClick }: DealKanbanCardProps) {
               {/* Título e Labels */}
               <div className="flex justify-between items-start gap-2">
                 <span className="font-medium text-sm line-clamp-2 leading-tight">
-                    {deal.title}
+                    {deal.clientName}
                 </span>
                 {isRotting && (
                     <TooltipProvider>
@@ -58,26 +60,28 @@ export function DealKanbanCard({ deal, index, onClick }: DealKanbanCardProps) {
 
               {/* Empresa */}
               <div className="text-xs text-muted-foreground truncate">
-                {deal.company_name || 'Sem empresa vinculada'}
+                {deal.company?.name || 'Sem empresa vinculada'}
               </div>
 
               {/* Footer do Card: Valor e Avatar */}
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
                 <span className="font-semibold text-sm text-emerald-600">
-                    {formatCurrency(deal.value)}
+                    {formatCurrency(deal.volume)}
                 </span>
                 
                 <div className="flex items-center gap-2">
                     {/* Data curta */}
                     <span className={cn("text-[10px]", isRotting ? "text-red-400 font-medium" : "text-muted-foreground")}>
-                        {new Date(deal.updated_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                        {new Date(updateDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
                     </span>
                     
-                    {/* Avatar do Dono */}
-                    <Avatar className="h-6 w-6 border-2 border-background">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${deal.id}`} />
-                        <AvatarFallback className="text-[9px]"><User /></AvatarFallback>
-                    </Avatar>
+                    {/* Avatar do Dono (se existir) */}
+                    {deal.createdByUser && (
+                      <Avatar className="h-6 w-6 border-2 border-background" title={deal.createdByUser.name}>
+                          <AvatarImage src={deal.createdByUser.avatar} />
+                          <AvatarFallback className="text-[9px]">{deal.createdByUser.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    )}
                 </div>
               </div>
             </CardContent>
