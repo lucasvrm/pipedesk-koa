@@ -4,6 +4,7 @@ import { usePlayer, createPlayer, updatePlayer } from '@/services/playerService'
 import { useCreateContact, useDeleteContact } from '@/services/contactService'
 import { usePlayerTracks, useCreateTrack, useDeleteTrack } from '@/services/trackService'
 import { useDeals, useCreateDeal, useUpdateDeal } from '@/services/dealService'
+import { useStages } from '@/services/pipelineService' // NOVO: Importa o hook dinâmico
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,11 +39,10 @@ import {
   BARTER_SUBTYPE_LABELS,
   ALL_PRODUCT_LABELS,
   PlayerType,
-  PlayerStage,
-  STAGE_LABELS
-} from '@/lib/types'
+  PlayerStage
+} from '@/lib/types' // REMOVIDO: STAGE_LABELS
 import { formatCurrency } from '@/lib/helpers'
-import { cn } from '@/lib/utils' // Certifique-se de importar o cn
+import { cn } from '@/lib/utils'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -66,6 +66,7 @@ export default function PlayerDetailPage() {
   const [isEditing, setIsEditing] = useState(!!startEditing)
 
   // Hooks de dados
+  const { data: stages = [], isLoading: isLoadingStages } = useStages() // Hook Dinâmico
   const { data: player, isLoading, refetch } = usePlayer(isNew ? undefined : id)
   const { data: playerTracks, isLoading: isLoadingTracks } = usePlayerTracks(isNew ? undefined : id)
   
@@ -145,6 +146,18 @@ export default function PlayerDetailPage() {
     }
   }, [player])
 
+  // Mapas e Helpers dinâmicos
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = { name: stage.name, order: stage.stageOrder };
+      return acc;
+    }, {} as Record<string, { name: string, order: number }>);
+  }, [stages]);
+
+  const getStageName = (stageId: string) => {
+    return stageMap[stageId]?.name || stageId;
+  };
+  
   // --- Lógica de Tabela de Deals (Ordenação e Filtro) ---
   
   const handleDealSort = (key: DealSortKey) => {
@@ -185,9 +198,9 @@ export default function PlayerDetailPage() {
             bValue = b.trackVolume || 0;
             break;
           case 'currentStage':
-            const stageOrder: Record<string, number> = { 'nda': 0, 'analysis': 1, 'proposal': 2, 'negotiation': 3, 'closing': 4 };
-            aValue = stageOrder[a.currentStage] || -1;
-            bValue = stageOrder[b.currentStage] || -1;
+            // CORRIGIDO: Usa a ordem dinâmica do estágio do banco
+            aValue = stageMap[a.currentStage]?.order || -1;
+            bValue = stageMap[b.currentStage]?.order || -1;
             break;
         }
 
@@ -198,7 +211,7 @@ export default function PlayerDetailPage() {
     }
 
     return result;
-  }, [playerTracks, dealStageFilters, dealSortConfig]);
+  }, [playerTracks, dealStageFilters, dealSortConfig, stageMap]); // Adicionado stageMap como dependência
 
   const SortIcon = ({ columnKey }: { columnKey: DealSortKey }) => {
     if (dealSortConfig?.key !== columnKey) return <CaretUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" weight="bold" />;
@@ -221,6 +234,14 @@ export default function PlayerDetailPage() {
     const selectedMasterDeal = allDeals?.find(d => d.id === selectedDealToLink)
     if (!selectedMasterDeal) return
 
+    // Estágio inicial é sempre o primeiro do pipeline
+    const initialStage = stages.length > 0 ? stages[0] : null
+
+    if (!initialStage) {
+        toast.error('Não foi possível determinar o estágio inicial do pipeline.')
+        return
+    }
+
     try {
       if (selectedDealProduct && selectedDealProduct !== selectedMasterDeal.dealProduct) {
         await updateDealMutation.mutateAsync({
@@ -233,9 +254,9 @@ export default function PlayerDetailPage() {
         masterDealId: selectedDealToLink,
         playerName: player.name,
         playerId: id,
-        currentStage: 'nda',
+        currentStage: initialStage.id, // Usa o ID dinâmico
         trackVolume: selectedMasterDeal.volume,
-        probability: 10,
+        probability: initialStage.probability, // Usa a probabilidade dinâmica
         status: 'active'
       })
       toast.success('Deal vinculado com sucesso')
@@ -249,6 +270,12 @@ export default function PlayerDetailPage() {
 
   const handleCreateAndLinkDeal = async () => {
     if (!profile || !id || !newDealForm.clientName) return toast.error('Nome do deal é obrigatório');
+
+    const initialStage = stages.length > 0 ? stages[0] : null
+    if (!initialStage) {
+        toast.error('Não foi possível determinar o estágio inicial do pipeline.')
+        return
+    }
     
     try {
       await createDealMutation.mutateAsync({
@@ -257,7 +284,7 @@ export default function PlayerDetailPage() {
         dealProduct: newDealForm.dealProduct,
         createdBy: profile.id,
         playerId: id,
-        initialStage: 'nda'
+        initialStage: initialStage.id // Usa o ID dinâmico
       })
       toast.success('Novo deal criado e vinculado!')
       setIsLinkDealModalOpen(false)
@@ -386,7 +413,7 @@ export default function PlayerDetailPage() {
     )
   }
 
-  if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
+  if (isLoading || isLoadingStages) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 
   return (
     <div className="container mx-auto p-6 max-w-7xl pb-24">
@@ -582,7 +609,6 @@ export default function PlayerDetailPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Deals Vinculados</CardTitle>
-                    {/* Subtítulo alterado */}
                     <CardDescription>Oportunidades apresentadas.</CardDescription>
                   </div>
                   
@@ -705,7 +731,12 @@ export default function PlayerDetailPage() {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className={dealStageFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className={cn("transition-colors", dealStageFilters.length > 0 && 'bg-primary/10 border-primary text-primary')}
+                          disabled={isLoadingStages}
+                        >
                           <Funnel className="mr-2 h-3 w-3" />
                           Estágio {dealStageFilters.length > 0 && `(${dealStageFilters.length})`}
                         </Button>
@@ -713,15 +744,15 @@ export default function PlayerDetailPage() {
                       <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>Filtrar por Estágio</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {Object.entries(STAGE_LABELS).map(([key, label]) => (
+                        {stages.map((stage) => ( // CORRIGIDO: Itera sobre estágios dinâmicos
                           <DropdownMenuCheckboxItem
-                            key={key}
-                            checked={dealStageFilters.includes(key as PlayerStage)}
+                            key={stage.id}
+                            checked={dealStageFilters.includes(stage.id as PlayerStage)}
                             onCheckedChange={(checked) => {
-                              setDealStageFilters(prev => checked ? [...prev, key as PlayerStage] : prev.filter(k => k !== key))
+                              setDealStageFilters(prev => checked ? [...prev, stage.id as PlayerStage] : prev.filter(k => k !== stage.id))
                             }}
                           >
-                            {label}
+                            {stage.name}
                           </DropdownMenuCheckboxItem>
                         ))}
                       </DropdownMenuContent>
@@ -784,7 +815,7 @@ export default function PlayerDetailPage() {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline">
-                                  {STAGE_LABELS[track.currentStage]}
+                                  {getStageName(track.currentStage)} {/* CORRIGIDO: Usa nome dinâmico */}
                                 </Badge>
                               </TableCell>
                               <TableCell>
