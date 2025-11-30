@@ -118,6 +118,17 @@ export function Layout({ children }: LayoutProps) {
                   Dashboard
                 </Link>
               </Button>
+
+              <Button
+                variant={isActive('/leads') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/leads">
+                  <Funnel className="mr-2" />
+                  Leads
+                </Link>
+              </Button>
               
               <Button
                 variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
@@ -185,19 +196,6 @@ export function Layout({ children }: LayoutProps) {
                   Tarefas
                 </Link>
               </Button>
-
-              {canViewAnalytics && (
-                <Button
-                  variant={isActive('/analytics') ? 'secondary' : 'ghost'}
-                  size="sm"
-                  asChild
-                >
-                  <Link to="/analytics">
-                    <ChartBar className="mr-2" />
-                    Analytics
-                  </Link>
-                </Button>
-              )}
             </nav>
           </div>
 
@@ -273,6 +271,13 @@ export function Layout({ children }: LayoutProps) {
                 
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Gestão</DropdownMenuLabel>
+
+                {canViewAnalytics && (
+                  <DropdownMenuItem onClick={() => navigate('/analytics')}>
+                    <ChartBar className="mr-2" />
+                    Analytics
+                  </DropdownMenuItem>
+                )}
                 
                 {canManageUsers && (
                   <DropdownMenuItem onClick={() => navigate('/admin/users')}>
