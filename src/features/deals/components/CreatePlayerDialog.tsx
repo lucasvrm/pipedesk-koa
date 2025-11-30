@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useUsers } from '@/services/userService'
+import { useCreateTrack, useTracks } from '@/services/trackService'
+import { usePlayers, useCreatePlayer } from '@/services/playerService'
 import {
   Dialog,
   DialogContent,
@@ -9,264 +10,304 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createDeal } from "@/services/dealService";
-import { toast } from "sonner";
-import PlayerSelect from "@/components/PlayerSelect"; // CORRIGIDO: Importação Default
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext"; // Importando contexto de autenticação
+} from '@/components/ui/select'
+import { MasterDeal, PlayerStage, STAGE_LABELS } from '@/lib/types'
+import { toast } from 'sonner'
+import { ArrowLeft, Plus } from '@phosphor-icons/react'
+import { PlayerSelect } from '@/components/PlayerSelect'
 
-// Schema de validação
-const formSchema = z.object({
-  title: z.string().min(1, "O título é obrigatório"), // Mapeia para clientName
-  description: z.string().optional(), // Mapeia para observations
-  amount: z.string().transform((val) => {
-    if (!val) return 0;
-    // Remove R$, espaços e converte vírgula para ponto
-    const number = parseFloat(val.replace(/[^\d.,]/g, "").replace(",", "."));
-    return isNaN(number) ? 0 : number;
-  }), // Mapeia para volume
-  stage: z.string().min(1, "A fase é obrigatória"),
-  player_id: z.string().optional(), // Opcional: só cria track se preenchido
-});
-
-interface CreateDealDialogProps {
-  children?: React.ReactNode;
-  defaultStage?: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+interface CreatePlayerDialogProps {
+  masterDeal: MasterDeal
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function CreateDealDialog({ 
-  children, 
-  defaultStage = "prospect",
-  open: controlledOpen,
-  onOpenChange: setControlledOpen
-}: CreateDealDialogProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user } = useAuth(); // Obtendo usuário logado
+export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: CreatePlayerDialogProps) {
+  const { profile: currentUser } = useAuth()
   
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = isControlled ? setControlledOpen : setInternalOpen;
+  // Hooks de dados
+  const { data: users } = useUsers()
+  const { data: existingPlayers } = usePlayers()
+  // 1. Buscando tracks existentes para validação de duplicidade
+  const { data: existingTracks } = useTracks(masterDeal.id)
+  
+  // Hooks de mutação
+  const createTrack = useCreateTrack()
+  const createPlayerMutation = useCreatePlayer()
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      amount: "0",
-      stage: defaultStage,
-      player_id: "", 
-    },
-  });
+  // Estados do Formulário
+  const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [selectedPlayerId, setSelectedPlayerId] = useState('')
+  const [newPlayerName, setNewPlayerName] = useState('')
+  
+  const [trackVolume, setTrackVolume] = useState(masterDeal.volume.toString())
+  const [currentStage, setCurrentStage] = useState<PlayerStage>('nda')
+  const [notes, setNotes] = useState('')
+  const [selectedTeam, setSelectedTeam] = useState<string[]>([])
 
-  const createDealMutation = useMutation({
-    mutationFn: createDeal,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deals"] });
-      // Invalida tracks também, caso um tenha sido criado
-      queryClient.invalidateQueries({ queryKey: ["player-tracks"] });
-      toast.success("Negócio criado com sucesso!");
-      setOpen(false);
-      form.reset();
-    },
-    onError: (error) => {
-      console.error("Erro ao criar negócio:", error);
-      toast.error("Erro ao criar negócio. Tente novamente.");
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user?.id) {
-      toast.error("Erro de autenticação. Recarregue a página.");
-      return;
-    }
-
-    // Mapeamento dos campos do formulário para o formato esperado pelo serviço (DealInput)
-    createDealMutation.mutate({
-      clientName: values.title,      // title -> clientName
-      observations: values.description, // description -> observations
-      volume: values.amount,         // amount -> volume
-      createdBy: user.id,            // ID do usuário logado
-      
-      // Campos específicos da nova lógica
-      initialStage: values.stage,
-      playerId: values.player_id && values.player_id.length > 0 ? values.player_id : undefined,
-      
-      // Valores padrão obrigatórios
-      operationType: 'acquisition', // Pode virar campo no form futuramente
-      status: 'active'
-    });
+  const resetForm = () => {
+    setIsCreatingNew(false)
+    setSelectedPlayerId('')
+    setNewPlayerName('')
+    setTrackVolume(masterDeal.volume.toString())
+    setCurrentStage('nda')
+    setNotes('')
+    setSelectedTeam([])
   }
 
-  const handleCreateNewPlayer = () => {
-    setOpen(false);
-    navigate("/players"); 
-    toast.info("Crie o player na aba de Players e retorne para vincular.");
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!trackVolume) {
+      toast.error('O volume é obrigatório')
+      return
+    }
+
+    let finalPlayerId = selectedPlayerId
+    let finalPlayerName = ''
+
+    try {
+      // Lógica de Obtenção do ID do Player (Novo ou Existente)
+      if (isCreatingNew) {
+        if (!newPlayerName.trim()) {
+          toast.error('Nome do player é obrigatório')
+          return
+        }
+        if (!currentUser) {
+          toast.error('Usuário não autenticado')
+          return
+        }
+
+        const newPlayer = await createPlayerMutation.mutateAsync({
+          data: {
+            name: newPlayerName,
+            type: 'other', 
+            relationshipLevel: 'none'
+          },
+          userId: currentUser.id
+        })
+
+        finalPlayerId = newPlayer.id
+        finalPlayerName = newPlayer.name
+      
+      } else {
+        if (!selectedPlayerId) {
+          toast.error('Selecione um player')
+          return
+        }
+        const selectedPlayer = existingPlayers?.find(p => p.id === selectedPlayerId)
+        if (!selectedPlayer) {
+          toast.error('Player selecionado inválido')
+          return
+        }
+        finalPlayerId = selectedPlayer.id
+        finalPlayerName = selectedPlayer.name
+      }
+
+      // 1. VALIDAÇÃO DE DUPLICIDADE
+      // Verifica se já existe um track com este playerId neste deal
+      const isDuplicate = existingTracks?.some(t => t.playerId === finalPlayerId)
+      
+      if (isDuplicate) {
+        toast.error('Este player já está cadastrado neste deal.', {
+          description: 'Verifique a lista de ativos ou a aba "Dropped".'
+        })
+        return
+      }
+
+      // Criação do Track (Vínculo)
+      await createTrack.mutateAsync({
+        masterDealId: masterDeal.id,
+        playerName: finalPlayerName,
+        playerId: finalPlayerId,
+        trackVolume: parseFloat(trackVolume),
+        currentStage,
+        probability: 0,
+        responsibles: selectedTeam,
+        status: 'active',
+        notes,
+      })
+
+      toast.success('Player adicionado ao deal com sucesso!')
+      resetForm()
+      onOpenChange(false)
+
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao adicionar player')
+    }
+  }
+
+  const toggleTeamMember = (userId: string) => {
+    setSelectedTeam((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
+    )
+  }
+
+  // 2. EQUIPE RESPONSÁVEL
+  // Se outros usuários não aparecem, verifique se eles possuem as roles abaixo no banco de dados.
+  // Caso contrário, ajuste este filtro ou verifique as políticas RLS (Row Level Security) do Supabase.
+  const teamMembers = (users || []).filter(
+    (u) => u.role === 'admin' || u.role === 'analyst' || u.role === 'newbusiness'
+  )
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={(val) => {
+      if (!val) resetForm()
+      onOpenChange(val)
+    }}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Novo Negócio (Master Deal)</DialogTitle>
+          <DialogTitle>Adicionar Player</DialogTitle>
           <DialogDescription>
-            Cadastre um novo ativo ou projeto. Se já houver um investidor líder, selecione-o abaixo.
+            Adicione um novo player/investidor para {masterDeal.clientName}
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            
-            {/* Título do Negócio */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título do Projeto / Ativo <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Venda Hospital Santa Clara" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="player-select">Player *</Label>
+              {isCreatingNew ? (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-xs px-2"
+                  onClick={() => setIsCreatingNew(false)}
+                >
+                  <ArrowLeft className="mr-1 h-3 w-3" /> Voltar para Seleção
+                </Button>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-xs px-2 text-primary"
+                  onClick={() => setIsCreatingNew(true)}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Criar Novo
+                </Button>
               )}
+            </div>
+
+            {isCreatingNew ? (
+              <Input
+                autoFocus
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                placeholder="Digite o nome do novo player..."
+                className="bg-primary/5 border-primary/20"
+              />
+            ) : (
+              <PlayerSelect 
+                value={selectedPlayerId}
+                onChange={setSelectedPlayerId}
+                onCheckNew={() => setIsCreatingNew(true)}
+              />
+            )}
+            {isCreatingNew && (
+              <p className="text-[10px] text-muted-foreground">
+                Um novo registro será criado na base de players.
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="track-volume">Volume (R$) *</Label>
+              <Input
+                id="track-volume"
+                type="number"
+                step="0.01"
+                value={trackVolume}
+                onChange={(e) => setTrackVolume(e.target.value)}
+                placeholder="0.00"
+                className="currency-input"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="current-stage">Estágio Atual *</Label>
+              <Select value={currentStage} onValueChange={(v) => setCurrentStage(v as PlayerStage)}>
+                <SelectTrigger id="current-stage">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STAGE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notas</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Informações adicionais sobre este player..."
+              rows={3}
             />
+          </div>
 
-            {/* Seletor de Player (Opcional) */}
-            <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
-              <FormField
-                control={form.control}
-                name="player_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between mb-1">
-                      <FormLabel className="font-semibold text-primary">Lead Investor (Opcional)</FormLabel>
-                      <span className="text-[11px] text-muted-foreground bg-background px-2 py-0.5 rounded border">
-                        Cria Track Automático
-                      </span>
-                    </div>
-                    <FormControl>
-                      <PlayerSelect 
-                        value={field.value || ""} 
-                        onChange={field.onChange}
-                        onCheckNew={handleCreateNewPlayer}
-                      />
-                    </FormControl>
-                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                      Deixe vazio se estiver apenas cadastrando o ativo para prospecção futura.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Grid de Valor e Fase */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Estimado (R$)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="0,00" 
-                        {...field} 
-                        // Pequeno hack para permitir digitar livremente e só formatar no submit
-                        onChange={(e) => field.onChange(e)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fase Inicial <span className="text-red-500">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a fase" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="prospect">Prospecção / NDA</SelectItem>
-                        <SelectItem value="active">Em Análise (Active)</SelectItem>
-                        <SelectItem value="proposal">Proposta (NBO)</SelectItem>
-                        <SelectItem value="negotiation">Negociação (Binding)</SelectItem>
-                        <SelectItem value="closing">Fechamento / Assinatura</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Descrição */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição e Observações</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Detalhes importantes, teses de investimento ou notas iniciais..."
-                      className="resize-none min-h-[100px]"
-                      {...field}
+          <div className="space-y-2">
+            <Label>Equipe Responsável</Label>
+            <div className="border border-border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
+              {teamMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum membro de equipe disponível. (Verifique permissões ou roles)
+                </p>
+              ) : (
+                teamMembers.map((user) => (
+                  <div key={user.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`team-${user.id}`}
+                      checked={selectedTeam.includes(user.id)}
+                      onCheckedChange={() => toggleTeamMember(user.id)}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                    <Label
+                      htmlFor={`team-${user.id}`}
+                      className="flex-1 cursor-pointer text-sm font-normal"
+                    >
+                      {user.name}
+                    </Label>
+                  </div>
+                ))
               )}
-            />
+            </div>
+          </div>
 
-            <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={createDealMutation.isPending}>
-                {createDealMutation.isPending ? "Processando..." : "Criar Master Deal"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isCreatingNew ? !newPlayerName : !selectedPlayerId}>
+              {isCreatingNew ? 'Criar e Adicionar' : 'Adicionar Player'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

@@ -32,7 +32,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createDeal } from "@/services/dealService";
 import { toast } from "sonner";
-import { PlayerSelect } from "@/components/PlayerSelect";
+import PlayerSelect from "@/components/PlayerSelect"; // CORRIGIDO: Importação DEFAULT
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext"; // Importando contexto de autenticação
 
@@ -171,6 +171,7 @@ export function CreateDealDialog({
                       </span>
                     </div>
                     <FormControl>
+                      {/* O componente PlayerSelect deve ser adaptado para a nova interface se a original for apenas {value, onChange, onCheckNew} */}
                       <PlayerSelect 
                         value={field.value || ""} 
                         onChange={field.onChange}
