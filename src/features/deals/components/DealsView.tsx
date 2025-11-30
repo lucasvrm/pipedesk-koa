@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useDeals, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
 import { useUsers } from '@/services/userService'
-import { useStages } from '@/services/pipelineService' // Hook dinâmico
+import { useStages } from '@/services/pipelineService'
+import { useTags } from '@/services/tagService'
+import { useSettings } from '@/services/systemSettingsService'
 
 // Componentes UI
 import { Input } from '@/components/ui/input'
@@ -32,7 +34,7 @@ import { EditDealDialog } from './EditDealDialog'
 import { CreateDealDialog } from './CreateDealDialog'
 import { DealsMetrics } from './DealsMetrics'
 import { DealPreviewSheet } from './DealPreviewSheet'
-import DealsList from './DealsList' // Componente de Grade
+import DealsList from './DealsList'
 
 // --- Tipos Locais ---
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
@@ -49,10 +51,11 @@ interface FilterState {
   responsible: string;
   minVolume: string;
   maxVolume: string;
+  tags: string[]; // NEW
 }
 
 const INITIAL_FILTERS: FilterState = {
-  status: 'all', type: 'all', responsible: 'all', minVolume: '', maxVolume: ''
+  status: 'all', type: 'all', responsible: 'all', minVolume: '', maxVolume: '', tags: []
 }
 
 const getStatusBadgeClass = (status: DealStatus) => {
@@ -68,16 +71,28 @@ const getStatusBadgeClass = (status: DealStatus) => {
 export default function DealsView() {
   const navigate = useNavigate()
   
-  // Hooks de Dados
-  const { data: masterDeals, isLoading: dealsLoading } = useDeals()
-  const { data: allTracks, isLoading: tracksLoading } = useTracks()
+  // Hooks
   const { data: users } = useUsers()
-  const { data: stages = [] } = useStages() // Busca estágios do banco
+  const { data: stages = [] } = useStages()
+  const { data: tags = [] } = useTags('deal')
+  const { data: settings } = useSettings()
+
+  // State for filters
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
+  const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS)
+
+  // Main Data Hook with Filters
+  const { data: masterDeals, isLoading: dealsLoading } = useDeals(filters.tags.length > 0 ? filters.tags : undefined)
+  const { data: allTracks, isLoading: tracksLoading } = useTracks()
   
   const deleteSingleMutation = useDeleteDeal()
   const deleteBulkMutation = useDeleteDeals()
 
   const isLoading = dealsLoading || tracksLoading
+
+  // Feature Flag Logic
+  const tagsConfig = settings?.find(s => s.key === 'tags_config')?.value;
+  const tagsEnabled = tagsConfig?.global && tagsConfig?.modules?.deals !== false;
 
   // Estados de UI
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
@@ -87,8 +102,6 @@ export default function DealsView() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'clientName', direction: 'asc' })
   
-  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
-  const [tempFilters, setTempFilters] = useState<FilterState>(INITIAL_FILTERS) 
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   // Estados de Modais
@@ -102,17 +115,13 @@ export default function DealsView() {
   const [editDealOpen, setEditDealOpen] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
 
-  // --- Lógica Dinâmica de Estágios ---
-  // Função para encontrar as informações do estágio (nome, prob, cor) baseado no ID ou slug
   const getStageInfo = (stageKey: string): PipelineStage | undefined => {
     if (!stageKey) return undefined;
-    // Tenta encontrar por ID exato, ou pelo nome normalizado (para compatibilidade legada)
     return stages.find(s => s.id === stageKey) || 
            stages.find(s => s.name.toLowerCase().replace(/\s/g, '_') === stageKey) ||
            stages.find(s => s.isDefault);
   }
 
-  // Agrupa tracks por deal para acesso rápido
   const tracksByDealId = useMemo(() => {
     if (!allTracks) return {} as Record<string, any[]>;
     return allTracks.reduce((acc, track) => {
@@ -122,37 +131,30 @@ export default function DealsView() {
     }, {} as Record<string, any[]>)
   }, [allTracks])
 
-  // Calcula o progresso visual baseado no "Melhor Track" do deal
   const getAdvancedTrackInfo = (dealId: string) => {
     const tracks = tracksByDealId[dealId] || []
     if (tracks.length === 0) return null
-    
-    // Ordena tracks: quem tem o estágio com maior 'stageOrder' ganha
     const sorted = [...tracks].sort((a, b) => {
       const stageA = getStageInfo(a.currentStage);
       const stageB = getStageInfo(b.currentStage);
       const orderA = stageA ? stageA.stageOrder : -1;
       const orderB = stageB ? stageB.stageOrder : -1;
-      return orderB - orderA; // Descendente (maior ordem primeiro)
+      return orderB - orderA;
     })
-    
     const bestTrack = sorted[0]
     const bestStage = getStageInfo(bestTrack.currentStage)
-
     return {
       bestTrack,
       extraCount: tracks.length - 1,
-      stageLabel: bestStage ? bestStage.name : bestTrack.currentStage, // Nome vindo do banco
+      stageLabel: bestStage ? bestStage.name : bestTrack.currentStage,
       stageColor: bestStage ? bestStage.color : '#64748b',
       playerName: bestTrack.playerName,
-      progress: bestStage ? bestStage.probability : 0 // Probabilidade vinda do banco
+      progress: bestStage ? bestStage.probability : 0
     }
   }
 
-  // Lógica de Filtragem e Ordenação
   const processedDeals = useMemo(() => {
     if (!masterDeals) return []
-    
     let result = masterDeals.filter(deal => {
       if (searchQuery) {
         const term = searchQuery.toLowerCase()
@@ -187,9 +189,8 @@ export default function DealsView() {
       if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     })
-
     return result
-  }, [masterDeals, searchQuery, filters, sortConfig, tracksByDealId, stages]) // Depende de 'stages'
+  }, [masterDeals, searchQuery, filters, sortConfig, tracksByDealId, stages])
 
   const activeFilterCount = useMemo(() => {
     let count = 0
@@ -197,26 +198,17 @@ export default function DealsView() {
     if (filters.type !== 'all') count++
     if (filters.responsible !== 'all') count++
     if (filters.minVolume || filters.maxVolume) count++
+    if (filters.tags.length > 0) count++
     return count
   }, [filters])
 
-  // Paginação
   const totalPages = Math.ceil(processedDeals.length / itemsPerPage)
   const currentDeals = processedDeals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-  // Handlers
   const handleSort = (key: SortKey) => setSortConfig(c => ({ key, direction: c.key === key && c.direction === 'asc' ? 'desc' : 'asc' }))
   
-  const handlePreview = (deal: MasterDeal) => {
-    setSelectedDeal(deal)
-    setIsPreviewOpen(true)
-  }
-
-  const handleEdit = (deal: MasterDeal) => {
-    setSelectedDeal(deal)
-    setIsPreviewOpen(false) 
-    setEditDealOpen(true)
-  }
+  const handlePreview = (deal: MasterDeal) => { setSelectedDeal(deal); setIsPreviewOpen(true); }
+  const handleEdit = (deal: MasterDeal) => { setSelectedDeal(deal); setIsPreviewOpen(false); setEditDealOpen(true); }
 
   const handleDelete = async () => {
     if (!itemToDelete) return
@@ -230,8 +222,7 @@ export default function DealsView() {
             toast.success('Negócio excluído')
         }
     } catch { toast.error('Erro ao excluir') }
-    setDeleteDialogOpen(false)
-    setItemToDelete(null)
+    setDeleteDialogOpen(false); setItemToDelete(null);
   }
 
   const applyFilters = () => { setFilters(tempFilters); setIsFilterOpen(false); setCurrentPage(1); }
@@ -242,44 +233,39 @@ export default function DealsView() {
     return sortConfig.direction === 'asc' ? <CaretUp className="ml-1 h-3 w-3" /> : <CaretDown className="ml-1 h-3 w-3" />
   }
 
+  const toggleTagFilter = (tagId: string) => {
+    setTempFilters(prev => {
+        const current = prev.tags || [];
+        const newTags = current.includes(tagId) ? current.filter(id => id !== tagId) : [...current, tagId];
+        return { ...prev, tags: newTags };
+    });
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto pb-24 md:pb-6">
-      
-      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
           <p className="text-muted-foreground">Visão geral e gestão de oportunidades.</p>
         </div>
-        <Button onClick={() => setCreateDealOpen(true)} className="shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Novo Negócio
-        </Button>
+        <Button onClick={() => setCreateDealOpen(true)} className="shadow-sm"><Plus className="mr-2 h-4 w-4" /> Novo Negócio</Button>
       </div>
 
-      {/* KPIs */}
       {!isLoading && masterDeals && <DealsMetrics deals={masterDeals} tracks={allTracks || []} />}
 
-      {/* CONTEÚDO PRINCIPAL */}
       <Card>
         <CardHeader className="pb-4 space-y-4">
           <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
-            
             <div className="flex flex-1 flex-col md:flex-row gap-3 w-full items-center">
               <div className="relative w-full md:w-80">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar cliente ou empresa..."
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  className="pl-9 h-9"
-                />
+                <Input placeholder="Buscar cliente ou empresa..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="pl-9 h-9" />
               </div>
 
               <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                  <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className={`h-9 border-dashed ${activeFilterCount > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
-                        <Funnel className="mr-2 h-4 w-4" /> Filtros
-                        {activeFilterCount > 0 && <Badge className="ml-2 h-5 px-1">{activeFilterCount}</Badge>}
+                        <Funnel className="mr-2 h-4 w-4" /> Filtros {activeFilterCount > 0 && <Badge className="ml-2 h-5 px-1">{activeFilterCount}</Badge>}
                     </Button>
                  </PopoverTrigger>
                  <PopoverContent className="w-80 p-4" align="start">
@@ -287,26 +273,31 @@ export default function DealsView() {
                         <h4 className="font-medium">Filtros Avançados</h4>
                         <div className="space-y-2">
                            <Label className="text-xs">Status</Label>
-                           <Select value={tempFilters.status} onValueChange={(v) => setTempFilters({...tempFilters, status: v as any})}>
-                               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                               <SelectContent>
-                                   <SelectItem value="all">Todos</SelectItem>
-                                   <SelectItem value="active">Ativos</SelectItem>
-                                   <SelectItem value="concluded">Concluídos</SelectItem>
-                                   <SelectItem value="cancelled">Cancelados</SelectItem>
-                               </SelectContent>
-                           </Select>
+                           <Select value={tempFilters.status} onValueChange={(v) => setTempFilters({...tempFilters, status: v as any})}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="active">Ativos</SelectItem><SelectItem value="concluded">Concluídos</SelectItem><SelectItem value="cancelled">Cancelados</SelectItem></SelectContent></Select>
                         </div>
                         <div className="space-y-2">
                            <Label className="text-xs">Responsável</Label>
-                           <Select value={tempFilters.responsible} onValueChange={(v) => setTempFilters({...tempFilters, responsible: v})}>
-                               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                               <SelectContent>
-                                   <SelectItem value="all">Todos</SelectItem>
-                                   {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                               </SelectContent>
-                           </Select>
+                           <Select value={tempFilters.responsible} onValueChange={(v) => setTempFilters({...tempFilters, responsible: v})}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select>
                         </div>
+                        {tagsEnabled && (
+                            <div className="space-y-2">
+                                <Label className="text-xs">Tags (Qualquer uma)</Label>
+                                <div className="flex flex-wrap gap-1 border p-2 rounded-md max-h-32 overflow-y-auto">
+                                    {tags.map(tag => (
+                                        <Badge
+                                            key={tag.id}
+                                            variant={tempFilters.tags.includes(tag.id) ? 'default' : 'outline'}
+                                            className="cursor-pointer"
+                                            onClick={() => toggleTagFilter(tag.id)}
+                                            style={tempFilters.tags.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
+                                        >
+                                            {tag.name}
+                                        </Badge>
+                                    ))}
+                                    {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag criada.</span>}
+                                </div>
+                            </div>
+                        )}
                         <Button className="w-full" size="sm" onClick={applyFilters}>Aplicar</Button>
                         {activeFilterCount > 0 && <Button variant="ghost" size="sm" className="w-full h-6" onClick={clearFilters}>Limpar</Button>}
                     </div>
@@ -314,31 +305,13 @@ export default function DealsView() {
               </Popover>
 
               <div className="flex items-center bg-muted p-1 rounded-md border">
-                <Button 
-                    variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
-                    size="icon" className="h-7 w-7" 
-                    onClick={() => setViewMode('table')}
-                    title="Lista"
-                >
-                    <ListDashes />
-                </Button>
-                <Button 
-                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
-                    size="icon" className="h-7 w-7" 
-                    onClick={() => setViewMode('grid')}
-                    title="Cards"
-                >
-                    <SquaresFour />
-                </Button>
+                <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('table')} title="Lista"><ListDashes /></Button>
+                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('grid')} title="Cards"><SquaresFour /></Button>
               </div>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-               {selectedIds.length > 0 && (
-                 <Button variant="destructive" size="sm" onClick={() => { setItemToDelete('bulk'); setDeleteDialogOpen(true); }}>
-                   <Trash className="mr-2" /> ({selectedIds.length})
-                 </Button>
-               )}
+               {selectedIds.length > 0 && (<Button variant="destructive" size="sm" onClick={() => { setItemToDelete('bulk'); setDeleteDialogOpen(true); }}><Trash className="mr-2" /> ({selectedIds.length})</Button>)}
             </div>
           </div>
         </CardHeader>
@@ -347,40 +320,18 @@ export default function DealsView() {
           {isLoading ? (
             <div className="text-center py-20 text-muted-foreground">Carregando dados...</div>
           ) : viewMode === 'grid' ? (
-             /* MODO GRID (DealsList) - Passamos 'stages' para ele usar a mesma lógica */
-             <DealsList 
-                deals={currentDeals} 
-                tracks={allTracks || []} 
-                stages={stages} // PROPS NOVA
-                onDealClick={handlePreview} 
-             />
+             <DealsList deals={currentDeals} tracks={allTracks || []} stages={stages} onDealClick={handlePreview} />
           ) : (
-            /* MODO TABELA */
             <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40px]">
-                         <Checkbox 
-                            checked={currentDeals.length > 0 && selectedIds.length === currentDeals.length}
-                            onCheckedChange={() => setSelectedIds(selectedIds.length === currentDeals.length ? [] : currentDeals.map(d => d.id))}
-                         />
-                      </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientName')}>
-                        <div className="flex items-center">Cliente / Empresa <SortIcon columnKey="clientName" /></div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50 w-[25%]" onClick={() => handleSort('trackStatus')}>
-                         <div className="flex items-center">Progresso (Visual) <SortIcon columnKey="trackStatus" /></div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('operationType')}>
-                         <div className="flex items-center">Tipo <SortIcon columnKey="operationType" /></div>
-                      </TableHead>
-                      <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort('volume')}>
-                         <div className="flex items-center justify-end">Volume <SortIcon columnKey="volume" /></div>
-                      </TableHead>
-                      <TableHead className="text-center cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
-                         <div className="flex items-center justify-center">Status <SortIcon columnKey="status" /></div>
-                      </TableHead>
+                      <TableHead className="w-[40px]"><Checkbox checked={currentDeals.length > 0 && selectedIds.length === currentDeals.length} onCheckedChange={() => setSelectedIds(selectedIds.length === currentDeals.length ? [] : currentDeals.map(d => d.id))} /></TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('clientName')}><div className="flex items-center">Cliente / Empresa <SortIcon columnKey="clientName" /></div></TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 w-[25%]" onClick={() => handleSort('trackStatus')}><div className="flex items-center">Progresso (Visual) <SortIcon columnKey="trackStatus" /></div></TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('operationType')}><div className="flex items-center">Tipo <SortIcon columnKey="operationType" /></div></TableHead>
+                      <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort('volume')}><div className="flex items-center justify-end">Volume <SortIcon columnKey="volume" /></div></TableHead>
+                      <TableHead className="text-center cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}><div className="flex items-center justify-center">Status <SortIcon columnKey="status" /></div></TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -388,156 +339,72 @@ export default function DealsView() {
                     {currentDeals.map((deal) => {
                       const trackInfo = getAdvancedTrackInfo(deal.id)
                       const isSelected = selectedIds.includes(deal.id)
-
                       return (
-                        <TableRow 
-                            key={deal.id} 
-                            className="group cursor-pointer hover:bg-muted/50"
-                            onClick={() => handlePreview(deal)}
-                        >
-                          <TableCell onClick={e => e.stopPropagation()}>
-                             <Checkbox 
-                                checked={isSelected} 
-                                onCheckedChange={() => setSelectedIds(prev => prev.includes(deal.id) ? prev.filter(id => id !== deal.id) : [...prev, deal.id])} 
-                             />
-                          </TableCell>
-                          
+                        <TableRow key={deal.id} className="group cursor-pointer hover:bg-muted/50" onClick={() => handlePreview(deal)}>
+                          <TableCell onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onCheckedChange={() => setSelectedIds(prev => prev.includes(deal.id) ? prev.filter(id => id !== deal.id) : [...prev, deal.id])} /></TableCell>
                           <TableCell>
                             <div className="flex flex-col">
                                 <span className="font-medium text-sm text-foreground">{deal.clientName}</span>
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Buildings size={10} /> {deal.company?.name || '-'}
-                                </span>
+                                <span className="text-xs text-muted-foreground flex items-center gap-1"><Buildings size={10} /> {deal.company?.name || '-'}</span>
+                                {/* Inline Tags */}
+                                {tagsEnabled && deal.tags && deal.tags.length > 0 && (
+                                    <div className="flex gap-1 mt-1">
+                                        {deal.tags.slice(0, 3).map(tag => (
+                                            <div key={tag.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} title={tag.name} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                           </TableCell>
-
                           <TableCell>
                             {trackInfo ? (
                                 <div className="space-y-1.5 pr-4">
                                     <div className="flex justify-between text-xs items-center">
-                                        <Badge variant="outline" className="h-5 px-1.5 font-normal text-[10px] bg-primary/5 border-primary/20 text-primary">
-                                            {trackInfo.stageLabel}
-                                        </Badge>
+                                        <Badge variant="outline" className="h-5 px-1.5 font-normal text-[10px] bg-primary/5 border-primary/20 text-primary">{trackInfo.stageLabel}</Badge>
                                         <span className="text-muted-foreground font-mono text-[10px]">{trackInfo.progress}%</span>
                                     </div>
                                     <Progress value={trackInfo.progress} className="h-1.5" />
-                                    <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-                                        <span className="font-medium text-foreground">{trackInfo.playerName}</span>
-                                        {trackInfo.extraCount > 0 && <span className="text-muted-foreground">+{trackInfo.extraCount} outros</span>}
-                                    </div>
+                                    <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1"><span className="font-medium text-foreground">{trackInfo.playerName}</span>{trackInfo.extraCount > 0 && <span className="text-muted-foreground">+{trackInfo.extraCount} outros</span>}</div>
                                 </div>
-                            ) : (
-                                <span className="text-xs text-muted-foreground italic pl-2">Sem players ativos</span>
-                            )}
+                            ) : (<span className="text-xs text-muted-foreground italic pl-2">Sem players ativos</span>)}
                           </TableCell>
-
-                          <TableCell>
-                             <Badge variant="outline" className="font-normal text-muted-foreground border-slate-200">
-                                {OPERATION_LABELS[deal.operationType]}
-                             </Badge>
-                          </TableCell>
-
-                          <TableCell className="text-right font-medium text-slate-700 dark:text-slate-200">
-                            {formatCurrency(deal.volume)}
-                          </TableCell>
-
-                          <TableCell className="text-center">
-                            <Badge className={`font-normal rounded-full px-2 ${getStatusBadgeClass(deal.status)}`}>
-                                {STATUS_LABELS[deal.status]}
-                            </Badge>
-                          </TableCell>
-
+                          <TableCell><Badge variant="outline" className="font-normal text-muted-foreground border-slate-200">{OPERATION_LABELS[deal.operationType]}</Badge></TableCell>
+                          <TableCell className="text-right font-medium text-slate-700 dark:text-slate-200">{formatCurrency(deal.volume)}</TableCell>
+                          <TableCell className="text-center"><Badge className={`font-normal rounded-full px-2 ${getStatusBadgeClass(deal.status)}`}>{STATUS_LABELS[deal.status]}</Badge></TableCell>
                           <TableCell className="text-right">
                              <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setTagsOpen(true); setSelectedDeal(deal); }}>
-                                    <TagIcon size={16} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(deal); }}>
-                                    <PencilSimple size={16} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); setItemToDelete(deal.id); setDeleteDialogOpen(true); }}>
-                                    <Trash size={16} />
-                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setTagsOpen(true); setSelectedDeal(deal); }}><TagIcon size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(deal); }}><PencilSimple size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); setItemToDelete(deal.id); setDeleteDialogOpen(true); }}><Trash size={16} /></Button>
                              </div>
                           </TableCell>
                         </TableRow>
                       )
                     })}
-                    {currentDeals.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                Nenhum negócio encontrado.
-                            </TableCell>
-                        </TableRow>
-                    )}
+                    {currentDeals.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum negócio encontrado.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
             </div>
           )}
-
-          {/* Paginação */}
           {processedDeals.length > 0 && (
               <div className="flex items-center justify-between space-x-2 py-4 text-sm text-muted-foreground">
                  <div>Mostrando {Math.min(itemsPerPage * currentPage, processedDeals.length)} de {processedDeals.length}</div>
-                 <div className="space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>
-                        <CaretLeft className="mr-1" /> Anterior
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>
-                        Próximo <CaretRight className="ml-1" />
-                    </Button>
-                 </div>
+                 <div className="space-x-2"><Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}><CaretLeft className="mr-1" /> Anterior</Button><Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>Próximo <CaretRight className="ml-1" /></Button></div>
               </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Modais */}
-      <DealPreviewSheet 
-        deal={selectedDeal}
-        tracks={allTracks || []}
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        onEdit={handleEdit}
-      />
-
+      <DealPreviewSheet deal={selectedDeal} tracks={allTracks || []} isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} onEdit={handleEdit} />
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-
-      {selectedDeal && (
-        <EditDealDialog 
-          deal={selectedDeal}
-          open={editDealOpen}
-          onOpenChange={setEditDealOpen}
-        />
-      )}
-
+      {selectedDeal && <EditDealDialog deal={selectedDeal} open={editDealOpen} onOpenChange={setEditDealOpen} />}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
-           <AlertDialogHeader>
-               <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-               <AlertDialogDescription>
-                   Esta ação excluirá permanentemente o(s) negócio(s) selecionado(s) e todo o histórico vinculado.
-               </AlertDialogDescription>
-           </AlertDialogHeader>
-           <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setItemToDelete(null); }}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Sim, excluir
-              </AlertDialogAction>
-           </AlertDialogFooter>
+           <AlertDialogHeader><AlertDialogTitle>Tem certeza?</AlertDialogTitle><AlertDialogDescription>Esta ação excluirá permanentemente o(s) negócio(s) selecionado(s).</AlertDialogDescription></AlertDialogHeader>
+           <AlertDialogFooter><AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setItemToDelete(null); }}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Sim, excluir</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {selectedDeal && (
-         <SmartTagSelector 
-            entityType="deal"
-            entityId={selectedDeal.id}
-            selectedTagIds={selectedDeal.tags?.map(t => t.id) || []}
-            open={tagsOpen}
-            onOpenChange={setTagsOpen}
-         />
-      )}
-
+      {selectedDeal && <SmartTagSelector entityType="deal" entityId={selectedDeal.id} selectedTagIds={selectedDeal.tags?.map(t => t.id) || []} open={tagsOpen} onOpenChange={setTagsOpen} />}
     </div>
   )
 }

@@ -1,11 +1,13 @@
-import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS, PipelineStage } from '@/lib/types'
+import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS, PipelineStage, SlaPolicy } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { WarningCircle, TrendUp, Buildings, CalendarBlank } from '@phosphor-icons/react'
+import { WarningCircle, TrendUp, Buildings, CalendarBlank, Clock, Tag as TagIcon } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { useSlaPolicies } from '@/services/slaService'
+import { differenceInHours, parseISO } from 'date-fns'
 
 interface DealsListProps {
   deals: MasterDeal[]
@@ -15,6 +17,7 @@ interface DealsListProps {
 }
 
 export default function DealsList({ deals, tracks, stages, onDealClick }: DealsListProps) {
+  const { data: slaPolicies = [] } = useSlaPolicies();
   
   // Helper para buscar informações do estágio (ID ou Slug)
   const getStageInfo = (stageKey: string): PipelineStage | undefined => {
@@ -40,11 +43,29 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
 
     const stageInfo = getStageInfo(bestTrack.currentStage);
 
+    // SLA Check
+    let slaStatus: 'ok' | 'warning' | 'overdue' = 'ok';
+    if (stageInfo && bestTrack) {
+        const policy = slaPolicies.find(p => p.stageId === stageInfo.id);
+        if (policy && policy.maxHours > 0) {
+            // Updated to use stageEnteredAt if available, else updated_at
+            const entryTime = bestTrack.stageEnteredAt ? parseISO(bestTrack.stageEnteredAt) : parseISO(bestTrack.updatedAt);
+            const hoursInStage = differenceInHours(new Date(), entryTime);
+
+            if (hoursInStage >= policy.maxHours) {
+                slaStatus = 'overdue';
+            } else if (policy.warningThresholdHours > 0 && hoursInStage >= policy.warningThresholdHours) {
+                slaStatus = 'warning';
+            }
+        }
+    }
+
     return {
       bestTrack,
       totalTracks: dealTracks.length,
       stageLabel: stageInfo ? stageInfo.name : bestTrack.currentStage,
-      progress: stageInfo ? stageInfo.probability : 0
+      progress: stageInfo ? stageInfo.probability : 0,
+      slaStatus
     }
   }
 
@@ -61,11 +82,22 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
         return (
           <Card 
             key={deal.id} 
-            className="group cursor-pointer hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between"
+            className={cn(
+                "group cursor-pointer hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between relative overflow-hidden",
+                highlights?.slaStatus === 'overdue' && "border-red-200 bg-red-50/10"
+            )}
             onClick={() => onDealClick(deal)}
           >
+             {/* SLA Indicator Stripe */}
+             {highlights?.slaStatus === 'overdue' && (
+                <div className="absolute top-0 left-0 w-1 h-full bg-red-500" title="SLA Estourado" />
+             )}
+             {highlights?.slaStatus === 'warning' && (
+                <div className="absolute top-0 left-0 w-1 h-full bg-orange-400" title="SLA em Risco" />
+             )}
+
             <CardHeader className="p-4 pb-2 space-y-3">
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start pl-2">
                  <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-slate-200">
                     {OPERATION_LABELS[deal.operationType]}
                  </Badge>
@@ -74,7 +106,7 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
                  </Badge>
               </div>
 
-              <div>
+              <div className="pl-2">
                 <h3 className="font-bold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                     {deal.clientName}
                 </h3>
@@ -85,12 +117,31 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
               </div>
             </CardHeader>
 
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-4 pt-0 pl-6">
                <div className="mb-4">
                   <span className="text-lg font-bold text-slate-700 dark:text-slate-200 block">
                     {formatCurrency(deal.volume)}
                   </span>
                </div>
+
+               {/* Tags Display */}
+               {deal.tags && deal.tags.length > 0 && (
+                 <div className="flex flex-wrap gap-1 mb-3">
+                    {deal.tags.slice(0, 3).map(tag => (
+                       <Badge
+                          key={tag.id}
+                          style={{ backgroundColor: tag.color + '20', color: tag.color, borderColor: tag.color + '40' }}
+                          variant="outline"
+                          className="text-[9px] px-1 h-4 border"
+                       >
+                          {tag.name}
+                       </Badge>
+                    ))}
+                    {deal.tags.length > 3 && (
+                       <Badge variant="secondary" className="text-[9px] px-1 h-4">+{deal.tags.length - 3}</Badge>
+                    )}
+                 </div>
+               )}
 
                {/* Seção Visual de Progresso */}
                <div className="bg-muted/30 p-2 rounded-lg border border-border/40">
@@ -100,9 +151,13 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
                             <span className="font-medium text-primary flex items-center gap-1">
                                 <TrendUp /> {highlights.stageLabel}
                             </span>
-                            <span className="text-muted-foreground font-mono">{highlights.progress}%</span>
+                            <div className="flex items-center gap-2">
+                                {highlights.slaStatus === 'overdue' && <Clock className="text-red-500 animate-pulse" weight="fill" />}
+                                {highlights.slaStatus === 'warning' && <Clock className="text-orange-500" weight="fill" />}
+                                <span className="text-muted-foreground font-mono">{highlights.progress}%</span>
+                            </div>
                         </div>
-                        <Progress value={highlights.progress} className="h-1.5" />
+                        <Progress value={highlights.progress} className={cn("h-1.5", highlights.slaStatus === 'overdue' && "bg-red-100")} />
                         <div className="flex justify-between items-center text-[10px] text-muted-foreground pt-1">
                             <span className="truncate max-w-[120px]">{highlights.bestTrack.playerName}</span>
                             {highlights.totalTracks > 1 && <span className="bg-muted px-1 rounded">+{highlights.totalTracks - 1}</span>}
@@ -116,7 +171,7 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
                </div>
             </CardContent>
 
-            <CardFooter className="p-3 border-t bg-muted/5 flex justify-between items-center">
+            <CardFooter className="p-3 border-t bg-muted/5 flex justify-between items-center pl-6">
                 <div className={cn("text-[10px] flex items-center gap-1.5 font-medium", overdue ? "text-destructive" : "text-muted-foreground")}>
                     <CalendarBlank />
                     {formatDate(deal.deadline)}
