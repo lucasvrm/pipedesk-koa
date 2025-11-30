@@ -9,14 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch'; // NEW
 import { PencilSimple, Trash, Plus, ArrowsDownUp, WarningCircle, Clock, CheckCircle } from '@phosphor-icons/react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { toast } from 'sonner';
 import TransitionRulesMatrix from '@/features/admin/components/TransitionRulesMatrix';
 
 export default function PipelineSettings() {
-  const { data: stages = [], isLoading } = useStages(null, true); // Include inactive
+  const { data: stages = [], isLoading } = useStages();
   const { data: slaPolicies = [] } = useSlaPolicies();
 
   const createMutation = useCreateStage();
@@ -32,7 +31,6 @@ export default function PipelineSettings() {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#6366f1');
   const [probability, setProbability] = useState(0);
-  const [isActive, setIsActive] = useState(true); // NEW
 
   // SLA states inside the modal
   const [maxHours, setMaxHours] = useState(0);
@@ -43,7 +41,6 @@ export default function PipelineSettings() {
     setName('');
     setColor('#6366f1');
     setProbability(0);
-    setIsActive(true);
     setMaxHours(0);
     setWarningHours(0);
     setIsDialogOpen(true);
@@ -54,7 +51,6 @@ export default function PipelineSettings() {
     setName(stage.name);
     setColor(stage.color);
     setProbability(stage.probability || 0);
-    setIsActive(stage.active);
 
     // Find existing SLA
     const policy = slaPolicies.find(p => p.stageId === stage.id);
@@ -73,7 +69,7 @@ export default function PipelineSettings() {
       if (editingStage) {
         await updateMutation.mutateAsync({
           stageId: editingStage.id,
-          updates: { name, color, probability, active: isActive }
+          updates: { name, color, probability }
         });
         toast.success("Estágio atualizado!");
       } else {
@@ -108,19 +104,13 @@ export default function PipelineSettings() {
 
   const handleDelete = async (stage: PipelineStage) => {
     if (stage.isDefault) return toast.error("Não é possível excluir estágios padrão do sistema.");
-    if (!confirm(`Excluir o estágio "${stage.name}"?`)) return;
+    if (!confirm(`Excluir o estágio "${stage.name}"? Negócios nesta fase podem ficar inconsistentes.`)) return;
 
     try {
       await deleteMutation.mutateAsync(stage.id);
       toast.success("Estágio excluído.");
-    } catch (error: any) {
-      // Improved error handling
-      const msg = error?.message || "Erro ao excluir.";
-      if (msg.includes("existem")) {
-          toast.error(msg, { duration: 5000 });
-      } else {
-          toast.error("Erro ao excluir. Tente desativar o estágio.");
-      }
+    } catch (error) {
+      toast.error("Erro ao excluir.");
     }
   };
 
@@ -131,6 +121,9 @@ export default function PipelineSettings() {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
+    // Optimistic update (UI first) is hard without local state management mirroring RQ
+    // So we just call mutation.
+    // Prepare updates
     const reorderedPayload = items.map((item, index) => ({
       id: item.id,
       stageOrder: index + 1
@@ -179,7 +172,7 @@ export default function PipelineSettings() {
                                 <Card
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
-                                    className={`flex items-center p-4 justify-between group hover:border-primary/50 transition-colors ${!stage.active ? 'opacity-60 bg-muted/20' : ''}`}
+                                    className="flex items-center p-4 justify-between group hover:border-primary/50 transition-colors"
                                 >
                                     <div className="flex items-center gap-4">
                                         <div {...provided.dragHandleProps} className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing">
@@ -191,10 +184,7 @@ export default function PipelineSettings() {
                                             title={`Cor: ${stage.color}`}
                                         />
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="font-semibold text-sm">{stage.name}</h4>
-                                                {!stage.active && <Badge variant="outline" className="text-[10px]">Inativo</Badge>}
-                                            </div>
+                                            <h4 className="font-semibold text-sm">{stage.name}</h4>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                                 <Badge variant="outline">{stage.probability}% prob.</Badge>
                                                 {sla && (sla.maxHours > 0) && (
@@ -269,11 +259,6 @@ export default function PipelineSettings() {
                         />
                         <span className="text-sm text-muted-foreground">{color}</span>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-2 border p-2 rounded bg-muted/20">
-                    <Switch checked={isActive} onCheckedChange={setIsActive} id="active-toggle" />
-                    <Label htmlFor="active-toggle" className="cursor-pointer">Estágio Ativo</Label>
                 </div>
 
                 <div className="border-t pt-4 mt-2">
