@@ -299,11 +299,19 @@ export default function SyntheticDataPanel() {
             count={config.contactCount}
             setCount={v => setConfig({...config, contactCount: v})}
             onGenerate={handleGenerateContacts}
-            onClear={() => {}} // Limpeza via Empresas ou Geral
-            hasData={false} // Difícil rastrear avulsos isoladamente na UI
+            onClear={async () => {
+              if(!confirm('Apagar apenas contatos sintéticos órfãos (sem empresa/lead)?')) return;
+              setLoading(true);
+              try {
+                const count = await syntheticDataService.clearOrphanSyntheticContacts();
+                toast.success(`${count} contatos avulsos removidos.`);
+                await refreshCounts();
+              } catch { toast.error('Erro ao limpar contatos avulsos'); }
+              finally { setLoading(false); }
+            }}
+            hasData={counts.contacts > 0}
             loading={loading}
             color="cyan"
-            hideDelete
           />
 
           {/* 6. Deals */}

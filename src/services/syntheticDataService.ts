@@ -355,9 +355,20 @@ export const syntheticDataService = {
     const { data: users } = await supabase.from('profiles').select('id');
     if (!users?.length) throw new Error("Sem usuários para atribuir deals.");
 
-    // Busca empresas para vincular
-    const { data: companies } = await supabase.from('companies').select('id, name').limit(50);
-    const hasCompanies = companies && companies.length > 0;
+    // Busca empresas para vincular (prioriza sintéticas)
+    const { data: companies } = await supabase.from('companies')
+        .select('id, name')
+        .eq('is_synthetic', true)
+        .limit(50);
+
+    // Fallback: buscar qualquer empresa se não houver sintéticas
+    let availableCompanies = companies;
+    if (!availableCompanies?.length) {
+        const { data: allCompanies } = await supabase.from('companies').select('id, name').limit(20);
+        availableCompanies = allCompanies;
+    }
+
+    const hasCompanies = availableCompanies && availableCompanies.length > 0;
 
     const deals: any[] = [];
 
@@ -368,7 +379,7 @@ export const syntheticDataService = {
       let clientName = faker.company.name();
 
       if (hasCompanies && Math.random() > 0.1) {
-        const c = faker.helpers.arrayElement(companies);
+        const c = faker.helpers.arrayElement(availableCompanies!);
         companyId = c.id;
         clientName = c.name;
       }
@@ -389,9 +400,13 @@ export const syntheticDataService = {
     }
 
     const { data: createdDeals, error } = await supabase.from('master_deals').insert(deals).select();
-    if (error) throw error;
 
-    if (createRelated && createdDeals) {
+    if (error) {
+        console.error("Erro ao criar deals:", error);
+        throw error;
+    }
+
+    if (createRelated && createdDeals && createdDeals.length > 0) {
       await this.generateTracksAndTasks(createdDeals, users.map(u => u.id));
     }
     return createdDeals?.length || 0;
@@ -464,21 +479,72 @@ export const syntheticDataService = {
   },
 
   async clearSyntheticPlayers() {
-    await supabase.from('player_contacts').delete().like('name', '%SINTÉTICO%'); // fallback safety
+    // Delete contacts related to synthetic players first (if cascade fails or to be sure)
+    // Note: player_contacts table usually doesn't have is_synthetic, but we can query by player
+    const { data: syntheticPlayers } = await supabase.from('players').select('id').eq('is_synthetic', true);
+    if (syntheticPlayers?.length) {
+        const playerIds = syntheticPlayers.map(p => p.id);
+        await supabase.from('player_contacts').delete().in('player_id', playerIds);
+    }
     await supabase.from('players').delete().eq('is_synthetic', true);
   },
 
   async clearSyntheticCompanies() {
-    // Delete contacts first if needed, though CASCADE might handle it.
-    // Since we added is_synthetic to contacts, we can clean them
+    // Delete contacts related to synthetic companies
+    // Note: This deletes ALL contacts marked synthetic, including orphans
+    // If we want to be specific, we could delete only those linked to synthetic companies first, then companies
+    // But requirement says "Contacts não estão sendo deletados (cleanup)" -> generic cleanup usually implies all synthetic data
     await supabase.from('contacts').delete().eq('is_synthetic', true);
     await supabase.from('companies').delete().eq('is_synthetic', true);
   },
 
   async clearSyntheticLeads() {
-    // Lead contacts/members handled by cascade usually, or we clean by flag
-    // We clean lead_contacts/members implicitly or explicit if they have flags (they don't, but parent does)
+    // Explicitly delete lead dependencies if needed, though CASCADE should work.
+    // Given the report of failure, we will be explicit.
+
+    const { data: leads } = await supabase.from('leads').select('id').eq('is_synthetic', true);
+    if (leads?.length) {
+        const leadIds = leads.map(l => l.id);
+        // Delete links
+        await supabase.from('lead_contacts').delete().in('lead_id', leadIds);
+        await supabase.from('lead_members').delete().in('lead_id', leadIds);
+        // Delete lead comments (if any) - assuming comments table has entity_type/id
+        await supabase.from('comments').delete().eq('entity_type', 'lead').in('entity_id', leadIds);
+    }
+
     await supabase.from('leads').delete().eq('is_synthetic', true);
+  },
+
+  async clearOrphanSyntheticContacts() {
+    // Deleta contatos sintéticos que não têm company_id E não estão ligados a nenhum lead (via lead_contacts)
+    // 1. Get all synthetic contacts with no company
+    const { data: noCompanyContacts } = await supabase
+        .from('contacts')
+        .select('id')
+        .eq('is_synthetic', true)
+        .is('company_id', null);
+
+    if (!noCompanyContacts?.length) return 0;
+
+    const potentialOrphanIds = noCompanyContacts.map(c => c.id);
+
+    // 2. Find which of these are used in leads
+    const { data: linkedContacts } = await supabase
+        .from('lead_contacts')
+        .select('contact_id')
+        .in('contact_id', potentialOrphanIds);
+
+    const linkedIds = new Set(linkedContacts?.map(lc => lc.contact_id));
+
+    // 3. Filter orphans
+    const orphanIds = potentialOrphanIds.filter(id => !linkedIds.has(id));
+
+    if (orphanIds.length > 0) {
+        const { error } = await supabase.from('contacts').delete().in('id', orphanIds);
+        if (error) throw error;
+        return orphanIds.length;
+    }
+    return 0;
   },
 
   async clearAllSyntheticData() {
