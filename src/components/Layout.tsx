@@ -28,7 +28,9 @@ import {
   Briefcase,
   Eye,
   EyeSlash,
-  Tag
+  Tag,
+  Funnel,
+  AddressBook
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -116,6 +118,17 @@ export function Layout({ children }: LayoutProps) {
                   Dashboard
                 </Link>
               </Button>
+
+              <Button
+                variant={isActive('/leads') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/leads">
+                  <Funnel className="mr-2" />
+                  Leads
+                </Link>
+              </Button>
               
               <Button
                 variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
@@ -141,6 +154,17 @@ export function Layout({ children }: LayoutProps) {
               </Button>
 
               <Button
+                variant={isActive('/contacts') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/contacts">
+                  <AddressBook className="mr-2" />
+                  Contatos
+                </Link>
+              </Button>
+
+              <Button
                 variant={isActive('/players') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild
@@ -161,19 +185,6 @@ export function Layout({ children }: LayoutProps) {
                   Tarefas
                 </Link>
               </Button>
-
-              {canViewAnalytics && (
-                <Button
-                  variant={isActive('/analytics') ? 'secondary' : 'ghost'}
-                  size="sm"
-                  asChild
-                >
-                  <Link to="/analytics">
-                    <ChartBar className="mr-2" />
-                    Analytics
-                  </Link>
-                </Button>
-              )}
             </nav>
           </div>
 
@@ -198,7 +209,7 @@ export function Layout({ children }: LayoutProps) {
             </Button>
 
             <Button
-              variant={ghost}
+              variant="ghost"
               size="icon"
               className="relative"
               onClick={() => setInboxOpen(true)}
@@ -249,6 +260,13 @@ export function Layout({ children }: LayoutProps) {
                 
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Gestão</DropdownMenuLabel>
+
+                {canViewAnalytics && (
+                  <DropdownMenuItem onClick={() => navigate('/analytics')}>
+                    <ChartBar className="mr-2" />
+                    Analytics
+                  </DropdownMenuItem>
+                )}
                 
                 {canManageUsers && (
                   <DropdownMenuItem onClick={() => navigate('/admin/users')}>
@@ -274,7 +292,7 @@ export function Layout({ children }: LayoutProps) {
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Configurações</DropdownMenuLabel>
                     
-                    <DropdownMenuItem onClick={() => navigate('/settings/custom-fields')}>
+                    <DropdownMenuItem onClick={() => navigate('/custom-fields')}>
                       <Gear className="mr-2" />
                       Campos Customizados
                     </DropdownMenuItem>

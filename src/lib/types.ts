@@ -178,7 +178,7 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
-  entity_type?: 'deal' | 'track' | 'global';
+  entity_type?: 'deal' | 'track' | 'global' | 'lead' | 'company';
   createdAt?: string;
   createdBy?: string;
 }
@@ -203,7 +203,7 @@ export interface Task {
 export interface Comment {
   id: string
   entityId: string
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead' | 'company'
   authorId: string
   // Fallback para código que busca 'author'
   author?: {
@@ -295,7 +295,7 @@ export interface CalendarEvent {
   id: string
   googleEventId?: string
   entityId: string
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead'
   title: string
   description: string
   startTime: string
@@ -377,7 +377,7 @@ export interface CustomFieldDefinition {
   name: string
   key: string
   type: CustomFieldType
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead'
   required: boolean
   options?: string[]
   defaultValue?: any
@@ -392,7 +392,7 @@ export interface CustomFieldValue {
   id: string
   fieldDefinitionId: string
   entityId: string
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead'
   value: any
   updatedAt: string
   updatedBy: string
@@ -414,7 +414,7 @@ export interface Folder {
 export interface EntityLocation {
   id: string
   entityId: string
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead'
   folderId: string
   isPrimary: boolean
   addedAt: string
@@ -476,17 +476,23 @@ export interface PlayerProductCapabilities {
   barter?: BarterSubtype[];
 }
 
-export interface PlayerContact {
+export interface Contact {
   id: string;
-  playerId: string;
+  companyId: string | null;
   name: string;
-  role?: string;
   email?: string;
   phone?: string;
+  role?: string;
+  department?: string;
+  linkedin?: string;
+  notes?: string;
   isPrimary: boolean;
   createdAt: string;
   createdBy: string;
 }
+
+// Alias legacy for backward compatibility during refactor
+export type PlayerContact = Contact & { playerId?: string };
 
 export interface Player {
   id: string;
@@ -512,9 +518,9 @@ export interface Player {
   categoryId?: string;
   category?: PlayerCategory;
 
-  contacts?: PlayerContact[];
+  contacts?: Contact[];
   creator?: { name: string };
-  primaryContact?: PlayerContact; 
+  primaryContact?: Contact;
 }
 
 export const PLAYER_TYPE_LABELS: Record<PlayerType, string> = {
@@ -585,7 +591,8 @@ export type CompanyType =
   | 'assessor_juridico' 
   | 'agente_fiduciario' 
   | 'servicer' 
-  | 'outros';
+  | 'outros'
+  | 'corporation' | 'fund' | 'startup' | 'advisor' | 'other'; // Added new types from migration
 
 export interface Company {
   id: string;
@@ -602,7 +609,7 @@ export interface Company {
   deletedAt?: string;
   
   deals?: MasterDeal[];
-  contacts?: PlayerContact[]; 
+  contacts?: Contact[];
   
   dealsCount?: number; 
   primaryContactName?: string;
@@ -614,7 +621,12 @@ export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
   assessor_juridico: 'Assessor Jurídico',
   agente_fiduciario: 'Agente Fiduciário',
   servicer: 'Servicer',
-  outros: 'Outros'
+  outros: 'Outros',
+  corporation: 'Corporação',
+  fund: 'Fundo',
+  startup: 'Startup',
+  advisor: 'Advisor',
+  other: 'Outro'
 };
 
 // -- Permissões e Roles (RBAC Dinâmico) --
@@ -631,3 +643,58 @@ export interface Role {
   isSystem: boolean;
   permissions?: Permission[]; 
 }
+
+// === LEADS ===
+
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'disqualified';
+export type LeadOrigin = 'inbound' | 'outbound' | 'referral' | 'event' | 'other';
+
+export interface Lead {
+  id: string;
+  legalName: string;
+  tradeName?: string;
+  cnpj?: string;
+  website?: string;
+  segment?: string;
+  addressCity?: string;
+  addressState?: string;
+  description?: string;
+
+  status: LeadStatus;
+  origin: LeadOrigin;
+  ownerUserId?: string;
+
+  qualifiedAt?: string;
+  qualifiedCompanyId?: string;
+  qualifiedMasterDealId?: string;
+
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+
+  contacts?: Contact[];
+  members?: LeadMember[];
+}
+
+export interface LeadMember {
+  leadId: string;
+  userId: string;
+  role: 'owner' | 'collaborator' | 'watcher';
+  addedAt: string;
+  user?: User; // Joined
+}
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  new: 'Novo',
+  contacted: 'Contatado',
+  qualified: 'Qualificado',
+  disqualified: 'Desqualificado'
+};
+
+export const LEAD_ORIGIN_LABELS: Record<LeadOrigin, string> = {
+  inbound: 'Inbound',
+  outbound: 'Outbound',
+  referral: 'Indicação',
+  event: 'Evento',
+  other: 'Outro'
+};

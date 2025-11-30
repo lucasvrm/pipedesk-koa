@@ -191,28 +191,6 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
-    query = withoutDeleted(query);
-
-    // Filter by tags if provided
-    if (tagIds && tagIds.length > 0) {
-      const { data: matchingIds, error: matchError } = await supabase
-        .from('entity_tags')
-        .select('entity_id')
-        .eq('entity_type', 'deal')
-        .in('tag_id', tagIds);
-
-      if (matchError) throw matchError;
-
-      const ids = matchingIds.map((r: any) => r.entity_id);
-      if (ids.length > 0) {
-        query = query.in('id', ids);
-      } else {
-        return []; // No deals match
-      }
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
     // Fallback removed/simplified because deal_members is now created by 006
     if (error) {
       console.error('Error in getDeals query:', error);
