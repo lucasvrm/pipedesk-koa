@@ -198,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
             </Button>
 
             <Button
-              variant={ghost}
+              variant="ghost"
               size="icon"
               className="relative"
               onClick={() => setInboxOpen(true)}
@@ -274,7 +274,7 @@ export function Layout({ children }: LayoutProps) {
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Configurações</DropdownMenuLabel>
                     
-                    <DropdownMenuItem onClick={() => navigate('/settings/custom-fields')}>
+                    <DropdownMenuItem onClick={() => navigate('/custom-fields')}>
                       <Gear className="mr-2" />
                       Campos Customizados
                     </DropdownMenuItem>
