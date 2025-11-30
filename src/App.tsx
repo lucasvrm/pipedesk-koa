@@ -36,7 +36,7 @@ const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetai
 const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPage'))
 const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
-const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
+const ContactDetailPage = lazy(() => import('@/features/contacts/pages/ContactDetailPage'))
 
 // Leads & Contacts
 const LeadsListPage = lazy(() => import('@/features/leads/pages/LeadsListPage'))
@@ -81,12 +81,13 @@ function App() {
 
             <Route path="/companies" element={<CompaniesListPage />} />
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
-            <Route path="/contacts/company/:id" element={<CompanyContactDetailPage />} />
 
             {/* Leads & Contacts Modules */}
             <Route path="/leads" element={<LeadsListPage />} />
             <Route path="/leads/:id" element={<LeadDetailPage />} />
+
             <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/contacts/:id" element={<ContactDetailPage />} />
 
             {/* Tools */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
