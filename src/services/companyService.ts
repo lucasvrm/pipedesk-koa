@@ -37,7 +37,7 @@ function mapContactFromDB(item: any): PlayerContact {
 
 function mapCompanyFromDB(item: any): Company {
   // Processa os contatos para encontrar o principal
-  const contacts = item.company_contacts ? item.company_contacts.map(mapContactFromDB) : [];
+  const contacts = item.contacts ? item.contacts.map(mapContactFromDB) : [];
   const primaryContact = contacts.find((c: PlayerContact) => c.isPrimary) || contacts[0];
 
   return {
@@ -69,7 +69,7 @@ function mapCompanyFromDB(item: any): Company {
 export async function getCompanies(): Promise<Company[]> {
   const { data, error } = await supabase
     .from('companies')
-    .select('*, master_deals(count), company_contacts(*)') // Traz contagem de deals e todos os contatos
+    .select('*, master_deals(count), contacts(*)') // Traz contagem de deals e todos os contatos
     .is('deleted_at', null)
     .order('name')
 
@@ -80,7 +80,7 @@ export async function getCompanies(): Promise<Company[]> {
 export async function getCompany(id: string): Promise<Company> {
   const { data, error } = await supabase
     .from('companies')
-    .select('*, company_contacts(*)')
+    .select('*, contacts(*)')
     .eq('id', id)
     .single()
 
@@ -161,13 +161,13 @@ export async function createCompanyContact(contact: Partial<PlayerContact>, user
   // Se for primário, remove o flag dos outros contatos desta empresa
   if (contact.isPrimary && companyId) {
     await supabase
-      .from('company_contacts')
+      .from('contacts')
       .update({ is_primary: false })
       .eq('company_id', companyId)
   }
 
   const { data, error } = await supabase
-    .from('company_contacts')
+    .from('contacts')
     .insert({
       company_id: companyId,
       name: contact.name,
@@ -187,7 +187,7 @@ export async function createCompanyContact(contact: Partial<PlayerContact>, user
 
 export async function deleteCompanyContact(id: string) {
   const { error } = await supabase
-    .from('company_contacts')
+    .from('contacts')
     .delete()
     .eq('id', id)
 
@@ -197,7 +197,7 @@ export async function deleteCompanyContact(id: string) {
 // Busca um contato de empresa específico pelo ID (usado na nova rota de detalhes)
 export async function getCompanyContact(contactId: string): Promise<PlayerContact & { companyName?: string }> {
   const { data, error } = await supabase
-    .from('company_contacts')
+    .from('contacts')
     .select('*, companies(name)') // Faz join para pegar o nome da empresa
     .eq('id', contactId)
     .single()

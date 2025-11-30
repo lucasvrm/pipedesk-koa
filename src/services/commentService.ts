@@ -78,7 +78,7 @@ export async function deleteComment(commentId: string) {
 
 // --- Hooks ---
 
-export function useComments(entityId: string | undefined, entityType: 'deal' | 'track' | 'task') {
+export function useComments(entityId: string | undefined, entityType: 'deal' | 'track' | 'task' | 'lead' | 'company') {
   return useQuery({
     queryKey: ['comments', entityId],
     queryFn: () => getComments(entityId!, entityType),
