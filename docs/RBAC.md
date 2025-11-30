@@ -16,15 +16,6 @@ This section defines the **desired state** of the permissions system. All develo
 | | `tags.update` | Create/Edit/Delete global tags. |
 | **Custom Fields**| `custom_fields.manage` | Access Custom Fields Settings page (`/custom-fields`). |
 | **RBAC** | `rbac.manage` | Manage Roles and Permissions (`/rbac` or `/admin/users`). |
-| **Leads** | `leads.view` | View leads list and details. |
-| | `leads.create` | Create new leads. |
-| | `leads.update` | Edit lead details. |
-| | `leads.qualify` | Execute lead qualification (convert to Deal). |
-| | `leads.manage` | Delete leads or manage configurations. |
-| **Contacts** | `contacts.view` | View contacts list and details. |
-| | `contacts.create` | Create new contacts. |
-| | `contacts.update` | Edit contact details. |
-| | `contacts.manage` | Delete contacts. |
 
 ---
 
@@ -33,13 +24,16 @@ Current status of enforcement in the codebase.
 
 | Permission | Backend Enforcement (RLS/Service) | Frontend Guard (Route/UI) | Observations |
 |------------|-----------------------------------|---------------------------|--------------|
-| `tracks.*` | ✅ Enforced in DB | ❌ **Missing** | Route `/tracks/:id` has no check. |
-| `pipeline.*` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role) | |
-| `tags.*` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role) | |
-| `custom_fields.*`| ❌ **Missing** | ❌ **Missing** | |
-| `rbac.manage` | ⚠️ Assumed via `admin` role | ⚠️ Partial (`admin` Role) | |
-| `leads.*` | ✅ Enforced in DB (007) | ❌ **Pending UI** | New module. |
-| `contacts.*` | ✅ Enforced in DB (007) | ❌ **Pending UI** | New module. |
+| `tracks.view` | ✅ Enforced in DB (006_fix_schema) | ❌ **Missing** (Open to all Auth users) | Route `/tracks/:id` has no check. |
+| `tracks.create` | ✅ Enforced in DB | ❌ **Missing** | |
+| `tracks.update` | ✅ Enforced in DB | ❌ **Missing** | |
+| `tracks.manage` | ✅ Enforced in DB | ❌ **Missing** | |
+| `pipeline.manage` | ✅ Enforced in DB (005_rbac) | ⚠️ Partial (`admin` Role only) | Route guarded by `requiredRole=['admin']` instead of permission. |
+| `pipeline.update` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role only) | |
+| `tags.manage` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role only) | Route guarded by `requiredRole=['admin']`. |
+| `tags.update` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role only) | |
+| `custom_fields.manage`| ❌ **Missing** | ❌ **Missing** | Page `/custom-fields` is currently open to any authenticated user (inside `ProtectedRoute`). |
+| `rbac.manage` | ⚠️ Assumed via `admin` role | ⚠️ Partial (`admin` Role only) | Users/RBAC routes guarded by `requiredRole=['admin']`. |
 
 > **Key**:
 > - ✅ = Fully implemented and verified.
@@ -52,5 +46,8 @@ Current status of enforcement in the codebase.
 The following items are required to reach full compliance with the RBAC Contract:
 
 1.  **Tracks**: Add `RequirePermission` guards to `TrackDetailPage` and `TracksList`.
-2.  **Custom Fields**: Seed `custom_fields.manage` permission and bind to admin.
-3.  **Leads/Contacts**: Ensure UI checks permissions before showing "Qualify" button or "Edit" forms.
+2.  **Custom Fields**:
+    - Seed `custom_fields.manage` permission.
+    - Bind to `admin` role.
+    - Protect `/custom-fields` route with `RequirePermission`.
+3.  **Refactor Admin Routes**: Replace `requiredRole=['admin']` with specific `RequirePermission` guards for Pipeline, Tags, and Users pages to allow more granular access (e.g. `pipeline.manage` without full admin).

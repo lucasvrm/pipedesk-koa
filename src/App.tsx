@@ -38,11 +38,6 @@ const CompaniesListPage = lazy(() => import('@/features/companies/pages/Companie
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
 const CompanyContactDetailPage = lazy(() => import('@/features/contacts/pages/CompanyContactDetailPage'))
 
-// Leads & Contacts
-const LeadsListPage = lazy(() => import('@/features/leads/pages/LeadsListPage'))
-const LeadDetailPage = lazy(() => import('@/features/leads/pages/LeadDetailPage'))
-const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
-
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="text-center">
