@@ -31,8 +31,12 @@ const SYNTHETIC_STAGE_PROBABILITIES: Record<string, number> = {
 
 const PLAYER_TYPES: PlayerType[] = ['bank', 'asset_manager', 'family_office', 'securitizer', 'fund'];
 const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'fip', 'fiagro', 'multimercado'];
-const COMPANY_TYPES: CompanyType[] = ['incorporadora', 'construtora', 'assessor_juridico', 'agente_fiduciario', 'servicer', 'corporation', 'fund', 'startup', 'advisor'];
-const RELATIONSHIP_LEVELS: RelationshipLevel[] = ['basic', 'intermediate', 'close'];
+
+// Mapeamento correto com constraints do banco (migration 007)
+const SYNTHETIC_COMPANY_TYPES: CompanyType[] = ['corporation', 'fund', 'startup', 'advisor', 'other'];
+const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: string[] = ['none', 'prospect', 'active_client', 'partner', 'churned'];
+
+const RELATIONSHIP_LEVELS: RelationshipLevel[] = ['basic', 'intermediate', 'close']; // Para Players
 
 const CREDIT_KEYS = Object.keys(CREDIT_SUBTYPE_LABELS);
 const EQUITY_KEYS = Object.keys(EQUITY_SUBTYPE_LABELS);
@@ -202,8 +206,8 @@ export const syntheticDataService = {
         cnpj: faker.helpers.replaceSymbols('##.###.###/0001-##'),
         site: faker.internet.url(),
         description: faker.lorem.paragraph(),
-        type: faker.helpers.arrayElement(COMPANY_TYPES),
-        relationship_level: faker.helpers.arrayElement(RELATIONSHIP_LEVELS),
+        type: faker.helpers.arrayElement(SYNTHETIC_COMPANY_TYPES),
+        relationship_level: faker.helpers.arrayElement(SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS),
         created_by: userId,
         is_synthetic: true
       });
