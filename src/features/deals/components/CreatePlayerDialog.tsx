@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers } from '@/services/userService'
 import { useCreateTrack, useTracks } from '@/services/trackService'
 import { usePlayers, useCreatePlayer } from '@/services/playerService'
+import { useStages } from '@/services/pipelineService' // NOVO: Importa o serviço de estágios dinâmicos
 import {
   Dialog,
   DialogContent,
@@ -23,10 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MasterDeal, PlayerStage, STAGE_LABELS } from '@/lib/types'
+import { MasterDeal, PlayerStage } from '@/lib/types' // REMOVIDO: STAGE_LABELS
 import { toast } from 'sonner'
 import { ArrowLeft, Plus } from '@phosphor-icons/react'
-import { PlayerSelect } from '@/components/PlayerSelect'
+import PlayerSelect from '@/components/PlayerSelect' // CORRIGIDO: Importação DEFAULT
 
 interface CreatePlayerDialogProps {
   masterDeal: MasterDeal
@@ -40,8 +41,8 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
   // Hooks de dados
   const { data: users } = useUsers()
   const { data: existingPlayers } = usePlayers()
-  // 1. Buscando tracks existentes para validação de duplicidade
   const { data: existingTracks } = useTracks(masterDeal.id)
+  const { data: stages = [], isLoading: isLoadingStages } = useStages() // NOVO: Estágios dinâmicos
   
   // Hooks de mutação
   const createTrack = useCreateTrack()
@@ -53,16 +54,34 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
   const [newPlayerName, setNewPlayerName] = useState('')
   
   const [trackVolume, setTrackVolume] = useState(masterDeal.volume.toString())
-  const [currentStage, setCurrentStage] = useState<PlayerStage>('nda')
+  const [currentStage, setCurrentStage] = useState<PlayerStage>('') // Stage ID dinâmico
   const [notes, setNotes] = useState('')
   const [selectedTeam, setSelectedTeam] = useState<string[]>([])
+
+  // Define o estágio inicial padrão quando os estágios carregam
+  useEffect(() => {
+    if (stages.length > 0 && !currentStage) {
+      const defaultStage = stages.find(s => s.isDefault) || stages[0]
+      if (defaultStage) {
+        setCurrentStage(defaultStage.id)
+      }
+    }
+  }, [stages, currentStage])
 
   const resetForm = () => {
     setIsCreatingNew(false)
     setSelectedPlayerId('')
     setNewPlayerName('')
     setTrackVolume(masterDeal.volume.toString())
-    setCurrentStage('nda')
+    
+    // Reseta para o estágio default (se carregado)
+    if (stages.length > 0) {
+        const defaultStage = stages.find(s => s.isDefault) || stages[0]
+        setCurrentStage(defaultStage?.id || '')
+    } else {
+        setCurrentStage('')
+    }
+
     setNotes('')
     setSelectedTeam([])
   }
@@ -75,11 +94,17 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
       return
     }
 
+    if (!currentStage) {
+        toast.error('O estágio é obrigatório')
+        return
+    }
+
     let finalPlayerId = selectedPlayerId
     let finalPlayerName = ''
+    let probability = 0
 
+    // 1. Lógica de Obtenção do ID do Player (Novo ou Existente)
     try {
-      // Lógica de Obtenção do ID do Player (Novo ou Existente)
       if (isCreatingNew) {
         if (!newPlayerName.trim()) {
           toast.error('Nome do player é obrigatório')
@@ -116,8 +141,7 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
         finalPlayerName = selectedPlayer.name
       }
 
-      // 1. VALIDAÇÃO DE DUPLICIDADE
-      // Verifica se já existe um track com este playerId neste deal
+      // 2. VALIDAÇÃO DE DUPLICIDADE
       const isDuplicate = existingTracks?.some(t => t.playerId === finalPlayerId)
       
       if (isDuplicate) {
@@ -127,14 +151,18 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
         return
       }
 
-      // Criação do Track (Vínculo)
+      // 3. Obter Probabilidade do Estágio Dinâmico
+      const currentStageInfo = stages.find(s => s.id === currentStage)
+      probability = currentStageInfo?.probability || 0
+
+      // 4. Criação do Track (Vínculo)
       await createTrack.mutateAsync({
         masterDealId: masterDeal.id,
         playerName: finalPlayerName,
         playerId: finalPlayerId,
         trackVolume: parseFloat(trackVolume),
         currentStage,
-        probability: 0,
+        probability, // Usando probabilidade dinâmica
         responsibles: selectedTeam,
         status: 'active',
         notes,
@@ -158,9 +186,6 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
     )
   }
 
-  // 2. EQUIPE RESPONSÁVEL
-  // Se outros usuários não aparecem, verifique se eles possuem as roles abaixo no banco de dados.
-  // Caso contrário, ajuste este filtro ou verifique as políticas RLS (Row Level Security) do Supabase.
   const teamMembers = (users || []).filter(
     (u) => u.role === 'admin' || u.role === 'analyst' || u.role === 'newbusiness'
   )
@@ -245,16 +270,20 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
 
             <div className="space-y-2">
               <Label htmlFor="current-stage">Estágio Atual *</Label>
-              <Select value={currentStage} onValueChange={(v) => setCurrentStage(v as PlayerStage)}>
+              <Select value={currentStage} onValueChange={(v) => setCurrentStage(v as PlayerStage)} disabled={isLoadingStages}>
                 <SelectTrigger id="current-stage">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o estágio" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(STAGE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  {stages.length === 0 ? (
+                      <div className="p-2 text-center text-muted-foreground text-xs">Carregando estágios...</div>
+                  ) : (
+                    stages.map((stage) => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.name} ({stage.probability}%)
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
