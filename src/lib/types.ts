@@ -57,6 +57,66 @@ export interface PipelineStage {
   updatedAt: string
 }
 
+// === NOVOS TIPOS DE CONFIGURAÇÃO (SETTINGS) ===
+
+export interface LossReason {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  acronym?: string;
+  description?: string;
+  defaultFeePercentage?: number;
+  defaultSlaDays?: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface DealSource {
+  id: string;
+  name: string;
+  type?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PlayerCategory {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Holiday {
+  id: string;
+  date: string; // ISO Date String 'YYYY-MM-DD'
+  name: string;
+  type: 'national' | 'regional';
+  createdAt: string;
+}
+
+export type CommunicationTemplateType = 'email' | 'whatsapp' | 'document';
+
+export interface CommunicationTemplate {
+  id: string;
+  title: string;
+  subject?: string;
+  content: string;
+  type: CommunicationTemplateType;
+  category?: string;
+  variables: string[]; // ex: ['{{client_name}}']
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
 export interface MasterDeal {
   id: string
   clientName: string
@@ -83,6 +143,14 @@ export interface MasterDeal {
   // Fallback para código legado que acessa snake_case direto do banco sem mapeamento
   company_id?: string;
   company?: Company;
+
+  // NOVOS CAMPOS RELACIONAIS
+  productId?: string;
+  product?: Product;
+  sourceId?: string;
+  source?: DealSource;
+  lossReasonId?: string;
+  lossReason?: LossReason;
 
   responsibles?: User[];
   tags?: Tag[];
@@ -439,6 +507,10 @@ export interface Player {
   deletedAt?: string;
   isSynthetic: boolean;
   
+  // NOVO CAMPO RELACIONAL
+  categoryId?: string;
+  category?: PlayerCategory;
+
   contacts?: PlayerContact[];
   creator?: { name: string };
   primaryContact?: PlayerContact; 
