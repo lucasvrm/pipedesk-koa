@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlayerTrack, PlayerStage } from '@/lib/types';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Types
@@ -46,6 +47,8 @@ function mapTrackFromDB(item: any): PlayerTrack & { dealName?: string; dealProdu
         notes: item.notes || '',
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        // Using stage_entered_at for SLA if available, otherwise fallback to updatedAt
+        stageEnteredAt: item.stage_entered_at || item.updated_at,
         dealName: item.master_deal?.client_name,
         dealProduct: item.master_deal?.deal_product
     };
@@ -119,6 +122,7 @@ export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
             responsibles: track.responsibles || [],
             status: track.status || 'active',
             notes: track.notes,
+            stage_entered_at: new Date().toISOString() // Set initial entry time
         })
         .select()
         .single();
@@ -128,7 +132,39 @@ export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
     return mapTrackFromDB(data);
 }
 
+export async function validateTransition(currentStage: string, nextStage: string): Promise<boolean> {
+    if (currentStage === nextStage) return true;
+
+    // Check if there are rules
+    const { data: rules } = await supabase
+        .from('phase_transition_rules')
+        .select('*')
+        .eq('from_stage', currentStage)
+        .eq('to_stage', nextStage);
+
+    // If explicit rules exist for this pair
+    if (rules && rules.length > 0) {
+        // If ANY rule is disabled, we block.
+        // Logic: The existence of a disabled rule overrides any enabled rule?
+        // Or usually uniqueness constraint ensures only one rule per pair.
+        // Assuming one rule per pair.
+        const blocked = rules.some(r => r.enabled === false);
+        if (blocked) return false;
+    }
+
+    return true;
+}
+
 export async function updateTrack(trackId: string, updates: TrackUpdate): Promise<PlayerTrack> {
+    // Phase Transition Validation
+    if (updates.currentStage) {
+        const current = await getTrack(trackId);
+        const allowed = await validateTransition(current.currentStage, updates.currentStage);
+        if (!allowed) {
+            throw new Error(`Transição de ${current.currentStage} para ${updates.currentStage} não permitida.`);
+        }
+    }
+
     const updateData: any = {
         updated_at: new Date().toISOString(),
     };
@@ -136,7 +172,16 @@ export async function updateTrack(trackId: string, updates: TrackUpdate): Promis
     if (updates.masterDealId !== undefined) updateData.master_deal_id = updates.masterDealId;
     if (updates.playerName !== undefined) updateData.player_name = updates.playerName;
     if (updates.trackVolume !== undefined) updateData.track_volume = updates.trackVolume;
-    if (updates.currentStage !== undefined) updateData.current_stage = updates.currentStage;
+
+    // SLA Logic: If stage changes, update entered_at
+    if (updates.currentStage !== undefined) {
+        updateData.current_stage = updates.currentStage;
+        // Only update timestamp if stage actually changes (checked via logic or assumed from caller)
+        // Since we fetch current above for validation, we can check.
+        // But to be safe and simple, if caller passes stage, we treat as change.
+        updateData.stage_entered_at = new Date().toISOString();
+    }
+
     if (updates.probability !== undefined) updateData.probability = updates.probability;
     if (updates.responsibles !== undefined) updateData.responsibles = updates.responsibles;
     if (updates.status !== undefined) updateData.status = updates.status;
@@ -215,6 +260,9 @@ export function useUpdateTrack() {
             queryClient.invalidateQueries({ queryKey: ['tracks', 'detail', data.id] });
             queryClient.invalidateQueries({ queryKey: ['player-tracks'] });
         },
+        onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar track.");
+        }
     });
 }
 

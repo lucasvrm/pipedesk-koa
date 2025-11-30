@@ -20,9 +20,18 @@ export const TAG_COLORS = [
 
 // --- API Functions ---
 
-export async function getTags(entityType?: 'deal' | 'track'): Promise<Tag[]> {
+export async function getTags(entityType?: 'deal' | 'track' | 'global'): Promise<Tag[]> {
   let query = supabase.from('tags').select('*').order('name');
-  if (entityType) query = query.eq('entity_type', entityType);
+
+  if (entityType) {
+    // Se solicitou um tipo específico, traz esse tipo E globais
+    // Se solicitou 'global', traz só global
+    if (entityType === 'global') {
+      query = query.eq('entity_type', 'global');
+    } else {
+      query = query.in('entity_type', [entityType, 'global']);
+    }
+  }
   
   const { data, error } = await query;
   if (error) throw error;
@@ -35,7 +44,9 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
   const { data, error } = await supabase
     .from('tags')
     .insert({
-      ...tag,
+      name: tag.name,
+      color: tag.color,
+      entity_type: tag.entity_type || 'global',
       created_by: userData.user?.id
     })
     .select()
@@ -91,13 +102,36 @@ export async function removeTagFromEntity(tagId: string, entityId: string) {
   if (error) throw error;
 }
 
+// Buscar tags de uma entidade específica
+export async function getEntityTags(entityId: string): Promise<Tag[]> {
+  const { data, error } = await supabase
+    .from('entity_tags')
+    .select(`
+      tag_id,
+      tags:tags(*)
+    `)
+    .eq('entity_id', entityId);
+
+  if (error) throw error;
+  return data.map((item: any) => item.tags) as Tag[];
+}
+
+
 // --- Hooks React Query ---
 
-export function useTags(entityType?: 'deal' | 'track') {
+export function useTags(entityType?: 'deal' | 'track' | 'global') {
   return useQuery({
     queryKey: ['tags', entityType],
     queryFn: () => getTags(entityType),
     staleTime: 1000 * 60 * 5 // 5 minutos
+  });
+}
+
+export function useEntityTags(entityId: string) {
+  return useQuery({
+    queryKey: ['tags', 'entity', entityId],
+    queryFn: () => getEntityTags(entityId),
+    enabled: !!entityId
   });
 }
 
@@ -109,10 +143,16 @@ export function useTagOperations() {
     queryClient.invalidateQueries({ queryKey: ['tags'] }); // Atualiza lista de tags
     if (entityType === 'deal') {
       queryClient.invalidateQueries({ queryKey: ['deals'] }); // Atualiza lista de deals
-      if (entityId) queryClient.invalidateQueries({ queryKey: ['deal', entityId] }); // Atualiza detalhe
+      if (entityId) {
+        queryClient.invalidateQueries({ queryKey: ['deals', entityId] }); // Atualiza detalhe
+        queryClient.invalidateQueries({ queryKey: ['tags', 'entity', entityId] });
+      }
     } else if (entityType === 'track') {
       queryClient.invalidateQueries({ queryKey: ['tracks'] });
-      if (entityId) queryClient.invalidateQueries({ queryKey: ['tracks', 'detail', entityId] }); // Atualiza detalhe do track
+      if (entityId) {
+        queryClient.invalidateQueries({ queryKey: ['tracks', 'detail', entityId] });
+        queryClient.invalidateQueries({ queryKey: ['tags', 'entity', entityId] });
+      }
     }
   };
 
