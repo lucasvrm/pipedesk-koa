@@ -23,6 +23,13 @@ export interface LeadUpdate extends Partial<LeadInput> {
   status?: LeadStatus;
 }
 
+export interface LeadFilters {
+  status?: string[];
+  origin?: string[];
+  responsibleId?: string;
+  search?: string;
+}
+
 export interface QualifyLeadInput {
   leadId: string;
   userId: string;
@@ -88,6 +95,8 @@ function mapLeadFromDB(item: any): Lead {
 // API Functions
 // ============================================================================
 
+export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
+  let query = supabase
 export async function getLeads(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
@@ -96,6 +105,26 @@ export async function getLeads(): Promise<Lead[]> {
       lead_contacts(is_primary, contacts(*)),
       lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url))
     `)
+    .is('deleted_at', null);
+
+  if (filters) {
+    if (filters.status && filters.status.length > 0) {
+      query = query.in('status', filters.status);
+    }
+    if (filters.origin && filters.origin.length > 0) {
+      query = query.in('origin', filters.origin);
+    }
+    if (filters.responsibleId) {
+      query = query.eq('owner_user_id', filters.responsibleId);
+    }
+    if (filters.search) {
+      // NOTE: Supabase OR with related tables or multiple fields is complex.
+      // Basic search on name/cnpj:
+      query = query.or(`legal_name.ilike.%${filters.search}%,cnpj.ilike.%${filters.search}%`);
+    }
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
@@ -225,6 +254,11 @@ export async function qualifyLead(input: QualifyLeadInput) {
 // Hooks
 // ============================================================================
 
+export function useLeads(filters?: LeadFilters) {
+  return useQuery({
+    queryKey: ['leads', filters],
+    queryFn: () => getLeads(filters)
+  });
 export function useLeads() {
   return useQuery({ queryKey: ['leads'], queryFn: getLeads });
 }

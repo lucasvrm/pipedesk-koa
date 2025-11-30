@@ -154,17 +154,6 @@ export function Layout({ children }: LayoutProps) {
               </Button>
 
               <Button
-                variant={isActive('/leads') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/leads">
-                  <Funnel className="mr-2" />
-                  Leads
-                </Link>
-              </Button>
-
-              <Button
                 variant={isActive('/contacts') ? 'secondary' : 'ghost'}
                 size="sm"
                 asChild

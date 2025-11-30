@@ -20,6 +20,16 @@ export interface ContactInput {
 
 export interface ContactUpdate extends Partial<ContactInput> {}
 
+export interface ContactWithCompany extends Contact {
+  companyName?: string;
+  companyType?: string;
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function mapContactFromDB(item: any): ContactWithCompany {
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -37,13 +47,26 @@ function mapContactFromDB(item: any): Contact {
     notes: item.notes || '',
     isPrimary: item.is_primary || false,
     createdAt: item.created_at,
-    createdBy: item.created_by
+    createdBy: item.created_by,
+    companyName: item.companies?.name,
+    companyType: item.companies?.type
   }
 }
 
 // ============================================================================
 // API Functions
 // ============================================================================
+
+export async function getContacts(companyId?: string): Promise<ContactWithCompany[]> {
+  let query = supabase.from('contacts').select('*, companies(name, type)');
+
+  if (companyId && companyId !== 'all') {
+    query = query.eq('company_id', companyId);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+
 
 export async function getContacts(companyId?: string): Promise<Contact[]> {
   let query = supabase.from('contacts').select('*');
@@ -123,6 +146,16 @@ export async function deleteContact(id: string) {
 // ============================================================================
 // Hooks
 // ============================================================================
+
+export function useContacts(companyId?: string) {
+  return useQuery({
+    queryKey: ['contacts', companyId],
+    queryFn: () => getContacts(companyId)
+  });
+}
+
+export function useContact(id?: string) {
+  return useQuery({
 
 export function useContacts(companyId?: string) {
   return useQuery({
