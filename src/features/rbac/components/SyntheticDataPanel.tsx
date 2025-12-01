@@ -73,6 +73,16 @@ export default function SyntheticDataPanel() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!confirm('ATENÇÃO: Isso excluirá TODOS os dados sintéticos gerados. Continuar?')) return;
+    setLoading(true);
+    try {
+      await syntheticDataService.clearAllSyntheticData();
+      toast.success('Todos os dados sintéticos foram removidos.');
+      await refreshCounts();
+    } catch { toast.error('Erro ao limpar tudo'); } finally { setLoading(false); }
+  };
+
   return (
     <Card className="w-full border-dashed border-2 border-primary/20">
       <CardHeader>
