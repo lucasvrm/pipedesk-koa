@@ -106,7 +106,8 @@ function App() {
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
-            <Route path="/admin/synthetic-data" element={<ProtectedRoute requiredRole={['admin']}><SyntheticDataAdminPage /></ProtectedRoute>} />
+            {/* Altera a rota antiga /admin/synthetic-data para a nova slug /admin/gerador-dados */}
+            <Route path="/admin/gerador-dados" element={<ProtectedRoute requiredRole={['admin']}><SyntheticDataAdminPage /></ProtectedRoute>} />
             <Route path="/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
             <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
