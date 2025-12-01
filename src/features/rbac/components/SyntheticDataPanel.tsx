@@ -73,16 +73,6 @@ export default function SyntheticDataPanel() {
     }
   };
 
-  const handleClearAll = async () => {
-    if (!confirm('ATENÇÃO: Isso excluirá TODOS os dados sintéticos gerados. Continuar?')) return;
-    setLoading(true);
-    try {
-      await syntheticDataService.clearAllSyntheticData();
-      toast.success('Todos os dados sintéticos foram removidos.');
-      await refreshCounts();
-    } catch { toast.error('Erro ao limpar tudo'); } finally { setLoading(false); }
-  };
-
   return (
     <Card className="w-full border-dashed border-2 border-primary/20">
       <CardHeader>
@@ -297,10 +287,17 @@ export default function SyntheticDataPanel() {
                 if (!confirm('ATENÇÃO: Isso excluirá TODOS os dados sintéticos gerados. Continuar?')) return;
                 setLoading(true);
                 try {
-                    await syntheticDataService.clearAllSyntheticData();
-                    toast.success('Todos os dados sintéticos foram removidos.');
+                    const result = await syntheticDataService.clearAllSyntheticData();
+                    if (result) {
+                        toast.success(`Limpeza concluída: ${JSON.stringify(result)}`);
+                    } else {
+                        toast.success('Limpeza concluída (Legacy/Auth).');
+                    }
                     await refreshCounts();
-                } catch { toast.error('Erro ao limpar tudo'); } finally { setLoading(false); }
+                } catch (e: any) {
+                    console.error(e);
+                    toast.error(`Erro ao limpar tudo: ${e.message}`);
+                } finally { setLoading(false); }
             }}
             disabled={loading}
         >

@@ -100,7 +100,13 @@ export const syntheticDataService = {
       });
       if (error) throw error;
 
-      const createdUsers = data.created || [];
+      // B) Fix: Ensure createdUsers is an array
+      const createdUsers = Array.isArray(data.created) ? data.created : [];
+
+      if (data.error) {
+          console.error("Erro na Edge Function:", data.error);
+          throw new Error(data.error);
+      }
 
       // 2. Atualiza roles e flag is_synthetic no Profile
       if (createdUsers.length > 0) {
@@ -546,11 +552,22 @@ export const syntheticDataService = {
   },
 
   async clearAllSyntheticData() {
-    await this.clearSyntheticDeals();
-    await this.clearSyntheticLeads();
-    await this.clearSyntheticCompanies(); // Cleans contacts too
-    await this.clearSyntheticPlayers();
+    // D2) Use Robust RPC
+    const { data, error } = await supabase.rpc('clear_synthetic_data');
+
+    if (error) {
+        console.error("Erro no RPC clear_synthetic_data:", error);
+        // Fallback to legacy method if RPC missing (should not happen if migrated)
+        await this.clearSyntheticDeals();
+        await this.clearSyntheticLeads();
+        await this.clearSyntheticCompanies();
+        await this.clearSyntheticPlayers();
+    }
+
+    // Users still need Edge Function for Auth deletion
     await this.clearSyntheticUsers();
+
+    return data;
   },
 
   async getSyntheticCounts() {
