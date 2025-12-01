@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { PageContainer } from '@/components/PageContainer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { syntheticDataService } from '@/services/syntheticDataService'
-import { useAuth } from '@/contexts/AuthContext'
 import {
   Database,
   Users,
@@ -16,131 +14,126 @@ import {
   Kanban,
   Trash,
   Play,
-  ArrowClockwise as RefreshCw,
-  Warning
+  Warning,
+  AddressBook
 } from '@phosphor-icons/react'
-
-interface SyntheticCounts {
-  users: number
-  companies: number
-  leads: number
-  deals: number
-  contacts: number
-}
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function SyntheticDataAdminPage() {
-  const { profile } = useAuth()
   const [loading, setLoading] = useState(false)
-  const [counts, setCounts] = useState<SyntheticCounts>({
-    users: 0,
-    companies: 0,
-    leads: 0,
-    deals: 0,
-    contacts: 0
-  })
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([])
 
-  // Form states
-  const [userCount, setUserCount] = useState(5)
+  // Generator inputs
+  const [userCount, setUserCount] = useState(3)
   const [companyCount, setCompanyCount] = useState(10)
   const [leadCount, setLeadCount] = useState(10)
   const [dealCount, setDealCount] = useState(5)
+  const [contactCount, setContactCount] = useState(15)
 
-  const fetchCounts = async () => {
-    try {
-      const data = await syntheticDataService.fetchRealCounts()
-      setCounts({
-        users: data.users,
-        companies: data.companies,
-        leads: data.leads,
-        deals: data.deals,
-        contacts: data.contacts
-      })
-    } catch (error) {
-      console.error('Error fetching counts:', error)
-      toast.error('Erro ao carregar contagens')
-    }
+  const log = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setConsoleLogs(prev => [`[${timestamp}] ${message}`, ...prev])
   }
-
-  useEffect(() => {
-    fetchCounts()
-  }, [])
 
   const handleGenerateUsers = async () => {
-    if (!confirm(`Gerar ${userCount} usuários? Isso pode levar alguns segundos.`)) return
+    if (!confirm(`Generate ${userCount} users?`)) return
 
     setLoading(true)
+    log(`Starting user generation (Count: ${userCount})...`)
+
     try {
-      const { count, logs } = await syntheticDataService.generateUsers(userCount)
-      toast.success(`${count} usuários gerados com sucesso!`)
-      console.log('Logs:', logs)
-      await fetchCounts()
-    } catch (error) {
-      console.error(error)
-      toast.error('Erro ao gerar usuários')
+      const data = await syntheticDataService.createUsers(userCount)
+
+      log(`✅ Success! Created: ${data.created_count}`)
+      if (data.errors?.length) {
+        log(`⚠️ Errors: ${JSON.stringify(data.errors)}`)
+      }
+      toast.success(`${data.created_count} users created`)
+    } catch (err: any) {
+      log(`❌ Error: ${err.message}`)
+      toast.error('Failed to generate users')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGenerateCompanies = async () => {
-    if (!profile?.id) return
+  const handleGenerateCRM = async (companyStrategy: 'v1' | 'v2') => {
     setLoading(true)
-    try {
-      const { count } = await syntheticDataService.generateCompanies(companyCount, profile.id, true)
-      toast.success(`${count} empresas geradas com sucesso!`)
-      await fetchCounts()
-    } catch (error) {
-      console.error(error)
-      toast.error('Erro ao gerar empresas')
-    } finally {
-      setLoading(false)
-    }
-  }
+    log(`Starting CRM Data generation (Strategy: ${companyStrategy})...`)
+    log(`Inputs: Companies=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contacts=${contactCount}`)
 
-  const handleGenerateLeads = async () => {
-    if (!profile?.id) return
-    setLoading(true)
     try {
-      const { count } = await syntheticDataService.generateLeads(leadCount, profile.id, true)
-      toast.success(`${count} leads gerados com sucesso!`)
-      await fetchCounts()
-    } catch (error) {
-      console.error(error)
-      toast.error('Erro ao gerar leads')
-    } finally {
-      setLoading(false)
-    }
-  }
+      // 1. Fetch synthetic users to own the data
+      const userIds = await syntheticDataService.getSyntheticUserIds()
+      log(`Found ${userIds.length} synthetic users to assign as owners.`)
 
-  const handleGenerateDeals = async () => {
-    setLoading(true)
-    try {
-      const { count } = await syntheticDataService.generateDeals(dealCount, true)
-      toast.success(`${count} deals gerados com sucesso!`)
-      await fetchCounts()
-    } catch (error) {
-      console.error(error)
-      toast.error('Erro ao gerar deals. Verifique se existem usuários e empresas.')
+      // 2. Call RPC via Service
+      const payload = {
+        companies_count: companyCount,
+        leads_count: leadCount,
+        deals_count: dealCount,
+        contacts_count: contactCount,
+        users_ids: userIds,
+        company_strategy: companyStrategy
+      }
+
+      const data = await syntheticDataService.generateCRM(payload)
+
+      log(`✅ Generation Complete!`)
+      log(`Companies created: ${data.companies}`)
+      log(`Leads created: ${data.leads}`)
+      log(`Deals created: ${data.deals}`)
+      log(`Contacts created: ${data.contacts}`)
+
+      toast.success('CRM Data generated successfully')
+    } catch (err: any) {
+      log(`❌ Error: ${err.message}`)
+      toast.error('Failed to generate CRM data')
     } finally {
       setLoading(false)
     }
   }
 
   const handleClearAll = async () => {
-    if (!confirm('ATENÇÃO: Isso apagará TODOS os dados marcados como sintéticos do sistema. Deseja continuar?')) return
+    if (!confirm('DANGER: This will delete ALL synthetic data from the system (including Auth Users). Continue?')) return
 
     setLoading(true)
+    log('Starting cleanup...')
+
     try {
-      const result = await syntheticDataService.clearAllSyntheticData()
-      if (result.success) {
-        toast.success('Dados sintéticos removidos com sucesso!')
-        await fetchCounts()
-      } else {
-        toast.error('Erro ao limpar dados: ' + result.error)
+      // 1. Delete Auth Users via Edge Function
+      log('Step 1: Deleting Auth Users...')
+      let authDeletedCount = 0
+      try {
+        const authData = await syntheticDataService.deleteAuthUsers()
+        authDeletedCount = authData.deleted_count
+        log(`Deleted Users (Auth): ${authDeletedCount}`)
+      } catch (authError: any) {
+        log(`⚠️ Auth Cleanup Error: ${authError.message}`)
       }
-    } catch (error) {
-      console.error(error)
-      toast.error('Erro crítico ao limpar dados')
+
+      // 2. Delete CRM Data via RPC
+      log('Step 2: Cleaning up CRM data...')
+      const data = await syntheticDataService.clearCRM()
+
+      log('✅ Cleanup Complete!')
+      // Users here refer to profiles
+      log(`Deleted Profiles: ${data.users}`)
+      log(`Deleted Companies: ${data.companies}`)
+      log(`Deleted Leads: ${data.leads}`)
+      log(`Deleted Deals: ${data.deals}`)
+      log(`Deleted Contacts: ${data.contacts}`)
+
+      const total = Object.values(data).reduce((a: any, b: any) => a + b, 0)
+      if (total === 0 && authDeletedCount === 0) {
+        log('ℹ️ No synthetic data found to delete.')
+      } else {
+        toast.success(`Cleanup finished.`)
+      }
+
+    } catch (err: any) {
+      log(`❌ Error: ${err.message}`)
+      toast.error('Cleanup failed')
     } finally {
       setLoading(false)
     }
@@ -148,180 +141,147 @@ export default function SyntheticDataAdminPage() {
 
   return (
     <PageContainer>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-6 max-w-6xl mx-auto">
+
+        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Database className="text-primary" />
-            Dados Sintéticos
+            Synthetic Data Admin
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gere dados de teste para validar funcionalidades e layouts.
+            Server-side generation of test data. Deterministic and safe.
           </p>
         </div>
-        <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchCounts} disabled={loading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar Contagem
-            </Button>
-            <Button variant="destructive" onClick={handleClearAll} disabled={loading}>
-                <Trash className="mr-2 h-4 w-4" />
-                Limpar Tudo
-            </Button>
+
+        {/* Main Actions Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+
+          {/* 1. USERS */}
+          <Card className="border-l-4 border-l-blue-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users size={20} /> Identity (Users)
+              </CardTitle>
+              <CardDescription>
+                Creates Auth users via Edge Function.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Count</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={userCount}
+                  onChange={(e) => setUserCount(Number(e.target.value))}
+                />
+              </div>
+              <Button onClick={handleGenerateUsers} disabled={loading} className="w-full">
+                Generate Users
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* 2. CRM DATA */}
+          <Card className="border-l-4 border-l-green-500 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Buildings size={20} /> CRM Entities
+              </CardTitle>
+              <CardDescription>
+                Generates Companies, Leads, Deals, Contacts using database RPC.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1"><Buildings /> Companies</Label>
+                  <Input type="number" value={companyCount} onChange={(e) => setCompanyCount(Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1"><Funnel /> Leads</Label>
+                  <Input type="number" value={leadCount} onChange={(e) => setLeadCount(Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1"><Kanban /> Deals</Label>
+                  <Input type="number" value={dealCount} onChange={(e) => setDealCount(Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1"><AddressBook /> Contacts</Label>
+                  <Input type="number" value={contactCount} onChange={(e) => setContactCount(Number(e.target.value))} />
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <Button
+                    variant="outline"
+                    onClick={() => handleGenerateCRM('v1')}
+                    disabled={loading}
+                    className="flex-1 border-dashed"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Generate (Strategy A: Legacy Types)
+                </Button>
+                <Button
+                    onClick={() => handleGenerateCRM('v2')}
+                    disabled={loading}
+                    className="flex-1"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Generate (Strategy B: New Types)
+                </Button>
+              </div>
+
+              <Alert className="bg-muted/50 border-none">
+                <Warning className="h-4 w-4" />
+                <AlertTitle>Strategy Note</AlertTitle>
+                <AlertDescription className="text-xs text-muted-foreground">
+                    Try "Strategy A" first if you are unsure about database constraints.
+                    "Strategy B" uses updated relationship types found in documentation.
+                </AlertDescription>
+              </Alert>
+
+            </CardContent>
+          </Card>
+
+          {/* 3. CLEANUP */}
+          <Card className="border-l-4 border-l-red-500 lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <Trash size={20} /> Danger Zone
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="destructive" onClick={handleClearAll} disabled={loading} className="w-full sm:w-auto">
+                Clear All Synthetic Data
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Usuários (Auth + Profile)</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{counts.users}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Empresas</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{counts.companies}</div>
-                <p className="text-xs text-muted-foreground">+ {counts.contacts} contatos</p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Leads</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{counts.leads}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Deals (Master)</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{counts.deals}</div>
-            </CardContent>
-        </Card>
-      </div>
-
-      <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-        <Play size={20} />
-        Geradores
-      </h2>
-
-      <div className="grid gap-6 md:grid-cols-2">
-
-        {/* USERS */}
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Users size={20} /> Usuários
+        {/* CONSOLE */}
+        <Card className="bg-slate-950 text-slate-50 border-slate-800">
+            <CardHeader className="py-3 border-b border-slate-800">
+                <CardTitle className="text-sm font-mono flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                    Execution Log
                 </CardTitle>
-                <CardDescription>Cria usuários na tabela auth.users e profiles.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="flex items-end gap-4">
-                    <div className="space-y-2 flex-1">
-                        <Label>Quantidade</Label>
-                        <Input
-                            type="number"
-                            min={1}
-                            max={50}
-                            value={userCount}
-                            onChange={(e) => setUserCount(Number(e.target.value))}
-                        />
+            <CardContent className="p-0 max-h-[300px] overflow-y-auto font-mono text-xs">
+                {consoleLogs.length === 0 ? (
+                    <div className="p-4 text-slate-500 italic">Ready...</div>
+                ) : (
+                    <div className="flex flex-col">
+                        {consoleLogs.map((log, i) => (
+                            <div key={i} className="px-4 py-1 border-b border-slate-800/50 hover:bg-white/5">
+                                {log}
+                            </div>
+                        ))}
                     </div>
-                    <Button onClick={handleGenerateUsers} disabled={loading}>
-                        Gerar
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
-        {/* COMPANIES */}
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Buildings size={20} /> Empresas
-                </CardTitle>
-                <CardDescription>Cria empresas e contatos vinculados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-end gap-4">
-                    <div className="space-y-2 flex-1">
-                        <Label>Quantidade</Label>
-                        <Input
-                            type="number"
-                            min={1}
-                            max={100}
-                            value={companyCount}
-                            onChange={(e) => setCompanyCount(Number(e.target.value))}
-                        />
-                    </div>
-                    <Button onClick={handleGenerateCompanies} disabled={loading}>
-                        Gerar
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
-        {/* LEADS */}
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Funnel size={20} /> Leads
-                </CardTitle>
-                <CardDescription>Cria leads com origem e status variados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-end gap-4">
-                    <div className="space-y-2 flex-1">
-                        <Label>Quantidade</Label>
-                        <Input
-                            type="number"
-                            min={1}
-                            max={100}
-                            value={leadCount}
-                            onChange={(e) => setLeadCount(Number(e.target.value))}
-                        />
-                    </div>
-                    <Button onClick={handleGenerateLeads} disabled={loading}>
-                        Gerar
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
-        {/* DEALS */}
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Kanban size={20} /> Deals
-                </CardTitle>
-                <CardDescription>Cria deals associados a usuários e empresas existentes.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-end gap-4">
-                    <div className="space-y-2 flex-1">
-                        <Label>Quantidade</Label>
-                        <Input
-                            type="number"
-                            min={1}
-                            max={50}
-                            value={dealCount}
-                            onChange={(e) => setDealCount(Number(e.target.value))}
-                        />
-                    </div>
-                    <Button onClick={handleGenerateDeals} disabled={loading}>
-                        Gerar
-                    </Button>
-                </div>
-                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs rounded border border-yellow-200 dark:border-yellow-900 flex items-start gap-2">
-                    <Warning className="shrink-0 mt-0.5" />
-                    <p>Requer usuários e empresas já criados no banco para vincular.</p>
-                </div>
+                )}
             </CardContent>
         </Card>
 
