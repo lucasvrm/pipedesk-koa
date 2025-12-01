@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabaseClient'
 import {
   Database,
@@ -15,13 +14,11 @@ import {
   Kanban,
   Trash,
   Play,
-  Warning,
-  AddressBook
+  AddressBook,
+  User
 } from '@phosphor-icons/react'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function SyntheticDataAdminPage() {
-  const { profile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [consoleLogs, setConsoleLogs] = useState<string[]>([])
 
@@ -31,6 +28,10 @@ export default function SyntheticDataAdminPage() {
   const [leadCount, setLeadCount] = useState(10)
   const [dealCount, setDealCount] = useState(5)
   const [contactCount, setContactCount] = useState(15)
+  const [playerCount, setPlayerCount] = useState(5)
+
+  // Store generated user IDs for immediate use
+  const [generatedUserIds, setGeneratedUserIds] = useState<string[]>([])
 
   const log = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -38,10 +39,10 @@ export default function SyntheticDataAdminPage() {
   }
 
   const handleGenerateUsers = async () => {
-    if (!confirm(`Generate ${userCount} users?`)) return
+    if (!confirm(`Gerar ${userCount} usuários?`)) return
 
     setLoading(true)
-    log(`Starting user generation (Count: ${userCount})...`)
+    log(`Iniciando geração de usuários (Quantidade: ${userCount})...`)
 
     try {
       const { data, error } = await supabase.functions.invoke('admin-create-synthetic-users', {
@@ -50,33 +51,49 @@ export default function SyntheticDataAdminPage() {
 
       if (error) throw error
 
-      log(`✅ Success! Created: ${data.created_count}`)
-      if (data.errors?.length) {
-        log(`⚠️ Errors: ${JSON.stringify(data.errors)}`)
+      log(`✅ Sucesso! Criados: ${data.created_count}`)
+      if (data.users && Array.isArray(data.users)) {
+          const ids = data.users.map((u: any) => u.id)
+          setGeneratedUserIds(ids)
+          log(`IDs capturados para uso imediato: ${ids.length}`)
       }
-      toast.success(`${data.created_count} users created`)
+
+      if (data.errors?.length) {
+        log(`⚠️ Erros: ${JSON.stringify(data.errors)}`)
+      }
+      toast.success(`${data.created_count} usuários criados com sucesso`)
     } catch (err: any) {
-      log(`❌ Error: ${err.message}`)
-      toast.error('Failed to generate users')
+      log(`❌ Erro: ${err.message}`)
+      toast.error('Falha ao gerar usuários')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGenerateCRM = async (companyStrategy: 'v1' | 'v2') => {
+  const handleGenerateCRM = async () => {
     setLoading(true)
-    log(`Starting CRM Data generation (Strategy: ${companyStrategy})...`)
-    log(`Inputs: Companies=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contacts=${contactCount}`)
+    const companyStrategy = 'v1' // Forced Strategy A
+    log(`Iniciando geração de Dados CRM (Estratégia: ${companyStrategy})...`)
+    log(`Entradas: Empresas=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contatos=${contactCount}, Players=${playerCount}`)
 
     try {
-      // 1. Fetch synthetic users to own the data (optional but good practice)
-      const { data: syntheticUsers } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('is_synthetic', true)
+      let userIds = generatedUserIds
 
-      const userIds = syntheticUsers?.map(u => u.id) || []
-      log(`Found ${userIds.length} synthetic users to assign as owners.`)
+      // If no users generated recently, fetch existing synthetic users
+      if (userIds.length === 0) {
+        const { data: syntheticUsers } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('is_synthetic', true)
+
+        userIds = syntheticUsers?.map(u => u.id) || []
+      }
+
+      if (userIds.length > 0) {
+          log(`Encontrados ${userIds.length} usuários sintéticos para atribuir como responsáveis.`)
+      } else {
+          log(`Nenhum usuário sintético solicitado ou encontrado; pulando atribuição de responsáveis.`)
+      }
 
       // 2. Call RPC
       const payload = {
@@ -84,6 +101,7 @@ export default function SyntheticDataAdminPage() {
         leads_count: leadCount,
         deals_count: dealCount,
         contacts_count: contactCount,
+        players_count: playerCount,
         users_ids: userIds,
         company_strategy: companyStrategy
       }
@@ -92,50 +110,70 @@ export default function SyntheticDataAdminPage() {
 
       if (error) throw error
 
-      log(`✅ Generation Complete!`)
-      log(`Companies created: ${data.companies}`)
-      log(`Leads created: ${data.leads}`)
-      log(`Deals created: ${data.deals}`)
-      log(`Contacts created: ${data.contacts}`)
+      log(`✅ Geração Completa!`)
+      log(`Empresas criadas: ${data.companies}`)
+      log(`Leads criados: ${data.leads}`)
+      log(`Deals criados: ${data.deals}`)
+      log(`Contatos criados: ${data.contacts}`)
+      log(`Players criados: ${data.players}`)
 
-      toast.success('CRM Data generated successfully')
+      // Verification Step
+      if (data.deals > 0) {
+          const { count } = await supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true)
+          if (!count || count === 0) {
+              log(`⚠️ ALERTA: Deals foram reportados como criados, mas não encontrados no banco!`)
+          } else {
+              log(`🔍 Verificação: ${count} deals sintéticos encontrados no banco.`)
+          }
+      }
+
+      toast.success('Dados CRM gerados com sucesso')
     } catch (err: any) {
-      log(`❌ Error: ${err.message}`)
-      toast.error('Failed to generate CRM data')
+      log(`❌ Erro: ${err.message}`)
+      toast.error('Falha ao gerar dados CRM')
     } finally {
       setLoading(false)
     }
   }
 
   const handleClearAll = async () => {
-    if (!confirm('DANGER: This will delete ALL synthetic data from the system. Continue?')) return
+    if (!confirm('PERIGO: Isso deletará TODOS os dados sintéticos do sistema. Continuar?')) return
 
     setLoading(true)
-    log('Starting cleanup...')
+    log('Iniciando limpeza...')
 
     try {
-      const { data, error } = await supabase.rpc('clear_synthetic_data')
+      // 1. Clean Business Data via RPC
+      const { data: rpcData, error: rpcError } = await supabase.rpc('clear_synthetic_data')
+      if (rpcError) throw rpcError
 
-      if (error) throw error
+      // 2. Clean Auth Users via Edge Function
+      const { data: efData, error: efError } = await supabase.functions.invoke('admin-create-synthetic-users', {
+        method: 'DELETE'
+      })
+      if (efError) throw efError
 
-      log('✅ Cleanup Complete!')
-      log(`Deleted Users: ${data.users}`)
-      log(`Deleted Companies: ${data.companies}`)
-      log(`Deleted Leads: ${data.leads}`)
-      log(`Deleted Deals: ${data.deals}`)
-      log(`Deleted Contacts: ${data.contacts}`)
+      log('✅ Limpeza Completa!')
+      log(`Usuários Deletados: ${efData.deleted_count || 0}`)
+      log(`Empresas Deletadas: ${rpcData.companies}`)
+      log(`Leads Deletados: ${rpcData.leads}`)
+      log(`Deals Deletados: ${rpcData.deals}`)
+      log(`Contatos Deletados: ${rpcData.contacts}`)
+      log(`Players Deletados: ${rpcData.players}`)
 
       // Check total deleted
-      const total = Object.values(data).reduce((a: any, b: any) => a + b, 0)
+      const rpcTotal = Object.values(rpcData).reduce((a: any, b: any) => a + b, 0)
+      const total = rpcTotal + (efData.deleted_count || 0)
+
       if (total === 0) {
-        log('ℹ️ No synthetic data found to delete.')
+        log('ℹ️ Nenhum dado sintético encontrado para deletar.')
       } else {
-        toast.success(`Cleanup finished. Removed ${total} records.`)
+        toast.success(`Limpeza finalizada. Removidos ${total} registros.`)
       }
 
     } catch (err: any) {
-      log(`❌ Error: ${err.message}`)
-      toast.error('Cleanup failed')
+      log(`❌ Erro: ${err.message}`)
+      toast.error('Falha na limpeza')
     } finally {
       setLoading(false)
     }
@@ -149,10 +187,10 @@ export default function SyntheticDataAdminPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Database className="text-primary" />
-            Synthetic Data Admin
+            Admin de Dados Sintéticos
           </h1>
           <p className="text-muted-foreground mt-1">
-            Server-side generation of test data. Deterministic and safe.
+            Geração server-side de dados de teste. Determinístico e seguro.
           </p>
         </div>
 
@@ -163,15 +201,15 @@ export default function SyntheticDataAdminPage() {
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users size={20} /> Identity (Users)
+                <Users size={20} /> Identidade (Usuários)
               </CardTitle>
               <CardDescription>
-                Creates Auth users via Edge Function.
+                Cria usuários de Autenticação via Edge Function.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Count</Label>
+                <Label>Quantidade</Label>
                 <Input
                   type="number"
                   min={1}
@@ -181,7 +219,7 @@ export default function SyntheticDataAdminPage() {
                 />
               </div>
               <Button onClick={handleGenerateUsers} disabled={loading} className="w-full">
-                Generate Users
+                Gerar Usuários
               </Button>
             </CardContent>
           </Card>
@@ -190,16 +228,16 @@ export default function SyntheticDataAdminPage() {
           <Card className="border-l-4 border-l-green-500 lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Buildings size={20} /> CRM Entities
+                <Buildings size={20} /> Entidades CRM
               </CardTitle>
               <CardDescription>
-                Generates Companies, Leads, Deals, Contacts using database RPC.
+                Gera Empresas, Leads, Deals, Contatos e Players usando RPC de banco de dados.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><Buildings /> Companies</Label>
+                  <Label className="flex items-center gap-1"><Buildings /> Empresas</Label>
                   <Input type="number" value={companyCount} onChange={(e) => setCompanyCount(Number(e.target.value))} />
                 </div>
                 <div className="space-y-2">
@@ -211,70 +249,41 @@ export default function SyntheticDataAdminPage() {
                   <Input type="number" value={dealCount} onChange={(e) => setDealCount(Number(e.target.value))} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><AddressBook /> Contacts</Label>
+                  <Label className="flex items-center gap-1"><AddressBook /> Contatos</Label>
                   <Input type="number" value={contactCount} onChange={(e) => setContactCount(Number(e.target.value))} />
+                </div>
+                 <div className="space-y-2">
+                  <Label className="flex items-center gap-1"><User /> Players</Label>
+                  <Input type="number" value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))} />
                 </div>
               </div>
 
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <Button
                     variant="outline"
-                    onClick={() => handleGenerateCRM('v1')}
+                    onClick={handleGenerateCRM}
                     disabled={loading}
                     className="flex-1 border-dashed"
                 >
                   <Play className="mr-2 h-4 w-4" />
-                  Generate (Strategy A: Legacy Types)
-                </Button>
-                <Button
-                    onClick={() => handleGenerateCRM('v2')}
-                    disabled={loading}
-                    className="flex-1"
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  Generate (Strategy B: New Types)
+                  Gerar (Estratégia A: Tipos Legados)
                 </Button>
               </div>
 
-              <Alert className="bg-muted/50 border-none">
-                <Warning className="h-4 w-4" />
-                <AlertTitle>Strategy Note</AlertTitle>
-                <AlertDescription className="text-xs text-muted-foreground">
-                    Try "Strategy A" first if you are unsure about database constraints.
-                    "Strategy B" uses updated relationship types found in documentation.
-                </AlertDescription>
-              </Alert>
-
             </CardContent>
           </Card>
 
-          {/* 3. CLEANUP */}
-          <Card className="border-l-4 border-l-red-500 lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <Trash size={20} /> Danger Zone
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button variant="destructive" onClick={handleClearAll} disabled={loading} className="w-full sm:w-auto">
-                Clear All Synthetic Data
-              </Button>
-            </CardContent>
-          </Card>
-
-        </div>
-
-        {/* CONSOLE */}
-        <Card className="bg-slate-950 text-slate-50 border-slate-800">
+           {/* 3. EXECUTION LOG (Swapped Position) */}
+           <Card className="bg-slate-950 text-slate-50 border-slate-800 lg:col-span-3">
             <CardHeader className="py-3 border-b border-slate-800">
                 <CardTitle className="text-sm font-mono flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                    Execution Log
+                    Log de execução
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0 max-h-[300px] overflow-y-auto font-mono text-xs">
                 {consoleLogs.length === 0 ? (
-                    <div className="p-4 text-slate-500 italic">Ready...</div>
+                    <div className="p-4 text-slate-500 italic">Pronto...</div>
                 ) : (
                     <div className="flex flex-col">
                         {consoleLogs.map((log, i) => (
@@ -285,7 +294,23 @@ export default function SyntheticDataAdminPage() {
                     </div>
                 )}
             </CardContent>
-        </Card>
+          </Card>
+
+          {/* 4. DANGER ZONE (Swapped Position) */}
+          <Card className="border-l-4 border-l-red-500 lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <Trash size={20} /> Danger zone
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="destructive" onClick={handleClearAll} disabled={loading} className="w-full sm:w-auto">
+                Limpar Todos os Dados Sintéticos
+              </Button>
+            </CardContent>
+          </Card>
+
+        </div>
 
       </div>
     </PageContainer>
