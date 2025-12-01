@@ -37,6 +37,7 @@ import { toast } from 'sonner'
 import CreateTaskDialog from './CreateTaskDialog'
 import TaskDetailDialog from './TaskDetailDialog'
 import TaskKanbanView from './TaskKanbanView'
+import { PageContainer } from '@/components/PageContainer'
 
 interface TaskManagementViewProps {
   currentUser: User
@@ -208,9 +209,9 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b border-border bg-card">
-        <div className="px-6 py-4">
+    <PageContainer>
+      <div className="flex flex-col gap-6">
+        <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -366,7 +367,7 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
             isTaskOverdue={isTaskOverdue}
           />
         ) : (
-          <div className="p-6">
+          <div>
             {filteredAndSortedTasks.length === 0 ? (
               <Card>
                 <CardContent className="p-12">
@@ -502,6 +503,6 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
           currentUser={currentUser}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

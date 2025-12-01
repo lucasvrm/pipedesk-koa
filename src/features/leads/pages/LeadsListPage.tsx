@@ -37,6 +37,7 @@ import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector' // Educated guess, will verify.
+import { PageContainer } from '@/components/PageContainer'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -138,7 +139,7 @@ export default function LeadsListPage() {
   )
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <PageContainer>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
@@ -394,6 +395,6 @@ export default function LeadsListPage() {
         onConfirm={handleDelete}
         isDeleting={deleteLead.isPending}
       />
-    </div>
+    </PageContainer>
   )
 }

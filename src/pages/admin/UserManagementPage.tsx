@@ -42,6 +42,7 @@ import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
 import RolesManager from '@/features/rbac/components/RolesManager'
+import { PageContainer } from '@/components/PageContainer'
 
 // Tipos para Ordenação
 type SortKey = 'name' | 'email' | 'role' | 'clientEntity';
@@ -312,7 +313,7 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl space-y-6">
+    <PageContainer>
       
       {/* Cabeçalho */}
       <div className="flex items-center gap-4 mb-2">
@@ -700,6 +701,6 @@ export default function UserManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }
