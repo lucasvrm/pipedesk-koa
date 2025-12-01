@@ -1,5 +1,5 @@
 // supabase/functions/generate-synthetic-users/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.200.0/http/server.ts" // Versão atualizada do Deno std
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { fakerPT_BR as faker } from "https://esm.sh/@faker-js/faker@8"
 
@@ -11,8 +11,8 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight request (OPTIONS)
   if (req.method === 'OPTIONS') {
-    // Usar 204 No Content é o padrão para respostas de preflight bem-sucedidas.
-    return new Response(null, { headers: corsHeaders, status: 204 })
+    // Confirmação do status 204 para CORS, que já estava aplicado.
+    return new Response(null, { headers: corsHeaders, status: 204 }) 
   }
 
   try {
