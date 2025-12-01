@@ -72,8 +72,8 @@ export default function SyntheticDataAdminPage() {
 
   const handleGenerateCRM = async () => {
     setLoading(true)
-    const companyStrategy = 'v1' // Forced Strategy A
-    log(`Iniciando geração de Dados CRM (Estratégia: ${companyStrategy})...`)
+    // companyStrategy removed as it is now hardcoded to valid DB types in RPC
+    log(`Iniciando geração de Dados CRM...`)
     log(`Entradas: Empresas=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contatos=${contactCount}, Players=${playerCount}`)
 
     try {
@@ -102,8 +102,7 @@ export default function SyntheticDataAdminPage() {
         deals_count: dealCount,
         contacts_count: contactCount,
         players_count: playerCount,
-        users_ids: userIds,
-        company_strategy: companyStrategy
+        users_ids: userIds
       }
 
       const { data, error } = await supabase.rpc('generate_synthetic_data', { payload })
@@ -266,7 +265,7 @@ export default function SyntheticDataAdminPage() {
                     className="flex-1 border-dashed"
                 >
                   <Play className="mr-2 h-4 w-4" />
-                  Gerar (Estratégia A: Tipos Legados)
+                  Gerar Dados Sintéticos
                 </Button>
               </div>
 
