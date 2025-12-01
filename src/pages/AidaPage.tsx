@@ -16,7 +16,7 @@ export default function AidaPage() {
   // O token vem da sessão do Supabase (seu AuthContext)
   // Nota: O backend Python espera o INTERNAL_API_TOKEN ou um JWT válido.
   // Se estiver usando o INTERNAL_TOKEN fixo para testes, substitua abaixo.
-  const token = session?.access_token || import.meta.env.VITE_AIDA_INTERNAL_TOKEN;
+  const token = import.meta.env.VITE_AIDA_INTERNAL_TOKEN;
 
   if (loading) {
     return (

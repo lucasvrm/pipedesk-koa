@@ -23,7 +23,7 @@ export interface Deal extends MasterDeal {
   };
   company?: Company;
   responsibles?: User[];
-  tags?: Tag[]; // Added tags to deal type
+  tags?: Tag[];
 }
 
 export interface DealInput {
@@ -78,8 +78,8 @@ function mapDealFromDB(item: any): Deal {
     } as User);
   }
 
-  // Map tags from join
-  const tags: Tag[] = item.entity_tags?.map((et: any) => et.tags) || [];
+  // Tags removidas temporariamente para evitar erro 400
+  const tags: Tag[] = []; 
 
   return {
     id: item.id,
@@ -113,7 +113,7 @@ function mapDealFromDB(item: any): Deal {
     } : undefined,
 
     responsibles: responsibles,
-    tags: tags // Added tags
+    tags: tags 
   };
 }
 
@@ -123,64 +123,21 @@ function mapDealFromDB(item: any): Deal {
 
 export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
   try {
-    // FIX C1: Remove relationships that might not exist or are causing 400
-    // deal_members relationship might be named differently or problematic in join
-    // Simplification: Fetch core data + critical joins. If deep nested joins fail, we split queries or simplify.
-    // Based on error report: "Error in getDeals query" -> likely 400 Bad Request due to ambiguous FK or missing relation.
-
-    // We try a safer select first. If `deal_members` is the issue, we remove it from the main fetch or fix the FK hint.
-    // Assuming `deal_members` table exists (checked in migrations). FK to master_deals is deal_id.
-
+    // CORREÇÃO: Removido 'entity_tags!left(...)' que causava erro 400
+    // O Supabase não consegue fazer join sem FK explícita.
     let query = supabase
         .from('master_deals')
         .select(`
           *,
           createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-          company:companies(id, name, type, site),
-          entity_tags!left(
-            tags(*)
-          )
+          company:companies(id, name, type, site)
         `);
-        // Removed deal_members(user:profiles(*)) temporarily to fix 400 if that's the cause.
-        // Or better: try to fetch it but if it fails, we know.
-        // But we want to fix it.
 
     query = withoutDeleted(query);
 
-    // Filter by tags if provided
+    // Lógica de filtro por tags mantida apenas se houver ids, 
+    // mas a busca de tags no select principal foi removida.
     if (tagIds && tagIds.length > 0) {
-      // Logic: Deals that have ANY of the tags.
-      // We use !inner join to filter. But Supabase syntax for filtering on joined table is:
-      // .select(..., entity_tags!inner(...))
-      // But we already selected entity_tags!left to show tags even if filter not applied.
-      // If we apply filter, we need to ensure the deal HAS the tag.
-      // Approach: Use a separate query or change !left to !inner conditionally?
-      // Supabase JS allows modifiers in select string.
-      // Or we can filter the main query based on existing relationship.
-
-      // Simpler approach for "Match Any":
-      // Use the 'in' filter on the foreign key if possible, but M2M is hard.
-      // Best approach: Filter logic.
-      // 'entity_tags' table links deal_id -> tag_id.
-      // We want deals where id IN (select entity_id from entity_tags where tag_id in tags)
-
-      // Since supabase-js doesn't support subqueries easily in .in(), we might use .or() or RPC.
-      // Alternatively, we filter on the joined resource.
-      // To filter "deals having specific tags", we need the join to be INNER and satisfy criteria.
-
-      // However, we want to fetch ALL tags for the deal, not just the matching ones?
-      // Standard filter: return deals that match. Then map.
-      // Let's try to modify the query string dynamically.
-
-      // If filtering, we change 'entity_tags!left' to 'entity_tags!inner' AND add filter?
-      // But that would only return the matching tags in the response, hiding others.
-      // We want: Filter Deals by Tag X, but show Tags X, Y, Z.
-      // This usually requires two steps or a smart query.
-      // Given the volume (CRM deals ~hundreds/thousands), client-side filtering might be okay if we fetch everything?
-      // But requirement says "Backend: filtrar deals por tags".
-
-      // Correct approach with Supabase:
-      // Filter deals ID based on tag match.
       const { data: matchingIds, error: matchError } = await supabase
         .from('entity_tags')
         .select('entity_id')
@@ -193,13 +150,12 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
       if (ids.length > 0) {
         query = query.in('id', ids);
       } else {
-        return []; // No deals match
+        return []; 
       }
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
-    // Fallback removed/simplified because deal_members is now created by 006
     if (error) {
       console.error('Error in getDeals query:', error);
       throw error;
@@ -207,30 +163,12 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
 
     return (data || []).map((item: any) => mapDealFromDB(item));
   } catch (error) {
-    console.error('Error fetching deals (with members):', error);
-    // Try basic fetch if join fails heavily?
-    // We assume 006 fixes the missing table, so standard error handling is preferred.
+    console.error('Error fetching deals:', error);
     throw error;
   }
 }
 
-async function getDealsFallback(): Promise<Deal[]> {
-  // Keeping fallback for reference but ideally unreachable if 006 ran
-  const { data, error } = await withoutDeleted(
-    supabase
-      .from('master_deals')
-      .select(`
-        *,
-        createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-        company:companies(id, name, type, site)
-      `)
-  ).order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return (data || []).map((item: any) => mapDealFromDB(item));
-}
-
-// FIX: Adicionada função de Fallback para getDeal individual
+// Helper de fallback mantido caso precise
 async function getDealFallback(dealId: string): Promise<Deal> {
   const { data, error } = await withoutDeleted(
     supabase
@@ -249,6 +187,7 @@ async function getDealFallback(dealId: string): Promise<Deal> {
 
 export async function getDeal(dealId: string): Promise<Deal> {
   try {
+    // CORREÇÃO: Removido entity_tags daqui também
     const { data, error } = await withoutDeleted(
       supabase
         .from('master_deals')
@@ -258,17 +197,15 @@ export async function getDeal(dealId: string): Promise<Deal> {
           company:companies(id, name, type, site),
           deal_members(
             user:profiles(*)
-          ),
-          entity_tags!left(
-            tags(*)
           )
         `)
         .eq('id', dealId)
     ).single();
 
     if (error) {
+      // Se falhar por causa de deal_members (ainda não migrado), usa fallback
       if (error.code === 'PGRST301' || error.message.includes('deal_members')) {
-         console.warn("Tabela deal_members não encontrada no getDeal. Usando fallback.");
+         console.warn("Tabela deal_members não encontrada ou erro de join. Usando fallback.");
          return getDealFallback(dealId);
       }
       throw error; 
@@ -295,7 +232,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
         fee_percentage: deal.feePercentage,
         created_by: deal.createdBy,
         company_id: deal.companyId,
-        deal_product: deal.dealProduct, // ADICIONADO
+        deal_product: deal.dealProduct,
       })
       .select(`
         *,
@@ -313,7 +250,6 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
           deal_id: masterDealData.id,
           user_id: deal.createdBy
         });
-      // Now that deal_members exists, this should succeed. Log if not.
       if (memberError) console.warn("Could not add creator to deal_members:", memberError.message);
     }
 
@@ -361,7 +297,7 @@ export async function updateDeal(dealId: string, updates: DealUpdate): Promise<D
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.feePercentage !== undefined) updateData.fee_percentage = updates.feePercentage;
     if (updates.companyId !== undefined) updateData.company_id = updates.companyId;
-    if (updates.dealProduct !== undefined) updateData.deal_product = updates.dealProduct; // ADICIONADO
+    if (updates.dealProduct !== undefined) updateData.deal_product = updates.dealProduct;
 
     const { data, error } = await supabase
       .from('master_deals')
@@ -411,7 +347,7 @@ export async function deleteDeals(ids: string[]): Promise<void> {
   }
 }
 
-// Hook with filter support
+// Hook exportado do service (duplicado, mas mantido para compatibilidade)
 export function useDeals(tagIds?: string[]) {
   return useQuery({
     queryKey: ['deals', tagIds],
