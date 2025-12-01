@@ -551,6 +551,8 @@ export const syntheticDataService = {
     await this.clearSyntheticCompanies(); // Cleans contacts too
     await this.clearSyntheticPlayers();
     await this.clearSyntheticUsers();
+
+    return data;
   },
 
   async getSyntheticCounts() {
