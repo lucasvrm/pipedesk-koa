@@ -35,8 +35,7 @@ const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'f
 
 // Mapeamento correto com constraints do banco (migration 007)
 const SYNTHETIC_COMPANY_TYPES: CompanyType[] = ['corporation', 'fund', 'startup', 'advisor', 'other'];
-// CORREÇÃO: Os valores estavam incorretos e violando a constraint 'companies_relationship_level_check'.
-// Os valores permitidos são os definidos pelo tipo RelationshipLevel: 'none', 'basic', 'intermediate', 'close'.
+// CORREÇÃO (Do passo anterior): Ajustando para os valores corretos do RelationshipLevel
 const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: RelationshipLevel[] = ['none', 'basic', 'intermediate', 'close'];
 
 const RELATIONSHIP_LEVELS: RelationshipLevel[] = ['basic', 'intermediate', 'close']; // Para Players
@@ -90,12 +89,14 @@ const getRandomPlayerType = (): PlayerType => {
 
 // ============================================================================
 // Serviço Principal
+// CORREÇÃO: Usando arrow functions (ou 'async fn = async () => {}') para manter o 'this' lexicalmente ligado ao objeto, 
+// o que é crucial quando se chama métodos internos como 'this.generateContactsForPlayers'.
 // ============================================================================
 
 export const syntheticDataService = {
   
   // --- 1. USUÁRIOS ---
-  async generateUsers(count: number, assignRoles: boolean = true) {
+  generateUsers: async (count: number, assignRoles: boolean = true) => {
     try {
       // 1. Cria usuários na Auth via Edge Function
       const { data, error } = await supabase.functions.invoke('generate-synthetic-users', {
@@ -134,7 +135,7 @@ export const syntheticDataService = {
     }
   },
 
-  async clearSyntheticUsers() {
+  clearSyntheticUsers: async () => {
     // 1. Remove da Auth (Edge Function)
     const { data, error } = await supabase.functions.invoke('generate-synthetic-users', {
         body: { action: 'delete' }
@@ -150,7 +151,7 @@ export const syntheticDataService = {
   },
 
   // --- 2. PLAYERS ---
-  async generatePlayers(count: number, userId: string) {
+  generatePlayers: async (count: number, userId: string) => {
     const players: any[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -178,12 +179,12 @@ export const syntheticDataService = {
     const { data, error } = await supabase.from('players').insert(players).select();
     if (error) throw error;
     
-    if (data) await this.generateContactsForPlayers(data, userId);
+    if (data) await syntheticDataService.generateContactsForPlayers(data, userId); // Acessando via service name para evitar 'this'
 
     return { count: data?.length || 0, ids: data?.map(p => p.id) || [] };
   },
 
-  async generateContactsForPlayers(players: any[], userId: string) {
+  generateContactsForPlayers: async (players: any[], userId: string) => {
     const contacts: any[] = [];
     for (const player of players) {
       const contactCount = faker.number.int({ min: 1, max: 3 });
@@ -204,7 +205,7 @@ export const syntheticDataService = {
   },
 
   // --- 3. COMPANIES & CONTACTS ---
-  async generateCompanies(count: number, userId: string, withContacts: boolean = true) {
+  generateCompanies: async (count: number, userId: string, withContacts: boolean = true) => {
     const companies: any[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -231,13 +232,13 @@ export const syntheticDataService = {
     console.log("Companies criadas:", createdCompanies?.length);
 
     if (withContacts && createdCompanies) {
-      await this.generateContactsForCompanies(createdCompanies, userId);
+      await syntheticDataService.generateContactsForCompanies(createdCompanies, userId); // Acessando via service name para evitar 'this'
     }
 
     return { count: createdCompanies?.length || 0, ids: createdCompanies?.map(c => c.id) || [] };
   },
 
-  async generateContactsForCompanies(companies: any[], userId: string) {
+  generateContactsForCompanies: async (companies: any[], userId: string) => {
     const contacts: any[] = [];
     for (const company of companies) {
       const contactCount = faker.number.int({ min: 1, max: 3 });
@@ -259,7 +260,7 @@ export const syntheticDataService = {
     if (contacts.length > 0) await supabase.from('contacts').insert(contacts);
   },
 
-  async generateContacts(count: number, userId: string) {
+  generateContacts: async (count: number, userId: string) => {
     // Gera contatos soltos ou vinculados a empresas existentes sintéticas
     const { data: companies } = await supabase
       .from('companies')
@@ -291,7 +292,7 @@ export const syntheticDataService = {
   },
 
   // --- 4. LEADS ---
-  async generateLeads(count: number, userId: string, withContacts: boolean = true) {
+  generateLeads: async (count: number, userId: string, withContacts: boolean = true) => {
     const leads: any[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -365,7 +366,7 @@ export const syntheticDataService = {
 
 
   // --- 5. DEALS (NEGÓCIOS) ---
-  async generateDeals(count: number, createRelated: boolean = true) {
+  generateDeals: async (count: number, createRelated: boolean = true) => {
     const { data: users } = await supabase.from('profiles').select('id');
     if (!users?.length) throw new Error("Sem usuários para atribuir deals.");
 
@@ -424,13 +425,13 @@ export const syntheticDataService = {
     console.log("Deals criados:", createdDeals?.length);
 
     if (createRelated && createdDeals && createdDeals.length > 0) {
-      await this.generateTracksAndTasks(createdDeals, users.map(u => u.id));
+      await syntheticDataService.generateTracksAndTasks(createdDeals, users.map(u => u.id)); // Acessando via service name para evitar 'this'
     }
 
     return { count: createdDeals?.length || 0, ids: createdDeals?.map(d => d.id) || [] };
   },
 
-  async generateTracksAndTasks(deals: any[], userIds: string[]) {
+  generateTracksAndTasks: async (deals: any[], userIds: string[]) => {
     const tracks: any[] = [];
     const stages: PlayerStage[] = ['nda', 'analysis', 'proposal', 'negotiation', 'closing'];
     
@@ -490,13 +491,13 @@ export const syntheticDataService = {
 
   // --- CLEANUP ---
 
-  async clearSyntheticDeals() {
+  clearSyntheticDeals: async () => {
     await supabase.from('tasks').delete().eq('is_synthetic', true);
     await supabase.from('player_tracks').delete().eq('is_synthetic', true);
     await supabase.from('master_deals').delete().eq('is_synthetic', true);
   },
 
-  async clearSyntheticPlayers() {
+  clearSyntheticPlayers: async () => {
     // Delete contacts related to synthetic players first (if cascade fails or to be sure)
     // Note: player_contacts table usually doesn't have is_synthetic, but we can query by player
     const { data: syntheticPlayers } = await supabase.from('players').select('id').eq('is_synthetic', true);
@@ -507,7 +508,7 @@ export const syntheticDataService = {
     await supabase.from('players').delete().eq('is_synthetic', true);
   },
 
-  async clearSyntheticCompanies() {
+  clearSyntheticCompanies: async () => {
     // Delete contacts related to synthetic companies
     // Note: This deletes ALL contacts marked synthetic, including orphans
     // If we want to be specific, we could delete only those linked to synthetic companies first, then companies
@@ -516,7 +517,7 @@ export const syntheticDataService = {
     await supabase.from('companies').delete().eq('is_synthetic', true);
   },
 
-  async clearSyntheticLeads() {
+  clearSyntheticLeads: async () => {
     // Explicitly delete lead dependencies if needed, though CASCADE should work.
     // Given the report of failure, we will be explicit.
 
@@ -533,7 +534,7 @@ export const syntheticDataService = {
     await supabase.from('leads').delete().eq('is_synthetic', true);
   },
 
-  async clearOrphanSyntheticContacts() {
+  clearOrphanSyntheticContacts: async () => {
     // Deleta contatos sintéticos que não têm company_id E não estão ligados a nenhum lead (via lead_contacts)
     // 1. Get all synthetic contacts with no company
     const { data: noCompanyContacts } = await supabase
@@ -565,26 +566,26 @@ export const syntheticDataService = {
     return 0;
   },
 
-  async clearAllSyntheticData() {
+  clearAllSyntheticData: async () => {
     // D2) Use Robust RPC
     const { data, error } = await supabase.rpc('clear_synthetic_data');
 
     if (error) {
         console.error("Erro no RPC clear_synthetic_data:", error);
         // Fallback to legacy method if RPC missing (should not happen if migrated)
-        await this.clearSyntheticDeals();
-        await this.clearSyntheticLeads();
-        await this.clearSyntheticCompanies();
-        await this.clearSyntheticPlayers();
+        await syntheticDataService.clearSyntheticDeals();
+        await syntheticDataService.clearSyntheticLeads();
+        await syntheticDataService.clearSyntheticCompanies();
+        await syntheticDataService.clearSyntheticPlayers();
     }
 
     // Users still need Edge Function for Auth deletion
-    await this.clearSyntheticUsers();
+    await syntheticDataService.clearSyntheticUsers(); // CORRIGIDO: Chamando via nome do objeto
 
     return data;
   },
 
-  async getSyntheticCounts() {
+  getSyntheticCounts: async () => {
     const deals = await supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
     const players = await supabase.from('players').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
     const users = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
