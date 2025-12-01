@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import {
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
-  Phone, Envelope, Star, PencilSimple, X
+  Phone, Envelope, Star, PencilSimple, X, ChartBar
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { Company, COMPANY_TYPE_LABELS, CompanyType, STATUS_LABELS } from '@/lib/types'
@@ -116,7 +116,6 @@ export default function CompanyDetailPage() {
   if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 
   return (
-    // CORREÇÃO AQUI: max-w-7xl para alinhar com o resto do sistema
     <div className="container mx-auto p-6 max-w-7xl pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -135,6 +134,18 @@ export default function CompanyDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          {/* BOTÃO AIDA (Exibido apenas se não for nova empresa) */}
+          {!isNew && (
+            <Button 
+              variant="secondary" 
+              className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 border"
+              onClick={() => navigate(`/aida/${id}`)}
+            >
+              <ChartBar className="mr-2 h-4 w-4" />
+              Análise AIDA
+            </Button>
+          )}
+
           {isEditing ? (
             <>
               <Button variant="outline" onClick={handleCancel}><X className="mr-2"/> Cancelar</Button>

@@ -36,7 +36,8 @@ import {
   FileText, Sparkle, Tag, PencilSimple,
   Kanban as KanbanIcon, List as ListIcon, Buildings,
   DotsThreeOutline, Wallet, CalendarBlank, WarningCircle,
-  FileArrowDown, CheckCircle, PauseCircle, XCircle, PlayCircle
+  FileArrowDown, CheckCircle, PauseCircle, XCircle, PlayCircle,
+  ChartBar // Ícone AIDA
 } from '@phosphor-icons/react'
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
@@ -184,9 +185,17 @@ export default function DealDetailPage() {
           
           <div className="flex gap-2 items-center">
             
-            {/* IMPORTANTE: O DocumentGenerator fica FORA do DropdownMenu 
-                para evitar conflitos de overlay e pointer-events.
-            */}
+            {/* BOTÃO AIDA */}
+            <Button 
+              variant="secondary" 
+              className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 border"
+              onClick={() => navigate(`/aida/${deal.id}`)}
+            >
+              <ChartBar className="mr-2 h-4 w-4" />
+              Análise AIDA
+            </Button>
+
+            {/* IMPORTANTE: O DocumentGenerator fica FORA do DropdownMenu */}
             <DocumentGenerator 
               deal={deal} 
               playerTracks={activeTracks} 
