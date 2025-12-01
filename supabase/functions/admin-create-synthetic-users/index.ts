@@ -6,7 +6,7 @@ console.log("Hello from admin-create-synthetic-users!")
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } })
+    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS' } })
   }
 
   try {
@@ -21,6 +21,44 @@ Deno.serve(async (req) => {
       }
     )
 
+    // Handle DELETE request (Cleanup Auth Users)
+    if (req.method === 'DELETE') {
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers()
+        
+        if (listError) throw listError
+
+        // Filter users that are synthetic based on metadata
+        const syntheticUsers = users.filter((u: any) => u.user_metadata?.is_synthetic === true)
+        
+        const deletedIds = []
+        const errors = []
+
+        for (const user of syntheticUsers) {
+            const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
+            if (deleteError) {
+                errors.push({ id: user.id, error: deleteError.message })
+            } else {
+                deletedIds.push(user.id)
+            }
+        }
+
+        return new Response(
+            JSON.stringify({ 
+              success: true, 
+              deleted_count: deletedIds.length, 
+              deleted_ids: deletedIds,
+              errors 
+            }),
+            { 
+              headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              } 
+            },
+        )
+    }
+
+    // Handle POST request (Create Users)
     const { count = 1, prefix = 'synth' } = await req.json()
 
     const createdUsers = []
@@ -51,26 +89,26 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        created_count: createdUsers.length,
+      JSON.stringify({ 
+        success: true, 
+        created_count: createdUsers.length, 
         users: createdUsers.map(u => ({ id: u.id, email: u.email })),
-        errors
+        errors 
       }),
-      {
-        headers: {
+      { 
+        headers: { 
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
-        }
+        } 
       },
     )
 
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      { 
+        status: 400, 
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
       },
     )
   }
