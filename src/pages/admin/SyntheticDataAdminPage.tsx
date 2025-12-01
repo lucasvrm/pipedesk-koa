@@ -109,6 +109,15 @@ export default function SyntheticDataAdminPage() {
 
       if (error) throw error
 
+      // Check for zero companies if requested > 0 (Critical Failure)
+      if (companyCount > 0 && data.companies === 0) {
+        log(`❌ ERRO CRÍTICO: 0 empresas criadas. Verifique constraints do banco (relationship_level, etc).`)
+        toast.error('Falha crítica: Nenhuma empresa foi criada. Verifique logs.')
+        // Abort further checks or success messages?
+        // Logic continues to show other counts, but we must not log "success"
+        return
+      }
+
       log(`✅ Geração Completa!`)
       log(`Empresas criadas: ${data.companies}`)
       log(`Leads criados: ${data.leads}`)
@@ -166,6 +175,7 @@ export default function SyntheticDataAdminPage() {
 
       if (total === 0) {
         log('ℹ️ Nenhum dado sintético encontrado para deletar.')
+        toast.info('Nenhum dado sintético encontrado para deletar.')
       } else {
         toast.success(`Limpeza finalizada. Removidos ${total} registros.`)
       }
