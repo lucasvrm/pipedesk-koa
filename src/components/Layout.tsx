@@ -30,7 +30,8 @@ import {
   EyeSlash,
   Tag,
   Funnel,
-  AddressBook
+  AddressBook,
+  Database
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -305,6 +306,11 @@ export function Layout({ children }: LayoutProps) {
                     <DropdownMenuItem onClick={() => navigate('/admin/pipeline')}>
                       <FlowArrow className="mr-2" />
                       Pipeline & Fases
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => navigate('/admin/synthetic-data')}>
+                      <Database className="mr-2" />
+                      Dados Sintéticos
                     </DropdownMenuItem>
                   </>
                 )}

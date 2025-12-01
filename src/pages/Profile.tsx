@@ -247,7 +247,7 @@ export default function Profile() {
 
   return (
     <PageContainer>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
         
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>

@@ -22,6 +22,7 @@ const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'
 
 // Admin & Settings Pages
 const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings'))
+const SyntheticDataAdminPage = lazy(() => import('@/pages/admin/SyntheticDataAdminPage'))
 const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings'))
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
@@ -105,6 +106,7 @@ function App() {
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/synthetic-data" element={<ProtectedRoute requiredRole={['admin']}><SyntheticDataAdminPage /></ProtectedRoute>} />
             <Route path="/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
             <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
