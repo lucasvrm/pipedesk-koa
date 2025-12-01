@@ -44,6 +44,9 @@ const LeadsListPage = lazy(() => import('@/features/leads/pages/LeadsListPage'))
 const LeadDetailPage = lazy(() => import('@/features/leads/pages/LeadDetailPage'))
 const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
 
+// AIDA
+const AidaPage = lazy(() => import('@/pages/AidaPage'))
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="text-center">
@@ -111,6 +114,11 @@ function App() {
             <Route path="/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
             <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
+
+            {/* --- Rota AIDA --- */}
+            {/* Permite visualizar a análise consolidada passando o ID do projeto */}
+            <Route path="/aida/:projectId" element={<AidaPage />} />
+            {/* ----------------- */}
 
             <Route path="/analytics" element={
                 <ProtectedRoute requiredRole={['admin', 'analyst', 'newbusiness']}>
