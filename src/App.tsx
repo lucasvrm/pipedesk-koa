@@ -1,141 +1,135 @@
-// Path: lucasvrm/pipedesk-koa/pipedesk-koa-d477da2e57e2097cdd221bf7a1031b90a70be347/src/App.tsx
-import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Suspense, lazy } from 'react'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Toaster } from '@/components/ui/sonner'
+import { Layout } from '@/components/Layout'
+import LoginView from '@/features/rbac/components/LoginView'
+import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
+import { useAuth } from '@/contexts/AuthContext'
+import Profile from '@/pages/Profile'
 
-import { useAuth } from '@/contexts/AuthContext';
-import Layout from '@/components/Layout';
-import ProtectedRoute from '@/components/Auth/ProtectedRoute';
-import LoadingPage from '@/pages/LoadingPage'; // Assumindo a existência desta página
-import LoginView from '@/features/rbac/components/LoginView';
-import MagicLinkAuth from '@/features/rbac/components/MagicLinkAuth';
+// Lazy loads (Carregamento sob demanda)
+const Dashboard = lazy(() => import('@/pages/DashboardPage'))
+const DealsView = lazy(() => import('@/features/deals/components/DealsView'))
+const DealDetailPage = lazy(() => import('@/features/deals/pages/DealDetailPage'))
+const AnalyticsDashboard = lazy(() => import('@/features/analytics/components/AnalyticsDashboard'))
+const MasterMatrixView = lazy(() => import('@/features/deals/components/MasterMatrixView'))
+const TaskManagementView = lazy(() => import('@/features/tasks/components/TaskManagementView'))
+const DataRoomView = lazy(() => import('@/components/DataRoomView'))
+const AuditLogView = lazy(() => import('@/components/AuditLogView'))
+const RBACDemo = lazy(() => import('@/features/rbac/components/RBACDemo'))
+const FolderBrowser = lazy(() => import('@/components/FolderBrowser'))
+const DealComparison = lazy(() => import('@/features/deals/pages/DealComparison'))
 
-// Componentes Lazy-Loaded
-import DashboardPage from '@/pages/DashboardPage';
-import DealsView from '@/features/deals/components/DealsView';
-import DealDetailPage from '@/features/deals/pages/DealDetailPage';
-import DealComparison from '@/features/deals/pages/DealComparison';
-import CompaniesListPage from '@/features/companies/pages/CompaniesListPage';
-import CompanyDetailPage from '@/features/companies/pages/CompanyDetailPage';
-import PlayersListPage from '@/features/players/pages/PlayersListPage';
-import PlayerDetailPage from '@/features/players/pages/PlayerDetailPage';
-import LeadsListPage from '@/features/leads/pages/LeadsListPage';
-import LeadDetailPage from '@/features/leads/pages/LeadDetailPage';
-import ContactsPage from '@/pages/ContactsPage';
-import Profile from '@/pages/Profile';
-import SettingsPage from '@/pages/admin/SettingsPage';
-import UserManagementPage from '@/pages/admin/UserManagementPage';
-import PipelineSettingsPage from '@/pages/admin/PipelineSettingsPage';
-import CustomFieldsPage from '@/pages/settings/CustomFieldsPage';
-import HelpCenterPage from '@/pages/HelpCenterPage';
-import FolderManagerPage from '@/pages/FolderManagerPage';
+// Admin & Settings Pages
+const PipelineSettingsPage = lazy(() => import('@/pages/admin/PipelineSettings'))
+const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings'))
+const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
+const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'))
+const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
+const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
+const HelpCenterPage = lazy(() => import('@/pages/HelpCenterPage'))
 
-// Importando o PageContainer
-import PageContainer from '@/components/PageContainer'; 
+// Features Pages
+const PlayersListPage = lazy(() => import('@/features/players/pages/PlayersListPage'))
+const PlayerDetailPage = lazy(() => import('@/features/players/pages/PlayerDetailPage'))
+const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPage'))
+const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
+const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
+const ContactDetailPage = lazy(() => import('@/features/contacts/pages/ContactDetailPage'))
+
+// Leads & Contacts
+const LeadsListPage = lazy(() => import('@/features/leads/pages/LeadsListPage'))
+const LeadDetailPage = lazy(() => import('@/features/leads/pages/LeadDetailPage'))
+const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <p className="text-sm text-muted-foreground">Carregando...</p>
+    </div>
+  </div>
+)
+
+// const Unauthorized = () => <div className="p-8 text-center text-muted-foreground">Acesso não autorizado.</div>;
 
 function App() {
-  const { isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingPage />;
-  }
-
-  // Wrapper para as rotas que precisam do PageContainer
-  const PageWrapper = ({ children, title }: { children: React.ReactNode, title?: string }) => (
-    <PageContainer title={title}>{children}</PageContainer>
-  );
+  const { user, profile } = useAuth()
 
   return (
-    <Suspense fallback={<LoadingPage />}>
-      <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/login" element={<LoginView />} />
-        <Route path="/magic-link-auth" element={<MagicLinkAuth />} />
-        
-        {/* Layout Principal com Sidebar e Header */}
-        <Route element={<ProtectedRoute element={<Layout />} />}>
-          
-          {/* Rotas Envolvidas pelo PageContainer */}
-          <Route 
-            path="/" 
-            element={<PageWrapper title="Dashboard"><DashboardPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/deals" 
-            element={<PageWrapper title="Deals"><DealsView /></PageWrapper>} 
-          />
-          <Route 
-            path="/deals/:dealId" 
-            element={<PageWrapper><DealDetailPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/compare" 
-            element={<PageWrapper title="Comparativo de Deals"><DealComparison /></PageWrapper>} 
-          />
-          <Route 
-            path="/companies" 
-            element={<PageWrapper title="Empresas"><CompaniesListPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/companies/:companyId" 
-            element={<PageWrapper><CompanyDetailPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/players" 
-            element={<PageWrapper title="Players"><PlayersListPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/players/:playerId" 
-            element={<PageWrapper><PlayerDetailPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/leads" 
-            element={<PageWrapper title="Leads"><LeadsListPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/leads/:leadId" 
-            element={<PageWrapper><LeadDetailPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/contacts" 
-            element={<PageWrapper title="Contatos"><ContactsPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/profile" 
-            element={<PageWrapper title="Perfil"><Profile /></PageWrapper>} 
-          />
-          <Route 
-            path="/help-center" 
-            element={<PageWrapper title="Central de Ajuda"><HelpCenterPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/folders" 
-            element={<PageWrapper title="Gerenciador de Pastas"><FolderManagerPage /></PageWrapper>} 
-          />
-          
-          {/* Rotas de Admin/Settings (algumas podem precisar de PageContainer, outras não) */}
-          <Route 
-            path="/settings" 
-            element={<PageWrapper title="Configurações"><SettingsPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/settings/users" 
-            element={<PageWrapper title="Usuários e Permissões"><UserManagementPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/settings/pipeline" 
-            element={<PageWrapper title="Config. Pipeline"><PipelineSettingsPage /></PageWrapper>} 
-          />
-          <Route 
-            path="/settings/custom-fields" 
-            element={<PageWrapper title="Campos Personalizados"><CustomFieldsPage /></PageWrapper>} 
-          />
-        </Route>
+    <>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={!user ? <LoginView /> : <Navigate to="/dashboard" replace />} />
 
-        {/* 404/Fallback page - Adicione aqui se necessário */}
-        {/* <Route path="*" element={<NotFoundPage />} /> */}
-      </Routes>
-    </Suspense>
-  );
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute><Layout><Outlet /></Layout></ProtectedRoute>}>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            
+            {/* Core Modules */}
+            <Route path="/deals" element={<DealsView />} />
+            <Route path="/deals/:id" element={<DealDetailPage />} />
+            <Route path="/deals/comparison" element={<DealComparison />} />
+            
+            <Route path="/players" element={<PlayersListPage />} />
+            <Route path="/players/:id" element={<PlayerDetailPage />} />
+
+            <Route path="/tracks/:id" element={<TrackDetailPage />} />
+
+            <Route path="/companies" element={<CompaniesListPage />} />
+            <Route path="/companies/:id" element={<CompanyDetailPage />} />
+
+            {/* Leads & Contacts Modules */}
+            <Route path="/leads" element={<LeadsListPage />} />
+            <Route path="/leads/:id" element={<LeadDetailPage />} />
+
+            <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/contacts/:id" element={<ContactDetailPage />} />
+
+            {/* Tools */}
+            <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
+            <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
+            
+            <Route path="/folders" element={profile ? <FolderBrowser currentUser={profile} onManageFolders={() => {}} /> : null} />
+            <Route path="/folders/manage" element={<FolderManagerPage />} />
+            
+            <Route path="/dataroom" element={<DataRoomView />} />
+            <Route path="/audit" element={<AuditLogView />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/help" element={<HelpCenterPage />} />
+
+            {/* Admin & Settings Routes */}
+            <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
+            <Route path="/custom-fields" element={<CustomFieldsPage />} />
+            <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
+
+            <Route path="/analytics" element={
+                <ProtectedRoute requiredRole={['admin', 'analyst', 'newbusiness']}>
+                  {profile ? <AnalyticsDashboard currentUser={profile} /> : null}
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/rbac" element={
+                <ProtectedRoute requiredRole={['admin']}>
+                  {profile ? <RBACDemo currentUser={profile} /> : <div>Carregando...</div>}
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          {/* 404 Fallback */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
+      <Toaster position="top-right" />
+    </>
+  )
 }
 
-export default App;
+export default App
