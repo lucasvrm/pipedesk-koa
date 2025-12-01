@@ -52,31 +52,36 @@ BEGIN
 
     -- 1. Generate Companies
     FOR v_counter IN 1..p_companies_count LOOP
-        -- Valid types from CHECK companies_type_check: corporation, fund, startup, advisor, other
-        v_comp_type := (ARRAY['corporation', 'fund', 'startup', 'advisor', 'other'])[floor(random()*5 + 1)];
+        -- CORRECTED TYPES based on strict user input
+        v_comp_type := (ARRAY['incorporadora','construtora','assessor_juridico','agente_fiduciario','servicer','outros'])[floor(random()*6 + 1)];
 
         -- Valid levels from CHECK: none, prospect, active_client, partner, churned
         v_rel_level := (ARRAY['none', 'prospect', 'active_client', 'partner', 'churned'])[floor(random()*5 + 1)];
 
         v_owner_id := v_available_user_ids[floor(random()*array_length(v_available_user_ids, 1) + 1)];
 
-        INSERT INTO companies (
-            name,
-            type,
-            relationship_level,
-            is_synthetic,
-            created_by
-            -- NO updated_by
-        ) VALUES (
-            'Synth Comp ' || substr(md5(random()::text), 1, 6),
-            v_comp_type,
-            v_rel_level,
-            true,
-            v_owner_id
-        ) RETURNING id INTO v_company_id;
+        BEGIN
+            INSERT INTO companies (
+                name,
+                type,
+                relationship_level,
+                is_synthetic,
+                created_by
+                -- NO updated_by
+            ) VALUES (
+                'Synth Comp ' || substr(md5(random()::text), 1, 6),
+                v_comp_type,
+                v_rel_level,
+                true,
+                v_owner_id
+            ) RETURNING id INTO v_company_id;
 
-        v_company_ids := array_append(v_company_ids, v_company_id);
-        r_companies := r_companies + 1;
+            v_company_ids := array_append(v_company_ids, v_company_id);
+            r_companies := r_companies + 1;
+        EXCEPTION WHEN OTHERS THEN
+            -- Re-raise exception to alert frontend, do not swallow.
+            RAISE EXCEPTION 'Failed to create company with type %: %', v_comp_type, SQLERRM;
+        END;
     END LOOP;
 
     -- Update available companies if we didn't create any (using existing for deals/contacts)
