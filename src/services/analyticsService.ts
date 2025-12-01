@@ -88,7 +88,7 @@ export async function getAnalyticsSummary(
 
         // SLA Breaches (Simplificado)
         const breachesByStage: Record<string, number> = {};
-        let totalBreaches = 0;
+        const totalBreaches = 0;
 
         // Deals por Estágio
         const dealsByStage: Record<string, number> = {};

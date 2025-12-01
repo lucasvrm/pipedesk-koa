@@ -115,7 +115,7 @@ export default function CompaniesListPage() {
     if (!companies) return []
 
     // 1. Filtragem
-    let result = companies.filter(company => {
+    const result = companies.filter(company => {
       const matchesSearch = 
         company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         company.cnpj?.includes(searchTerm) ||

@@ -35,6 +35,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function Profile() {
   const { profile, signOut, resetPassword } = useAuth()
@@ -245,7 +246,7 @@ export default function Profile() {
   const createdAtDate = createdAt ? new Date(createdAt) : null
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <PageContainer>
       <div className="max-w-5xl mx-auto space-y-6">
         
         <div className="flex items-center gap-4">
@@ -542,6 +543,6 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   )
 }
