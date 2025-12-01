@@ -104,9 +104,6 @@ export const syntheticDataService = {
 
       // 2. Atualiza roles e flag is_synthetic no Profile
       if (createdUsers.length > 0) {
-        // Obter IDs dos usuários criados (assumindo que data.created retorna objetos com id)
-        // A edge function retorna { created: [{ id, email, ... }] }
-
         for (const user of createdUsers) {
           const role = assignRoles ? faker.helpers.arrayElement(ROLES) : 'client';
 
@@ -120,7 +117,7 @@ export const syntheticDataService = {
         }
       }
 
-      return createdUsers;
+      return { count: createdUsers.length, ids: createdUsers.map((u: any) => u.id), items: createdUsers };
     } catch (error) {
       console.error("Erro na Edge Function ou update de roles:", error);
       throw error;
@@ -144,7 +141,6 @@ export const syntheticDataService = {
 
   // --- 2. PLAYERS ---
   async generatePlayers(count: number, userId: string) {
-    console.log(`🎲 Gerando ${count} players ricos...`);
     const players: any[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -173,7 +169,8 @@ export const syntheticDataService = {
     if (error) throw error;
     
     if (data) await this.generateContactsForPlayers(data, userId);
-    return data;
+
+    return { count: data?.length || 0, ids: data?.map(p => p.id) || [] };
   },
 
   async generateContactsForPlayers(players: any[], userId: string) {
@@ -219,7 +216,8 @@ export const syntheticDataService = {
     if (withContacts && createdCompanies) {
       await this.generateContactsForCompanies(createdCompanies, userId);
     }
-    return createdCompanies;
+
+    return { count: createdCompanies?.length || 0, ids: createdCompanies?.map(c => c.id) || [] };
   },
 
   async generateContactsForCompanies(companies: any[], userId: string) {
@@ -246,7 +244,6 @@ export const syntheticDataService = {
 
   async generateContacts(count: number, userId: string) {
     // Gera contatos soltos ou vinculados a empresas existentes sintéticas
-    // Busca algumas empresas sintéticas para vincular
     const { data: companies } = await supabase
       .from('companies')
       .select('id')
@@ -273,7 +270,7 @@ export const syntheticDataService = {
 
     const { data, error } = await supabase.from('contacts').insert(contacts).select();
     if (error) throw error;
-    return data;
+    return { count: data?.length || 0, ids: data?.map(c => c.id) || [] };
   },
 
   // --- 4. LEADS ---
@@ -346,7 +343,7 @@ export const syntheticDataService = {
         }
       }
     }
-    return createdLeads;
+    return { count: createdLeads?.length || 0, ids: createdLeads?.map(l => l.id) || [] };
   },
 
 
@@ -409,7 +406,8 @@ export const syntheticDataService = {
     if (createRelated && createdDeals && createdDeals.length > 0) {
       await this.generateTracksAndTasks(createdDeals, users.map(u => u.id));
     }
-    return createdDeals?.length || 0;
+
+    return { count: createdDeals?.length || 0, ids: createdDeals?.map(d => d.id) || [] };
   },
 
   async generateTracksAndTasks(deals: any[], userIds: string[]) {

@@ -10,8 +10,9 @@ import { syntheticDataService } from '@/services/syntheticDataService';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Trash, Database, Plus, ArrowsClockwise, Users, Briefcase, Buildings, Warning,
-  AddressBook, Funnel, UserCircle
+  AddressBook, Funnel, UserCircle, CheckCircle, XCircle
 } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 
 export default function SyntheticDataPanel() {
   const { profile } = useAuth();
@@ -24,22 +25,17 @@ export default function SyntheticDataPanel() {
   const [config, setConfig] = useState({
     userCount: 5,
     assignRoles: true,
-
     dealCount: 10,
     dealsWithTracks: true,
-
     playerCount: 20,
-
     companyCount: 10,
     companiesWithContacts: true,
-
     leadCount: 15,
     leadsWithContacts: true,
-
-    contactCount: 20 // Independent contacts
+    contactCount: 20
   });
 
-  const [lastGeneratedUsers, setLastGeneratedUsers] = useState<any[]>([]);
+  const [lastResult, setLastResult] = useState<{ type: string, count: number, ids?: string[] } | null>(null);
 
   const refreshCounts = async () => {
     try {
@@ -54,130 +50,27 @@ export default function SyntheticDataPanel() {
     refreshCounts();
   }, []);
 
-  // --- Handlers de Geração ---
-
-  const handleGenerateUsers = async () => {
+  const handleGenerate = async (type: string, fn: () => Promise<any>) => {
     setLoading(true);
-    setLastGeneratedUsers([]);
+    setLastResult(null);
     try {
-      const users = await syntheticDataService.generateUsers(config.userCount, config.assignRoles);
-      setLastGeneratedUsers(users);
-      toast.success(`${users.length} Usuários criados!`);
-      await refreshCounts();
-    } catch (error) {
-      toast.error('Erro ao criar usuários');
-    } finally { setLoading(false); }
-  };
+      const result = await fn();
+      const count = result?.count || result?.length || 0;
+      const ids = result?.ids || [];
 
-  const handleGeneratePlayers = async () => {
-    if (!profile?.id) return;
-    setLoading(true);
-    try {
-      const data = await syntheticDataService.generatePlayers(config.playerCount, profile.id);
-      toast.success(`${data?.length || 0} Players gerados!`);
-      await refreshCounts();
-    } catch (error) {
-      toast.error('Erro ao gerar players');
-    } finally { setLoading(false); }
-  };
-
-  const handleGenerateCompanies = async () => {
-    if (!profile?.id) return;
-    setLoading(true);
-    try {
-      const data = await syntheticDataService.generateCompanies(config.companyCount, profile.id, config.companiesWithContacts);
-      toast.success(`${data?.length || 0} Empresas geradas!`);
-      await refreshCounts();
-    } catch (error) {
-      toast.error('Erro ao gerar empresas');
-    } finally { setLoading(false); }
-  };
-
-  const handleGenerateLeads = async () => {
-    if (!profile?.id) return;
-    setLoading(true);
-    try {
-      const data = await syntheticDataService.generateLeads(config.leadCount, profile.id, config.leadsWithContacts);
-      toast.success(`${data?.length || 0} Leads gerados!`);
-      await refreshCounts();
-    } catch (error) {
-      toast.error('Erro ao gerar leads');
-    } finally { setLoading(false); }
-  };
-
-  const handleGenerateDeals = async () => {
-    setLoading(true);
-    try {
-      const count = await syntheticDataService.generateDeals(config.dealCount, config.dealsWithTracks);
-      toast.success(`${count} Negócios gerados!`);
-      await refreshCounts();
-    } catch (error) {
-      toast.error('Erro ao gerar negócios');
-    } finally { setLoading(false); }
-  };
-
-  const handleGenerateContacts = async () => {
-    if (!profile?.id) return;
-    setLoading(true);
-    try {
-      const data = await syntheticDataService.generateContacts(config.contactCount, profile.id);
-      toast.success(`${data?.length || 0} Contatos gerados!`);
-      await refreshCounts();
-    } catch (error) {
-      toast.error('Erro ao gerar contatos');
-    } finally { setLoading(false); }
-  };
-
-  // --- Handlers de Exclusão ---
-
-  const handleClearUsers = async () => {
-    if (!confirm('Excluir apenas USUÁRIOS sintéticos?')) return;
-    setLoading(true);
-    try {
-      await syntheticDataService.clearSyntheticUsers();
-      toast.success('Usuários excluídos');
-      await refreshCounts();
-    } catch { toast.error('Erro ao limpar usuários'); } finally { setLoading(false); }
-  };
-
-  const handleClearPlayers = async () => {
-    if (!confirm('Excluir apenas PLAYERS sintéticos?')) return;
-    setLoading(true);
-    try {
-      await syntheticDataService.clearSyntheticPlayers();
-      toast.success('Players excluídos');
-      await refreshCounts();
-    } catch { toast.error('Erro ao limpar players'); } finally { setLoading(false); }
-  };
-
-  const handleClearCompanies = async () => {
-    if (!confirm('Excluir EMPRESAS sintéticas (e contatos vinculados)?')) return;
-    setLoading(true);
-    try {
-      await syntheticDataService.clearSyntheticCompanies();
-      toast.success('Empresas excluídas');
-      await refreshCounts();
-    } catch { toast.error('Erro ao limpar empresas'); } finally { setLoading(false); }
-  };
-
-  const handleClearLeads = async () => {
-    if (!confirm('Excluir LEADS sintéticos?')) return;
-    setLoading(true);
-    try {
-      await syntheticDataService.clearSyntheticLeads();
-      toast.success('Leads excluídos');
-      await refreshCounts();
-    } catch { toast.error('Erro ao limpar leads'); } finally { setLoading(false); }
-  };
-
-  const handleClearDeals = async () => {
-    if (!confirm('Excluir apenas DEALS (e tracks/tasks) sintéticos?')) return;
-    setLoading(true);
-    try {
-      await syntheticDataService.clearSyntheticDeals();
-      toast.success('Deals excluídos');
-      await refreshCounts();
-    } catch { toast.error('Erro ao limpar deals'); } finally { setLoading(false); }
+      if (count > 0) {
+        toast.success(`${count} ${type} gerados com sucesso!`);
+        setLastResult({ type, count, ids });
+        await refreshCounts();
+      } else {
+        toast.warning(`Nenhum ${type} foi gerado. Verifique os logs.`);
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(`Erro ao gerar ${type}: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClearAll = async () => {
@@ -197,10 +90,11 @@ export default function SyntheticDataPanel() {
           <Database className="w-6 h-6 text-primary" />
           <CardTitle>Gerador de Dados Sintéticos</CardTitle>
         </div>
-        <CardDescription>Popule o ambiente com dados ricos para teste. Dados são marcados e podem ser removidos facilmente.</CardDescription>
+        <CardDescription>Popule o ambiente com dados ricos para teste. Dados são marcados e podem ser removidos.</CardDescription>
       </CardHeader>
       
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
+
         {/* Placar */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
           <CountBadge count={counts.users} label="Usuários" color="blue" />
@@ -211,135 +105,205 @@ export default function SyntheticDataPanel() {
           <CountBadge count={counts.deals} label="Deals" color="green" />
         </div>
 
+        {/* Resumo da Última Execução */}
+        {lastResult && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div>
+                        <p className="text-sm font-medium text-green-800">
+                            Geração concluída: {lastResult.count} {lastResult.type}
+                        </p>
+                        <p className="text-xs text-green-600">IDs: {lastResult.ids?.slice(0, 3).join(', ')} {lastResult.ids && lastResult.ids.length > 3 ? '...' : ''}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    {lastResult.type === 'Empresas' && <Link to="/companies"><Button size="sm" variant="outline" className="h-8">Ver Lista</Button></Link>}
+                    {lastResult.type === 'Deals' && <Link to="/deals"><Button size="sm" variant="outline" className="h-8">Ver Lista</Button></Link>}
+                    {lastResult.type === 'Leads' && <Link to="/leads"><Button size="sm" variant="outline" className="h-8">Ver Lista</Button></Link>}
+                    {lastResult.type === 'Players' && <Link to="/players"><Button size="sm" variant="outline" className="h-8">Ver Lista</Button></Link>}
+                </div>
+            </div>
+        )}
+
         <Separator />
 
-        {/* Controles de Geração */}
-        <div className="space-y-4">
-          
-          {/* 1. Usuários */}
-          <GenerationRow
-            label="Usuários"
-            icon={<UserCircle className="w-4 h-4" />}
-            count={config.userCount}
-            setCount={v => setConfig({...config, userCount: v})}
-            onGenerate={handleGenerateUsers}
-            onClear={handleClearUsers}
-            hasData={!!counts.users}
-            loading={loading}
-          >
-            <div className="flex items-center space-x-2 mt-2">
-              <Switch id="roles" checked={config.assignRoles} onCheckedChange={c => setConfig({...config, assignRoles: c})} />
-              <Label htmlFor="roles" className="text-xs">Distribuir Roles (Admin, Analyst, etc)</Label>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            {/* Coluna 1: Entidades Base */}
+            <div className="space-y-6">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground flex items-center gap-2">
+                    <Buildings className="w-4 h-4" /> Entidades Base
+                </h3>
+
+                {/* Users */}
+                <GenerationRow
+                    label="Usuários"
+                    count={config.userCount}
+                    setCount={v => setConfig({...config, userCount: v})}
+                    onGenerate={() => handleGenerate('Usuários', () => syntheticDataService.generateUsers(config.userCount, config.assignRoles))}
+                    onClear={async () => {
+                        if(!confirm('Excluir TODOS os usuários sintéticos?')) return;
+                        setLoading(true);
+                        try { await syntheticDataService.clearSyntheticUsers(); toast.success('Limpeza concluída'); await refreshCounts(); } catch { toast.error('Erro'); } finally { setLoading(false); }
+                    }}
+                    hasData={counts.users > 0}
+                    loading={loading}
+                >
+                    <div className="flex items-center space-x-2 mt-2">
+                        <Switch id="roles" checked={config.assignRoles} onCheckedChange={c => setConfig({...config, assignRoles: c})} />
+                        <Label htmlFor="roles" className="text-xs">Distribuir Roles</Label>
+                    </div>
+                </GenerationRow>
+
+                {/* Companies */}
+                <GenerationRow
+                    label="Empresas"
+                    count={config.companyCount}
+                    setCount={v => setConfig({...config, companyCount: v})}
+                    onGenerate={() => handleGenerate('Empresas', () => syntheticDataService.generateCompanies(config.companyCount, profile?.id!, config.companiesWithContacts))}
+                    onClear={async () => {
+                        if(!confirm('Excluir EMPRESAS sintéticas?')) return;
+                        setLoading(true);
+                        try { await syntheticDataService.clearSyntheticCompanies(); toast.success('Limpeza concluída'); await refreshCounts(); } catch { toast.error('Erro'); } finally { setLoading(false); }
+                    }}
+                    hasData={counts.companies > 0}
+                    loading={loading}
+                >
+                    <div className="flex items-center space-x-2 mt-2">
+                        <Switch id="comp-contacts" checked={config.companiesWithContacts} onCheckedChange={c => setConfig({...config, companiesWithContacts: c})} />
+                        <Label htmlFor="comp-contacts" className="text-xs">Gerar contatos vinculados</Label>
+                    </div>
+                </GenerationRow>
+
+                {/* Players */}
+                <GenerationRow
+                    label="Players"
+                    count={config.playerCount}
+                    setCount={v => setConfig({...config, playerCount: v})}
+                    onGenerate={() => handleGenerate('Players', () => syntheticDataService.generatePlayers(config.playerCount, profile?.id!))}
+                    onClear={async () => {
+                        if(!confirm('Excluir PLAYERS sintéticos?')) return;
+                        setLoading(true);
+                        try { await syntheticDataService.clearSyntheticPlayers(); toast.success('Limpeza concluída'); await refreshCounts(); } catch { toast.error('Erro'); } finally { setLoading(false); }
+                    }}
+                    hasData={counts.players > 0}
+                    loading={loading}
+                />
             </div>
-            {lastGeneratedUsers.length > 0 && (
-              <div className="mt-2 text-xs bg-slate-100 p-2 rounded">
-                <strong>Últimos gerados (senha: password123):</strong>
-                <ul className="list-disc pl-4 max-h-20 overflow-auto">
-                  {lastGeneratedUsers.map((u, i) => (
-                    <li key={i}>{u.email}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </GenerationRow>
 
-          {/* 2. Companies */}
-          <GenerationRow
-            label="Empresas"
-            icon={<Buildings className="w-4 h-4" />}
-            count={config.companyCount}
-            setCount={v => setConfig({...config, companyCount: v})}
-            onGenerate={handleGenerateCompanies}
-            onClear={handleClearCompanies}
-            hasData={!!counts.companies}
-            loading={loading}
-            color="orange"
-          >
-            <div className="flex items-center space-x-2 mt-2">
-              <Switch id="comp-contacts" checked={config.companiesWithContacts} onCheckedChange={c => setConfig({...config, companiesWithContacts: c})} />
-              <Label htmlFor="comp-contacts" className="text-xs">Gerar contatos vinculados</Label>
+            {/* Coluna 2: Negócios & Leads */}
+            <div className="space-y-6">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" /> Negócios & Fluxo
+                </h3>
+
+                {/* Leads */}
+                <GenerationRow
+                    label="Leads"
+                    count={config.leadCount}
+                    setCount={v => setConfig({...config, leadCount: v})}
+                    onGenerate={() => handleGenerate('Leads', () => syntheticDataService.generateLeads(config.leadCount, profile?.id!, config.leadsWithContacts))}
+                    onClear={async () => {
+                        if(!confirm('Excluir LEADS sintéticos?')) return;
+                        setLoading(true);
+                        try { await syntheticDataService.clearSyntheticLeads(); toast.success('Limpeza concluída'); await refreshCounts(); } catch { toast.error('Erro'); } finally { setLoading(false); }
+                    }}
+                    hasData={counts.leads > 0}
+                    loading={loading}
+                >
+                    <div className="flex items-center space-x-2 mt-2">
+                        <Switch id="lead-contacts" checked={config.leadsWithContacts} onCheckedChange={c => setConfig({...config, leadsWithContacts: c})} />
+                        <Label htmlFor="lead-contacts" className="text-xs">Gerar contatos e membros</Label>
+                    </div>
+                </GenerationRow>
+
+                {/* Deals */}
+                <GenerationRow
+                    label="Deals"
+                    count={config.dealCount}
+                    setCount={v => setConfig({...config, dealCount: v})}
+                    onGenerate={() => handleGenerate('Deals', () => syntheticDataService.generateDeals(config.dealCount, config.dealsWithTracks))}
+                    onClear={async () => {
+                        if(!confirm('Excluir DEALS sintéticos?')) return;
+                        setLoading(true);
+                        try { await syntheticDataService.clearSyntheticDeals(); toast.success('Limpeza concluída'); await refreshCounts(); } catch { toast.error('Erro'); } finally { setLoading(false); }
+                    }}
+                    hasData={counts.deals > 0}
+                    loading={loading}
+                >
+                    <div className="flex items-center space-x-2 mt-2">
+                        <Switch id="tracks" checked={config.dealsWithTracks} onCheckedChange={c => setConfig({...config, dealsWithTracks: c})} />
+                        <Label htmlFor="tracks" className="text-xs">Gerar Tracks e Tasks</Label>
+                    </div>
+                </GenerationRow>
+
+                {/* Contatos Avulsos */}
+                <div className="pt-4 border-t mt-4">
+                    <h4 className="text-sm font-medium mb-3">Contatos Avulsos</h4>
+                    <div className="bg-slate-50 p-3 rounded-md border flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <AddressBook className="w-5 h-5 text-slate-500" />
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium">Gerar Avulsos</p>
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-xs">Qtd:</Label>
+                                    <Input
+                                        type="number"
+                                        className="h-6 w-16 text-xs"
+                                        min="1"
+                                        value={config.contactCount}
+                                        onChange={e => setConfig({...config, contactCount: +e.target.value})}
+                                    />
+                                    <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => handleGenerate('Contatos', () => syntheticDataService.generateContacts(config.contactCount, profile?.id!))}>
+                                        Gerar
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={loading || counts.contacts === 0}
+                            onClick={async () => {
+                                if(!confirm('Apagar apenas contatos sintéticos órfãos (sem empresa/lead)?')) return;
+                                setLoading(true);
+                                try {
+                                    const count = await syntheticDataService.clearOrphanSyntheticContacts();
+                                    toast.success(`${count} contatos avulsos removidos.`);
+                                    await refreshCounts();
+                                } catch { toast.error('Erro ao limpar'); }
+                                finally { setLoading(false); }
+                            }}
+                        >
+                            <Trash className="mr-2 w-4 h-4" /> Limpar Órfãos
+                        </Button>
+                    </div>
+                </div>
+
             </div>
-          </GenerationRow>
-
-          {/* 3. Players */}
-          <GenerationRow
-            label="Players"
-            icon={<Buildings className="w-4 h-4" />}
-            count={config.playerCount}
-            setCount={v => setConfig({...config, playerCount: v})}
-            onGenerate={handleGeneratePlayers}
-            onClear={handleClearPlayers}
-            hasData={!!counts.players}
-            loading={loading}
-            color="purple"
-          />
-
-          {/* 4. Leads */}
-          <GenerationRow
-            label="Leads"
-            icon={<Funnel className="w-4 h-4" />}
-            count={config.leadCount}
-            setCount={v => setConfig({...config, leadCount: v})}
-            onGenerate={handleGenerateLeads}
-            onClear={handleClearLeads}
-            hasData={!!counts.leads}
-            loading={loading}
-            color="rose"
-          >
-            <div className="flex items-center space-x-2 mt-2">
-              <Switch id="lead-contacts" checked={config.leadsWithContacts} onCheckedChange={c => setConfig({...config, leadsWithContacts: c})} />
-              <Label htmlFor="lead-contacts" className="text-xs">Gerar contatos e membros</Label>
-            </div>
-          </GenerationRow>
-
-          {/* 5. Contatos (Avulsos) */}
-          <GenerationRow
-            label="Contatos (Avulsos)"
-            icon={<AddressBook className="w-4 h-4" />}
-            count={config.contactCount}
-            setCount={v => setConfig({...config, contactCount: v})}
-            onGenerate={handleGenerateContacts}
-            onClear={async () => {
-              if(!confirm('Apagar apenas contatos sintéticos órfãos (sem empresa/lead)?')) return;
-              setLoading(true);
-              try {
-                const count = await syntheticDataService.clearOrphanSyntheticContacts();
-                toast.success(`${count} contatos avulsos removidos.`);
-                await refreshCounts();
-              } catch { toast.error('Erro ao limpar contatos avulsos'); }
-              finally { setLoading(false); }
-            }}
-            hasData={counts.contacts > 0}
-            loading={loading}
-            color="cyan"
-          />
-
-          {/* 6. Deals */}
-          <GenerationRow
-            label="Deals"
-            icon={<Briefcase className="w-4 h-4" />}
-            count={config.dealCount}
-            setCount={v => setConfig({...config, dealCount: v})}
-            onGenerate={handleGenerateDeals}
-            onClear={handleClearDeals}
-            hasData={!!counts.deals}
-            loading={loading}
-            color="green"
-          >
-            <div className="flex items-center space-x-2 mt-2">
-              <Switch id="tracks" checked={config.dealsWithTracks} onCheckedChange={c => setConfig({...config, dealsWithTracks: c})} />
-              <Label htmlFor="tracks" className="text-xs">Gerar Tracks e Tasks</Label>
-            </div>
-          </GenerationRow>
-
         </div>
+
       </CardContent>
       
       <CardFooter className="bg-muted/20 justify-between">
         <Button variant="ghost" size="sm" onClick={refreshCounts}>
           <ArrowsClockwise className={`mr-2 ${loading ? 'animate-spin' : ''}`} /> Atualizar Contagem
         </Button>
-        <Button variant="destructive" size="sm" onClick={handleClearAll} disabled={loading}>
+        <Button
+            variant="destructive"
+            size="sm"
+            onClick={async () => {
+                if (!confirm('ATENÇÃO: Isso excluirá TODOS os dados sintéticos gerados. Continuar?')) return;
+                setLoading(true);
+                try {
+                    await syntheticDataService.clearAllSyntheticData();
+                    toast.success('Todos os dados sintéticos foram removidos.');
+                    await refreshCounts();
+                } catch { toast.error('Erro ao limpar tudo'); } finally { setLoading(false); }
+            }}
+            disabled={loading}
+        >
             <Trash className="mr-2" /> Limpar TUDO
         </Button>
       </CardFooter>
@@ -347,7 +311,7 @@ export default function SyntheticDataPanel() {
   );
 }
 
-// Subcomponentes para UI limpa
+// Subcomponentes
 
 function CountBadge({ count, label, color }: { count: number, label: string, color: string }) {
   const colorClasses: Record<string, string> = {
@@ -368,49 +332,29 @@ function CountBadge({ count, label, color }: { count: number, label: string, col
 }
 
 function GenerationRow({
-  label, icon, count, setCount, onGenerate, onClear, hasData, loading, children, color = 'slate', hideDelete = false
+  label, count, setCount, onGenerate, onClear, hasData, loading, children
 }: any) {
-
-    const bgColors: Record<string, string> = {
-        slate: 'bg-slate-50/50',
-        purple: 'bg-purple-50/30 border-purple-100',
-        green: 'bg-green-50/30 border-green-100',
-        orange: 'bg-orange-50/30 border-orange-100',
-        rose: 'bg-rose-50/30 border-rose-100',
-        cyan: 'bg-cyan-50/30 border-cyan-100'
-    };
-
-    const btnColors: Record<string, string> = {
-        slate: 'variant="outline"',
-        purple: 'bg-purple-600 hover:bg-purple-700 text-white',
-        green: 'bg-green-600 hover:bg-green-700 text-white',
-        orange: 'bg-orange-500 hover:bg-orange-600 text-white',
-        rose: 'bg-rose-500 hover:bg-rose-600 text-white',
-        cyan: 'bg-cyan-500 hover:bg-cyan-600 text-white'
-    };
-
   return (
-    <div className={`p-3 border rounded ${bgColors[color]}`}>
-      <div className="flex items-end gap-4">
-        <div className="grid w-full max-w-[120px] gap-1.5">
-          <Label className="text-xs">Qtd. {label}</Label>
-          <Input type="number" min="1" max="100" value={count} onChange={e => setCount(+e.target.value)} />
-        </div>
-        <Button
-            onClick={onGenerate}
-            disabled={loading}
-            className={`flex-1 justify-start ${btnColors[color].startsWith('bg') ? btnColors[color] : ''}`}
-            variant={btnColors[color].startsWith('bg') ? 'default' : 'outline'}
-        >
-          <span className="mr-2">{icon}</span> Gerar {label}
-        </Button>
-        {!hideDelete && (
-            <Button onClick={onClear} disabled={loading || !hasData} variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
-            <Trash />
+    <div className="p-4 border rounded-lg bg-card/50 hover:bg-card transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <Label className="text-base font-medium">{label}</Label>
+        {hasData && (
+            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive opacity-50 hover:opacity-100" onClick={onClear} title={`Limpar ${label}`}>
+                <Trash className="w-4 h-4" />
             </Button>
         )}
       </div>
-      {children && <div className="mt-2 pl-1">{children}</div>}
+
+      <div className="flex gap-3">
+        <div className="w-20">
+            <Input type="number" min="1" max="100" value={count} onChange={e => setCount(+e.target.value)} />
+        </div>
+        <Button onClick={onGenerate} disabled={loading} className="flex-1" variant="secondary">
+            <Plus className="mr-2 w-4 h-4" /> Gerar
+        </Button>
+      </div>
+
+      {children && <div className="mt-3 pt-3 border-t">{children}</div>}
     </div>
   );
 }
