@@ -9,9 +9,10 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight request (OPTIONS)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    // Usar 204 No Content é o padrão para respostas de preflight bem-sucedidas.
+    return new Response(null, { headers: corsHeaders, status: 204 })
   }
 
   try {
