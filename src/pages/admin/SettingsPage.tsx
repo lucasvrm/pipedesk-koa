@@ -20,6 +20,7 @@ import {
 import { Plus, PencilSimple, Trash, Gear, Globe, Users, Megaphone, Calendar as CalendarIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { PageContainer } from '@/components/PageContainer'
 
 // --- TIPOS DE CONFIGURAÇÃO SUPORTADOS ---
 type SettingType = 'products' | 'deal_sources' | 'loss_reasons' | 'player_categories' | 'holidays' | 'communication_templates'
@@ -308,7 +309,7 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
 // --- PÁGINA PRINCIPAL ---
 export default function SettingsPage() {
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer>
       <div className="flex items-center gap-4 mb-8">
         <div className="bg-primary/10 p-3 rounded-full">
             <Gear className="h-8 w-8 text-primary" />
@@ -401,6 +402,6 @@ export default function SettingsPage() {
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   )
 }

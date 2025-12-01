@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { COMPANY_TYPE_LABELS, CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
@@ -119,7 +120,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <PageContainer>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Contatos</h1>
@@ -288,6 +289,6 @@ export default function ContactsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

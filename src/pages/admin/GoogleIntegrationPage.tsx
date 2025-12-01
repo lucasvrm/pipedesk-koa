@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator'
 import { GoogleLogo, FolderOpen, CalendarBlank, EnvelopeSimple, CheckCircle, XCircle, ArrowsClockwise, Warning, Link as LinkIcon, ArrowLeft } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function GoogleIntegrationPage() {
   const { profile: currentUser } = useAuth()
@@ -78,7 +79,7 @@ export default function GoogleIntegrationPage() {
   const isTokenExpired = integration && new Date(integration.expiresAt) < new Date()
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <PageContainer>
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" onClick={() => navigate('/rbac')}>
           <ArrowLeft className="h-5 w-5" />
@@ -131,6 +132,6 @@ export default function GoogleIntegrationPage() {
             </>
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }
