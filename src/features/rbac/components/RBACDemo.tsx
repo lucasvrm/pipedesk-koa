@@ -8,7 +8,6 @@ import {
 } from '@phosphor-icons/react'
 
 // Componentes das Abas
-import SyntheticDataPanel from './SyntheticDataPanel'
 import MagicLinksPanel from './MagicLinksPanel'
 import AuthSettingsPanel from './AuthSettingsPanel'
 
@@ -64,8 +63,10 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
 
         {/* ABA 3: DADOS SINTÉTICOS */}
         <TabsContent value="synthetic" className="animate-in fade-in-50 focus-visible:outline-none">
-            <div className="max-w-4xl">
-                <SyntheticDataPanel />
+            <div className="max-w-4xl p-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                <Database className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-medium">Recurso Movido</h3>
+                <p>O gerador de dados sintéticos foi movido para uma área administrativa dedicada.</p>
             </div>
         </TabsContent>
 

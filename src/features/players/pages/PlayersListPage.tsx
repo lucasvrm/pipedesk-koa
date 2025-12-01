@@ -85,7 +85,7 @@ export default function PlayersListPage() {
     if (!players) return []
 
     // 1. Filtragem
-    let result = players.filter(p => {
+    const result = players.filter(p => {
       const searchLower = search.toLowerCase()
       const matchesSearch = 
         p.name.toLowerCase().includes(searchLower) ||

@@ -172,7 +172,7 @@ export default function PlayerDetailPage() {
   const processedDeals = useMemo(() => {
     if (!playerTracks) return [];
 
-    let result = playerTracks.filter(track => {
+    const result = playerTracks.filter(track => {
       if (dealStageFilters.length > 0 && !dealStageFilters.includes(track.currentStage)) return false;
       return true;
     });

@@ -128,7 +128,7 @@ export default function UserManagementPage() {
     if (!users) return []
 
     // 1. Filtragem
-    let result = users.filter(user => {
+    const result = users.filter(user => {
       const searchLower = searchQuery.toLowerCase()
       const matchesSearch = 
         user.name.toLowerCase().includes(searchLower) ||

@@ -97,7 +97,7 @@ const maskCurrencyInput = (value: string) => {
 
 // Máscara de Porcentagem (0,00%)
 const maskPercentageInput = (value: string) => {
-  let cleanValue = value.replace(/[^\d]/g, '')
+  const cleanValue = value.replace(/[^\d]/g, '')
   if (!cleanValue) return ''
   const numberValue = Number(cleanValue) / 100
   return new Intl.NumberFormat('pt-BR', { 

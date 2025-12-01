@@ -156,7 +156,7 @@ export default function DealsView() {
 
   const processedDeals = useMemo(() => {
     if (!masterDeals) return []
-    let result = masterDeals.filter(deal => {
+    const result = masterDeals.filter(deal => {
       if (searchQuery) {
         const term = searchQuery.toLowerCase()
         if (!deal.clientName.toLowerCase().includes(term) && !deal.company?.name?.toLowerCase().includes(term)) return false
