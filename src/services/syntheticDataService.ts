@@ -7,11 +7,14 @@ import {
   AssetManagerType, 
   OperationType, 
   CREDIT_SUBTYPE_LABELS, 
-  EQUITY_SUBTYPE_LABELS
+  EQUITY_SUBTYPE_LABELS,
+  CompanyType,
+  RelationshipLevel,
+  UserRole
 } from '@/lib/types';
 
 // ============================================================================
-// CONSTANTES DE DADOS SINTÉTICOS (ISOLADAS)
+// CONSTANTES DE DADOS SINTÉTICOS
 // ============================================================================
 
 const SYNTHETIC_STAGE_PROBABILITIES: Record<string, number> = {
@@ -28,7 +31,12 @@ const SYNTHETIC_STAGE_PROBABILITIES: Record<string, number> = {
 
 const PLAYER_TYPES: PlayerType[] = ['bank', 'asset_manager', 'family_office', 'securitizer', 'fund'];
 const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'fip', 'fiagro', 'multimercado'];
-const RELATIONSHIP_LEVELS = ['basic', 'intermediate', 'close'];
+
+// Mapeamento correto com constraints do banco (migration 007)
+const SYNTHETIC_COMPANY_TYPES: CompanyType[] = ['corporation', 'fund', 'startup', 'advisor', 'other'];
+const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: string[] = ['none', 'prospect', 'active_client', 'partner', 'churned'];
+
+const RELATIONSHIP_LEVELS: RelationshipLevel[] = ['basic', 'intermediate', 'close']; // Para Players
 
 const CREDIT_KEYS = Object.keys(CREDIT_SUBTYPE_LABELS);
 const EQUITY_KEYS = Object.keys(EQUITY_SUBTYPE_LABELS);
@@ -45,6 +53,8 @@ const OPERATIONS: OperationType[] = [
 // Status possíveis
 const STATUSES: DealStatus[] = ['active', 'concluded', 'cancelled', 'on_hold'];
 
+const ROLES: UserRole[] = ['admin', 'analyst', 'newbusiness', 'client'];
+
 interface Products {
   credit: string[];
   equity: string[];
@@ -52,7 +62,7 @@ interface Products {
 }
 
 const getRandomProducts = (): Products => {
-  let products: Products = { credit: [], equity: [], barter: [] };
+  const products: Products = { credit: [], equity: [], barter: [] };
   let hasAny = false;
 
   while (!hasAny) {
@@ -82,38 +92,61 @@ const getRandomPlayerType = (): PlayerType => {
 export const syntheticDataService = {
   
   // --- 1. USUÁRIOS ---
-  async generateUsers(count: number) {
+  async generateUsers(count: number, assignRoles: boolean = true) {
     try {
+      // 1. Cria usuários na Auth via Edge Function
       const { data, error } = await supabase.functions.invoke('generate-synthetic-users', {
         body: { action: 'create', count, password: 'password123' }
       });
       if (error) throw error;
-      return data.created;
+
+      // B) Fix: Ensure createdUsers is an array
+      const createdUsers = Array.isArray(data.created) ? data.created : [];
+
+      if (data.error) {
+          console.error("Erro na Edge Function:", data.error);
+          throw new Error(data.error);
+      }
+
+      // 2. Atualiza roles e flag is_synthetic no Profile
+      if (createdUsers.length > 0) {
+        for (const user of createdUsers) {
+          const role = assignRoles ? faker.helpers.arrayElement(ROLES) : 'client';
+
+          await supabase.from('profiles').update({
+            role: role,
+            is_synthetic: true,
+            has_completed_onboarding: true,
+            name: `[SINTÉTICO] ${faker.person.fullName()}`,
+            client_entity: faker.company.name()
+          }).eq('id', user.id);
+        }
+      }
+
+      return { count: createdUsers.length, ids: createdUsers.map((u: any) => u.id), items: createdUsers };
     } catch (error) {
-      console.error("Erro na Edge Function:", error);
-      return 0;
+      console.error("Erro na Edge Function ou update de roles:", error);
+      throw error;
     }
   },
 
   async clearSyntheticUsers() {
-    // Chama a Edge Function para deletar do Auth (que deleta profile em cascata)
+    // 1. Remove da Auth (Edge Function)
     const { data, error } = await supabase.functions.invoke('generate-synthetic-users', {
         body: { action: 'delete' }
     });
     
     if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
     
-    // Se a função retornar erro de lógica
-    if (data && data.error) {
-        throw new Error(data.error);
-    }
-    
+    // Profiles são deletados em cascata pelo Auth, mas garantimos limpeza de orfãos se houver
+    await supabase.from('profiles').delete().eq('is_synthetic', true);
+
     return data;
   },
 
   // --- 2. PLAYERS ---
   async generatePlayers(count: number, userId: string) {
-    console.log(`🎲 Gerando ${count} players ricos...`);
     const players: any[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -121,7 +154,7 @@ export const syntheticDataService = {
       const isGestora = type === 'asset_manager';
       
       players.push({
-        name: faker.company.name(),
+        name: `[SINTÉTICO] ${faker.company.name()}`,
         cnpj: faker.helpers.replaceSymbols('##.###.###/0001-##'),
         site: faker.internet.url(),
         description: faker.lorem.paragraph(),
@@ -142,7 +175,8 @@ export const syntheticDataService = {
     if (error) throw error;
     
     if (data) await this.generateContactsForPlayers(data, userId);
-    return data;
+
+    return { count: data?.length || 0, ids: data?.map(p => p.id) || [] };
   },
 
   async generateContactsForPlayers(players: any[], userId: string) {
@@ -165,21 +199,197 @@ export const syntheticDataService = {
     if (contacts.length > 0) await supabase.from('player_contacts').insert(contacts);
   },
 
-  async clearSyntheticPlayers() {
-    await supabase.from('players').delete().eq('is_synthetic', true);
+  // --- 3. COMPANIES & CONTACTS ---
+  async generateCompanies(count: number, userId: string, withContacts: boolean = true) {
+    const companies: any[] = [];
+
+    for (let i = 0; i < count; i++) {
+      companies.push({
+        name: `[SINTÉTICO] ${faker.company.name()}`,
+        cnpj: faker.helpers.replaceSymbols('##.###.###/0001-##'),
+        site: faker.internet.url(),
+        description: faker.lorem.paragraph(),
+        type: faker.helpers.arrayElement(SYNTHETIC_COMPANY_TYPES),
+        relationship_level: faker.helpers.arrayElement(SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS),
+        created_by: userId,
+        is_synthetic: true
+      });
+    }
+
+    const { data: createdCompanies, error } = await supabase.from('companies').insert(companies).select();
+    if (error) throw error;
+
+    if (withContacts && createdCompanies) {
+      await this.generateContactsForCompanies(createdCompanies, userId);
+    }
+
+    return { count: createdCompanies?.length || 0, ids: createdCompanies?.map(c => c.id) || [] };
   },
 
-  // --- 3. DEALS (NEGÓCIOS) ---
+  async generateContactsForCompanies(companies: any[], userId: string) {
+    const contacts: any[] = [];
+    for (const company of companies) {
+      const contactCount = faker.number.int({ min: 1, max: 3 });
+      for (let k = 0; k < contactCount; k++) {
+        contacts.push({
+          company_id: company.id,
+          name: faker.person.fullName(),
+          role: faker.person.jobTitle(),
+          email: faker.internet.email(),
+          phone: faker.phone.number({ style: 'national' }),
+          is_primary: k === 0,
+          created_by: userId,
+          updated_by: userId,
+          is_synthetic: true,
+          origin: 'synthetic'
+        });
+      }
+    }
+    if (contacts.length > 0) await supabase.from('contacts').insert(contacts);
+  },
+
+  async generateContacts(count: number, userId: string) {
+    // Gera contatos soltos ou vinculados a empresas existentes sintéticas
+    const { data: companies } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('is_synthetic', true)
+      .limit(20);
+
+    const contacts: any[] = [];
+    for (let i = 0; i < count; i++) {
+      const companyId = (companies && companies.length > 0 && Math.random() > 0.3)
+        ? faker.helpers.arrayElement(companies).id
+        : null;
+
+      contacts.push({
+        company_id: companyId,
+        name: `[SINTÉTICO] ${faker.person.fullName()}`,
+        email: faker.internet.email(),
+        phone: faker.phone.number({ style: 'national' }),
+        role: faker.person.jobTitle(),
+        created_by: userId,
+        is_synthetic: true,
+        origin: 'synthetic'
+      });
+    }
+
+    const { data, error } = await supabase.from('contacts').insert(contacts).select();
+    if (error) throw error;
+    return { count: data?.length || 0, ids: data?.map(c => c.id) || [] };
+  },
+
+  // --- 4. LEADS ---
+  async generateLeads(count: number, userId: string, withContacts: boolean = true) {
+    const leads: any[] = [];
+
+    for (let i = 0; i < count; i++) {
+      leads.push({
+        legal_name: `[SINTÉTICO] ${faker.company.name()}`,
+        trade_name: faker.company.name(),
+        cnpj: faker.helpers.replaceSymbols('##.###.###/0001-##'),
+        website: faker.internet.url(),
+        segment: faker.commerce.department(),
+        address_city: faker.location.city(),
+        address_state: faker.location.state({ abbreviated: true }),
+        description: faker.lorem.paragraph(),
+        status: faker.helpers.arrayElement(['new', 'contacted', 'qualified', 'disqualified']),
+        origin: faker.helpers.arrayElement(['inbound', 'outbound', 'referral', 'event', 'other']),
+        owner_user_id: userId,
+        created_by: userId,
+        is_synthetic: true
+      });
+    }
+
+    const { data: createdLeads, error } = await supabase.from('leads').insert(leads).select();
+    if (error) throw error;
+
+    if (createdLeads) {
+      // Create Members (Owner)
+      const members = createdLeads.map(l => ({
+        lead_id: l.id,
+        user_id: userId,
+        role: 'owner'
+      }));
+      await supabase.from('lead_members').insert(members);
+
+      // Create Contacts
+      if (withContacts) {
+        // Primeiro cria contatos
+        const contactsToCreate: any[] = [];
+        const leadContactMap: { leadId: string, contactIndex: number }[] = [];
+        let contactIdx = 0;
+
+        for (const lead of createdLeads) {
+          const numContacts = faker.number.int({ min: 1, max: 2 });
+          for (let k = 0; k < numContacts; k++) {
+            contactsToCreate.push({
+              name: faker.person.fullName(),
+              email: faker.internet.email(),
+              phone: faker.phone.number({ style: 'national' }),
+              role: faker.person.jobTitle(),
+              created_by: userId,
+              is_synthetic: true,
+              origin: 'synthetic'
+            });
+            leadContactMap.push({ leadId: lead.id, contactIndex: contactIdx });
+            contactIdx++;
+          }
+        }
+
+        const { data: createdContacts } = await supabase.from('contacts').insert(contactsToCreate).select();
+
+        if (createdContacts) {
+          const leadContacts = leadContactMap.map(m => ({
+            lead_id: m.leadId,
+            contact_id: createdContacts[m.contactIndex].id,
+            is_primary: Math.random() > 0.5 // Simplificação
+          }));
+          await supabase.from('lead_contacts').insert(leadContacts);
+        }
+      }
+    }
+    return { count: createdLeads?.length || 0, ids: createdLeads?.map(l => l.id) || [] };
+  },
+
+
+  // --- 5. DEALS (NEGÓCIOS) ---
   async generateDeals(count: number, createRelated: boolean = true) {
     const { data: users } = await supabase.from('profiles').select('id');
     if (!users?.length) throw new Error("Sem usuários para atribuir deals.");
+
+    // Busca empresas para vincular (prioriza sintéticas)
+    const { data: companies } = await supabase.from('companies')
+        .select('id, name')
+        .eq('is_synthetic', true)
+        .limit(50);
+
+    // Fallback: buscar qualquer empresa se não houver sintéticas
+    let availableCompanies = companies;
+    if (!availableCompanies?.length) {
+        const { data: allCompanies } = await supabase.from('companies').select('id, name').limit(20);
+        availableCompanies = allCompanies;
+    }
+
+    const hasCompanies = availableCompanies && availableCompanies.length > 0;
 
     const deals: any[] = [];
 
     for (let i = 0; i < count; i++) {
       const creator = faker.helpers.arrayElement(users).id;
+
+      let companyId = null;
+      let clientName = faker.company.name();
+
+      if (hasCompanies && Math.random() > 0.1) {
+        const c = faker.helpers.arrayElement(availableCompanies!);
+        companyId = c.id;
+        clientName = c.name;
+      }
+
       deals.push({
-        client_name: faker.company.name(),
+        client_name: clientName,
+        company_id: companyId,
         volume: parseFloat(faker.finance.amount({ min: 500000, max: 50000000 })),
         
         operation_type: faker.helpers.arrayElement(OPERATIONS),
@@ -193,12 +403,17 @@ export const syntheticDataService = {
     }
 
     const { data: createdDeals, error } = await supabase.from('master_deals').insert(deals).select();
-    if (error) throw error;
 
-    if (createRelated && createdDeals) {
+    if (error) {
+        console.error("Erro ao criar deals:", error);
+        throw error;
+    }
+
+    if (createRelated && createdDeals && createdDeals.length > 0) {
       await this.generateTracksAndTasks(createdDeals, users.map(u => u.id));
     }
-    return createdDeals?.length || 0;
+
+    return { count: createdDeals?.length || 0, ids: createdDeals?.map(d => d.id) || [] };
   },
 
   async generateTracksAndTasks(deals: any[], userIds: string[]) {
@@ -259,27 +474,117 @@ export const syntheticDataService = {
     }
   },
 
+  // --- CLEANUP ---
+
   async clearSyntheticDeals() {
     await supabase.from('tasks').delete().eq('is_synthetic', true);
     await supabase.from('player_tracks').delete().eq('is_synthetic', true);
     await supabase.from('master_deals').delete().eq('is_synthetic', true);
   },
 
+  async clearSyntheticPlayers() {
+    // Delete contacts related to synthetic players first (if cascade fails or to be sure)
+    // Note: player_contacts table usually doesn't have is_synthetic, but we can query by player
+    const { data: syntheticPlayers } = await supabase.from('players').select('id').eq('is_synthetic', true);
+    if (syntheticPlayers?.length) {
+        const playerIds = syntheticPlayers.map(p => p.id);
+        await supabase.from('player_contacts').delete().in('player_id', playerIds);
+    }
+    await supabase.from('players').delete().eq('is_synthetic', true);
+  },
+
+  async clearSyntheticCompanies() {
+    // Delete contacts related to synthetic companies
+    // Note: This deletes ALL contacts marked synthetic, including orphans
+    // If we want to be specific, we could delete only those linked to synthetic companies first, then companies
+    // But requirement says "Contacts não estão sendo deletados (cleanup)" -> generic cleanup usually implies all synthetic data
+    await supabase.from('contacts').delete().eq('is_synthetic', true);
+    await supabase.from('companies').delete().eq('is_synthetic', true);
+  },
+
+  async clearSyntheticLeads() {
+    // Explicitly delete lead dependencies if needed, though CASCADE should work.
+    // Given the report of failure, we will be explicit.
+
+    const { data: leads } = await supabase.from('leads').select('id').eq('is_synthetic', true);
+    if (leads?.length) {
+        const leadIds = leads.map(l => l.id);
+        // Delete links
+        await supabase.from('lead_contacts').delete().in('lead_id', leadIds);
+        await supabase.from('lead_members').delete().in('lead_id', leadIds);
+        // Delete lead comments (if any) - assuming comments table has entity_type/id
+        await supabase.from('comments').delete().eq('entity_type', 'lead').in('entity_id', leadIds);
+    }
+
+    await supabase.from('leads').delete().eq('is_synthetic', true);
+  },
+
+  async clearOrphanSyntheticContacts() {
+    // Deleta contatos sintéticos que não têm company_id E não estão ligados a nenhum lead (via lead_contacts)
+    // 1. Get all synthetic contacts with no company
+    const { data: noCompanyContacts } = await supabase
+        .from('contacts')
+        .select('id')
+        .eq('is_synthetic', true)
+        .is('company_id', null);
+
+    if (!noCompanyContacts?.length) return 0;
+
+    const potentialOrphanIds = noCompanyContacts.map(c => c.id);
+
+    // 2. Find which of these are used in leads
+    const { data: linkedContacts } = await supabase
+        .from('lead_contacts')
+        .select('contact_id')
+        .in('contact_id', potentialOrphanIds);
+
+    const linkedIds = new Set(linkedContacts?.map(lc => lc.contact_id));
+
+    // 3. Filter orphans
+    const orphanIds = potentialOrphanIds.filter(id => !linkedIds.has(id));
+
+    if (orphanIds.length > 0) {
+        const { error } = await supabase.from('contacts').delete().in('id', orphanIds);
+        if (error) throw error;
+        return orphanIds.length;
+    }
+    return 0;
+  },
+
   async clearAllSyntheticData() {
-    await this.clearSyntheticDeals();
-    await this.clearSyntheticPlayers();
+    // D2) Use Robust RPC
+    const { data, error } = await supabase.rpc('clear_synthetic_data');
+
+    if (error) {
+        console.error("Erro no RPC clear_synthetic_data:", error);
+        // Fallback to legacy method if RPC missing (should not happen if migrated)
+        await this.clearSyntheticDeals();
+        await this.clearSyntheticLeads();
+        await this.clearSyntheticCompanies();
+        await this.clearSyntheticPlayers();
+    }
+
+    // Users still need Edge Function for Auth deletion
     await this.clearSyntheticUsers();
+
+    return data;
   },
 
   async getSyntheticCounts() {
     const deals = await supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
     const players = await supabase.from('players').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
     const users = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
+    const companies = await supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
+    const leads = await supabase.from('leads').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
+    const contacts = await supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('is_synthetic', true);
     
     return {
       deals: deals.count || 0,
       players: players.count || 0,
       users: users.count || 0,
+      companies: companies.count || 0,
+      leads: leads.count || 0,
+      contacts: contacts.count || 0,
       tracks: 0, 
       tasks: 0 
     };
