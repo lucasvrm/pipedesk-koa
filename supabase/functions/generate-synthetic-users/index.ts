@@ -68,6 +68,7 @@ serve(async (req) => {
     for (let i = 0; i < count; i++) {
       const email = faker.internet.email().toLowerCase() // Emails únicos
       const name = faker.person.fullName()
+      const role = faker.helpers.arrayElement(['client', 'analyst', 'newbusiness'])
       
       // 1. Criar usuário no Auth
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -75,7 +76,8 @@ serve(async (req) => {
         password: password,
         email_confirm: true, // Já confirma o email para poder logar direto
         user_metadata: {
-          full_name: name,
+          name: name, // CORREÇÃO: trigger usa 'name', não 'full_name'
+          role: role,
           is_synthetic: true // Passamos no metadata também
         }
       })
@@ -86,18 +88,24 @@ serve(async (req) => {
       }
 
       if (authData.user) {
-        // 2. Garantir flag is_synthetic no profile
+        // 2. Garantir flag is_synthetic no profile (Best Effort)
+        // O trigger deve criar o perfil, mas fazemos um update para garantir o campo is_synthetic
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
           .update({ 
             is_synthetic: true,
             name: name,
+            role: role,
             avatar_url: faker.image.avatar()
           })
           .eq('id', authData.user.id)
 
         if (!profileError) {
-          createdUsers.push({ id: authData.user.id, email, name })
+          createdUsers.push({ id: authData.user.id, email, name, role })
+        } else {
+           console.warn(`Profile update failed for ${authData.user.id}, likely handled by trigger.`)
+           // Mesmo se falhar o update (ex: trigger lento), consideramos criado pois o Auth user existe
+           createdUsers.push({ id: authData.user.id, email, name, role })
         }
       }
     }

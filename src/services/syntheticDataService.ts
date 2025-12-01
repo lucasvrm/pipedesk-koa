@@ -1,3 +1,4 @@
+// Path: lucasvrm/pipedesk-koa/pipedesk-koa-d477da2e57e2097cdd221bf7a1031b90a70be347/src/services/syntheticDataService.ts
 import { supabase } from '@/lib/supabaseClient';
 import { fakerPT_BR as faker } from '@faker-js/faker';
 import { 
@@ -34,9 +35,9 @@ const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'f
 
 // Mapeamento correto com constraints do banco (migration 007)
 const SYNTHETIC_COMPANY_TYPES: CompanyType[] = ['corporation', 'fund', 'startup', 'advisor', 'other'];
-// FIX: Valores ajustados para bater com a constraint do banco (migration 007)
-// O array deve conter: 'none', 'prospect', 'active_client', 'partner', 'churned'
-const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: string[] = ['none', 'prospect', 'active_client', 'partner', 'churned'];
+// CORREÇÃO: Os valores estavam incorretos e violando a constraint 'companies_relationship_level_check'.
+// Os valores permitidos são os definidos pelo tipo RelationshipLevel: 'none', 'basic', 'intermediate', 'close'.
+const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: RelationshipLevel[] = ['none', 'basic', 'intermediate', 'close'];
 
 const RELATIONSHIP_LEVELS: RelationshipLevel[] = ['basic', 'intermediate', 'close']; // Para Players
 
