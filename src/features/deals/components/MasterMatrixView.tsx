@@ -13,6 +13,7 @@ import { canViewPlayerName } from '@/lib/permissions'
 import { CaretLeft, CaretRight, Kanban } from '@phosphor-icons/react'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
 import { CreateDealDialog } from './CreateDealDialog'
+import { PageContainer } from '@/components/PageContainer'
 
 interface MasterMatrixViewProps {
   currentUser: User
@@ -71,9 +72,9 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
   }
 
   return (
-    <>
+    <PageContainer>
       {activeDeals.length === 0 ? (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
+        <div className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
             <p className="text-muted-foreground">Visualização de deals e players por estágio</p>
@@ -87,7 +88,7 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
           />
         </div>
       ) : currentDeal ? (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <h2 className="text-3xl font-bold tracking-tight">Kanban</h2>
@@ -170,6 +171,6 @@ export default function MasterMatrixView({ currentUser }: MasterMatrixViewProps)
         </div>
       ) : null}
       <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
-    </>
+    </PageContainer>
   )
 }

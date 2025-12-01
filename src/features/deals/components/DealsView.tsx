@@ -35,6 +35,7 @@ import { CreateDealDialog } from './CreateDealDialog'
 import { DealsMetrics } from './DealsMetrics'
 import { DealPreviewSheet } from './DealPreviewSheet'
 import DealsList from './DealsList'
+import { PageContainer } from '@/components/PageContainer'
 
 // --- Tipos Locais ---
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
@@ -242,7 +243,7 @@ export default function DealsView() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto pb-24 md:pb-6">
+    <PageContainer>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
@@ -405,6 +406,6 @@ export default function DealsView() {
         </AlertDialogContent>
       </AlertDialog>
       {selectedDeal && <SmartTagSelector entityType="deal" entityId={selectedDeal.id} selectedTagIds={selectedDeal.tags?.map(t => t.id) || []} open={tagsOpen} onOpenChange={setTagsOpen} />}
-    </div>
+    </PageContainer>
   )
 }

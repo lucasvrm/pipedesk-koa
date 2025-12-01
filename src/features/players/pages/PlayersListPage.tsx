@@ -32,6 +32,7 @@ import {
   CREDIT_SUBTYPE_LABELS, EQUITY_SUBTYPE_LABELS, BARTER_SUBTYPE_LABELS
 } from '@/lib/types'
 import { toast } from 'sonner'
+import { PageContainer } from '@/components/PageContainer'
 
 // Tipagem para ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'relationshipLevel';
@@ -269,7 +270,7 @@ export default function PlayersListPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer>
       
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
@@ -632,6 +633,6 @@ export default function PlayersListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-    </div>
+    </PageContainer>
   )
 }
