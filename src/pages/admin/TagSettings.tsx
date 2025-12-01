@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PencilSimple, Trash, Plus, Tag as TagIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { PageContainer } from '@/components/PageContainer';
 
 export default function TagSettings() {
   const { data: tags = [], isLoading: tagsLoading } = useTags('global'); // Fetch all/global tags
@@ -97,7 +98,7 @@ export default function TagSettings() {
   if (tagsLoading) return <div>Carregando tags...</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <PageContainer>
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Gerenciador de Tags</h3>
@@ -195,7 +196,7 @@ export default function TagSettings() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }
 

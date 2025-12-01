@@ -34,8 +34,9 @@ const GESTORA_TYPES: AssetManagerType[] = ['fii_tijolo', 'fii_papel', 'fidc', 'f
 
 // Mapeamento correto com constraints do banco (migration 007)
 const SYNTHETIC_COMPANY_TYPES: CompanyType[] = ['corporation', 'fund', 'startup', 'advisor', 'other'];
-// FIX: Valores ajustados para bater com a constraint do banco (RelationshipLevel)
-const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: string[] = ['none', 'basic', 'intermediate', 'close'];
+// FIX: Valores ajustados para bater com a constraint do banco (migration 007)
+// O array deve conter: 'none', 'prospect', 'active_client', 'partner', 'churned'
+const SYNTHETIC_COMPANY_RELATIONSHIP_LEVELS: string[] = ['none', 'prospect', 'active_client', 'partner', 'churned'];
 
 const RELATIONSHIP_LEVELS: RelationshipLevel[] = ['basic', 'intermediate', 'close']; // Para Players
 
@@ -102,7 +103,8 @@ export const syntheticDataService = {
       if (error) throw error;
 
       // B) Fix: Ensure createdUsers is an array
-      const createdUsers = Array.isArray(data.created) ? data.created : [];
+      // A Edge Function retorna { created: number, users: Array }
+      const createdUsers = Array.isArray(data.users) ? data.users : [];
 
       if (data.error) {
           console.error("Erro na Edge Function:", data.error);

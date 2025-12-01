@@ -13,6 +13,7 @@ import { PencilSimple, Trash, Plus, ArrowsDownUp, WarningCircle, Clock, CheckCir
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { toast } from 'sonner';
 import TransitionRulesMatrix from '@/features/admin/components/TransitionRulesMatrix';
+import { PageContainer } from '@/components/PageContainer';
 
 export default function PipelineSettings() {
   const { data: stages = [], isLoading } = useStages();
@@ -140,7 +141,7 @@ export default function PipelineSettings() {
   if (isLoading) return <div>Carregando pipeline...</div>;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <PageContainer>
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Pipeline de Negócios</h3>
@@ -296,6 +297,6 @@ export default function PipelineSettings() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }
