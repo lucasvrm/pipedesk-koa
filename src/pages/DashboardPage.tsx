@@ -20,6 +20,7 @@ import PlayerIntelligenceDashboard from '@/features/analytics/components/PlayerI
 import InboxPanel from '@/features/inbox/components/InboxPanel' 
 import { hasPermission } from '@/lib/permissions'
 import { UserRole } from '@/lib/types'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
@@ -30,7 +31,7 @@ export default function DashboardPage() {
   const canViewAnalytics = hasPermission(profile?.role as UserRole, 'VIEW_ANALYTICS')
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 bg-slate-50/50 dark:bg-background min-h-screen">
+    <PageContainer>
       
       {/* --- HEADER COM AÇÕES RÁPIDAS --- */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -140,6 +141,6 @@ export default function DashboardPage() {
 
       {/* Sheet de Notificações */}
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
-    </div>
+    </PageContainer>
   )
 }

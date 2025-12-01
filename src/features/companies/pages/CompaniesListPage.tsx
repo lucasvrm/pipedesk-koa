@@ -56,6 +56,7 @@ import {
   RelationshipLevel 
 } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
+import { PageContainer } from '@/components/PageContainer'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -267,7 +268,7 @@ export default function CompaniesListPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer>
       {/* Cabeçalho da Página */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -633,6 +634,6 @@ export default function CompaniesListPage() {
 
       {/* Modal de Deals Ativos */}
       <CompanyDealsModal />
-    </div>
+    </PageContainer>
   )
 }
