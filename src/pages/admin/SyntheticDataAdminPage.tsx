@@ -18,11 +18,14 @@ import {
   User
 } from '@phosphor-icons/react'
 
+// Nova versão da página de administração de dados sintéticos.
+// Esta página interage com a nova edge function unificada (synthetic-data-admin)
+// e com as stored procedures v2 no banco (generate_synthetic_data_v2 e clear_synthetic_data_v2).
 export default function SyntheticDataAdminPage() {
   const [loading, setLoading] = useState(false)
   const [consoleLogs, setConsoleLogs] = useState<string[]>([])
 
-  // Generator inputs
+  // Parâmetros de geração
   const [userCount, setUserCount] = useState(3)
   const [companyCount, setCompanyCount] = useState(10)
   const [leadCount, setLeadCount] = useState(10)
@@ -30,7 +33,7 @@ export default function SyntheticDataAdminPage() {
   const [contactCount, setContactCount] = useState(15)
   const [playerCount, setPlayerCount] = useState(5)
 
-  // Store generated user IDs for immediate use
+  // IDs de usuários gerados
   const [generatedUserIds, setGeneratedUserIds] = useState<string[]>([])
 
   const log = (message: string) => {
@@ -38,6 +41,7 @@ export default function SyntheticDataAdminPage() {
     setConsoleLogs(prev => [`[${timestamp}] ${message}`, ...prev])
   }
 
+  // Geração de usuários de autenticação via edge function unificada
   const handleGenerateUsers = async () => {
     if (!confirm(`Gerar ${userCount} usuários?`)) return
 
@@ -45,7 +49,7 @@ export default function SyntheticDataAdminPage() {
     log(`Iniciando geração de usuários (Quantidade: ${userCount})...`)
 
     try {
-      const { data, error } = await supabase.functions.invoke('admin-create-synthetic-users', {
+      const { data, error } = await supabase.functions.invoke('synthetic-data-admin', {
         body: { count: userCount, prefix: 'synth_user' }
       })
 
@@ -70,22 +74,21 @@ export default function SyntheticDataAdminPage() {
     }
   }
 
+  // Geração das entidades de CRM via stored procedure v2
   const handleGenerateCRM = async () => {
     setLoading(true)
-    // companyStrategy removed as it is now hardcoded to valid DB types in RPC
     log(`Iniciando geração de Dados CRM...`)
     log(`Entradas: Empresas=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contatos=${contactCount}, Players=${playerCount}`)
 
     try {
       let userIds = generatedUserIds
 
-      // If no users generated recently, fetch existing synthetic users
+      // Se não houver usuários gerados nesta sessão, buscar no banco usuários sintéticos
       if (userIds.length === 0) {
         const { data: syntheticUsers } = await supabase
             .from('profiles')
             .select('id')
             .eq('is_synthetic', true)
-
         userIds = syntheticUsers?.map(u => u.id) || []
       }
 
@@ -95,7 +98,6 @@ export default function SyntheticDataAdminPage() {
           log(`Nenhum usuário sintético solicitado ou encontrado; pulando atribuição de responsáveis.`)
       }
 
-      // 2. Call RPC
       const payload = {
         companies_count: companyCount,
         leads_count: leadCount,
@@ -105,16 +107,14 @@ export default function SyntheticDataAdminPage() {
         users_ids: userIds
       }
 
-      const { data, error } = await supabase.rpc('generate_synthetic_data', { payload })
+      const { data, error } = await supabase.rpc('generate_synthetic_data_v2', { payload })
 
       if (error) throw error
 
-      // Check for zero companies if requested > 0 (Critical Failure)
+      // Checar criação de empresas
       if (companyCount > 0 && data.companies === 0) {
         log(`❌ ERRO CRÍTICO: 0 empresas criadas. Verifique constraints do banco (relationship_level, etc).`)
         toast.error('Falha crítica: Nenhuma empresa foi criada. Verifique logs.')
-        // Abort further checks or success messages?
-        // Logic continues to show other counts, but we must not log "success"
         return
       }
 
@@ -125,7 +125,7 @@ export default function SyntheticDataAdminPage() {
       log(`Contatos criados: ${data.contacts}`)
       log(`Players criados: ${data.players}`)
 
-      // Verification Step
+      // Verificação extra para deals
       if (data.deals > 0) {
           const { count } = await supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true)
           if (!count || count === 0) {
@@ -144,6 +144,7 @@ export default function SyntheticDataAdminPage() {
     }
   }
 
+  // Limpeza completa via edge function e stored procedure v2
   const handleClearAll = async () => {
     if (!confirm('PERIGO: Isso deletará TODOS os dados sintéticos do sistema. Continuar?')) return
 
@@ -151,12 +152,12 @@ export default function SyntheticDataAdminPage() {
     log('Iniciando limpeza...')
 
     try {
-      // 1. Clean Business Data via RPC
-      const { data: rpcData, error: rpcError } = await supabase.rpc('clear_synthetic_data')
+      // 1. Limpar dados de CRM via RPC v2
+      const { data: rpcData, error: rpcError } = await supabase.rpc('clear_synthetic_data_v2')
       if (rpcError) throw rpcError
 
-      // 2. Clean Auth Users via Edge Function
-      const { data: efData, error: efError } = await supabase.functions.invoke('admin-create-synthetic-users', {
+      // 2. Limpar usuários de autenticação via edge function unificada
+      const { data: efData, error: efError } = await supabase.functions.invoke('synthetic-data-admin', {
         method: 'DELETE'
       })
       if (efError) throw efError
@@ -169,7 +170,6 @@ export default function SyntheticDataAdminPage() {
       log(`Contatos Deletados: ${rpcData.contacts}`)
       log(`Players Deletados: ${rpcData.players}`)
 
-      // Check total deleted
       const rpcTotal = Object.values(rpcData).reduce((a: any, b: any) => a + b, 0)
       const total = rpcTotal + (efData.deleted_count || 0)
 
@@ -191,7 +191,6 @@ export default function SyntheticDataAdminPage() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-6 max-w-6xl mx-auto">
-
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -205,7 +204,6 @@ export default function SyntheticDataAdminPage() {
 
         {/* Main Actions Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
           {/* 1. USERS */}
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader>
@@ -261,7 +259,7 @@ export default function SyntheticDataAdminPage() {
                   <Label className="flex items-center gap-1"><AddressBook /> Contatos</Label>
                   <Input type="number" value={contactCount} onChange={(e) => setContactCount(Number(e.target.value))} />
                 </div>
-                 <div className="space-y-2">
+                <div className="space-y-2">
                   <Label className="flex items-center gap-1"><User /> Players</Label>
                   <Input type="number" value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))} />
                 </div>
@@ -282,30 +280,30 @@ export default function SyntheticDataAdminPage() {
             </CardContent>
           </Card>
 
-           {/* 3. EXECUTION LOG (Swapped Position) */}
-           <Card className="bg-slate-950 text-slate-50 border-slate-800 lg:col-span-3">
+          {/* 3. EXECUTION LOG */}
+          <Card className="bg-slate-950 text-slate-50 border-slate-800 lg:col-span-3">
             <CardHeader className="py-3 border-b border-slate-800">
-                <CardTitle className="text-sm font-mono flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                    Log de execução
-                </CardTitle>
+              <CardTitle className="text-sm font-mono flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                Log de execução
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0 max-h-[300px] overflow-y-auto font-mono text-xs">
-                {consoleLogs.length === 0 ? (
-                    <div className="p-4 text-slate-500 italic">Pronto...</div>
-                ) : (
-                    <div className="flex flex-col">
-                        {consoleLogs.map((log, i) => (
-                            <div key={i} className="px-4 py-1 border-b border-slate-800/50 hover:bg-white/5">
-                                {log}
-                            </div>
-                        ))}
+              {consoleLogs.length === 0 ? (
+                <div className="p-4 text-slate-500 italic">Pronto...</div>
+              ) : (
+                <div className="flex flex-col">
+                  {consoleLogs.map((item, i) => (
+                    <div key={i} className="px-4 py-1 border-b border-slate-800/50 hover:bg-white/5">
+                      {item}
                     </div>
-                )}
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* 4. DANGER ZONE (Swapped Position) */}
+          {/* 4. DANGER ZONE */}
           <Card className="border-l-4 border-l-red-500 lg:col-span-3">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
@@ -320,7 +318,6 @@ export default function SyntheticDataAdminPage() {
           </Card>
 
         </div>
-
       </div>
     </PageContainer>
   )
