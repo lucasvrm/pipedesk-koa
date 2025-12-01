@@ -16,7 +16,7 @@ import {
   Kanban,
   Trash,
   Play,
-  RefreshCw,
+  ArrowClockwise as RefreshCw,
   Warning
 } from '@phosphor-icons/react'
 
