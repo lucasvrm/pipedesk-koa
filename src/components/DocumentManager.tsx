@@ -64,7 +64,7 @@ export interface Folder {
 
 interface DocumentManagerProps {
   entityId: string
-  entityType: 'deal' | 'track' | 'task'
+  entityType: 'deal' | 'track' | 'task' | 'lead'
   currentUser: any
   entityName?: string
 }

@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress'
 import { Kanban } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
 
 interface LeadsKanbanProps {
   leads: Lead[]
@@ -25,6 +26,7 @@ const columns: { status: LeadStatus; color: string }[] = [
 
 export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   type UpdateContext = { previous: { key: QueryKey; data: Lead[] | undefined }[] }
 
@@ -86,7 +88,10 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
               snapshot.isDragging ? 'rotate-1 shadow-lg scale-[1.01]' : ''
             )}
           >
-            <Card className="border-l-4 hover:border-l-primary cursor-grab">
+            <Card
+              className="border-l-4 hover:border-l-primary cursor-grab"
+              onClick={() => navigate(`/leads/${lead.id}`)}
+            >
               <CardContent className="p-3 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1 min-w-0">

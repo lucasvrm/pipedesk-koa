@@ -45,9 +45,18 @@ export async function getTags(entityType?: 'deal' | 'track' | 'lead' | 'global')
       query = query.in('entity_type', [entityType, 'global']);
     }
   }
-  
+
   const { data, error } = await query;
-  if (error) throw error;
+
+  if (error) {
+    // Em alguns ambientes o enum de entity_type pode não ter o valor "lead" ainda
+    if (entityType === 'lead') {
+      const fallback = await supabase.from('tags').select('*').eq('entity_type', 'global').order('name');
+      if (!fallback.error) return (fallback.data || []) as Tag[];
+    }
+    throw error;
+  }
+
   return (data || []) as Tag[];
 }
 
