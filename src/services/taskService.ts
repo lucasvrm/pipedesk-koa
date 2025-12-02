@@ -66,7 +66,7 @@ export async function getTasks(): Promise<Task[]> {
     const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('position', { ascending: true });
 
     if (error) throw error;
 

@@ -221,6 +221,13 @@ useEffect(() => {
 }, []) // ❌ Missing 'value' dependency
 ```
 
+### Data access layer
+
+- Use the files in `src/services/` as the single source of truth for Supabase calls and React Query hooks.
+- Each service should expose typed CRUD helpers (e.g., `getDeals`, `createDeal`) **and** their respective `useQuery`/`useMutation` wrappers in the same file to keep contracts aligned.
+- Consumers must import hooks from the service (for example, `useDeals` from `@/services/dealService`, `usePlayers` from `@/services/playerService`, `useTasks` from `@/services/taskService`) instead of feature-level wrappers.
+- Avoid duplicating fetching logic in feature folders—if a new query is needed, add it to the relevant service file and reuse it across the app.
+
 ### File Organization
 
 ```

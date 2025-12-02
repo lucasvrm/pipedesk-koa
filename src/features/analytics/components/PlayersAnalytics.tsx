@@ -5,7 +5,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { getPlayers } from "@/services/playerService";
-import { useDeals } from "@/features/deals/hooks/useDeals";
+import { useDeals } from "@/services/dealService";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
