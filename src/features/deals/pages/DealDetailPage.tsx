@@ -67,6 +67,22 @@ export default function DealDetailPage() {
   const [docGeneratorOpen, setDocGeneratorOpen] = useState(false)
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
 
+  const handleOpenAida = () => {
+    if (!deal) {
+      toast.error('Negócio não carregado. Tente novamente.')
+      return
+    }
+
+    const projectId = deal.company?.id || deal.companyId
+
+    if (!projectId) {
+      toast.error('Vincule uma empresa ao negócio para abrir a Análise AIDA.')
+      return
+    }
+
+    navigate(`/aida/${projectId}`)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -187,10 +203,10 @@ export default function DealDetailPage() {
           <div className="flex gap-2 items-center">
             
             {/* BOTÃO AIDA */}
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 border"
-              onClick={() => navigate(`/aida/${deal.id}`)}
+              onClick={handleOpenAida}
             >
               <ChartBar className="mr-2 h-4 w-4" />
               Análise AIDA
