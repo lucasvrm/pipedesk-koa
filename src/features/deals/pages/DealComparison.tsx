@@ -4,6 +4,7 @@ import { useDeals } from '@/services/dealService'
 import { usePlayerTracks } from '@/features/deals/hooks/usePlayerTracks'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, AlertCircle } from 'lucide-react'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function DealComparison() {
   const { data: deals, loading: dealsLoading, error: dealsError } = useDeals()
@@ -14,20 +15,20 @@ export default function DealComparison() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <PageContainer className="flex items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground">Carregando dados dos deals...</p>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <PageContainer className="flex items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
@@ -35,13 +36,13 @@ export default function DealComparison() {
             <p className="text-muted-foreground text-sm">{error.message}</p>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     )
   }
 
   if (!deals || deals.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <PageContainer className="flex items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-4" />
@@ -51,16 +52,16 @@ export default function DealComparison() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <DealComparisonMatrix 
-        deals={deals} 
-        playerTracks={playerTracks || []} 
+    <PageContainer>
+      <DealComparisonMatrix
+        deals={deals}
+        playerTracks={playerTracks || []}
       />
-    </div>
+    </PageContainer>
   )
 }

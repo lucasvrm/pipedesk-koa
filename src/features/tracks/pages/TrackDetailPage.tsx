@@ -49,6 +49,7 @@ import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function TrackDetailPage() {
   const { id } = useParams()
@@ -76,12 +77,12 @@ export default function TrackDetailPage() {
       return acc;
     }, {} as Record<string, string>);
   }, [stages]);
-  
+
   if (trackLoading || !track || stagesLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <PageContainer className="flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
+      </PageContainer>
     )
   }
 
@@ -158,7 +159,7 @@ export default function TrackDetailPage() {
     : 0
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer className="pb-24">
       
       {/* Breadcrumbs */}
       <Breadcrumb className="mb-6">
@@ -403,6 +404,6 @@ export default function TrackDetailPage() {
             currentUser={currentUser}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -43,6 +43,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { arrayMove } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
+import { PageContainer } from '@/components/PageContainer'
 
 // Componente para um item da lista que pode ser reordenado
 function SortableStageRow({ stage, onEdit, onDelete }: { stage: PipelineStage; onEdit: () => void; onDelete: () => void }) {
@@ -203,7 +204,7 @@ export default function PipelineSettingsPage() {
   // --- Renderização ---
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer className="pb-24">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <ListChecks className="h-8 w-8 text-primary" />
@@ -321,6 +322,6 @@ export default function PipelineSettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }

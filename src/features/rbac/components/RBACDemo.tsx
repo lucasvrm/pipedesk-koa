@@ -1,20 +1,21 @@
 import { User } from '@/lib/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Database, 
-  MagicWand, 
-  ShieldCheck, 
+import {
+  Database,
+  MagicWand,
+  ShieldCheck,
   Gear
 } from '@phosphor-icons/react'
+import { PageContainer } from '@/components/PageContainer'
 
 // Componentes das Abas
 import MagicLinksPanel from './MagicLinksPanel'
 import AuthSettingsPanel from './AuthSettingsPanel'
 
 export default function RBACDemo({ currentUser }: { currentUser: User }) {
-  
+
   return (
-    <div className="container mx-auto p-6 space-y-8 max-w-7xl">
+    <PageContainer className="space-y-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
           <Gear className="text-primary" />
@@ -71,6 +72,6 @@ export default function RBACDemo({ currentUser }: { currentUser: User }) {
         </TabsContent>
 
       </Tabs>
-    </div>
+    </PageContainer>
   )
 }
