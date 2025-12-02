@@ -700,6 +700,20 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   disqualified: 'Desqualificado'
 };
 
+export const LEAD_STATUS_PROGRESS: Record<LeadStatus, number> = {
+  new: 15,
+  contacted: 45,
+  qualified: 100,
+  disqualified: 0,
+};
+
+export const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
+  new: 'bg-blue-500',
+  contacted: 'bg-amber-500',
+  qualified: 'bg-emerald-500',
+  disqualified: 'bg-rose-500',
+};
+
 export const LEAD_ORIGIN_LABELS: Record<LeadOrigin, string> = {
   inbound: 'Inbound',
   outbound: 'Outbound',
