@@ -43,6 +43,7 @@ import {
 } from '@/lib/types' // REMOVIDO: STAGE_LABELS
 import { formatCurrency } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
+import { PageContainer } from '@/components/PageContainer'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -420,7 +421,7 @@ export default function PlayerDetailPage() {
   if (isLoading || isLoadingStages) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer className="pb-24 space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/players')}>
@@ -1003,6 +1004,6 @@ export default function PlayerDetailPage() {
         </DialogContent>
       </Dialog>
 
-    </div>
+    </PageContainer>
   )
 }

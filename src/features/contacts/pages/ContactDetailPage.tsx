@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { ContactUpdate } from '@/services/contactService'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -52,7 +53,7 @@ export default function ContactDetailPage() {
   const companyId = contact.companyId
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <PageContainer className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -165,6 +166,6 @@ export default function ContactDetailPage() {
             </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   )
 }

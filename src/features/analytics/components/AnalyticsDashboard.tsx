@@ -21,6 +21,7 @@ import { TeamWorkloadHeatmap } from './charts/TeamWorkloadHeatmap'
 import ConversionTrendChart from './ConversionTrendChart'
 import DealComparison from '@/features/deals/pages/DealComparison'
 import { PlayersAnalytics } from './PlayersAnalytics'
+import { PageContainer } from '@/components/PageContainer'
 
 interface AnalyticsDashboardProps {
   currentUser: User
@@ -60,7 +61,7 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+    <PageContainer className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -276,6 +277,6 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
           </TabsContent>
         </Tabs>
       )}
-    </div>
+    </PageContainer>
   )
 }
