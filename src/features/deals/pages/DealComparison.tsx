@@ -1,6 +1,6 @@
 import React from 'react'
 import { DealComparisonMatrix } from '@/features/deals/components/DealComparisonMatrix'
-import { useDeals } from '@/features/deals/hooks/useDeals'
+import { useDeals } from '@/services/dealService'
 import { usePlayerTracks } from '@/features/deals/hooks/usePlayerTracks'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, AlertCircle } from 'lucide-react'
