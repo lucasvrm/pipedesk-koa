@@ -188,6 +188,11 @@ describe('formatCurrency', () => {
 ### Integration Tests
 Test how multiple components work together.
 
+### UI Smoke for Listagens Compartilhadas
+- Garantir que `/deals` e `/companies` renderizam com `SharedListLayout` (bordas/barras alinhadas).
+- Validar que a contagem de paginação exibe "início–fim" e o seletor de itens por página funciona.
+- Confirmar que a coluna de ações fica sempre visível (sem hover) e o toggle de visualização permanece na barra de filtros.
+
 **Example**: Testing a form submission flow
 ```typescript
 it('creates a new deal', async () => {
