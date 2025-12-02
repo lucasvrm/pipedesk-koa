@@ -44,6 +44,9 @@ jobs:
             npm ci --legacy-peer-deps --no-audit --no-fund
           )
 
+      - name: Type check (if present)
+        run: npm run typecheck --if-present
+
       - name: Lint (if present)
         run: npm run lint --if-present
 

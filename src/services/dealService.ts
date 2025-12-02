@@ -1,12 +1,16 @@
+import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MasterDeal, OperationType, DealStatus, Company, User, Tag } from '@/lib/types';
+import { MasterDealDB, CompanyDB, ProfileDB } from '@/lib/databaseTypes';
+import { MasterDeal, OperationType, DealStatus, Company, User, Tag, UserRole } from '@/lib/types';
 
 // ============================================================================
 // Query Helpers
 // ============================================================================
 
-function withoutDeleted(query: any) {
+type PostgrestQuery = PostgrestFilterBuilder<any, any, any>;
+
+function withoutDeleted(query: PostgrestQuery) {
   return query.is('deleted_at', null);
 }
 
@@ -53,33 +57,64 @@ export interface DealUpdate {
   dealProduct?: string;
 }
 
+interface DealMemberRow {
+  user?: ProfileDB | null;
+}
+
+interface DealQueryResult extends MasterDealDB {
+  deal_product: string | null;
+  company?: CompanyDB | null;
+  createdByUser?: ProfileDB | null;
+  deal_members?: DealMemberRow[] | null;
+}
+
+interface EntityTagRow {
+  entity_id: string;
+}
+
+const normalizeUserRole = (role?: string | null): UserRole => {
+  return role === 'admin' || role === 'analyst' || role === 'client' || role === 'newbusiness'
+    ? role
+    : 'analyst';
+};
+
+function mapProfileToUser(profile?: ProfileDB | null): User | undefined {
+  if (!profile) return undefined;
+
+  return {
+    id: profile.id,
+    name: profile.name || 'Usuário',
+    email: profile.email || '',
+    avatar: profile.avatar_url || undefined,
+    role: normalizeUserRole(profile.role)
+  };
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
 
-function mapDealFromDB(item: any): Deal {
-  const profile = item.createdByUser;
-  const company = item.company;
+function mapDealFromDB(item: DealQueryResult): Deal {
+  const profile = mapProfileToUser(item.createdByUser);
+  const company = item.company
+    ? {
+        id: item.company.id,
+        name: item.company.name,
+        type: item.company.type || undefined,
+        site: item.company.site || undefined,
+      }
+    : undefined;
 
-  const responsibles: User[] = item.deal_members?.map((dm: any) => ({
-    id: dm.user?.id,
-    name: dm.user?.name || 'Usuário',
-    email: dm.user?.email,
-    avatar: dm.user?.avatar_url,
-    role: dm.user?.role || 'analyst'
-  })) || [];
+  const responsibles: User[] = (item.deal_members ?? [])
+    .map((dm) => mapProfileToUser(dm.user))
+    .filter((member): member is User => Boolean(member));
 
   if (responsibles.length === 0 && profile) {
-    responsibles.push({
-      id: profile.id,
-      name: profile.name || 'Usuário',
-      email: profile.email || '', 
-      avatar: profile.avatar_url 
-    } as User);
+    responsibles.push(profile);
   }
 
   // Tags removidas temporariamente para evitar erro 400
-  const tags: Tag[] = []; 
+  const tags: Tag[] = [];
 
   return {
     id: item.id,
@@ -94,26 +129,14 @@ function mapDealFromDB(item: any): Deal {
     updatedAt: item.updated_at,
     createdBy: item.created_by,
     deletedAt: item.deleted_at || undefined,
-    dealProduct: item.deal_product,
-    
+    dealProduct: item.deal_product || undefined,
+
     companyId: item.company_id || undefined,
-    
-    company: company ? {
-        id: company.id,
-        name: company.name,
-        type: company.type,
-        site: company.site,
-    } as Company : undefined,
 
-    createdByUser: profile ? {
-      id: profile.id,
-      name: profile.name || 'Usuário',
-      email: profile.email || '', 
-      avatar: profile.avatar_url 
-    } : undefined,
-
-    responsibles: responsibles,
-    tags: tags 
+    company,
+    createdByUser: profile,
+    responsibles,
+    tags
   };
 }
 
@@ -146,7 +169,7 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
 
       if (matchError) throw matchError;
 
-      const ids = matchingIds.map((r: any) => r.entity_id);
+      const ids = (matchingIds as EntityTagRow[]).map((r) => r.entity_id);
       if (ids.length > 0) {
         query = query.in('id', ids);
       } else {
@@ -161,7 +184,9 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
       throw error;
     }
 
-    return (data || []).map((item: any) => mapDealFromDB(item));
+    const deals = (data as DealQueryResult[] | null) ?? [];
+
+    return deals.map(mapDealFromDB);
   } catch (error) {
     console.error('Error fetching deals:', error);
     throw error;
@@ -182,7 +207,7 @@ async function getDealFallback(dealId: string): Promise<Deal> {
   ).single();
 
   if (error) throw error;
-  return mapDealFromDB(data);
+  return mapDealFromDB(data as DealQueryResult);
 }
 
 export async function getDeal(dealId: string): Promise<Deal> {
@@ -211,7 +236,7 @@ export async function getDeal(dealId: string): Promise<Deal> {
       throw error; 
     }
 
-    return mapDealFromDB(data);
+    return mapDealFromDB(data as DealQueryResult);
   } catch (error) {
     console.error('Error fetching deal:', error);
     return getDealFallback(dealId);
@@ -278,7 +303,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
       }
     }
 
-    return mapDealFromDB(masterDealData);
+    return mapDealFromDB(masterDealData as DealQueryResult);
   } catch (error) {
     console.error('Error creating deal:', error);
     throw error;
@@ -287,7 +312,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
 
 export async function updateDeal(dealId: string, updates: DealUpdate): Promise<Deal> {
   try {
-    const updateData: any = { updated_at: new Date().toISOString() };
+    const updateData: Partial<MasterDealDB> & { updated_at: string } = { updated_at: new Date().toISOString() };
 
     if (updates.clientName !== undefined) updateData.client_name = updates.clientName;
     if (updates.volume !== undefined) updateData.volume = updates.volume;
@@ -312,7 +337,7 @@ export async function updateDeal(dealId: string, updates: DealUpdate): Promise<D
 
     if (error) throw error;
 
-    return mapDealFromDB(data);
+    return mapDealFromDB(data as DealQueryResult);
   } catch (error) {
     console.error('Error updating deal:', error);
     throw error;
