@@ -4,8 +4,8 @@ import { useLeads, useCreateLead, useDeleteLead, LeadFilters } from '@/services/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash } from '@phosphor-icons/react'
-import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType } from '@/lib/types'
+import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash, Kanban } from '@phosphor-icons/react'
+import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,8 @@ import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/contexts/AuthContext'
+import { LeadsKanban } from '../components/LeadsKanban'
+import { Progress } from '@/components/ui/progress'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -40,8 +42,8 @@ export default function LeadsListPage() {
     }
   }, [])
 
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
-    return (savedPreferences?.viewMode as 'list' | 'grid') || 'list'
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban'>(() => {
+    return (savedPreferences?.viewMode as 'list' | 'grid' | 'kanban') || 'list'
   })
 
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
@@ -319,6 +321,14 @@ export default function LeadsListPage() {
           >
             <SquaresFour />
           </Button>
+          <Button
+            variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('kanban')}
+          >
+            <Kanban />
+          </Button>
         </div>
       }
       rightContent={
@@ -386,10 +396,10 @@ export default function LeadsListPage() {
         primaryAction={actions}
         metrics={metrics}
         filtersBar={filtersBar}
-        footer={pagination}
+        footer={viewMode === 'kanban' ? null : pagination}
       >
         {isLoading ? (
-          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Status", "Origem", "Responsável", "Ações"]} />
+          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Status", "Origem", "Responsável", "Ações"]} />
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado com os filtros atuais.
@@ -408,6 +418,7 @@ export default function LeadsListPage() {
                   <TableHead>Empresa</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Operação</TableHead>
+                  <TableHead>Progresso</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Responsável</TableHead>
@@ -455,6 +466,15 @@ export default function LeadsListPage() {
                           </span>
                         ) : <span className="text-muted-foreground">-</span>}
                       </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 min-w-[140px]">
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{LEAD_STATUS_LABELS[lead.status]}</span>
+                            <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
+                          </div>
+                          <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
+                        </div>
+                      </TableCell>
                       <TableCell>{renderStatusBadge(lead.status)}</TableCell>
                       <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
                       <TableCell>
@@ -498,7 +518,7 @@ export default function LeadsListPage() {
               </TableBody>
             </Table>
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedLeads.map(lead => {
               const contact = getPrimaryContact(lead)
@@ -545,6 +565,14 @@ export default function LeadsListPage() {
                       <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
                     </div>
 
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>{LEAD_STATUS_LABELS[lead.status]}</span>
+                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
+                      </div>
+                      <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t">
                       <div>
                         <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
@@ -578,6 +606,8 @@ export default function LeadsListPage() {
               )
             })}
           </div>
+        ) : (
+          <LeadsKanban leads={leads || []} isLoading={isLoading} />
         )}
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
