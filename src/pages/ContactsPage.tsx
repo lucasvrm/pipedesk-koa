@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { COMPANY_TYPE_LABELS, CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
-// IMPORT CORRETO (Igual ao Deals)
+import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
 
@@ -225,138 +225,140 @@ export default function ContactsPage() {
   )
 
   return (
-    <SharedListLayout
-      title="Contatos"
-      description="Base geral de contatos."
-      primaryAction={actions}
-      filtersBar={filtersBar}
-      footer={pagination}
-    >
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Empresa</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Contato</TableHead>
-              <TableHead>Criado em</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+    <PageContainer>
+      <SharedListLayout
+        title="Contatos"
+        description="Base geral de contatos."
+        primaryAction={actions}
+        filtersBar={filtersBar}
+        footer={pagination}
+      >
+        <div className="rounded-lg border bg-card">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Carregando...
-                </TableCell>
+                <TableHead>Nome</TableHead>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Contato</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
-            ) : paginatedContacts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Nenhum contato encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedContacts.map((contact) => (
-                <TableRow key={contact.id} className="hover:bg-muted/50 group">
-                  <TableCell>
-                    <div className="font-medium flex items-center gap-2">
-                       <User /> {contact.name}
-                       {contact.isPrimary && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Principal</span>}
-                    </div>
-                    {contact.role && <div className="text-xs text-muted-foreground ml-6">{contact.role}</div>}
-                  </TableCell>
-                  <TableCell>
-                    {contact.companyName ? (
-                      <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => navigate(`/companies/${contact.companyId}`)}>
-                        {contact.companyName}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground italic">Sem empresa</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {contact.companyType ? (
-                      <Badge variant="outline">{COMPANY_TYPE_LABELS[contact.companyType as CompanyType] || contact.companyType}</Badge>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1 text-sm">
-                      {contact.email && <div className="flex items-center gap-1"><Envelope size={12}/> {contact.email}</div>}
-                      {contact.phone && <div className="flex items-center gap-1"><Phone size={12}/> {contact.phone}</div>}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(contact.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <RequirePermission permission="contacts.update">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(contact)}>
-                          <PencilSimple className="h-4 w-4" />
-                        </Button>
-                      </RequirePermission>
-                      <RequirePermission permission="contacts.delete">
-                        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(contact.id)}>
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </RequirePermission>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Carregando...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : paginatedContacts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Nenhum contato encontrado.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedContacts.map((contact) => (
+                  <TableRow key={contact.id} className="hover:bg-muted/50 group">
+                    <TableCell>
+                      <div className="font-medium flex items-center gap-2">
+                         <User /> {contact.name}
+                         {contact.isPrimary && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Principal</span>}
+                      </div>
+                      {contact.role && <div className="text-xs text-muted-foreground ml-6">{contact.role}</div>}
+                    </TableCell>
+                    <TableCell>
+                      {contact.companyName ? (
+                        <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => navigate(`/companies/${contact.companyId}`)}>
+                          {contact.companyName}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Sem empresa</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contact.companyType ? (
+                        <Badge variant="outline">{COMPANY_TYPE_LABELS[contact.companyType as CompanyType] || contact.companyType}</Badge>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1 text-sm">
+                        {contact.email && <div className="flex items-center gap-1"><Envelope size={12}/> {contact.email}</div>}
+                        {contact.phone && <div className="flex items-center gap-1"><Phone size={12}/> {contact.phone}</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(contact.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <RequirePermission permission="contacts.update">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(contact)}>
+                            <PencilSimple className="h-4 w-4" />
+                          </Button>
+                        </RequirePermission>
+                        <RequirePermission permission="contacts.delete">
+                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(contact.id)}>
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </RequirePermission>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      <Dialog open={isCreateOpen || isEditOpen} onOpenChange={(open) => { if(!open) { setIsCreateOpen(false); setIsEditOpen(false); } }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isEditOpen ? 'Editar Contato' : 'Novo Contato'}</DialogTitle>
-            <DialogDescription>
-              {isEditOpen ? 'Atualize os dados do contato.' : 'Adicione um contato na base geral.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Nome *</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="João Silva" />
+        <Dialog open={isCreateOpen || isEditOpen} onOpenChange={(open) => { if(!open) { setIsCreateOpen(false); setIsEditOpen(false); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{isEditOpen ? 'Editar Contato' : 'Novo Contato'}</DialogTitle>
+              <DialogDescription>
+                {isEditOpen ? 'Atualize os dados do contato.' : 'Adicione um contato na base geral.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nome *</Label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="João Silva" />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="joao@exemplo.com" type="email" />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="(11) 99999-9999" />
+              </div>
+              <div className="space-y-2">
+                <Label>Empresa</Label>
+                <Select value={newCompanyId} onValueChange={setNewCompanyId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {companies?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="joao@exemplo.com" type="email" />
-            </div>
-            <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="(11) 99999-9999" />
-            </div>
-            <div className="space-y-2">
-              <Label>Empresa</Label>
-              <Select value={newCompanyId} onValueChange={setNewCompanyId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  {companies?.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsCreateOpen(false); setIsEditOpen(false); }}>Cancelar</Button>
-            <Button onClick={isEditOpen ? handleUpdate : handleCreate} disabled={createContact.isPending || updateContact.isPending}>
-              {(createContact.isPending || updateContact.isPending) ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </SharedListLayout>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setIsCreateOpen(false); setIsEditOpen(false); }}>Cancelar</Button>
+              <Button onClick={isEditOpen ? handleUpdate : handleCreate} disabled={createContact.isPending || updateContact.isPending}>
+                {(createContact.isPending || updateContact.isPending) ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </SharedListLayout>
+    </PageContainer>
   )
 }

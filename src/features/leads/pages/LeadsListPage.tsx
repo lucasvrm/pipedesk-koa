@@ -18,7 +18,7 @@ import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector'
-// IMPORT CORRETO (Igual ao Deals)
+import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
 
@@ -258,185 +258,187 @@ export default function LeadsListPage() {
   )
 
   return (
-    <SharedListLayout
-      title="Leads"
-      description="Gerencie seus prospects e oportunidades."
-      primaryAction={actions}
-      filtersBar={filtersBar}
-      footer={pagination}
-    >
-      {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-      ) : paginatedLeads.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
-          Nenhum lead encontrado com os filtros atuais.
-        </div>
-      ) : viewMode === 'list' ? (
-        <div className="rounded-lg border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Operação</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Responsável</TableHead>
-                <TableHead className="w-[80px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedLeads.map((lead) => {
-                const contact = getPrimaryContact(lead)
-                const owner = (lead as any).owner
-                return (
-                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/leads/${lead.id}`)}>
-                    <TableCell>
-                      <div className="font-medium">{lead.legalName}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        {lead.tradeName && <span className="text-xs text-muted-foreground">{lead.tradeName}</span>}
-                        <div onClick={e => e.stopPropagation()}>
-                          <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {contact ? (
-                        <div
-                          className="text-sm hover:underline text-primary"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            navigate(`/contacts/${contact.id}`)
-                          }}
-                        >
-                          {contact.name}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">--</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {lead.operationType ? (
-                        <span className="text-xs font-medium px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">
-                          {OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType}
-                        </span>
-                      ) : <span className="text-muted-foreground">-</span>}
-                    </TableCell>
-                    <TableCell>{renderStatusBadge(lead.status)}</TableCell>
-                    <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
-                    <TableCell>
-                      {owner ? (
-                        <div className="flex items-center gap-2" title={owner.name}>
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={owner.avatar || ''} />
-                            <AvatarFallback className="text-[10px]">{getInitials(owner.name)}</AvatarFallback>
-                          </Avatar>
-                        </div>
-                      ) : <span className="text-muted-foreground text-xs">-</span>}
-                    </TableCell>
-                    <TableCell onClick={e => e.stopPropagation()}>
-                      <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {paginatedLeads.map(lead => {
-            const contact = getPrimaryContact(lead)
-            const owner = (lead as any).owner
-            return (
-              <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
-                <CardHeader className="pb-2 space-y-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg line-clamp-1" title={lead.legalName}>{lead.legalName}</CardTitle>
-                      {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{lead.tradeName}</p>}
-                    </div>
-                    <div onClick={e => e.stopPropagation()}>
-                      <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {renderStatusBadge(lead.status)}
-                    {renderOriginBadge(lead.origin)}
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-3 text-sm space-y-3">
-                  <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
-                    <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                    <div>
-                      <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
-                      {contact ? (
-                        <div
-                          className="font-medium truncate hover:text-primary hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            navigate(`/contacts/${contact.id}`)
-                          }}
-                        >
-                          {contact.name}
-                        </div>
-                      ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
-                      {owner ? (
-                        <div className="flex items-center gap-1.5">
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={owner.avatar} />
-                            <AvatarFallback className="text-[8px]">{getInitials(owner.name)}</AvatarFallback>
-                          </Avatar>
-                          <span className="truncate text-xs">{owner.name.split(' ')[0]}</span>
-                        </div>
-                      ) : <span>-</span>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo Lead</DialogTitle>
-            <DialogDescription>Comece adicionando o nome da empresa.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Razão Social / Nome</Label>
-              <Input value={newLeadName} onChange={(e) => setNewLeadName(e.target.value)} placeholder="Ex: Acme Corp Ltda" />
-            </div>
+    <PageContainer>
+      <SharedListLayout
+        title="Leads"
+        description="Gerencie seus prospects e oportunidades."
+        primaryAction={actions}
+        filtersBar={filtersBar}
+        footer={pagination}
+      >
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        ) : paginatedLeads.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
+            Nenhum lead encontrado com os filtros atuais.
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!newLeadName}>Criar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        ) : viewMode === 'list' ? (
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Operação</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead className="w-[80px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLeads.map((lead) => {
+                  const contact = getPrimaryContact(lead)
+                  const owner = (lead as any).owner
+                  return (
+                    <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/leads/${lead.id}`)}>
+                      <TableCell>
+                        <div className="font-medium">{lead.legalName}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          {lead.tradeName && <span className="text-xs text-muted-foreground">{lead.tradeName}</span>}
+                          <div onClick={e => e.stopPropagation()}>
+                            <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {contact ? (
+                          <div
+                            className="text-sm hover:underline text-primary"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/contacts/${contact.id}`)
+                            }}
+                          >
+                            {contact.name}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">--</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {lead.operationType ? (
+                          <span className="text-xs font-medium px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">
+                            {OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType}
+                          </span>
+                        ) : <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell>{renderStatusBadge(lead.status)}</TableCell>
+                      <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
+                      <TableCell>
+                        {owner ? (
+                          <div className="flex items-center gap-2" title={owner.name}>
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={owner.avatar || ''} />
+                              <AvatarFallback className="text-[10px]">{getInitials(owner.name)}</AvatarFallback>
+                            </Avatar>
+                          </div>
+                        ) : <span className="text-muted-foreground text-xs">-</span>}
+                      </TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedLeads.map(lead => {
+              const contact = getPrimaryContact(lead)
+              const owner = (lead as any).owner
+              return (
+                <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
+                  <CardHeader className="pb-2 space-y-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg line-clamp-1" title={lead.legalName}>{lead.legalName}</CardTitle>
+                        {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{lead.tradeName}</p>}
+                      </div>
+                      <div onClick={e => e.stopPropagation()}>
+                        <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {renderStatusBadge(lead.status)}
+                      {renderOriginBadge(lead.origin)}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pb-3 text-sm space-y-3">
+                    <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
+                      <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
+                    </div>
 
-      <LeadEditSheet
-        lead={editingLead}
-        open={isEditOpen}
-        onOpenChange={setIsEditOpen}
-      />
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                      <div>
+                        <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
+                        {contact ? (
+                          <div
+                            className="font-medium truncate hover:text-primary hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/contacts/${contact.id}`)
+                            }}
+                          >
+                            {contact.name}
+                          </div>
+                        ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
+                        {owner ? (
+                          <div className="flex items-center gap-1.5">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={owner.avatar} />
+                              <AvatarFallback className="text-[8px]">{getInitials(owner.name)}</AvatarFallback>
+                            </Avatar>
+                            <span className="truncate text-xs">{owner.name.split(' ')[0]}</span>
+                          </div>
+                        ) : <span>-</span>}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
 
-      <LeadDeleteDialog
-        lead={deletingLead}
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-        onConfirm={handleDelete}
-        isDeleting={deleteLead.isPending}
-      />
-    </SharedListLayout>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Novo Lead</DialogTitle>
+              <DialogDescription>Comece adicionando o nome da empresa.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Razão Social / Nome</Label>
+                <Input value={newLeadName} onChange={(e) => setNewLeadName(e.target.value)} placeholder="Ex: Acme Corp Ltda" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} disabled={!newLeadName}>Criar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <LeadEditSheet
+          lead={editingLead}
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+        />
+
+        <LeadDeleteDialog
+          lead={deletingLead}
+          open={isDeleteOpen}
+          onOpenChange={setIsDeleteOpen}
+          onConfirm={handleDelete}
+          isDeleting={deleteLead.isPending}
+        />
+      </SharedListLayout>
+    </PageContainer>
   )
 }

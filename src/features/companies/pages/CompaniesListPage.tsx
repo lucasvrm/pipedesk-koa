@@ -55,7 +55,6 @@ import {
 } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
-// IMPORT CORRETO (Igual ao Deals)
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
 
