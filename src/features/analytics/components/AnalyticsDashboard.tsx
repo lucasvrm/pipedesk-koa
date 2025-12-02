@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { useAnalytics } from '@/services/analyticsService'
 import { User, PlayerStage, OperationType } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageContainer } from '@/components/PageContainer'
 // CORREÇÃO: Adicionado 'Clock' aos imports abaixo
 import { Download, ChartLine, Target, Users, Funnel, ChartLineUp, PresentationChart, Strategy, Handshake, Clock } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -24,9 +25,18 @@ import { PlayersAnalytics } from './PlayersAnalytics'
 
 interface AnalyticsDashboardProps {
   currentUser: User
+  withContainer?: boolean
 }
 
-export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardProps) {
+export default function AnalyticsDashboard({ currentUser, withContainer = true }: AnalyticsDashboardProps) {
+  const wrapWithContainer = (node: ReactNode) => {
+    if (withContainer) {
+      return <PageContainer className="space-y-6">{node}</PageContainer>
+    }
+
+    return node
+  }
+
   const [dateFilter, setDateFilter] = useState<'all' | '30d' | '90d' | '1y'>('all')
   const [teamFilter, setTeamFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<OperationType | 'all'>('all')
@@ -37,7 +47,7 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
   const canExport = hasPermission(currentUser.role, 'EXPORT_DATA')
 
   if (!canView) {
-    return (
+    return wrapWithContainer(
       <div className="p-8 text-center">
         <p className="text-muted-foreground">Você não tem permissão para visualizar analytics</p>
       </div>
@@ -59,8 +69,8 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
     return labels[stage]
   }
 
-  return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+  const content = (
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -278,4 +288,6 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
       )}
     </div>
   )
+
+  return wrapWithContainer(content)
 }

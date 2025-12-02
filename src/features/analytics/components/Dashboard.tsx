@@ -4,22 +4,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChartLineUp, PresentationChart, HandWaving } from '@phosphor-icons/react'
 import Overview from './Overview' // O arquivo que criamos no passo 1
 import PlayerIntelligenceDashboard from './PlayerIntelligenceDashboard' // O componente criado anteriormente
+import { PageContainer } from '@/components/PageContainer'
 
-export default function Dashboard() {
+interface DashboardProps {
+  withContainer?: boolean
+}
+
+export default function Dashboard({ withContainer = true }: DashboardProps) {
   const { profile } = useAuth()
 
-  return (
-    <div className="flex-1 space-y-4 p-8 pt-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <HandWaving className="text-yellow-500" />
-            Olá, {profile?.name?.split(' ')[0]}
-          </h2>
-          <p className="text-muted-foreground">
-            Aqui está o panorama geral da sua operação hoje.
-          </p>
-        </div>
+  const content = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <HandWaving className="text-yellow-500" />
+          Olá, {profile?.name?.split(' ')[0]}
+        </h2>
+        <p className="text-muted-foreground">Aqui está o panorama geral da sua operação hoje.</p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
@@ -42,4 +43,10 @@ export default function Dashboard() {
       </Tabs>
     </div>
   )
+
+  if (withContainer) {
+    return <PageContainer className="space-y-6">{content}</PageContainer>
+  }
+
+  return content
 }

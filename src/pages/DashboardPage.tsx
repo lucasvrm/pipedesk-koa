@@ -106,7 +106,7 @@ export default function DashboardPage() {
         {/* CONTEÚDO: ANALYTICS */}
         {canViewAnalytics && (
           <TabsContent value="analytics" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-             {profile && <AnalyticsDashboard currentUser={profile} />}
+             {profile && <AnalyticsDashboard currentUser={profile} withContainer={false} />}
           </TabsContent>
         )}
 
