@@ -130,9 +130,20 @@ export default function ContactsPage() {
     setEditingContact(null)
   }
 
+  // --- Layout Sections ---
+
+  const actions = (
+    <RequirePermission permission="contacts.create">
+      <Button onClick={() => { resetForm(); setIsCreateOpen(true); }}>
+        <Plus className="mr-2 h-4 w-4" />
+        Novo Contato
+      </Button>
+    </RequirePermission>
+  )
+
   const filtersBar = (
     <SharedListFiltersBar
-      left={(
+      leftContent={
         <>
           <div className="relative w-full sm:w-72">
             <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -160,26 +171,34 @@ export default function ContactsPage() {
             <Button variant="ghost" onClick={() => { setSearch(''); setCompanyFilter('all'); }}>Limpar</Button>
           )}
         </>
-      )}
-      right={(
-        <Select value={String(itemsPerPage)} onValueChange={(value) => { setItemsPerPage(Number(value)); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Itens" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10 por página</SelectItem>
-            <SelectItem value="20">20 por página</SelectItem>
-            <SelectItem value="50">50 por página</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
+      }
+      // Right content vazio pois o itensPerPage foi para o footer
     />
   )
 
   const pagination = totalContacts > 0 && (
-    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-      <div>
-        Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalContacts)} a {Math.min(currentPage * itemsPerPage, totalContacts)} de {totalContacts}
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span>
+          Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalContacts)}–{Math.min(currentPage * itemsPerPage, totalContacts)} de {totalContacts} contatos
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline">Linhas:</span>
+          <Select
+            value={String(itemsPerPage)}
+            onValueChange={(value) => {
+              setItemsPerPage(Number(value))
+              setCurrentPage(1)
+            }}
+          >
+            <SelectTrigger className="w-[80px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button
@@ -207,15 +226,8 @@ export default function ContactsPage() {
   return (
     <SharedListLayout
       title="Contatos"
-      subtitle="Base geral de contatos."
-      actions={(
-        <RequirePermission permission="contacts.create">
-          <Button onClick={() => { resetForm(); setIsCreateOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Contato
-          </Button>
-        </RequirePermission>
-      )}
+      description="Base geral de contatos."
+      primaryAction={actions}
       filtersBar={filtersBar}
       footer={pagination}
     >

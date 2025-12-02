@@ -17,7 +17,7 @@ import { LeadActionMenu } from '../components/LeadActionMenu'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { toast } from 'sonner'
-import TagSelector from '@/components/TagSelector' // Educated guess, will verify.
+import TagSelector from '@/components/TagSelector'
 import { SharedListFiltersBar, SharedListLayout } from '@/features/shared/components/SharedListLayout'
 
 export default function LeadsListPage() {
@@ -131,6 +131,8 @@ export default function LeadsListPage() {
     </div>
   )
 
+  // --- Layout Sections ---
+
   const actions = (
     <RequirePermission permission="leads.create">
       <Button onClick={() => setIsCreateOpen(true)}>
@@ -142,7 +144,7 @@ export default function LeadsListPage() {
 
   const filtersBar = (
     <SharedListFiltersBar
-      left={(
+      leftContent={
         <>
           <div className="relative w-full sm:w-64">
             <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -182,50 +184,53 @@ export default function LeadsListPage() {
             <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
           )}
         </>
-      )}
-      right={(
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setViewMode('list')}
-            >
-              <ListDashes />
-            </Button>
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setViewMode('grid')}
-            >
-              <SquaresFour />
-            </Button>
-          </div>
-
-          {viewMode === 'list' && (
-            <Select value={String(itemsPerPage)} onValueChange={(value) => {
-              setItemsPerPage(Number(value))
-              setCurrentPage(1)
-            }}>
-              <SelectTrigger className="w-[120px]"><SelectValue placeholder="Itens" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 por página</SelectItem>
-                <SelectItem value="20">20 por página</SelectItem>
-                <SelectItem value="50">50 por página</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+      }
+      rightContent={
+        <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('list')}
+          >
+            <ListDashes />
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('grid')}
+          >
+            <SquaresFour />
+          </Button>
         </div>
-      )}
+      }
     />
   )
 
   const pagination = totalLeads > 0 && (
-    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-      <div>
-        Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalLeads)} a {Math.min(currentPage * itemsPerPage, totalLeads)} de {totalLeads}
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span>
+          Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalLeads)}–{Math.min(currentPage * itemsPerPage, totalLeads)} de {totalLeads} leads
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline">Linhas:</span>
+          <Select
+            value={String(itemsPerPage)}
+            onValueChange={(value) => {
+              setItemsPerPage(Number(value))
+              setCurrentPage(1)
+            }}
+          >
+            <SelectTrigger className="w-[80px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button
@@ -253,8 +258,8 @@ export default function LeadsListPage() {
   return (
     <SharedListLayout
       title="Leads"
-      subtitle="Gerencie seus prospects e oportunidades."
-      actions={actions}
+      description="Gerencie seus prospects e oportunidades."
+      primaryAction={actions}
       filtersBar={filtersBar}
       footer={pagination}
     >

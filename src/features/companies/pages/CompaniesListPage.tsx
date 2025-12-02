@@ -33,19 +33,18 @@ import {
   DialogDescription
 } from "@/components/ui/dialog"
 import { 
-  Buildings, 
   MagnifyingGlass, 
   Plus, 
   Trash, 
   CaretUp, 
   CaretDown, 
   CaretUpDown, 
-  CaretLeft,
-  CaretRight,
+  CaretLeft, 
+  CaretRight, 
   Funnel, 
-  PencilSimple,
-  Briefcase,
-  ArrowSquareOut
+  PencilSimple, 
+  Briefcase, 
+  ArrowSquareOut 
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import {
@@ -56,8 +55,8 @@ import {
 } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
-import { SharedListLayout } from '@/components/layouts/SharedListLayout'
-import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
+import { SharedListLayout } from '@/features/shared/components/SharedListLayout'
+import { SharedListFiltersBar } from '@/features/shared/components/SharedListLayout'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -85,7 +84,7 @@ export default function CompaniesListPage() {
   
   // Filtros
   const [typeFilter, setTypeFilter] = useState<CompanyType[]>([])
-  const [relationshipFilter, setRelationshipFilter] = useState<RelationshipLevel[]>([]) // NOVO FILTRO
+  const [relationshipFilter, setRelationshipFilter] = useState<RelationshipLevel[]>([])
 
   // Estados dos Modais
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false)
@@ -222,7 +221,7 @@ export default function CompaniesListPage() {
     }
   }
 
-  // --- Componente Interno do Modal de Deals (CORRIGIDO) ---
+  // --- Componente Interno do Modal de Deals ---
   const CompanyDealsModal = () => {
     const { data: activeDeals, isLoading: isLoadingDeals } = useCompanyActiveDeals(
       selectedCompanyIdForDeals, 
@@ -630,4 +629,3 @@ export default function CompaniesListPage() {
     </PageContainer>
   )
 }
-// Forçando atualização de cache - v2
