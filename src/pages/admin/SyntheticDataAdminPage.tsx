@@ -156,6 +156,28 @@ export default function SyntheticDataAdminPage() {
     }
   }
 
+  // Atualiza contagem de entidades sintéticas no banco
+  const handleRefreshCounts = async () => {
+    setLoading(true)
+    log('Atualizando contagem de entidades sintéticas...')
+    try {
+      const [{ count: cCompanies }, { count: cLeads }, { count: cDeals }, { count: cContacts }, { count: cPlayers }] = await Promise.all([
+        supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('players').select('*', { count: 'exact', head: true }).eq('is_synthetic', true)
+      ])
+      log(`📊 Contagem atual: Empresas=${cCompanies || 0}, Leads=${cLeads || 0}, Deals=${cDeals || 0}, Contatos=${cContacts || 0}, Players=${cPlayers || 0}`)
+      toast.success('Contagem atualizada')
+    } catch (err: any) {
+      log(`❌ Erro ao atualizar contagem: ${err.message}`)
+      toast.error('Falha ao atualizar contagem')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <PageContainer>
       <div className="flex flex-col gap-6 max-w-6xl mx-auto">
@@ -222,6 +244,9 @@ export default function SyntheticDataAdminPage() {
                 <Button variant="outline" onClick={handleGenerateCRM} disabled={loading} className="flex-1 border-dashed">
                   <Play className="mr-2 h-4 w-4" />
                   Gerar Dados Sintéticos
+                </Button>
+                <Button variant="outline" onClick={handleRefreshCounts} disabled={loading} className="flex-1 border-dotted">
+                  Atualizar Contagem
                 </Button>
               </div>
             </CardContent>
