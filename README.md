@@ -2,6 +2,12 @@
 
 A modern Deal Flow Management Platform.
 
+## 📋 Padrão de Listagens Compartilhadas
+- **Layout:** Utilize `SharedListLayout` e `SharedListFiltersBar` para alinhar cabeçalho, filtros e barra de ações em páginas de listas.
+- **Paginação:** Controles ficam no rodapé da lista, sempre com seletor de itens por página e contagem "início–fim".
+- **Ações:** A coluna de ações permanece visível (sem hover para revelar). O toggle de visualização (lista/grid) fica junto aos filtros.
+- **Escopo Atual:** `/deals` e `/companies` já seguem o padrão de cores/bordas do container e filtros reagrupados.
+
 ## 🚀 Governance & RBAC
 
 Access control is enforced via Supabase RLS policies and Role-Based Access Control (RBAC).
