@@ -268,25 +268,25 @@ export function Layout({ children }: LayoutProps) {
                     Analytics
                   </DropdownMenuItem>
                 )}
-                
-                {canManageUsers && (
-                  <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                    <Users className="mr-2" />
-                    Usuários
-                  </DropdownMenuItem>
-                )}
-                
+
                 {canManageIntegrations && (
                   <DropdownMenuItem onClick={() => navigate('/admin/integrations/google')}>
                     <GoogleLogo className="mr-2" />
                     Google Workspace
                   </DropdownMenuItem>
                 )}
-                
+
                 <DropdownMenuItem onClick={() => navigate('/folders/manage')}>
                   <FolderOpen className="mr-2" />
                   Pastas
                 </DropdownMenuItem>
+
+                {canManageUsers && (
+                  <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                    <Users className="mr-2" />
+                    Usuários
+                  </DropdownMenuItem>
+                )}
 
                 {canManageSettings && (
                   <>
@@ -298,19 +298,19 @@ export function Layout({ children }: LayoutProps) {
                       Campos Customizados
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/admin/tags')}>
-                      <Tag className="mr-2" />
-                      Tags
+                    <DropdownMenuItem onClick={() => navigate('/admin/gerador-dados')}>
+                      <Database className="mr-2" />
+                      Dados Sintéticos
                     </DropdownMenuItem>
-                    
+
                     <DropdownMenuItem onClick={() => navigate('/admin/pipeline')}>
                       <FlowArrow className="mr-2" />
                       Pipeline & Fases
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/admin/synthetic-data')}>
-                      <Database className="mr-2" />
-                      Dados Sintéticos
+                    <DropdownMenuItem onClick={() => navigate('/admin/tags')}>
+                      <Tag className="mr-2" />
+                      Tags
                     </DropdownMenuItem>
                   </>
                 )}

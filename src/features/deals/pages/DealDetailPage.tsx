@@ -51,6 +51,7 @@ import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import { toast } from 'sonner'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -138,8 +139,8 @@ export default function DealDetailPage() {
   const deadlineIconColor = isDeadlineOverdue ? 'text-red-500' : 'text-slate-500';
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
-      
+    <PageContainer className="pb-24">
+
       {/* Breadcrumbs */}
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
@@ -395,11 +396,11 @@ export default function DealDetailPage() {
         onOpenChange={setCreatePlayerOpen} 
       />
 
-      <EditDealDialog 
+      <EditDealDialog
         deal={deal}
         open={editDealOpen}
         onOpenChange={setEditDealOpen}
       />
-    </div>
+    </PageContainer>
   )
 }
