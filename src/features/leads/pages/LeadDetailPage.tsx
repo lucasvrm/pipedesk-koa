@@ -204,7 +204,6 @@ export default function LeadDetailPage() {
 
           </div>
         </div>
-      </div>
 
       {user && (
         <QualifyLeadDialog
