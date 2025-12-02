@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './databaseTypes';
+import { safeFetch } from './safeFetch';
 
 // Função auxiliar para garantir HTTPS
 const ensureProtocol = (url: string | undefined) => {
@@ -27,10 +28,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Cliente padrão, sem sobrescrever o fetch global
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+export const supabase = createClient<Database>(supabaseUrl || '', supabaseAnonKey || '', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
+  },
+  global: {
+    fetch: safeFetch
   }
 });
