@@ -36,6 +36,16 @@ export default function SyntheticDataAdminPage() {
   // IDs de usuários gerados
   const [generatedUserIds, setGeneratedUserIds] = useState<string[]>([])
 
+  // Contagem atual de entidades sintéticas
+  const [entityCounts, setEntityCounts] = useState({
+    users: 0,
+    companies: 0,
+    leads: 0,
+    deals: 0,
+    contacts: 0,
+    players: 0
+  })
+
   const log = (msg: string) => {
     const ts = new Date().toLocaleTimeString()
     setConsoleLogs(prev => [`[${ts}] ${msg}`, ...prev])
@@ -161,14 +171,33 @@ export default function SyntheticDataAdminPage() {
     setLoading(true)
     log('Atualizando contagem de entidades sintéticas...')
     try {
-      const [{ count: cCompanies }, { count: cLeads }, { count: cDeals }, { count: cContacts }, { count: cPlayers }] = await Promise.all([
+      const [
+        { count: cUsers },
+        { count: cCompanies },
+        { count: cLeads },
+        { count: cDeals },
+        { count: cContacts },
+        { count: cPlayers }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
         supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
         supabase.from('leads').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
         supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
         supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
         supabase.from('players').select('*', { count: 'exact', head: true }).eq('is_synthetic', true)
       ])
-      log(`📊 Contagem atual: Empresas=${cCompanies || 0}, Leads=${cLeads || 0}, Deals=${cDeals || 0}, Contatos=${cContacts || 0}, Players=${cPlayers || 0}`)
+      const counts = {
+        users: cUsers || 0,
+        companies: cCompanies || 0,
+        leads: cLeads || 0,
+        deals: cDeals || 0,
+        contacts: cContacts || 0,
+        players: cPlayers || 0
+      }
+      setEntityCounts(counts)
+      log(
+        `📊 Contagem atual: Usuários=${counts.users}, Empresas=${counts.companies}, Leads=${counts.leads}, Deals=${counts.deals}, Contatos=${counts.contacts}, Players=${counts.players}`
+      )
       toast.success('Contagem atualizada')
     } catch (err: any) {
       log(`❌ Erro ao atualizar contagem: ${err.message}`)
@@ -190,6 +219,7 @@ export default function SyntheticDataAdminPage() {
             Geração server-side de dados de teste. Determinístico e seguro.
           </p>
         </div>
+        {/* Row 1: Usuários, CRM, Contagem */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Usuários */}
           <Card className="border-l-4 border-l-blue-500">
@@ -210,7 +240,7 @@ export default function SyntheticDataAdminPage() {
             </CardContent>
           </Card>
           {/* CRM */}
-          <Card className="border-l-4 border-l-green-500 lg:col-span-2">
+          <Card className="border-l-4 border-l-green-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Buildings size={20} /> Entidades CRM
@@ -251,8 +281,46 @@ export default function SyntheticDataAdminPage() {
               </div>
             </CardContent>
           </Card>
+          {/* Contagem Atual */}
+          <Card className="border-l-4 border-l-yellow-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📈 Contagem Sintética
+              </CardTitle>
+              <CardDescription>Visão geral das entidades sintéticas atuais.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><Users size={16} /> Usuários</span>
+                <span className="font-mono">{entityCounts.users}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><Buildings size={16} /> Empresas</span>
+                <span className="font-mono">{entityCounts.companies}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><Funnel size={16} /> Leads</span>
+                <span className="font-mono">{entityCounts.leads}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><Kanban size={16} /> Deals</span>
+                <span className="font-mono">{entityCounts.deals}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><AddressBook size={16} /> Contatos</span>
+                <span className="font-mono">{entityCounts.contacts}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><User size={16} /> Players</span>
+                <span className="font-mono">{entityCounts.players}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Row 2: Log e Danger zone lado a lado */}
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Log */}
-          <Card className="bg-slate-950 text-slate-50 border-slate-800 lg:col-span-3">
+          <Card className="bg-slate-950 text-slate-50 border-slate-800">
             <CardHeader className="py-3 border-b border-slate-800">
               <CardTitle className="text-sm font-mono flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -274,7 +342,7 @@ export default function SyntheticDataAdminPage() {
             </CardContent>
           </Card>
           {/* Danger zone */}
-          <Card className="border-l-4 border-l-red-500 lg:col-span-3">
+          <Card className="border-l-4 border-l-red-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <Trash size={20} /> Danger zone
