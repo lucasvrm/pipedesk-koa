@@ -209,7 +209,8 @@ export default function SyntheticDataAdminPage() {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6 max-w-6xl mx-auto">
+      {/* Removemos max-width para permitir largura total conforme PageContainer */}
+      <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Database className="text-primary" />
@@ -248,25 +249,30 @@ export default function SyntheticDataAdminPage() {
               <CardDescription>Gera Empresas, Leads, Deals, Contatos e Players usando RPC de banco de dados.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Leads */}
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><Buildings /> Empresas</Label>
-                  <Input type="number" value={companyCount} onChange={e => setCompanyCount(Number(e.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><Funnel /> Leads</Label>
+                  <Label>Leads</Label>
                   <Input type="number" value={leadCount} onChange={e => setLeadCount(Number(e.target.value))} />
                 </div>
+                {/* Contatos */}
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><Kanban /> Deals</Label>
-                  <Input type="number" value={dealCount} onChange={e => setDealCount(Number(e.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><AddressBook /> Contatos</Label>
+                  <Label>Contatos</Label>
                   <Input type="number" value={contactCount} onChange={e => setContactCount(Number(e.target.value))} />
                 </div>
+                {/* Empresas */}
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><User /> Players</Label>
+                  <Label>Empresas</Label>
+                  <Input type="number" value={companyCount} onChange={e => setCompanyCount(Number(e.target.value))} />
+                </div>
+                {/* Deals */}
+                <div className="space-y-2">
+                  <Label>Deals</Label>
+                  <Input type="number" value={dealCount} onChange={e => setDealCount(Number(e.target.value))} />
+                </div>
+                {/* Players */}
+                <div className="space-y-2">
+                  <Label>Players</Label>
                   <Input type="number" value={playerCount} onChange={e => setPlayerCount(Number(e.target.value))} />
                 </div>
               </div>
@@ -275,9 +281,7 @@ export default function SyntheticDataAdminPage() {
                   <Play className="mr-2 h-4 w-4" />
                   Gerar Dados Sintéticos
                 </Button>
-                <Button variant="outline" onClick={handleRefreshCounts} disabled={loading} className="flex-1 border-dotted">
-                  Atualizar Contagem
-                </Button>
+                {/* Botão de atualização movido para o card de contagem sintética */}
               </div>
             </CardContent>
           </Card>
@@ -314,6 +318,17 @@ export default function SyntheticDataAdminPage() {
                 <span className="flex items-center gap-1"><User size={16} /> Players</span>
                 <span className="font-mono">{entityCounts.players}</span>
               </div>
+            {/* Botão para atualizar contagem colocado no card de contagem */}
+            <div className="pt-3">
+              <Button
+                variant="outline"
+                onClick={handleRefreshCounts}
+                disabled={loading}
+                className="w-full border-dotted"
+              >
+                Atualizar Contagem
+              </Button>
+            </div>
             </CardContent>
           </Card>
         </div>
