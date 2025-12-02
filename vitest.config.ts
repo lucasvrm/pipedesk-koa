@@ -7,7 +7,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
+    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    setupFiles: './tests/setup.ts',
     css: true,
     env: {
       VITE_SUPABASE_URL: 'https://test.supabase.co',
@@ -19,11 +20,17 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.d.ts',
-        'src/test/**',
+        'tests/**',
         'src/main.tsx',
         'src/vite-end.d.ts',
         'src/components/ui/**', // shadcn components
       ],
+      thresholds: {
+        statements: 45,
+        branches: 35,
+        functions: 45,
+        lines: 45,
+      },
     },
   },
   resolve: {

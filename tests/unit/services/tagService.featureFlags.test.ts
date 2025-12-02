@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as tagService from '../tagService';
-import * as systemSettingsService from '../systemSettingsService';
+import * as tagService from '@/services/tagService';
+import * as systemSettingsService from '@/services/systemSettingsService';
 
 // Mock DB calls in tagService to avoid real network requests
 // We want to test the FEATURE FLAG check logic which happens BEFORE DB calls.

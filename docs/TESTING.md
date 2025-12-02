@@ -17,6 +17,9 @@ This document explains how to write and run tests for the PipeDesk application.
 # Run all tests once
 npm run test:run
 
+# Run all tests with coverage (CI default)
+npm run test:coverage
+
 # Run tests in watch mode (re-runs on file changes)
 npm run test
 
@@ -28,24 +31,23 @@ npm run test:ui
 
 Tests are configured in `vitest.config.ts`:
 - Environment: `jsdom` (simulates browser environment)
-- Setup file: `src/test/setup.ts`
+- Setup file: `tests/setup.ts`
 - Globals enabled for Jest-like API
 
 ## Test File Structure
 
 ### Location
-Place test files next to the components/modules they test:
+All suites live under the `/tests` root and mirror the source structure so domain ownership stays clear:
 ```
-src/
-├── components/
-│   ├── Button.tsx
-│   └── Button.test.tsx       # Component test
-├── lib/
-│   ├── helpers.ts
-│   └── helpers.test.ts       # Utility test
-└── test/
-    ├── setup.ts              # Test setup/configuration
-    └── shared/               # Shared test utilities
+tests/
+├── setup.ts                  # Shared setup (Testing Library + matchers)
+├── unit/
+│   ├── auth/                 # Contexts/hooks
+│   ├── components/           # UI & presentation
+│   ├── features/             # Feature-specific logic (analytics, deals, tasks...)
+│   ├── lib/                  # Shared domain helpers/RBAC
+│   └── services/             # Supabase + data services
+└── e2e/                      # Playwright suites
 ```
 
 ### Naming Convention
@@ -140,14 +142,9 @@ it('renders data from KV', () => {
 
 ## Coverage Guidelines
 
-### Current Coverage
-- **Overall**: ~5%
-- **Test files**: 2
-- **Total tests**: 5
-
-### Target Coverage
-- **Overall target**: 30%+
-- **Critical features**: 60%+
+### Coverage Gates
+- `npm run test:coverage` generates text/json/html reports
+- CI enforces minimums: **45%** lines/statements, **35%** branches/functions
 
 ### Priority for Testing
 
@@ -212,8 +209,8 @@ it('creates a new deal', async () => {
 Test that components render correctly and respond to user interactions.
 
 See examples in existing test files:
-- `src/test/EmptyState.test.tsx`
-- `src/test/AuthContext.test.tsx`
+- `tests/unit/components/EmptyState.test.tsx`
+- `tests/unit/auth/AuthContext.test.tsx`
 
 ## Best Practices
 

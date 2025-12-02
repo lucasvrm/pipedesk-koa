@@ -98,7 +98,7 @@ npm run build
 npm run test:run
 
 # Run tests with coverage
-npx vitest run --coverage
+npm run test:coverage
 ```
 
 ### React 19 and react-joyride Compatibility
@@ -216,38 +216,23 @@ The application uses advanced code splitting to optimize bundle size and initial
 
 ## 🧪 Testing
 
-**Current Test Coverage:** 3.52%
+Coverage is enforced in CI via `npm run test:coverage` (Vitest + V8 thresholds: **45%** lines/statements, **35%** branches/functions).
 
-The project includes comprehensive tests for critical business logic:
+The suites prioritize critical business flows:
 
-- **RBAC/Permissions**: 100% coverage (65 tests)
-  - Role-based permission checks
-  - Player name anonymization
-  - Permission mapping for all user roles
-
-- **Analytics Calculations**: 100% coverage (38 tests)
-  - Pipeline value and weighted forecasts
-  - Conversion rates and win rates
-  - Stage-based metrics
-  - Fee calculations
-
-- **Task Dependencies**: 96% coverage (25 tests)
-  - Circular dependency detection
-  - Task blocking logic
-  - Dependency management
-
-- **Helper Functions**: 35% coverage (39 tests)
-  - Currency formatting
-  - Date handling
-  - Weighted volume calculations
+- **RBAC/Permissions**: permission matrices and player anonymization
+- **Deals**: create/update service flows and player track seeding
+- **Analytics Calculations**: pipeline KPIs and fee/win-rate math
+- **Task Dependencies**: circular detection, blocking, and prioritization
+- **Shared UI/Auth**: AuthContext and empty-state rendering
 
 **Running Tests:**
 ```bash
 # Run all tests
 npm run test:run
 
-# Run tests with coverage
-npx vitest run --coverage
+# Run all tests with coverage (CI default)
+npm run test:coverage
 
 # Run tests in watch mode
 npm run test
@@ -295,26 +280,30 @@ src/
 ├── features/
 │   ├── analytics/             # Analytics dashboard and calculations
 │   │   ├── components/
-│   │   ├── utils/
-│   │   └── __tests__/
+│   │   └── utils/
 │   ├── deals/                 # Deal management
 │   │   ├── components/
-│   │   ├── hooks/
-│   │   └── __tests__/
+│   │   └── hooks/
 │   ├── tasks/                 # Task management with dependencies
 │   │   ├── components/
-│   │   ├── utils/
-│   │   └── __tests__/
+│   │   └── utils/
 │   ├── rbac/                  # Role-based access control
 │   │   ├── components/
 │   │   └── hooks/
 │   └── inbox/                 # Notifications
+├── tests/
+│   ├── setup.ts               # Global Vitest + Testing Library setup
+│   └── unit/
+│       ├── auth/
+│       ├── components/
+│       ├── features/          # Analytics, deals, tasks
+│       ├── lib/               # RBAC + shared helpers
+│       └── services/          # Supabase/data services
 ├── lib/
 │   ├── auth.ts                # Auth utilities ⭐
 │   ├── permissions.ts         # RBAC system ⭐
 │   ├── types.ts               # TypeScript types
 │   ├── helpers.ts             # Utility functions
-│   └── __tests__/             # Unit tests for core logic
 ├── contexts/
 │   ├── AuthContext.tsx        # Authentication state
 │   └── ImpersonationContext.tsx
