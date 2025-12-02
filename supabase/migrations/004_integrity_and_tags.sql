@@ -32,7 +32,7 @@ END $$;
 INSERT INTO system_settings (key, value, description)
 VALUES (
   'tags_config',
-  '{ "global": true, "modules": { "deals": true, "tracks": true } }'::jsonb,
+  '{ "global": true, "modules": { "deals": true, "tracks": true, "leads": true } }'::jsonb,
   'Configuration for Tags module'
 )
 ON CONFLICT (key) DO NOTHING;

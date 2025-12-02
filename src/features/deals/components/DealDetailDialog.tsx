@@ -49,7 +49,7 @@ interface DealDetailDialogProps {
 
 export default function DealDetailDialog({ deal, open, onOpenChange, currentUser }: DealDetailDialogProps) {
   const { data: playerTracks } = useTracks()
-  const { data: dealTags = [] } = useEntityTags(deal.id)
+  const { data: dealTags = [] } = useEntityTags(deal.id, 'deal')
   const { data: availableTags = [] } = useTags('deal')
   const updateDeal = useUpdateDeal()
   const updateTrack = useUpdateTrack()

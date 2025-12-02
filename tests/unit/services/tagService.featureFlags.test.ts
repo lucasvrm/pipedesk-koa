@@ -49,4 +49,21 @@ describe('Tag Service - Feature Flags', () => {
     // Should not throw FEATURE_DISABLED
     await expect(tagService.assignTagToEntity('t1', 'd1', 'deal')).resolves.not.toThrow();
   });
+
+  it('assignTagToEntity should respect lead module flag', async () => {
+    getSettingSpy.mockResolvedValue({
+      global: true,
+      modules: { leads: false }
+    });
+
+    await expect(tagService.assignTagToEntity('t1', 'l1', 'lead'))
+      .rejects.toThrow('FEATURE_DISABLED');
+
+    getSettingSpy.mockResolvedValue({
+      global: true,
+      modules: { leads: true }
+    });
+
+    await expect(tagService.assignTagToEntity('t1', 'l1', 'lead')).resolves.not.toThrow();
+  });
 });

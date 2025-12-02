@@ -56,7 +56,7 @@ interface PlayerTrackDetailDialogProps {
 export default function PlayerTrackDetailDialog({ track, open, onOpenChange, currentUser }: PlayerTrackDetailDialogProps) {
   const { data: playerTracks } = useTracks()
   const { data: stages = [] } = useStages()
-  const { data: trackTags = [] } = useEntityTags(track.id)
+  const { data: trackTags = [] } = useEntityTags(track.id, 'track')
   const { data: availableTags = [] } = useTags('track')
   const { data: settings } = useSettings()
   const updateTrack = useUpdateTrack()
