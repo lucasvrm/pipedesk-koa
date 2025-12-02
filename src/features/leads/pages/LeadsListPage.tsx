@@ -18,7 +18,9 @@ import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector'
-import { SharedListFiltersBar, SharedListLayout } from '@/features/shared/components/SharedListLayout'
+// IMPORT CORRETO (Igual ao Deals)
+import { SharedListLayout } from '@/components/layouts/SharedListLayout'
+import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -270,7 +272,7 @@ export default function LeadsListPage() {
           Nenhum lead encontrado com os filtros atuais.
         </div>
       ) : viewMode === 'list' ? (
-        <div className="border rounded-md bg-card">
+        <div className="rounded-lg border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

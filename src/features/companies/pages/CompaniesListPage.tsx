@@ -55,8 +55,9 @@ import {
 } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
-import { SharedListLayout } from '@/features/shared/components/SharedListLayout'
-import { SharedListFiltersBar } from '@/features/shared/components/SharedListLayout'
+// IMPORT CORRETO (Igual ao Deals)
+import { SharedListLayout } from '@/components/layouts/SharedListLayout'
+import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';

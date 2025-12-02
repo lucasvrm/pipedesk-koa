@@ -15,7 +15,9 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { COMPANY_TYPE_LABELS, CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
-import { SharedListLayout, SharedListFiltersBar } from '@/features/shared/components/SharedListLayout'
+// IMPORT CORRETO (Igual ao Deals)
+import { SharedListLayout } from '@/components/layouts/SharedListLayout'
+import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
@@ -172,7 +174,6 @@ export default function ContactsPage() {
           )}
         </>
       }
-      // Right content vazio pois o itensPerPage foi para o footer
     />
   )
 
@@ -231,7 +232,7 @@ export default function ContactsPage() {
       filtersBar={filtersBar}
       footer={pagination}
     >
-      <div className="border rounded-md bg-card">
+      <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
