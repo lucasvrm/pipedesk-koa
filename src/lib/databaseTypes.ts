@@ -11,7 +11,24 @@ export interface MasterDealDB {
   created_at: string
   updated_at: string
   created_by: string
+  company_id: string | null
+  deal_product: string | null
   deleted_at: string | null
+}
+
+export interface ProfileDB {
+  id: string
+  name: string | null
+  email: string | null
+  avatar_url: string | null
+  role?: string | null
+}
+
+export interface CompanyDB {
+  id: string
+  name: string
+  type: string | null
+  site: string | null
 }
 
 export interface PlayerTrackDB {

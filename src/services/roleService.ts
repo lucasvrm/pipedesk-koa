@@ -2,6 +2,28 @@ import { supabase } from '@/lib/supabaseClient';
 import { Role, Permission } from '@/lib/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+interface RolePermissionRow {
+  permissions: Permission;
+}
+
+interface RoleRow {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  role_permissions: RolePermissionRow[];
+}
+
+function mapRoleFromDB(role: RoleRow): Role {
+  return {
+    id: role.id,
+    name: role.name,
+    description: role.description || '',
+    isSystem: role.is_system,
+    permissions: (role.role_permissions ?? []).map((rp) => rp.permissions)
+  };
+}
+
 // --- API ---
 
 export async function getRoles(): Promise<Role[]> {
@@ -11,15 +33,11 @@ export async function getRoles(): Promise<Role[]> {
     .order('name');
 
   if (error) throw error;
-  
+
+  const roles = (data as RoleRow[] | null) ?? [];
+
   // Mapper simples para ajustar a estrutura do join
-  return data.map((r: any) => ({
-    id: r.id,
-    name: r.name,
-    description: r.description,
-    isSystem: r.is_system,
-    permissions: r.role_permissions.map((rp: any) => rp.permissions)
-  }));
+  return roles.map(mapRoleFromDB);
 }
 
 export async function getPermissions(): Promise<Permission[]> {

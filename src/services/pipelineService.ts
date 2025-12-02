@@ -6,6 +6,19 @@ import { PipelineStage } from '@/lib/types';
 // Types & Interfaces
 // ============================================================================
 
+interface PipelineStageRow {
+  id: string;
+  pipeline_id: string | null;
+  name: string;
+  color: string;
+  stage_order: number;
+  probability: number | null;
+  is_default: boolean;
+  active: boolean | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StageInput {
   pipelineId?: string | null;
   name: string;
@@ -24,6 +37,21 @@ export interface StageUpdate {
   active?: boolean; // NEW
 }
 
+function mapStageFromDB(item: PipelineStageRow): PipelineStage {
+  return {
+    id: item.id,
+    pipelineId: item.pipeline_id,
+    name: item.name,
+    color: item.color,
+    stageOrder: item.stage_order,
+    probability: item.probability || 0,
+    isDefault: item.is_default,
+    active: item.active !== false, // Default to true if null
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+  };
+}
+
 // ============================================================================
 // Service Functions
 // ============================================================================
@@ -31,7 +59,7 @@ export interface StageUpdate {
 /**
  * Busca todos os estágios ordenados pela ordem definida
  */
-export async function getStages(pipelineId: string | null = null): Promise<PipelineStage[]> {
+export async function getStages(pipelineId: string | null = null, includeInactive = true): Promise<PipelineStage[]> {
   // Agora suportamos apenas pipeline global (pipeline_id IS NULL) ou específico se passado
   // Mas a migração removeu o default e a FK, então vamos focar no stage_order
 
@@ -55,18 +83,9 @@ export async function getStages(pipelineId: string | null = null): Promise<Pipel
 
   if (error) throw error;
 
-  return (data || []).map((item) => ({
-    id: item.id,
-    pipelineId: item.pipeline_id,
-    name: item.name,
-    color: item.color,
-    stageOrder: item.stage_order,
-    probability: item.probability || 0,
-    isDefault: item.is_default,
-    active: item.active !== false, // Default to true if null
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-  }));
+  const stages = (data as PipelineStageRow[] | null) ?? [];
+
+  return stages.map(mapStageFromDB);
 }
 
 /**
@@ -89,25 +108,14 @@ export async function createStage(stage: StageInput): Promise<PipelineStage> {
 
   if (error) throw error;
 
-  return {
-    id: data.id,
-    pipelineId: data.pipeline_id,
-    name: data.name,
-    color: data.color,
-    stageOrder: data.stage_order,
-    probability: data.probability || 0,
-    isDefault: data.is_default,
-    active: data.active,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return mapStageFromDB(data as PipelineStageRow);
 }
 
 /**
  * Atualiza um estágio existente
  */
 export async function updateStage({ stageId, updates }: { stageId: string; updates: StageUpdate }): Promise<PipelineStage> {
-  const updateData: any = {
+  const updateData: Partial<PipelineStageRow> & { updated_at: string } = {
     updated_at: new Date().toISOString(),
   };
 
@@ -127,18 +135,7 @@ export async function updateStage({ stageId, updates }: { stageId: string; updat
 
   if (error) throw error;
 
-  return {
-    id: data.id,
-    pipelineId: data.pipeline_id,
-    name: data.name,
-    color: data.color,
-    stageOrder: data.stage_order,
-    probability: data.probability || 0,
-    isDefault: data.is_default,
-    active: data.active,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return mapStageFromDB(data as PipelineStageRow);
 }
 
 /**
