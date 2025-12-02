@@ -4,7 +4,7 @@ import { usePlayers, useDeletePlayer, useDeletePlayers } from '@/services/player
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -24,7 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { 
-  Plus, MagnifyingGlass, Trash, Buildings, PencilSimple, User, Phone, Funnel, X,
+  Plus, MagnifyingGlass, Trash, PencilSimple, User, Phone, Funnel, X,
   CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight
 } from '@phosphor-icons/react'
 import { 
@@ -32,7 +32,7 @@ import {
   CREDIT_SUBTYPE_LABELS, EQUITY_SUBTYPE_LABELS, BARTER_SUBTYPE_LABELS
 } from '@/lib/types'
 import { toast } from 'sonner'
-import { PageContainer } from '@/components/PageContainer'
+import { SharedListLayout, SharedListFiltersBar } from '@/features/shared/components/SharedListLayout'
 
 // Tipagem para ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'relationshipLevel';
@@ -269,156 +269,146 @@ export default function PlayersListPage() {
     return <div className="flex flex-wrap items-center">{groups}</div>;
   }
 
-  return (
-    <PageContainer>
-      
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Buildings className="text-primary" />
-            Base de Players
-          </h1>
-          <p className="text-muted-foreground">Diretório de Bancos, Gestoras, Family Offices, SECs</p>
+  const filtersBar = (
+    <SharedListFiltersBar
+      left={(
+        <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
+          <div className="relative w-full md:w-80 lg:w-96">
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, contato..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={typeFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
+                  <Funnel className="mr-2 h-3 w-3" />
+                  Tipo {typeFilters.length > 0 && `(${typeFilters.length})`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Tipos de Player</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={typeFilters.includes(key as PlayerType)}
+                    onCheckedChange={(checked) => {
+                      setTypeFilters(prev => checked ? [...prev, key as PlayerType] : prev.filter(k => k !== key))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={productFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
+                  Atuação {productFilters.length > 0 && `(${productFilters.length})`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Produtos</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {['credit', 'equity', 'barter'].map(key => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={productFilters.includes(key)}
+                    onCheckedChange={(checked) => {
+                      setProductFilters(prev => checked ? [...prev, key] : prev.filter(k => k !== key))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {key === 'credit' ? 'Crédito' : key === 'equity' ? 'Equity' : 'Permuta'}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={relFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
+                  Relacionamento {relFilters.length > 0 && `(${relFilters.length})`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={relFilters.includes(key as RelationshipLevel)}
+                    onCheckedChange={(checked) => {
+                      setRelFilters(prev => checked ? [...prev, key as RelationshipLevel] : prev.filter(k => k !== key))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {(typeFilters.length > 0 || relFilters.length > 0 || productFilters.length > 0 || search) && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground h-8 px-2">
+                <X className="mr-1 h-3 w-3" /> Limpar
+              </Button>
+            )}
+          </div>
         </div>
+      )}
+      right={(
+        <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="animate-in fade-in slide-in-from-right-5"
+              onClick={() => confirmDelete('bulk')}
+            >
+              <Trash className="mr-2" /> Excluir ({selectedIds.length})
+            </Button>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground hidden sm:inline">Linhas:</span>
+            <Select
+              value={String(itemsPerPage)}
+              onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
+            >
+              <SelectTrigger className="w-[70px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+    />
+  )
+
+  return (
+    <SharedListLayout
+      title="Base de Players"
+      subtitle="Diretório de Bancos, Gestoras, Family Offices, SECs"
+      actions={(
         <Button onClick={() => navigate('/players/new')}>
           <Plus className="mr-2" /> Novo Player
         </Button>
-      </div>
-
+      )}
+      filtersBar={filtersBar}
+    >
       <Card>
-        <CardHeader className="pb-4 space-y-4">
-          
-          {/* Layout Unificado: Busca + Filtros + Ações */}
-          <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
-            
-            {/* Grupo de Busca e Filtros */}
-            <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
-              <div className="relative w-full md:w-80 lg:w-96">
-                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar por nome, contato..." 
-                  value={search}
-                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Filtros Dropdown */}
-              <div className="flex flex-wrap items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className={typeFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
-                      <Funnel className="mr-2 h-3 w-3" />
-                      Tipo {typeFilters.length > 0 && `(${typeFilters.length})`}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuLabel>Tipos de Player</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {Object.entries(PLAYER_TYPE_LABELS).map(([key, label]) => (
-                      <DropdownMenuCheckboxItem
-                        key={key}
-                        checked={typeFilters.includes(key as PlayerType)}
-                        onCheckedChange={(checked) => {
-                          setTypeFilters(prev => checked ? [...prev, key as PlayerType] : prev.filter(k => k !== key))
-                          setCurrentPage(1)
-                        }}
-                      >
-                        {label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className={productFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
-                      Atuação {productFilters.length > 0 && `(${productFilters.length})`}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuLabel>Produtos</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {['credit', 'equity', 'barter'].map(key => (
-                      <DropdownMenuCheckboxItem
-                        key={key}
-                        checked={productFilters.includes(key)}
-                        onCheckedChange={(checked) => {
-                          setProductFilters(prev => checked ? [...prev, key] : prev.filter(k => k !== key))
-                          setCurrentPage(1)
-                        }}
-                      >
-                        {key === 'credit' ? 'Crédito' : key === 'equity' ? 'Equity' : 'Permuta'}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className={relFilters.length > 0 ? 'bg-primary/10 border-primary text-primary' : 'text-muted-foreground'}>
-                      Relacionamento {relFilters.length > 0 && `(${relFilters.length})`}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
-                      <DropdownMenuCheckboxItem
-                        key={key}
-                        checked={relFilters.includes(key as RelationshipLevel)}
-                        onCheckedChange={(checked) => {
-                          setRelFilters(prev => checked ? [...prev, key as RelationshipLevel] : prev.filter(k => k !== key))
-                          setCurrentPage(1)
-                        }}
-                      >
-                        {label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {(typeFilters.length > 0 || relFilters.length > 0 || productFilters.length > 0 || search) && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground h-8 px-2">
-                    <X className="mr-1 h-3 w-3" /> Limpar
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Barra Lateral (Paginação + Ação em Massa) */}
-            <div className="flex items-center gap-3 shrink-0">
-              {selectedIds.length > 0 && (
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="animate-in fade-in slide-in-from-right-5"
-                  onClick={() => confirmDelete('bulk')}
-                >
-                  <Trash className="mr-2" /> Excluir ({selectedIds.length})
-                </Button>
-              )}
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground hidden sm:inline">Linhas:</span>
-                <Select 
-                  value={String(itemsPerPage)} 
-                  onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
-                >
-                  <SelectTrigger className="w-[70px] h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-        </CardHeader>
-        
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">Carregando...</div>
@@ -429,57 +419,57 @@ export default function PlayersListPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40px]">
-                        <Checkbox 
+                        <Checkbox
                           checked={currentPlayers.length > 0 && selectedIds.length === currentPlayers.length}
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
-                      
-                      <TableHead 
+
+                      <TableHead
                         className="w-[250px] cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => handleSort('name')}
                       >
                         <div className="flex items-center">Nome <SortIcon columnKey="name" /></div>
                       </TableHead>
-                      
-                      <TableHead 
+
+                      <TableHead
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => handleSort('primaryContact')}
                       >
                         <div className="flex items-center">Contato Principal <SortIcon columnKey="primaryContact" /></div>
                       </TableHead>
-                      
-                      <TableHead 
+
+                      <TableHead
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => handleSort('type')}
                       >
                         <div className="flex items-center">Tipo <SortIcon columnKey="type" /></div>
                       </TableHead>
-                      
+
                       <TableHead>Atuação</TableHead>
-                      
-                      <TableHead 
+
+                      <TableHead
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => handleSort('relationshipLevel')}
                       >
                         <div className="flex items-center">Relacionamento <SortIcon columnKey="relationshipLevel" /></div>
                       </TableHead>
-                      
+
                       <TableHead>Website</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {currentPlayers.map((player) => {
                       const isSelected = selectedIds.includes(player.id);
                       return (
-                        <TableRow 
-                          key={player.id} 
+                        <TableRow
+                          key={player.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => navigate(`/players/${player.id}`)} 
+                          onClick={() => navigate(`/players/${player.id}`)}
                         >
                           <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox 
+                            <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => toggleSelectOne(player.id)}
                             />
@@ -490,7 +480,7 @@ export default function PlayersListPage() {
                                   {player.cnpj && <span className="text-xs text-muted-foreground">{player.cnpj}</span>}
                               </div>
                           </TableCell>
-                          
+
                           <TableCell>
                             {player.primaryContact ? (
                               <div className="flex flex-col text-sm">
@@ -513,7 +503,7 @@ export default function PlayersListPage() {
                           <TableCell>
                             <Badge variant="secondary">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
                           </TableCell>
-                          
+
                           <TableCell>
                             {renderProductTags(player.products)}
                           </TableCell>
@@ -530,11 +520,11 @@ export default function PlayersListPage() {
                               </a>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 title="Editar"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -543,13 +533,11 @@ export default function PlayersListPage() {
                               >
                                 <PencilSimple />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                disabled={!isSelected} // Botão desabilitado se não selecionado
-                                className={`
-                                  ${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30'}
-                                `}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={!isSelected}
+                                className={`${isSelected ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : 'text-muted-foreground/30'}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   confirmDelete(player.id);
@@ -573,13 +561,11 @@ export default function PlayersListPage() {
                 </Table>
               </div>
 
-              {/* Paginação */}
               {processedPlayers.length > 0 && (
                 <div className="flex items-center justify-between space-x-2 py-4">
                   <div className="text-sm text-muted-foreground">
                     Mostrando {startIndex + 1} a {Math.min(endIndex, processedPlayers.length)} de {processedPlayers.length} players
                   </div>
-                  {/* CORREÇÃO AQUI */}
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -607,14 +593,13 @@ export default function PlayersListPage() {
         </CardContent>
       </Card>
 
-      {/* MODAL DE CONFIRMAÇÃO DUPLA (IRREVERSÍVEL) */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. 
-              {itemToDelete === 'bulk' 
+              Esta ação não pode ser desfeita.
+              {itemToDelete === 'bulk'
                 ? ` Você está prestes a excluir permanentemente ${selectedIds.length} players selecionados.`
                 : " Você está prestes a excluir este player permanentemente."
               }
@@ -633,6 +618,6 @@ export default function PlayersListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-    </PageContainer>
+    </SharedListLayout>
   )
 }

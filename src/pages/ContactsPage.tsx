@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContacts, useCreateContact, useDeleteContact, useUpdateContact } from '@/services/contactService'
 import { useCompanies } from '@/services/companyService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MagnifyingGlass, Funnel, User, Phone, Envelope, Plus, Trash, PencilSimple } from '@phosphor-icons/react'
+import { MagnifyingGlass, User, Phone, Envelope, Plus, Trash, PencilSimple, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
@@ -15,14 +15,15 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { COMPANY_TYPE_LABELS, CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
-import { PageContainer } from '@/components/PageContainer'
+import { SharedListLayout, SharedListFiltersBar } from '@/features/shared/components/SharedListLayout'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
 
-  // Filter States
   const [search, setSearch] = useState('')
   const [companyFilter, setCompanyFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const { data: contacts, isLoading } = useContacts(companyFilter)
   const { data: companies } = useCompanies()
@@ -35,17 +36,27 @@ export default function ContactsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<any>(null)
 
-  // Create Form
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newCompanyId, setNewCompanyId] = useState<string | undefined>(undefined)
 
-  const filteredContacts = contacts?.filter(c =>
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, companyFilter])
+
+  const filteredContacts = useMemo(() => contacts?.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.email?.toLowerCase().includes(search.toLowerCase()) ||
     c.companyName?.toLowerCase().includes(search.toLowerCase())
-  )
+  ) || [], [contacts, search])
+
+  const totalContacts = filteredContacts.length
+  const totalPages = Math.max(1, Math.ceil(totalContacts / itemsPerPage))
+  const paginatedContacts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return filteredContacts.slice(start, start + itemsPerPage)
+  }, [filteredContacts, currentPage, itemsPerPage])
 
   const handleCreate = async () => {
     if (!newName) {
@@ -119,50 +130,95 @@ export default function ContactsPage() {
     setEditingContact(null)
   }
 
+  const filtersBar = (
+    <SharedListFiltersBar
+      left={(
+        <>
+          <div className="relative w-full sm:w-72">
+            <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar contatos..."
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <Select value={companyFilter} onValueChange={setCompanyFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filtrar por Empresa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Empresas</SelectItem>
+              {companies?.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {(companyFilter !== 'all' || search) && (
+            <Button variant="ghost" onClick={() => { setSearch(''); setCompanyFilter('all'); }}>Limpar</Button>
+          )}
+        </>
+      )}
+      right={(
+        <Select value={String(itemsPerPage)} onValueChange={(value) => { setItemsPerPage(Number(value)); setCurrentPage(1); }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Itens" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10 por página</SelectItem>
+            <SelectItem value="20">20 por página</SelectItem>
+            <SelectItem value="50">50 por página</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+    />
+  )
+
+  const pagination = totalContacts > 0 && (
+    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+      <div>
+        Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalContacts)} a {Math.min(currentPage * itemsPerPage, totalContacts)} de {totalContacts}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          <CaretLeft className="mr-2 h-4 w-4" />
+          Anterior
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Próximo
+          <CaretRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+
   return (
-    <PageContainer>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Contatos</h1>
-          <p className="text-muted-foreground">Base geral de contatos.</p>
-        </div>
+    <SharedListLayout
+      title="Contatos"
+      subtitle="Base geral de contatos."
+      actions={(
         <RequirePermission permission="contacts.create">
           <Button onClick={() => { resetForm(); setIsCreateOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Contato
           </Button>
         </RequirePermission>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar contatos..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        {/* Company Filter */}
-        <Select value={companyFilter} onValueChange={setCompanyFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filtrar por Empresa" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Empresas</SelectItem>
-            {companies?.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {(companyFilter !== 'all' || search) && (
-           <Button variant="ghost" onClick={() => { setSearch(''); setCompanyFilter('all'); }}>Limpar</Button>
-        )}
-      </div>
-
+      )}
+      filtersBar={filtersBar}
+      footer={pagination}
+    >
       <div className="border rounded-md bg-card">
         <Table>
           <TableHeader>
@@ -172,7 +228,7 @@ export default function ContactsPage() {
               <TableHead>Tipo</TableHead>
               <TableHead>Contato</TableHead>
               <TableHead>Criado em</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -182,14 +238,14 @@ export default function ContactsPage() {
                   Carregando...
                 </TableCell>
               </TableRow>
-            ) : filteredContacts?.length === 0 ? (
+            ) : paginatedContacts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum contato encontrado.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredContacts?.map((contact) => (
+              paginatedContacts.map((contact) => (
                 <TableRow key={contact.id} className="hover:bg-muted/50 group">
                   <TableCell>
                     <div className="font-medium flex items-center gap-2">
@@ -223,8 +279,8 @@ export default function ContactsPage() {
                       {format(new Date(contact.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <TableCell>
+                    <div className="flex gap-1">
                       <RequirePermission permission="contacts.update">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(contact)}>
                           <PencilSimple className="h-4 w-4" />
@@ -244,7 +300,6 @@ export default function ContactsPage() {
         </Table>
       </div>
 
-      {/* CREATE/EDIT DIALOG */}
       <Dialog open={isCreateOpen || isEditOpen} onOpenChange={(open) => { if(!open) { setIsCreateOpen(false); setIsEditOpen(false); } }}>
         <DialogContent>
           <DialogHeader>
@@ -289,6 +344,6 @@ export default function ContactsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageContainer>
+    </SharedListLayout>
   )
 }
