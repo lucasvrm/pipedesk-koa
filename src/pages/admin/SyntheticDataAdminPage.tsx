@@ -269,7 +269,12 @@ export default function SyntheticDataAdminPage() {
                 <Label>Quantidade</Label>
                 <Input type="number" min={1} max={20} value={userCount} onChange={e => setUserCount(Number(e.target.value))} />
               </div>
-              <Button onClick={handleGenerateUsers} disabled={loading} className="w-full">
+              <Button
+                variant="secondary"
+                onClick={handleGenerateUsers}
+                disabled={loading}
+                className="w-full"
+              >
                 Gerar Usuários
               </Button>
             </CardContent>
@@ -311,7 +316,12 @@ export default function SyntheticDataAdminPage() {
                 </div>
               </div>
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                <Button variant="outline" onClick={handleGenerateCRM} disabled={loading} className="flex-1 border-dashed">
+                <Button
+                  variant="secondary"
+                  onClick={handleGenerateCRM}
+                  disabled={loading}
+                  className="flex-1"
+                >
                   <Play className="mr-2 h-4 w-4" />
                   Gerar Dados Sintéticos
                 </Button>
@@ -355,10 +365,10 @@ export default function SyntheticDataAdminPage() {
             {/* Botão para atualizar contagem colocado no card de contagem */}
             <div className="pt-3">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleRefreshCounts}
                 disabled={loading}
-                className="w-full border-dotted"
+                className="w-full"
               >
                 Atualizar Contagem
               </Button>
@@ -366,8 +376,8 @@ export default function SyntheticDataAdminPage() {
             </CardContent>
           </Card>
         </div>
-        {/* Row 2: Log e Danger zone lado a lado */}
-        <div className="grid gap-6 md:grid-cols-2">
+        {/* Log e Danger zone empilhados */}
+        <div className="flex flex-col gap-6">
           {/* Log */}
           <Card className="bg-slate-950 text-slate-50 border-slate-800">
             <CardHeader className="py-3 border-b border-slate-800">
