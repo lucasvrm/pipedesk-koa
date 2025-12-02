@@ -31,7 +31,7 @@ export interface StageUpdate {
 /**
  * Busca todos os estágios ordenados pela ordem definida
  */
-export async function getStages(pipelineId: string | null = null): Promise<PipelineStage[]> {
+export async function getStages(pipelineId: string | null = null, includeInactive = true): Promise<PipelineStage[]> {
   // Agora suportamos apenas pipeline global (pipeline_id IS NULL) ou específico se passado
   // Mas a migração removeu o default e a FK, então vamos focar no stage_order
 
