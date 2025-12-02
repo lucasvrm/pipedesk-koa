@@ -222,7 +222,7 @@ export default function CompaniesListPage() {
     }
   }
 
-  // --- Componente Interno do Modal de Deals ---
+  // --- Componente Interno do Modal de Deals (CORRIGIDO) ---
   const CompanyDealsModal = () => {
     const { data: activeDeals, isLoading: isLoadingDeals } = useCompanyActiveDeals(
       selectedCompanyIdForDeals, 
@@ -231,7 +231,66 @@ export default function CompaniesListPage() {
 
     const companyName = companies?.find(c => c.id === selectedCompanyIdForDeals)?.name;
 
-    
+    return (
+      <Dialog open={dealsModalOpen} onOpenChange={setDealsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-primary"/>
+              Deals Ativos: {companyName}
+            </DialogTitle>
+            <DialogDescription>
+              Lista de oportunidades em andamento vinculadas a esta empresa.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {isLoadingDeals ? (
+              <div className="flex justify-center py-8 text-muted-foreground">Carregando deals...</div>
+            ) : !activeDeals || activeDeals.length === 0 ? (
+              <div className="text-center py-10 border-2 border-dashed rounded-lg bg-muted/20">
+                <Briefcase className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-muted-foreground">Nenhum deal ativo encontrado.</p>
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Fase</TableHead>
+                      <TableHead>Data Prevista</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeDeals.map((deal: any) => (
+                      <TableRow key={deal.id}>
+                        <TableCell className="font-medium">
+                          <Link to={`/deals/${deal.id}`} className="hover:underline hover:text-primary flex items-center gap-1">
+                            {deal.title}
+                            <ArrowSquareOut className="w-3 h-3 opacity-50"/>
+                          </Link>
+                        </TableCell>
+                        <TableCell>{formatCurrency(deal.value)}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{deal.stage?.name || 'Sem fase'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {deal.expectedCloseDate ? formatDate(deal.expectedCloseDate) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <PageContainer>
       <SharedListLayout
