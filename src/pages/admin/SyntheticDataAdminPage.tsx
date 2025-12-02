@@ -51,9 +51,67 @@ export default function SyntheticDataAdminPage() {
     setConsoleLogs(prev => [`[${ts}] ${msg}`, ...prev])
   }
 
-  // Criação de usuários sintéticos via edge function unificada
-  const handleGenerateUsers = async () => {
-    if (!confirm(`Gerar ${userCount} usuários?`)) return
+
+  // Atualiza contagem de entidades sintéticas no banco
+  const handleRefreshCounts = async () => {
+    setLoading(true)
+    log('Atualizando contagem de entidades sintéticas...')
+    try {
+      const [
+        { count: cUsers },
+        { count: cCompanies },
+        { count: cLeads },
+        { count: cDeals },
+        { count: cContacts },
+        { count: cPlayers }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
+        supabase.from('players').select('*', { count: 'exact', head: true }).eq('is_synthetic', true)
+      ])
+      const counts = {
+        users: cUsers || 0,
+        companies: cCompanies || 0,
+        leads: cLeads || 0,
+        deals: cDeals || 0,
+        contacts: cContacts || 0,
+        players: cPlayers || 0
+      }
+      setEntityCounts(counts)
+      log(
+        `📊 Contagem atual: Usuários=${counts.users}, Empresas=${counts.companies}, Leads=${counts.leads}, Deals=${counts.deals}, Contatos=${counts.contacts}, Players=${counts.players}`
+      )
+      toast.success('Contagem atualizada')
+    } catch (err: any) {
+      log(`❌ Erro ao atualizar contagem: ${err.message}`)
+      toast.error('Falha ao atualizar contagem')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Estado e utilitário para modal de confirmação
+  const [confirmState, setConfirmState] = useState<{
+    visible: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({ visible: false, title: '', message: '', onConfirm: () => {} })
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmState({ visible: true, title, message, onConfirm })
+  }
+
+  const closeConfirm = () => {
+    setConfirmState(prev => ({ ...prev, visible: false }))
+  }
+
+  // Ações de geração confirmadas
+  const generateUsersAction = async () => {
+    // Lógica original de geração de usuários
     setLoading(true)
     log(`Iniciando geração de usuários (Quantidade: ${userCount})...`)
     try {
@@ -76,11 +134,11 @@ export default function SyntheticDataAdminPage() {
       toast.error('Falha ao gerar usuários')
     } finally {
       setLoading(false)
+      closeConfirm()
     }
   }
 
-  // Geração das entidades CRM via RPC v2
-  const handleGenerateCRM = async () => {
+  const generateCRMAction = async () => {
     setLoading(true)
     log('Iniciando geração de Dados CRM...')
     log(`Entradas: Empresas=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contatos=${contactCount}, Players=${playerCount}`)
@@ -130,12 +188,11 @@ export default function SyntheticDataAdminPage() {
       toast.error('Falha ao gerar dados CRM')
     } finally {
       setLoading(false)
+      closeConfirm()
     }
   }
 
-  // Limpeza total via RPC v2 e edge function
-  const handleClearAll = async () => {
-    if (!confirm('PERIGO: Isso deletará TODOS os dados sintéticos do sistema. Continuar?')) return
+  const clearAllAction = async () => {
     setLoading(true)
     log('Iniciando limpeza...')
     try {
@@ -163,48 +220,25 @@ export default function SyntheticDataAdminPage() {
       toast.error('Falha na limpeza')
     } finally {
       setLoading(false)
+      closeConfirm()
     }
   }
 
-  // Atualiza contagem de entidades sintéticas no banco
-  const handleRefreshCounts = async () => {
-    setLoading(true)
-    log('Atualizando contagem de entidades sintéticas...')
-    try {
-      const [
-        { count: cUsers },
-        { count: cCompanies },
-        { count: cLeads },
-        { count: cDeals },
-        { count: cContacts },
-        { count: cPlayers }
-      ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
-        supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
-        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
-        supabase.from('master_deals').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
-        supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('is_synthetic', true),
-        supabase.from('players').select('*', { count: 'exact', head: true }).eq('is_synthetic', true)
-      ])
-      const counts = {
-        users: cUsers || 0,
-        companies: cCompanies || 0,
-        leads: cLeads || 0,
-        deals: cDeals || 0,
-        contacts: cContacts || 0,
-        players: cPlayers || 0
-      }
-      setEntityCounts(counts)
-      log(
-        `📊 Contagem atual: Usuários=${counts.users}, Empresas=${counts.companies}, Leads=${counts.leads}, Deals=${counts.deals}, Contatos=${counts.contacts}, Players=${counts.players}`
-      )
-      toast.success('Contagem atualizada')
-    } catch (err: any) {
-      log(`❌ Erro ao atualizar contagem: ${err.message}`)
-      toast.error('Falha ao atualizar contagem')
-    } finally {
-      setLoading(false)
-    }
+  // Handlers que exibem modal de confirmação antes de executar
+  const handleGenerateUsers = () => {
+    openConfirm('Gerar Usuários', `Gerar ${userCount} usuário(s) sintético(s)?`, generateUsersAction)
+  }
+
+  const handleGenerateCRM = () => {
+    openConfirm(
+      'Gerar Dados Sintéticos',
+      `Deseja gerar Empresas=${companyCount}, Leads=${leadCount}, Deals=${dealCount}, Contatos=${contactCount}, Players=${playerCount}?`,
+      generateCRMAction
+    )
+  }
+
+  const handleClearAll = () => {
+    openConfirm('Limpar Dados Sintéticos', 'PERIGO: Isso deletará TODOS os dados sintéticos do sistema. Continuar?', clearAllAction)
   }
 
   return (
@@ -371,6 +405,21 @@ export default function SyntheticDataAdminPage() {
           </Card>
         </div>
       </div>
+      {/* Modal de confirmação */}
+      {confirmState.visible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-md w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-2">{confirmState.title}</h3>
+            <p className="mb-4 text-sm text-muted-foreground">{confirmState.message}</p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={closeConfirm} disabled={loading}>Cancelar</Button>
+              <Button variant="destructive" onClick={confirmState.onConfirm} disabled={loading}>
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   )
 }
