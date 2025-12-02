@@ -5,7 +5,7 @@ import {
   isTaskBlocked,
   getBlockingTasks,
   getPriorityScore,
-} from '../utils/taskDependencies'
+} from '@/features/tasks/utils/taskDependencies'
 import { Task } from '@/lib/types'
 
 describe('Task Dependencies', () => {

@@ -25,15 +25,17 @@
   - Consistent design
 
 ### 3. Integration Tests with Vitest ✅
-- **Location**: `src/test/`
-- **Status**: Fully configured and running
+- **Location**: `tests/` (centralized suites for unit + UI logic)
+- **Status**: Expanded coverage for RBAC, deals, analytics, and task dependencies
 - **Test Coverage**:
-  - AuthContext tests
-  - EmptyState component tests
-  - 5 tests passing
+  - AuthContext & EmptyState components
+  - RBAC/permissions and anonymization rules
+  - Deal service create/update flows
+  - Analytics calculations and task dependency graph utilities
 - **Commands**:
   - `npm test` - watch mode
   - `npm run test:run` - single run
+  - `npm run test:coverage` - coverage report & thresholds
   - `npm run test:ui` - UI mode
 
 ### 4. CI/CD with GitHub Actions ✅

@@ -10,7 +10,7 @@ import {
   calculateWinRate,
   getTopDealsByVolume,
   calculateTotalFees,
-} from '../utils/calculations'
+} from '@/features/analytics/utils/calculations'
 import { MasterDeal, PlayerTrack, PlayerStage } from '@/lib/types'
 
 describe('Analytics Calculations', () => {

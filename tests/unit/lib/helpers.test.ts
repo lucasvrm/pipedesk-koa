@@ -10,7 +10,7 @@ import {
   getInitials,
   isOverdue,
   getDaysUntil,
-} from '../helpers'
+} from '@/lib/helpers'
 
 describe('Helpers - Utility Functions', () => {
   describe('formatCurrency', () => {

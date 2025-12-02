@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { hasPermission, canViewPlayerName, anonymizePlayerName, PERMISSIONS } from '../permissions'
-import { UserRole } from '../types'
+import { hasPermission, canViewPlayerName, anonymizePlayerName, PERMISSIONS } from '@/lib/permissions'
+import { UserRole } from '@/lib/types'
 
 describe('RBAC - Permissions', () => {
   describe('PERMISSIONS constant', () => {

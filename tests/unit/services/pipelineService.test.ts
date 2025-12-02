@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { deleteStage } from '../pipelineService';
+import { deleteStage } from '@/services/pipelineService';
 import { supabase } from '@/lib/supabaseClient';
 
 // Mock Supabase

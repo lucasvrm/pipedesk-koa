@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STAGE_PROBABILITIES } from '../types';
+import { STAGE_PROBABILITIES } from '@/lib/types';
 
 describe('Types - STAGE_PROBABILITIES', () => {
   it('should define correct probability for nda stage', () => {
