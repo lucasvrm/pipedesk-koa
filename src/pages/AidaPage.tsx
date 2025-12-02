@@ -11,7 +11,7 @@ export default function AidaPage() {
   const { session, loading } = useAuth();
 
   // URL do Backend Python (ajuste se necessário para a URL do Render)
-  const AIDA_API_URL = import.meta.env.VITE_AIDA_API_URL || "http://localhost:8000";
+  const AIDA_API_URL = import.meta.env.VITE_AIDA_API_URL || "https://aida-02zl.onrender.com";
   
   // O token vem da sessão do Supabase (seu AuthContext)
   // Nota: O backend Python espera o INTERNAL_API_TOKEN ou um JWT válido.

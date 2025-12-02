@@ -136,7 +136,9 @@ export default function DashboardAIDA({
       try {
         // Remove trailing slash se houver
         const baseUrl = backendUrl.replace(/\/$/, "");
-        const response = await fetch(`${baseUrl}/v1/projects/${projectId}`, {
+        const normalizedProjectId = projectId.trim();
+        const projectUrl = `${baseUrl}/v1/projects/${encodeURIComponent(normalizedProjectId)}`;
+        const response = await fetch(projectUrl, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -144,7 +146,14 @@ export default function DashboardAIDA({
         });
 
         if (!response.ok) {
-          throw new Error(`Erro na API AIDA: ${response.status}`);
+          let message = `Erro na API AIDA: ${response.status}`;
+
+          if (response.status === 404) {
+            message = `Projeto AIDA não encontrado para o ID ${normalizedProjectId}. Verifique se o recurso existe ou se o identificador está correto.`;
+            console.warn('AIDA project not found', { projectUrl, normalizedProjectId, status: response.status });
+          }
+
+          throw new Error(message);
         }
 
         const data = await response.json();
