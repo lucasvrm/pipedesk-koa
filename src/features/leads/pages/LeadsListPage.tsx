@@ -20,24 +20,35 @@ import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector'
 import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
-import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
+import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
+import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
+import { Checkbox } from '@/components/ui/checkbox'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
 
+  const savedPreferences = useMemo(() => {
+    const saved = localStorage.getItem('leads-list-preferences')
+    if (!saved) return null
+    try {
+      return JSON.parse(saved)
+    } catch (error) {
+      console.error('Erro ao carregar preferências de leads', error)
+      return null
+    }
+  }, [])
+
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
-    return (localStorage.getItem('leads-view-mode') as 'list' | 'grid') || 'list'
+    return (savedPreferences?.viewMode as 'list' | 'grid') || 'list'
   })
 
-  useEffect(() => {
-    localStorage.setItem('leads-view-mode', viewMode)
-  }, [viewMode])
-
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [originFilter, setOriginFilter] = useState<string>('all')
+  const [search, setSearch] = useState(() => savedPreferences?.search || '')
+  const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
+  const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const filters: LeadFilters = {
     search: search || undefined,
@@ -53,6 +64,21 @@ export default function LeadsListPage() {
     setCurrentPage(1)
   }, [search, statusFilter, originFilter])
 
+  useEffect(() => {
+    setSelectedIds([])
+  }, [viewMode, search, statusFilter, originFilter, currentPage])
+
+  useEffect(() => {
+    const payload = {
+      viewMode,
+      search,
+      statusFilter,
+      originFilter,
+      itemsPerPage
+    }
+    localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
+  }, [itemsPerPage, originFilter, search, statusFilter, viewMode])
+
   const totalLeads = leads?.length ?? 0
   const totalPages = Math.max(1, Math.ceil(totalLeads / itemsPerPage))
 
@@ -61,6 +87,7 @@ export default function LeadsListPage() {
     const start = (currentPage - 1) * itemsPerPage
     return leads.slice(start, start + itemsPerPage)
   }, [currentPage, itemsPerPage, leads])
+  const currentLeads = paginatedLeads
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newLeadName, setNewLeadName] = useState('')
@@ -69,6 +96,7 @@ export default function LeadsListPage() {
   const [deletingLead, setDeletingLead] = useState<Lead | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
 
   const handleCreate = async () => {
     if (!newLeadName) return
@@ -95,6 +123,33 @@ export default function LeadsListPage() {
       setDeletingLead(null)
     } catch (error) {
       toast.error('Erro ao excluir lead')
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === currentLeads.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(currentLeads.map(lead => lead.id))
+    }
+  }
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => (prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]))
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    try {
+      for (const id of selectedIds) {
+        await deleteLead.mutateAsync(id)
+      }
+      toast.success(`${selectedIds.length} leads excluídos`)
+      setSelectedIds([])
+    } catch (error) {
+      toast.error('Erro ao excluir leads selecionados')
+    } finally {
+      setIsBulkDeleteOpen(false)
     }
   }
 
@@ -144,20 +199,23 @@ export default function LeadsListPage() {
     </RequirePermission>
   )
 
-  const filtersBar = (
-    <SharedListFiltersBar
-      leftContent={
-        <>
-          <div className="relative w-full sm:w-64">
-            <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar leads..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search
 
+  const filtersBar = (
+    <SharedListToolbar
+      searchField={
+        <div className="relative w-full sm:w-64">
+          <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar leads..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      }
+      filters={
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Status" />
@@ -182,12 +240,12 @@ export default function LeadsListPage() {
             </SelectContent>
           </Select>
 
-          {(statusFilter !== 'all' || originFilter !== 'all' || search) && (
+          {hasFilters && (
             <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
           )}
-        </>
+        </div>
       }
-      rightContent={
+      viewToggle={
         <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -206,6 +264,13 @@ export default function LeadsListPage() {
             <SquaresFour />
           </Button>
         </div>
+      }
+      rightContent={
+        selectedIds.length > 0 && (
+          <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
+            <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
+          </Button>
+        )
       }
     />
   )
@@ -267,7 +332,7 @@ export default function LeadsListPage() {
         footer={pagination}
       >
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Status", "Origem", "Responsável", "Ações"]} />
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado com os filtros atuais.
@@ -277,21 +342,31 @@ export default function LeadsListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={currentLeads.length > 0 && selectedIds.length === currentLeads.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Operação</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Responsável</TableHead>
-                  <TableHead className="w-[80px]">Ações</TableHead>
+                  <TableHead className="w-[80px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedLeads.map((lead) => {
                   const contact = getPrimaryContact(lead)
                   const owner = (lead as any).owner
+                  const isSelected = selectedIds.includes(lead.id)
                   return (
                     <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/leads/${lead.id}`)}>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={isSelected} onCheckedChange={() => toggleSelectOne(lead.id)} />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{lead.legalName}</div>
                         <div className="flex items-center gap-2 mt-1">
@@ -335,7 +410,7 @@ export default function LeadsListPage() {
                           </div>
                         ) : <span className="text-muted-foreground text-xs">-</span>}
                       </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
+                      <TableCell onClick={e => e.stopPropagation()} className="text-right">
                         <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
                       </TableCell>
                     </TableRow>
@@ -438,6 +513,23 @@ export default function LeadsListPage() {
           onConfirm={handleDelete}
           isDeleting={deleteLead.isPending}
         />
+
+        <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir {selectedIds.length} leads?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação removerá todos os leads selecionados e não poderá ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SharedListLayout>
     </PageContainer>
   )
