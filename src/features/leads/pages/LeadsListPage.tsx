@@ -4,7 +4,7 @@ import { useLeads, useCreateLead, useDeleteLead, LeadFilters } from '@/services/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash } from '@phosphor-icons/react'
 import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LeadActionMenu } from '../components/LeadActionMenu'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { toast } from 'sonner'
@@ -24,9 +23,11 @@ import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
+  const { profile } = useAuth()
 
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
@@ -49,6 +50,7 @@ export default function LeadsListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const filters: LeadFilters = {
     search: search || undefined,
@@ -59,6 +61,16 @@ export default function LeadsListPage() {
   const { data: leads, isLoading } = useLeads(filters)
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
+
+  const leadMetrics = useMemo(() => {
+    const openLeads = leads?.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
+    const createdThisMonth = leads?.filter(l => new Date(l.createdAt) >= monthStart).length || 0
+    const qualifiedThisMonth = leads?.filter(
+      l => l.status === 'qualified' && l.qualifiedAt && new Date(l.qualifiedAt) >= monthStart
+    ).length || 0
+
+    return { openLeads, createdThisMonth, qualifiedThisMonth }
+  }, [leads, monthStart])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -100,10 +112,14 @@ export default function LeadsListPage() {
 
   const handleCreate = async () => {
     if (!newLeadName) return
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado')
+      return
+    }
     try {
       const lead = await createLead.mutateAsync({
         data: { legalName: newLeadName },
-        userId: 'temp-user'
+        userId: profile.id
       })
       setIsCreateOpen(false)
       setNewLeadName('')
@@ -200,6 +216,46 @@ export default function LeadsListPage() {
   )
 
   const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search
+
+  const metrics = (
+    <div className="grid gap-4 md:grid-cols-3 animate-in fade-in slide-in-from-top-4 duration-500">
+      <Card className="border-l-4 border-l-primary shadow-sm">
+        <CardContent className="p-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Leads em Aberto</p>
+            <p className="text-2xl font-bold">{leadMetrics.openLeads}</p>
+          </div>
+          <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+            <Funnel size={32} weight="duotone" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-l-4 border-l-blue-500 shadow-sm">
+        <CardContent className="p-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Criados no Mês</p>
+            <p className="text-2xl font-bold">{leadMetrics.createdThisMonth}</p>
+          </div>
+          <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-600">
+            <CalendarBlank size={32} weight="duotone" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-l-4 border-l-emerald-500 shadow-sm">
+        <CardContent className="p-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Qualificados no Mês</p>
+            <p className="text-2xl font-bold">{leadMetrics.qualifiedThisMonth}</p>
+          </div>
+          <div className="h-12 w-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-600">
+            <ChartBar size={32} weight="duotone" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 
   const filtersBar = (
     <SharedListToolbar
@@ -328,6 +384,7 @@ export default function LeadsListPage() {
         title="Leads"
         description="Gerencie seus prospects e oportunidades."
         primaryAction={actions}
+        metrics={metrics}
         filtersBar={filtersBar}
         footer={pagination}
       >
@@ -354,7 +411,7 @@ export default function LeadsListPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Responsável</TableHead>
-                  <TableHead className="w-[80px] text-right">Ações</TableHead>
+                  <TableHead className="w-[140px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -411,7 +468,29 @@ export default function LeadsListPage() {
                         ) : <span className="text-muted-foreground text-xs">-</span>}
                       </TableCell>
                       <TableCell onClick={e => e.stopPropagation()} className="text-right">
-                        <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
+                        <div className="flex justify-end gap-1">
+                          <TagSelector entityId={lead.id} entityType="lead" variant="icon" />
+                          <RequirePermission permission="leads.update">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              onClick={() => openEdit(lead)}
+                            >
+                              <PencilSimple className="h-4 w-4" />
+                            </Button>
+                          </RequirePermission>
+                          <RequirePermission permission="leads.delete">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => openDelete(lead)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </RequirePermission>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
@@ -432,8 +511,28 @@ export default function LeadsListPage() {
                         <CardTitle className="text-lg line-clamp-1" title={lead.legalName}>{lead.legalName}</CardTitle>
                         {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{lead.tradeName}</p>}
                       </div>
-                      <div onClick={e => e.stopPropagation()}>
-                        <LeadActionMenu lead={lead} onEdit={openEdit} onDelete={openDelete} />
+                      <div onClick={e => e.stopPropagation()} className="flex gap-1">
+                        <TagSelector entityId={lead.id} entityType="lead" variant="icon" />
+                        <RequirePermission permission="leads.update">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => openEdit(lead)}
+                          >
+                            <PencilSimple className="h-4 w-4" />
+                          </Button>
+                        </RequirePermission>
+                        <RequirePermission permission="leads.delete">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => openDelete(lead)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </RequirePermission>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">

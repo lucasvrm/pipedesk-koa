@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle 
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/tooltip"
 import { 
   Plus, MagnifyingGlass, Trash, PencilSimple, User, Phone, Funnel, X,
-  CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight
+  CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, ListDashes, SquaresFour
 } from '@phosphor-icons/react'
 import { 
   PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel,
@@ -71,6 +72,7 @@ export default function PlayersListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => savedPreferences?.viewMode || 'list')
   
   // Estado de Ordenação
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
@@ -181,9 +183,14 @@ export default function PlayersListPage() {
       typeFilters,
       relFilters,
       productFilters,
+      viewMode,
     }
     localStorage.setItem('players-list-preferences', JSON.stringify(payload))
-  }, [itemsPerPage, productFilters, relFilters, search, typeFilters])
+  }, [itemsPerPage, productFilters, relFilters, search, typeFilters, viewMode])
+
+  useEffect(() => {
+    setSelectedIds([])
+  }, [viewMode])
 
   const toggleSelectOne = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -391,6 +398,26 @@ export default function PlayersListPage() {
           )}
         </div>
       }
+      viewToggle={
+        <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('list')}
+          >
+            <ListDashes />
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('grid')}
+          >
+            <SquaresFour />
+          </Button>
+        </div>
+      }
       rightContent={
         selectedIds.length > 0 && (
           <Button
@@ -465,7 +492,7 @@ export default function PlayersListPage() {
       >
         {isLoading ? (
           <SharedListSkeleton columns={["", "Nome", "Contato", "Tipo", "Atuação", "Relacionamento", "Website", "Ações"]} />
-        ) : (
+        ) : viewMode === 'list' ? (
           <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
@@ -622,6 +649,100 @@ export default function PlayersListPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {currentPlayers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10">
+                Nenhum player encontrado com os filtros atuais.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {currentPlayers.map((player) => (
+                  <Card
+                    key={player.id}
+                    className="group hover:border-primary/40 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/players/${player.id}`)}
+                  >
+                    <CardHeader className="pb-3 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg line-clamp-1">{player.name}</CardTitle>
+                          {player.cnpj && <p className="text-xs text-muted-foreground">{player.cnpj}</p>}
+                          <Badge variant="secondary" className="w-fit">{PLAYER_TYPE_LABELS[player.type] || player.type}</Badge>
+                        </div>
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Editar"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => navigate(`/players/${player.id}`, { state: { startEditing: true } })}
+                          >
+                            <PencilSimple className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => confirmDelete(player.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Badge className={`${getRelationshipBadgeClass(player.relationshipLevel)} font-normal w-fit`}>
+                        {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Contato Principal</p>
+                        {player.primaryContact ? (
+                          <div className="mt-1 space-y-1">
+                            <div className="flex items-center gap-2 font-medium">
+                              <User size={14} className="text-muted-foreground" />
+                              <span className="truncate">{player.primaryContact.name}</span>
+                            </div>
+                            {player.primaryContact.phone && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Phone size={12} />
+                                <span>{player.primaryContact.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">Sem contato principal</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Atuação</p>
+                        <div className="mt-1">{renderProductTags(player.products)}</div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Website</span>
+                        {player.site ? (
+                          <a
+                            className="text-primary hover:underline"
+                            href={player.site}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Abrir
+                          </a>
+                        ) : (
+                          <span className="italic">-</span>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="text-[12px] text-muted-foreground">
+                      Atualizado em {new Date(player.updatedAt || player.createdAt).toLocaleDateString()}
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
