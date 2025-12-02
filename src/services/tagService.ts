@@ -21,6 +21,20 @@ export const TAG_COLORS = [
 
 type TagEntityType = 'deal' | 'track' | 'lead';
 
+// Some environments might not have the "entity_type" column yet. When we
+// detect that scenario (Postgres error 42703: column does not exist), we fall
+// back to queries without that field to avoid breaking the UI.
+let entityTypeColumnSupported: boolean | null = null;
+
+const isEntityTypeSupported = () => entityTypeColumnSupported !== false;
+const markEntityTypeUnsupported = (error: any) => {
+  if (error?.code === '42703' || error?.message?.includes('entity_type')) {
+    entityTypeColumnSupported = false;
+    return true;
+  }
+  return false;
+};
+
 // Helper to check feature flag
 async function checkFeatureEnabled(module: 'deals' | 'tracks' | 'leads' | 'global') {
   const config = await getSetting('tags_config');
@@ -36,7 +50,7 @@ async function checkFeatureEnabled(module: 'deals' | 'tracks' | 'leads' | 'globa
 export async function getTags(entityType?: 'deal' | 'track' | 'lead' | 'global'): Promise<Tag[]> {
   let query = supabase.from('tags').select('*').order('name');
 
-  if (entityType) {
+  if (entityType && isEntityTypeSupported()) {
     // Se solicitou um tipo específico, traz esse tipo E globais
     // Se solicitou 'global', traz só global
     if (entityType === 'global') {
@@ -49,6 +63,11 @@ export async function getTags(entityType?: 'deal' | 'track' | 'lead' | 'global')
   const { data, error } = await query;
 
   if (error) {
+    if (markEntityTypeUnsupported(error)) {
+      // Re-executa sem filtros específicos para garantir compatibilidade
+      const fallback = await supabase.from('tags').select('*').order('name');
+      if (!fallback.error) return (fallback.data || []) as Tag[];
+    }
     // Em alguns ambientes o enum de entity_type pode não ter o valor "lead" ainda
     if (entityType === 'lead') {
       const fallback = await supabase.from('tags').select('*').eq('entity_type', 'global').order('name');
@@ -67,18 +86,40 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
   if (!enabled) throw new Error('FEATURE_DISABLED');
 
   const { data: userData } = await supabase.auth.getUser();
-  
+
+  const basePayload: any = {
+    name: tag.name,
+    color: tag.color,
+    created_by: userData.user?.id
+  };
+
+  if (isEntityTypeSupported() && tag.entity_type) {
+    basePayload.entity_type = tag.entity_type || 'global';
+  }
+
   const { data, error } = await supabase
     .from('tags')
-    .insert({
-      name: tag.name,
-      color: tag.color,
-      entity_type: tag.entity_type || 'global',
-      created_by: userData.user?.id
-    })
+    .insert(basePayload)
     .select()
     .single();
-  if (error) throw error;
+
+  if (error) {
+    if (markEntityTypeUnsupported(error)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('tags')
+        .insert({
+          name: tag.name,
+          color: tag.color,
+          created_by: userData.user?.id
+        })
+        .select()
+        .single();
+      if (!fallbackError) return fallbackData as Tag;
+      if (fallbackError) throw fallbackError;
+    }
+    throw error;
+  }
+
   return data as Tag;
 }
 
@@ -86,13 +127,33 @@ export async function updateTag(id: string, updates: Partial<Tag>) {
   const enabled = await checkFeatureEnabled('global');
   if (!enabled) throw new Error('FEATURE_DISABLED');
 
+  const updatePayload = { ...updates } as any;
+  if (!isEntityTypeSupported()) {
+    delete updatePayload.entity_type;
+  }
+
   const { data, error } = await supabase
     .from('tags')
-    .update(updates)
+    .update(updatePayload)
     .eq('id', id)
     .select()
     .single();
-  if (error) throw error;
+
+  if (error) {
+    if (markEntityTypeUnsupported(error)) {
+      delete updatePayload.entity_type;
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('tags')
+        .update(updatePayload)
+        .eq('id', id)
+        .select()
+        .single();
+      if (!fallbackError) return fallbackData as Tag;
+      if (fallbackError) throw fallbackError;
+    }
+    throw error;
+  }
+
   return data as Tag;
 }
 
