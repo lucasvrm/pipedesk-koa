@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import TagSelector from '@/components/TagSelector'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -34,9 +35,9 @@ export default function LeadDetailPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <PageContainer className="space-y-6">
       {/* Header */}
-      <header className="border-b px-6 py-4 flex items-center justify-between bg-card">
+      <header className="border px-6 py-4 flex items-center justify-between bg-card rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/leads')}>
             <ArrowLeft className="h-5 w-5" />
@@ -78,16 +79,15 @@ export default function LeadDetailPage() {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="grid grid-cols-3 gap-6 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Main Info */}
-          <div className="col-span-2 space-y-6">
-             <Card>
-               <CardHeader>
-                 <CardTitle>Dados da Empresa</CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-4">
+        {/* Main Info */}
+        <div className="col-span-2 space-y-6">
+           <Card>
+             <CardHeader>
+               <CardTitle>Dados da Empresa</CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
                  <div className="grid grid-cols-2 gap-4">
                    <div>
                      <span className="text-xs text-muted-foreground uppercase font-bold">CNPJ</span>
@@ -214,6 +214,6 @@ export default function LeadDetailPage() {
           userId={user.id}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

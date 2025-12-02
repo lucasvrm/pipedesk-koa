@@ -49,6 +49,7 @@ import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
+import { PageContainer } from '@/components/PageContainer'
 
 export default function TrackDetailPage() {
   const { id } = useParams()
@@ -158,7 +159,7 @@ export default function TrackDetailPage() {
     : 0
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl pb-24">
+    <PageContainer className="pb-24 space-y-6">
       
       {/* Breadcrumbs */}
       <Breadcrumb className="mb-6">
@@ -395,7 +396,7 @@ export default function TrackDetailPage() {
       />
 
       {selectedTask && currentUser && (
-        <TaskDetailDialog 
+        <TaskDetailDialog
             task={selectedTask}
             open={!!selectedTask}
             onOpenChange={(open) => !open && setSelectedTask(null)}
@@ -403,6 +404,6 @@ export default function TrackDetailPage() {
             currentUser={currentUser}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }
