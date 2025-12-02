@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type MouseEvent } from "react"
 import { Check, Plus, Tag as TagIcon, Trash, PencilSimple } from "@phosphor-icons/react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,13 +10,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTags, useTagOperations, TAG_COLORS } from "@/services/tagService"
 import { toast } from "sonner"
 
@@ -78,7 +73,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
     }
   }
 
-  const handleDelete = (tagId: string, e: React.MouseEvent) => {
+  const handleDelete = (tagId: string, e: MouseEvent) => {
     e.stopPropagation()
     if (confirm("Tem certeza? Isso removerá a tag de todos os itens.")) {
       remove.mutate(tagId)
@@ -86,21 +81,31 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 gap-0 max-w-[400px]">
-        <DialogHeader className="px-4 py-3 border-b">
-          <DialogTitle className="text-sm font-medium flex items-center gap-2">
-            <TagIcon className="text-primary" /> Gerenciar Tags
-          </DialogTitle>
-        </DialogHeader>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <span className="sr-only">Abrir seletor de tags</span>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[380px] p-0 shadow-lg border">
+        <div className="px-4 py-3 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <TagIcon className="text-primary" />
+            <span>Gerenciar Tags</span>
+          </div>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setSearch(""); setEditingTag(null); onOpenChange(false) }}>
+            Fechar
+          </Button>
+        </div>
 
         {editingTag ? (
           <div className="p-4 space-y-3">
-            <h4 className="text-sm font-medium">Editar Tag</h4>
-            <Input 
-              value={editName} 
-              onChange={e => setEditName(e.target.value)} 
-              placeholder="Nome da tag" 
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Editar Tag</p>
+              <p className="text-xs text-muted-foreground">Ajuste o nome e confirme para salvar.</p>
+            </div>
+            <Input
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              placeholder="Nome da tag"
               autoFocus
             />
             <div className="flex gap-2 justify-end">
@@ -110,12 +115,12 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
           </div>
         ) : (
           <Command className="rounded-b-lg">
-            <CommandInput 
-              placeholder="Buscar ou criar tag..." 
+            <CommandInput
+              placeholder="Buscar ou criar tag..."
               value={search}
               onValueChange={setSearch}
             />
-            <CommandList className="max-h-[300px]">
+            <CommandList className="max-h-[320px]">
               <CommandEmpty className="py-6 text-center text-sm">
                 {search && !exactMatch ? (
                   <div className="flex flex-col items-center gap-2">
@@ -126,7 +131,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                   </div>
                 ) : "Nenhuma tag encontrada."}
               </CommandEmpty>
-              
+
               <CommandGroup heading="Tags Disponíveis">
                 {filteredTags.map(tag => {
                   const isSelected = selectedTagIds.includes(tag.id)
@@ -138,7 +143,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                       className="flex items-center justify-between group cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <div 
+                        <div
                           className={`flex items-center justify-center w-4 h-4 border rounded transition-colors ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-input'}`}
                         >
                           {isSelected && <Check className="w-3 h-3" />}
@@ -149,14 +154,14 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                       </div>
 
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="ghost" size="icon" className="h-6 w-6" 
+                        <Button
+                          variant="ghost" size="icon" className="h-6 w-6"
                           onClick={(e) => { e.stopPropagation(); setEditingTag(tag.id); setEditName(tag.name); }}
                         >
                           <PencilSimple className="h-3 w-3 text-muted-foreground" />
                         </Button>
-                        <Button 
-                          variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive" 
+                        <Button
+                          variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                           onClick={(e) => handleDelete(tag.id, e)}
                         >
                           <Trash className="h-3 w-3" />
@@ -169,7 +174,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
             </CommandList>
           </Command>
         )}
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   )
 }

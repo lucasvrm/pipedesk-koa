@@ -399,7 +399,7 @@ export default function LeadsListPage() {
         footer={viewMode === 'kanban' ? null : pagination}
       >
         {isLoading ? (
-          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Status", "Origem", "Responsável", "Ações"]} />
+          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Origem", "Responsável", "Ações"]} />
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado com os filtros atuais.
@@ -419,7 +419,6 @@ export default function LeadsListPage() {
                   <TableHead>Contato</TableHead>
                   <TableHead>Operação</TableHead>
                   <TableHead>Progresso</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead className="w-[140px] text-right">Ações</TableHead>
@@ -475,7 +474,6 @@ export default function LeadsListPage() {
                           <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
                         </div>
                       </TableCell>
-                      <TableCell>{renderStatusBadge(lead.status)}</TableCell>
                       <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
                       <TableCell>
                         {owner ? (
