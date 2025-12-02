@@ -17,7 +17,9 @@ import { COMPANY_TYPE_LABELS, CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
-import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
+import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
+import { Checkbox } from '@/components/ui/checkbox'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
@@ -26,6 +28,7 @@ export default function ContactsPage() {
   const [companyFilter, setCompanyFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const { data: contacts, isLoading } = useContacts(companyFilter)
   const { data: companies } = useCompanies()
@@ -37,6 +40,8 @@ export default function ContactsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<any>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | 'bulk' | null>(null)
 
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -45,6 +50,7 @@ export default function ContactsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
+    setSelectedIds([])
   }, [search, companyFilter])
 
   const filteredContacts = useMemo(() => contacts?.filter(c =>
@@ -104,14 +110,39 @@ export default function ContactsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este contato?")) {
-      try {
-        await deleteContact.mutateAsync(id)
-        toast.success("Contato excluído")
-      } catch (error) {
-        toast.error("Erro ao excluir")
+  const toggleSelectAll = () => {
+    if (selectedIds.length === paginatedContacts.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(paginatedContacts.map(c => c.id))
+    }
+  }
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id])
+  }
+
+  const openDelete = (target: string | 'bulk') => {
+    setDeleteTarget(target)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTarget) return
+    try {
+      if (deleteTarget === 'bulk') {
+        await Promise.all(selectedIds.map(id => deleteContact.mutateAsync(id)))
+        toast.success(`${selectedIds.length} contatos excluídos`)
+        setSelectedIds([])
+      } else {
+        await deleteContact.mutateAsync(deleteTarget)
+        toast.success('Contato excluído')
       }
+    } catch (error) {
+      toast.error('Erro ao excluir contato(s)')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -143,20 +174,23 @@ export default function ContactsPage() {
     </RequirePermission>
   )
 
-  const filtersBar = (
-    <SharedListFiltersBar
-      leftContent={
-        <>
-          <div className="relative w-full sm:w-72">
-            <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar contatos..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+  const hasFilters = companyFilter !== 'all' || search
 
+  const filtersBar = (
+    <SharedListToolbar
+      searchField={
+        <div className="relative w-full sm:w-72">
+          <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar contatos..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      }
+      filters={
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={companyFilter} onValueChange={setCompanyFilter}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Filtrar por Empresa" />
@@ -169,10 +203,17 @@ export default function ContactsPage() {
             </SelectContent>
           </Select>
 
-          {(companyFilter !== 'all' || search) && (
+          {hasFilters && (
             <Button variant="ghost" onClick={() => { setSearch(''); setCompanyFilter('all'); }}>Limpar</Button>
           )}
-        </>
+        </div>
+      }
+      rightContent={
+        selectedIds.length > 0 && (
+          <Button variant="destructive" size="sm" onClick={() => openDelete('bulk')}>
+            <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
+          </Button>
+        )
       }
     />
   )
@@ -237,12 +278,18 @@ export default function ContactsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={paginatedContacts.length > 0 && selectedIds.length === paginatedContacts.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead>Criado em</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -259,56 +306,62 @@ export default function ContactsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedContacts.map((contact) => (
-                  <TableRow key={contact.id} className="hover:bg-muted/50 group">
-                    <TableCell>
-                      <div className="font-medium flex items-center gap-2">
-                         <User /> {contact.name}
-                         {contact.isPrimary && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Principal</span>}
-                      </div>
-                      {contact.role && <div className="text-xs text-muted-foreground ml-6">{contact.role}</div>}
-                    </TableCell>
-                    <TableCell>
-                      {contact.companyName ? (
-                        <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => navigate(`/companies/${contact.companyId}`)}>
-                          {contact.companyName}
+                paginatedContacts.map((contact) => {
+                  const isSelected = selectedIds.includes(contact.id)
+                  return (
+                    <TableRow key={contact.id} className="hover:bg-muted/50 group">
+                      <TableCell>
+                        <Checkbox checked={isSelected} onCheckedChange={() => toggleSelectOne(contact.id)} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium flex items-center gap-2">
+                           <User /> {contact.name}
+                           {contact.isPrimary && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Principal</span>}
+                        </div>
+                        {contact.role && <div className="text-xs text-muted-foreground ml-6">{contact.role}</div>}
+                      </TableCell>
+                      <TableCell>
+                        {contact.companyName ? (
+                          <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => navigate(`/companies/${contact.companyId}`)}>
+                            {contact.companyName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Sem empresa</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {contact.companyType ? (
+                          <Badge variant="outline">{COMPANY_TYPE_LABELS[contact.companyType as CompanyType] || contact.companyType}</Badge>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 text-sm">
+                          {contact.email && <div className="flex items-center gap-1"><Envelope size={12}/> {contact.email}</div>}
+                          {contact.phone && <div className="flex items-center gap-1"><Phone size={12}/> {contact.phone}</div>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(contact.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
                         </span>
-                      ) : (
-                        <span className="text-muted-foreground italic">Sem empresa</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {contact.companyType ? (
-                        <Badge variant="outline">{COMPANY_TYPE_LABELS[contact.companyType as CompanyType] || contact.companyType}</Badge>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1 text-sm">
-                        {contact.email && <div className="flex items-center gap-1"><Envelope size={12}/> {contact.email}</div>}
-                        {contact.phone && <div className="flex items-center gap-1"><Phone size={12}/> {contact.phone}</div>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(contact.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <RequirePermission permission="contacts.update">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(contact)}>
-                            <PencilSimple className="h-4 w-4" />
-                          </Button>
-                        </RequirePermission>
-                        <RequirePermission permission="contacts.delete">
-                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(contact.id)}>
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </RequirePermission>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <RequirePermission permission="contacts.update">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(contact)}>
+                              <PencilSimple className="h-4 w-4" />
+                            </Button>
+                          </RequirePermission>
+                          <RequirePermission permission="contacts.delete">
+                            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => openDelete(contact.id)}>
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </RequirePermission>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -358,6 +411,23 @@ export default function ContactsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação removerá {deleteTarget === 'bulk' ? `${selectedIds.length} contatos selecionados` : 'o contato selecionado'} de forma permanente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirmed} className="bg-destructive hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SharedListLayout>
     </PageContainer>
   )

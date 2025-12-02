@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 interface SharedListLayoutProps {
@@ -25,12 +25,12 @@ export function SharedListLayout({
 }: SharedListLayoutProps) {
   return (
     <div className={cn('space-y-4', className)}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
-          {description && <p className="text-muted-foreground">{description}</p>}
+          {description && <p className="text-muted-foreground max-w-3xl">{description}</p>}
         </div>
-        {primaryAction}
+        {primaryAction && <div className="shrink-0">{primaryAction}</div>}
       </div>
 
       {metrics}
@@ -41,10 +41,12 @@ export function SharedListLayout({
             {filtersBar}
           </CardHeader>
         )}
-        <CardContent className="pt-4 space-y-4">
-          {children}
-          {footer}
-        </CardContent>
+        <CardContent className="pt-4 space-y-4">{children}</CardContent>
+        {footer && (
+          <CardFooter className="border-t border-border/60 bg-muted/20 rounded-b-xl py-4">
+            <div className="w-full">{footer}</div>
+          </CardFooter>
+        )}
       </Card>
     </div>
   )

@@ -29,7 +29,7 @@ import { toast } from 'sonner'
 
 // Componentes Internos
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
-import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
+import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { EditDealDialog } from './EditDealDialog'
 import { CreateDealDialog } from './CreateDealDialog'
@@ -256,19 +256,20 @@ export default function DealsView() {
         primaryAction={<Button onClick={() => setCreateDealOpen(true)} className="shadow-sm"><Plus className="mr-2 h-4 w-4" /> Novo Negócio</Button>}
         metrics={!isLoading && masterDeals && <DealsMetrics deals={masterDeals} tracks={allTracks || []} />}
         filtersBar={
-          <SharedListFiltersBar
-            leftContent={
-              <>
-                <div className="relative w-full md:w-80">
-                  <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Buscar cliente ou empresa..."
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                    className="pl-9 h-9"
-                  />
-                </div>
-
+          <SharedListToolbar
+            searchField={
+              <div className="relative w-full md:w-80">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar cliente ou empresa..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="pl-9 h-9"
+                />
+              </div>
+            }
+            filters={
+              <div className="flex flex-wrap gap-2">
                 <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -328,25 +329,24 @@ export default function DealsView() {
                     </div>
                   </PopoverContent>
                 </Popover>
-
-                <div className="flex items-center bg-muted p-1 rounded-md border">
-                  <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('table')} title="Lista"><ListDashes /></Button>
-                  <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('grid')} title="Cards"><SquaresFour /></Button>
-                </div>
-              </>
+              </div>
+            }
+            viewToggle={
+              <div className="flex items-center bg-muted p-1 rounded-md border">
+                <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('table')} title="Lista"><ListDashes /></Button>
+                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('grid')} title="Cards"><SquaresFour /></Button>
+              </div>
             }
             rightContent={
-              <>
-                {selectedIds.length > 0 && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => { setItemToDelete('bulk'); setDeleteDialogOpen(true); }}
-                  >
-                    <Trash className="mr-2" /> ({selectedIds.length})
-                  </Button>
-                )}
-              </>
+              selectedIds.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => { setItemToDelete('bulk'); setDeleteDialogOpen(true); }}
+                >
+                  <Trash className="mr-2" /> ({selectedIds.length})
+                </Button>
+              )
             }
           />
         }

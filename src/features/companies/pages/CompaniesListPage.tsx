@@ -56,7 +56,7 @@ import {
 import { formatCurrency, formatDate } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
-import { SharedListFiltersBar } from '@/components/layouts/SharedListFiltersBar'
+import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -297,89 +297,86 @@ export default function CompaniesListPage() {
         description="Diretório de clientes e parceiros."
         primaryAction={<Button onClick={() => navigate('/companies/new')}><Plus className="mr-2 h-4 w-4" /> Nova Empresa</Button>}
         filtersBar={
-          <SharedListFiltersBar
-            leftContent={
-              <>
-                <div className="relative w-full md:w-80 lg:w-96">
-                  <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, CNPJ ou site..."
-                    className="pl-10"
-                    value={searchTerm}
-                    onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                  />
-                </div>
+          <SharedListToolbar
+            searchField={
+              <div className="relative w-full md:w-80 lg:w-96">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, CNPJ ou site..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
+            }
+            filters={
+              <div className="flex flex-wrap items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={typeFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                      <Funnel className="mr-2 h-4 w-4" />
+                      Tipo {typeFilter.length > 0 && `(${typeFilter.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={typeFilter.includes(key as CompanyType)}
+                        onCheckedChange={(checked) => {
+                          setTypeFilter(prev =>
+                            checked ? [...prev, key as CompanyType] : prev.filter(t => t !== key)
+                          )
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className={typeFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                        <Funnel className="mr-2 h-4 w-4" />
-                        Tipo {typeFilter.length > 0 && `(${typeFilter.length})`}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
-                        <DropdownMenuCheckboxItem
-                          key={key}
-                          checked={typeFilter.includes(key as CompanyType)}
-                          onCheckedChange={(checked) => {
-                            setTypeFilter(prev =>
-                              checked ? [...prev, key as CompanyType] : prev.filter(t => t !== key)
-                            )
-                            setCurrentPage(1)
-                          }}
-                        >
-                          {label}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className={relationshipFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
-                        <Funnel className="mr-2 h-4 w-4" />
-                        Relacionamento {relationshipFilter.length > 0 && `(${relationshipFilter.length})`}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Filtrar por Nível</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
-                        <DropdownMenuCheckboxItem
-                          key={key}
-                          checked={relationshipFilter.includes(key as RelationshipLevel)}
-                          onCheckedChange={(checked) => {
-                            setRelationshipFilter(prev =>
-                              checked ? [...prev, key as RelationshipLevel] : prev.filter(t => t !== key)
-                            )
-                            setCurrentPage(1)
-                          }}
-                        >
-                          {label}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={relationshipFilter.length > 0 ? 'bg-primary/10 border-primary text-primary' : ''}>
+                      <Funnel className="mr-2 h-4 w-4" />
+                      Relacionamento {relationshipFilter.length > 0 && `(${relationshipFilter.length})`}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Filtrar por Nível</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        checked={relationshipFilter.includes(key as RelationshipLevel)}
+                        onCheckedChange={(checked) => {
+                          setRelationshipFilter(prev =>
+                            checked ? [...prev, key as RelationshipLevel] : prev.filter(t => t !== key)
+                          )
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             }
             rightContent={
-              <>
-                {selectedIds.length > 0 && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="animate-in fade-in slide-in-from-right-5"
-                    onClick={() => setIsBulkDeleteAlertOpen(true)}
-                  >
-                    <Trash className="mr-2" /> Excluir ({selectedIds.length})
-                  </Button>
-                )}
-              </>
+              selectedIds.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="animate-in fade-in slide-in-from-right-5"
+                  onClick={() => setIsBulkDeleteAlertOpen(true)}
+                >
+                  <Trash className="mr-2" /> Excluir ({selectedIds.length})
+                </Button>
+              )
             }
           />
         }
