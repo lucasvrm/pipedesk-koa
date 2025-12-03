@@ -37,7 +37,7 @@ import { toast } from 'sonner';
 // envolver com um PageContainer.
 
 export default function TagSettings() {
-  const { data: tags = [], isLoading: tagsLoading } = useTags('global');
+  const { data: tags = [], isLoading: tagsLoading } = useTags();
   const { data: settings } = useSettings();
   const { create, update, remove } = useTagOperations();
   const updateSetting = useUpdateSetting();
