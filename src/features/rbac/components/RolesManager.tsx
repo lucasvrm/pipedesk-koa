@@ -223,8 +223,8 @@ export default function RolesManager() {
             </div>
 
             {/* Filtros de Permissão */}
-            <div className="flex gap-4 items-end">
-              <div className="flex-1 space-y-2">
+            <div className="grid grid-cols-4 gap-4 items-end">
+              <div className="col-span-2 space-y-2">
                 <Label>Buscar Permissão</Label>
                 <div className="relative">
                   <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -236,10 +236,10 @@ export default function RolesManager() {
                   />
                 </div>
               </div>
-              <div className="w-[180px] space-y-2">
+              <div className="col-span-1 space-y-2">
                 <Label>Módulo</Label>
                 <Select value={filterModule} onValueChange={setFilterModule}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -250,10 +250,10 @@ export default function RolesManager() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="w-[180px] space-y-2">
+              <div className="col-span-1 space-y-2">
                 <Label>Função</Label>
                 <Select value={filterFunction} onValueChange={setFilterFunction}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
