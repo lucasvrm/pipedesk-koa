@@ -65,7 +65,7 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
     name: tag.name,
     color: tag.color,
     created_by: userData.user?.id,
-    entity_type: tag.entity_type || 'global'
+    entity_type: tag.entity_type === 'global' ? null : (tag.entity_type || null)
   };
 
   const { data, error } = await supabase
@@ -89,7 +89,7 @@ export async function updateTag(id: string, updates: Partial<Tag>) {
 
   // Ensure entity_type is passed if present, otherwise it might remain unchanged
   if (updates.entity_type) {
-      updatePayload.entity_type = updates.entity_type;
+    updatePayload.entity_type = updates.entity_type === 'global' ? null : updates.entity_type;
   }
 
   const { data, error } = await supabase
