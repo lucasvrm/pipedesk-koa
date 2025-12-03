@@ -17,13 +17,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, PencilSimple, Trash, Gear, Globe, Users, Megaphone, Calendar as CalendarIcon } from '@phosphor-icons/react'
+import { Plus, PencilSimple, Trash, Gear, Globe, Users, Megaphone, Calendar as CalendarIcon, FlowArrow, ListChecks } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { PageContainer } from '@/components/PageContainer'
+import { trackStatusService } from '@/services/trackStatusService'
+import { operationTypeService } from '@/services/operationTypeService'
+import { taskStatusService } from '@/services/taskStatusService'
+import { taskPriorityService } from '@/services/taskPriorityService'
 
 // --- TIPOS DE CONFIGURAÇÃO SUPORTADOS ---
-type SettingType = 'products' | 'deal_sources' | 'loss_reasons' | 'player_categories' | 'holidays' | 'communication_templates'
+type SettingType =
+  | 'products'
+  | 'deal_sources'
+  | 'loss_reasons'
+  | 'player_categories'
+  | 'holidays'
+  | 'communication_templates'
+  | 'track_statuses'
+  | 'operation_types'
+  | 'task_statuses'
+  | 'task_priorities'
+
+interface SettingHandler {
+  list: () => Promise<any[]>
+  create: (data: any) => Promise<any>
+  update: (id: string, data: any) => Promise<any>
+  remove: (id: string) => Promise<void>
+  toggleActive?: (id: string, isActive: boolean) => Promise<void>
+}
+
+const createSettingsAdapter = (type: Exclude<SettingType, 'track_statuses' | 'operation_types' | 'task_statuses' | 'task_priorities'>): SettingHandler => ({
+  list: () => settingsService.getSettings(type),
+  create: (data) => settingsService.createSetting(type, data),
+  update: (id, data) => settingsService.updateSetting(type, id, data),
+  remove: (id) => settingsService.deleteSetting(type, id),
+  toggleActive: type === 'holidays' ? undefined : (id, isActive) => settingsService.toggleActive(type, id, isActive)
+})
+
+const SERVICE_HANDLERS: Record<SettingType, SettingHandler> = {
+  products: createSettingsAdapter('products'),
+  deal_sources: createSettingsAdapter('deal_sources'),
+  loss_reasons: createSettingsAdapter('loss_reasons'),
+  player_categories: createSettingsAdapter('player_categories'),
+  holidays: createSettingsAdapter('holidays'),
+  communication_templates: createSettingsAdapter('communication_templates'),
+  track_statuses: trackStatusService,
+  operation_types: operationTypeService,
+  task_statuses: taskStatusService,
+  task_priorities: taskPriorityService,
+}
 
 interface GenericTableProps {
   type: SettingType
@@ -38,6 +81,8 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<any | null>(null)
+  const handler = SERVICE_HANDLERS[type]
+  const supportsToggle = !!handler.toggleActive && type !== 'holidays'
 
   // Estado do Formulário (Genérico)
   const [formData, setFormData] = useState<any>({})
@@ -45,7 +90,7 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const result = await settingsService.getSettings(type)
+      const result = await handler.list()
       setData(result)
     } catch (error) {
       toast.error('Erro ao carregar configurações')
@@ -61,10 +106,10 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
   const handleSave = async () => {
     try {
       if (editingItem) {
-        await settingsService.updateSetting(type, editingItem.id, formData)
+        await handler.update(editingItem.id, formData)
         toast.success('Atualizado com sucesso!')
       } else {
-        await settingsService.createSetting(type, { ...formData, isActive: true })
+        await handler.create({ ...formData, isActive: true })
         toast.success('Criado com sucesso!')
       }
       setIsDialogOpen(false)
@@ -77,7 +122,7 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir?')) return
     try {
-      await settingsService.deleteSetting(type, id)
+      await handler.remove(id)
       toast.success('Excluído com sucesso')
       fetchData()
     } catch (error) {
@@ -86,8 +131,9 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
   }
 
   const handleToggleActive = async (id: string, current: boolean) => {
+    if (!handler.toggleActive) return
     try {
-      await settingsService.toggleActive(type, id, !current)
+      await handler.toggleActive(id, !current)
       // Atualiza localmente para feedback instantâneo
       setData(prev => prev.map(item => item.id === id ? { ...item, isActive: !current } : item))
     } catch (error) {
@@ -101,7 +147,19 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
     if (item) {
       setFormData({ ...item })
     } else {
-      setFormData({ name: '', description: '', type: 'national', variables: [] }) // Defaults genéricos
+      const defaults: Record<SettingType, any> = {
+        products: { name: '', description: '', type: 'national', variables: [], acronym: '', defaultFeePercentage: 0, defaultSlaDays: 0 },
+        deal_sources: { name: '', description: '', type: 'inbound' },
+        loss_reasons: { name: '', description: '' },
+        player_categories: { name: '', description: '' },
+        holidays: { name: '', description: '', type: 'national', date: '' },
+        communication_templates: { title: '', subject: '', content: '', type: 'email', category: '', variables: [] },
+        track_statuses: { name: '', description: '', color: '#22c55e' },
+        operation_types: { name: '', description: '', code: '' },
+        task_statuses: { name: '', description: '', color: '#2563eb' },
+        task_priorities: { name: '', description: '', color: '#eab308' },
+      }
+      setFormData(defaults[type])
     }
     setIsDialogOpen(true)
   }
@@ -156,6 +214,47 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
                     <SelectItem value="regional">Regional</SelectItem>
                 </SelectContent>
               </Select>
+                </div>
+            </>
+        )
+      case 'track_statuses':
+      case 'task_statuses':
+      case 'task_priorities':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Cor</Label>
+              <Input
+                type="color"
+                value={formData.color}
+                onChange={e => setFormData({ ...formData, color: e.target.value })}
+                className="h-10 w-20 p-1"
+              />
+            </div>
+          </>
+        )
+      case 'operation_types':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Código</Label>
+              <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="Ex: ccb" />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
             </div>
           </>
         )
@@ -237,18 +336,18 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
                 {columns.map((col, idx) => (
                   <TableHead key={idx} style={{ width: col.width }}>{col.label}</TableHead>
                 ))}
-                {type !== 'holidays' && <TableHead className="w-[100px]">Ativo</TableHead>}
-                <TableHead className="w-[100px] text-right">Ações</TableHead>
+                {supportsToggle && <TableHead className="w-[100px]">Ativo</TableHead>}
+                <TableHead className="w-[120px] text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 2} className="text-center py-4">Carregando...</TableCell>
+                  <TableCell colSpan={columns.length + (supportsToggle ? 2 : 1)} className="text-center py-4">Carregando...</TableCell>
                 </TableRow>
               ) : data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 2} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={columns.length + (supportsToggle ? 2 : 1)} className="text-center py-8 text-muted-foreground">
                     Nenhum registro encontrado.
                   </TableCell>
                 </TableRow>
@@ -261,7 +360,7 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
                       </TableCell>
                     ))}
 
-                    {type !== 'holidays' && (
+                    {supportsToggle && (
                       <TableCell>
                         <Switch
                           checked={item.isActive}
@@ -321,9 +420,11 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="business" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 lg:w-full">
           <TabsTrigger value="business"><Globe className="mr-2 h-4 w-4" /> Negócios</TabsTrigger>
           <TabsTrigger value="players"><Users className="mr-2 h-4 w-4" /> Players</TabsTrigger>
+          <TabsTrigger value="tracks"><FlowArrow className="mr-2 h-4 w-4" /> Track Status</TabsTrigger>
+          <TabsTrigger value="tasks"><ListChecks className="mr-2 h-4 w-4" /> Tarefas</TabsTrigger>
           <TabsTrigger value="system"><CalendarIcon className="mr-2 h-4 w-4" /> Sistema</TabsTrigger>
           <TabsTrigger value="comms"><Megaphone className="mr-2 h-4 w-4" /> Comms</TabsTrigger>
         </TabsList>
@@ -331,12 +432,23 @@ export default function SettingsPage() {
         <TabsContent value="business" className="space-y-6">
           <SettingsTable
             type="products"
-            title="Produtos & Tipos de Operação"
+            title="Produtos"
             description="Defina os produtos financeiros (ex: CRI, CRA, CCB) disponíveis."
             columns={[
               { key: 'name', label: 'Nome', width: '250px', render: (i) => <span className="font-medium">{i.name}</span> },
               { key: 'acronym', label: 'Sigla', width: '100px', render: (i) => <Badge variant="outline">{i.acronym}</Badge> },
               { key: 'defaultFeePercentage', label: 'Fee Padrão', width: '100px', render: (i) => i.defaultFeePercentage ? `${i.defaultFeePercentage}%` : '-' },
+              { key: 'description', label: 'Descrição' }
+            ]}
+          />
+
+          <SettingsTable
+            type="operation_types"
+            title="Tipos de Operação"
+            description="Configure os tipos de operação suportados para negócios e deals."
+            columns={[
+              { key: 'name', label: 'Tipo', width: '220px', render: (i) => <span className="font-medium">{i.name}</span> },
+              { key: 'code', label: 'Código', width: '120px', render: (i) => i.code ? <Badge variant="outline" className="uppercase">{i.code}</Badge> : '-' },
               { key: 'description', label: 'Descrição' }
             ]}
           />
@@ -370,6 +482,52 @@ export default function SettingsPage() {
             description="Segmentação de investidores e parceiros."
             columns={[
               { key: 'name', label: 'Categoria', width: '250px', render: (i) => <span className="font-medium">{i.name}</span> },
+              { key: 'description', label: 'Descrição' }
+            ]}
+          />
+        </TabsContent>
+
+        <TabsContent value="tracks" className="space-y-6">
+          <SettingsTable
+            type="track_statuses"
+            title="Track Status"
+            description="Gerencie os status utilizados para os tracks dos players."
+            columns={[
+              { key: 'name', label: 'Status', width: '220px', render: (i) => <span className="font-medium">{i.name}</span> },
+              { key: 'color', label: 'Cor', width: '120px', render: (i) => {
+                const color = i.color || '#475569'
+                return <Badge style={{ backgroundColor: color, color: '#fff' }}>{i.color || 'Sem cor'}</Badge>
+              } },
+              { key: 'description', label: 'Descrição' }
+            ]}
+          />
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-6">
+          <SettingsTable
+            type="task_statuses"
+            title="Status de Tarefas"
+            description="Padronize os status das tarefas e acompanhe a ativação de cada um."
+            columns={[
+              { key: 'name', label: 'Status', width: '220px', render: (i) => <span className="font-medium">{i.name}</span> },
+              { key: 'color', label: 'Cor', width: '120px', render: (i) => {
+                const color = i.color || '#475569'
+                return <Badge style={{ backgroundColor: color, color: '#fff' }}>{i.color || 'Sem cor'}</Badge>
+              } },
+              { key: 'description', label: 'Descrição' }
+            ]}
+          />
+
+          <SettingsTable
+            type="task_priorities"
+            title="Prioridades de Tarefas"
+            description="Defina níveis de prioridade para organizar o fluxo de trabalho."
+            columns={[
+              { key: 'name', label: 'Prioridade', width: '220px', render: (i) => <span className="font-medium">{i.name}</span> },
+              { key: 'color', label: 'Cor', width: '120px', render: (i) => {
+                const color = i.color || '#475569'
+                return <Badge style={{ backgroundColor: color, color: '#fff' }}>{i.color || 'Sem cor'}</Badge>
+              } },
               { key: 'description', label: 'Descrição' }
             ]}
           />
