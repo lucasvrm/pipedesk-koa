@@ -188,6 +188,7 @@ function mapFromDb(item: any, type: SettingType): any {
         type: item.type,
         category: item.category,
         variables: item.variables || [],
+        isActive: item.is_active,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
         createdBy: item.created_by
@@ -231,6 +232,7 @@ function mapToDb(item: any, type: SettingType): any {
         type: item.type,
         category: item.category,
         variables: item.variables,
+        is_active: item.isActive,
       }
     default:
       return base
