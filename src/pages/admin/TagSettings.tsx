@@ -329,9 +329,9 @@ export default function TagSettings() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="global">Global (Todos)</SelectItem>
+                    <SelectItem value="lead">Apenas Leads</SelectItem>
                     <SelectItem value="deal">Apenas Deals</SelectItem>
                     <SelectItem value="track">Apenas Tracks</SelectItem>
-                    <SelectItem value="lead">Apenas Leads</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground mt-1">
