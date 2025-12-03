@@ -113,6 +113,7 @@ export interface CommunicationTemplate {
   type: CommunicationTemplateType;
   category?: string;
   variables: string[]; // ex: ['{{client_name}}']
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
