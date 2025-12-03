@@ -37,12 +37,13 @@ export async function getTags(entityType?: 'deal' | 'track' | 'lead' | 'global')
   let query = supabase.from('tags').select('*').order('name');
 
   if (entityType) {
-    // Se solicitou 'global', traz só global
+    // Se solicitou 'global', traz só global (que agora é null)
     if (entityType === 'global') {
-      query = query.eq('entity_type', 'global');
+      query = query.is('entity_type', null);
     } else {
-      // Se solicitou um tipo específico, traz esse tipo E globais
-      query = query.in('entity_type', [entityType, 'global']);
+      // Se solicitou um tipo específico, traz esse tipo E globais (null)
+      // Usamos .or() para combinar as condições
+      query = query.or(`entity_type.eq.${entityType},entity_type.is.null`);
     }
   }
 
@@ -65,7 +66,7 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
     name: tag.name,
     color: tag.color,
     created_by: userData.user?.id,
-    entity_type: tag.entity_type || 'global'
+    entity_type: tag.entity_type === 'global' ? null : (tag.entity_type || null)
   };
 
   const { data, error } = await supabase
@@ -89,7 +90,7 @@ export async function updateTag(id: string, updates: Partial<Tag>) {
 
   // Ensure entity_type is passed if present, otherwise it might remain unchanged
   if (updates.entity_type) {
-      updatePayload.entity_type = updates.entity_type;
+    updatePayload.entity_type = updates.entity_type === 'global' ? null : updates.entity_type;
   }
 
   const { data, error } = await supabase
