@@ -26,6 +26,38 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { Progress } from '@/components/ui/progress'
+import { useEntityTags } from '@/services/tagService'
+
+function LeadTagsCell({ leadId }: { leadId: string }) {
+  const { data: tags, isLoading } = useEntityTags(leadId, 'lead')
+
+  if (isLoading) {
+    return <span className="text-xs text-muted-foreground">Carregando...</span>
+  }
+
+  if (!tags || tags.length === 0) {
+    return <span className="text-xs text-muted-foreground">Sem tags</span>
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 max-w-[200px]">
+      {tags.map(tag => (
+        <Badge
+          key={tag.id}
+          variant="outline"
+          className="text-xs"
+          style={{
+            borderColor: tag.color,
+            color: tag.color,
+            backgroundColor: `${tag.color}15`
+          }}
+        >
+          {tag.name}
+        </Badge>
+      ))}
+    </div>
+  )
+}
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -399,7 +431,7 @@ export default function LeadsListPage() {
         footer={viewMode === 'kanban' ? null : pagination}
       >
         {isLoading ? (
-          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Origem", "Responsável", "Ações"]} />
+          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado com os filtros atuais.
@@ -419,6 +451,7 @@ export default function LeadsListPage() {
                   <TableHead>Contato</TableHead>
                   <TableHead>Operação</TableHead>
                   <TableHead>Progresso</TableHead>
+                  <TableHead>Tags</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead className="w-[140px] text-right">Ações</TableHead>
@@ -436,12 +469,7 @@ export default function LeadsListPage() {
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{lead.legalName}</div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {lead.tradeName && <span className="text-xs text-muted-foreground">{lead.tradeName}</span>}
-                          <div onClick={e => e.stopPropagation()}>
-                            <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
-                          </div>
-                        </div>
+                        {lead.tradeName && <div className="text-xs text-muted-foreground mt-1">{lead.tradeName}</div>}
                       </TableCell>
                       <TableCell>
                         {contact ? (
@@ -467,12 +495,14 @@ export default function LeadsListPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1 min-w-[140px]">
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>{LEAD_STATUS_LABELS[lead.status]}</span>
+                          <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
+                          <div className="flex items-center justify-end text-[11px] text-muted-foreground">
                             <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
                           </div>
-                          <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <LeadTagsCell leadId={lead.id} />
                       </TableCell>
                       <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
                       <TableCell>

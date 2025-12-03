@@ -308,6 +308,11 @@ export function Layout({ children }: LayoutProps) {
                       Pipeline & Fases
                     </DropdownMenuItem>
 
+                    <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                      <List className="mr-2" />
+                      Variáveis Globais
+                    </DropdownMenuItem>
+
                     <DropdownMenuItem onClick={() => navigate('/admin/tags')}>
                       <Tag className="mr-2" />
                       Tags
