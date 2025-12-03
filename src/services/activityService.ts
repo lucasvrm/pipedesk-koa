@@ -1,11 +1,21 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 
+export type ActivityEntityType =
+  | 'deal'
+  | 'track'
+  | 'task'
+  | 'lead'
+  | 'company'
+  | 'user'
+  | 'folder'
+  | 'player'
+
 export interface ActivityLogEntry {
   id: string
   user_id: string
   entity_id: string
-  entity_type: string
+  entity_type: ActivityEntityType
   action: string
   changes: any
   created_at: string
@@ -16,9 +26,9 @@ export interface ActivityLogEntry {
 }
 
 export async function logActivity(
-  entityId: string, 
-  entityType: string, 
-  action: string, 
+  entityId: string,
+  entityType: ActivityEntityType,
+  action: string,
   userId: string,
   details?: any
 ) {
@@ -35,7 +45,10 @@ export async function logActivity(
   }
 }
 
-export async function getActivities(entityId?: string, entityType?: string): Promise<ActivityLogEntry[]> {
+export async function getActivities(
+  entityId?: string,
+  entityType?: ActivityEntityType
+): Promise<ActivityLogEntry[]> {
   let query = supabase
     .from('activity_log')
     .select(`
@@ -62,7 +75,7 @@ export async function getActivities(entityId?: string, entityType?: string): Pro
 }
 
 // Hook para usar no componente
-export function useActivities(entityId?: string, entityType?: string) {
+export function useActivities(entityId?: string, entityType?: ActivityEntityType) {
   return useQuery({
     queryKey: ['activities', entityId, entityType],
     queryFn: () => getActivities(entityId, entityType),
