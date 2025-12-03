@@ -1,89 +1,80 @@
 import { supabase } from '@/lib/supabaseClient'
+import { TaskStatusDefinition } from '@/lib/types'
 
-export interface TaskStatusSetting {
-  id: string
+export interface TaskStatusInput {
   name: string
   description?: string
-  color?: string
-  isActive: boolean
-  createdAt?: string
+  isActive?: boolean
 }
 
-function mapFromDb(item: any): TaskStatusSetting {
+function mapFromDb(item: any): TaskStatusDefinition {
   return {
     id: item.id,
     name: item.name,
     description: item.description,
-    color: item.color,
-    isActive: item.is_active ?? true,
+    isActive: item.is_active,
     createdAt: item.created_at,
+    updatedAt: item.updated_at
   }
 }
 
-function mapToDb(item: Partial<TaskStatusSetting>) {
+function mapToDb(data: TaskStatusInput) {
   return {
-    name: item.name,
-    description: item.description,
-    color: item.color,
-    is_active: item.isActive,
+    name: data.name,
+    description: data.description,
+    is_active: data.isActive ?? true
   }
-}
-
-async function getTaskStatuses(): Promise<TaskStatusSetting[]> {
-  const { data, error } = await supabase
-    .from('task_statuses')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data || []).map(mapFromDb)
-}
-
-async function createTaskStatus(data: Partial<TaskStatusSetting>): Promise<TaskStatusSetting> {
-  const payload = mapToDb({ ...data, isActive: data.isActive ?? true })
-  const { data: created, error } = await supabase
-    .from('task_statuses')
-    .insert(payload)
-    .select()
-    .single()
-
-  if (error) throw error
-  return mapFromDb(created)
-}
-
-async function updateTaskStatus(id: string, data: Partial<TaskStatusSetting>): Promise<TaskStatusSetting> {
-  const payload = mapToDb(data)
-  const { data: updated, error } = await supabase
-    .from('task_statuses')
-    .update(payload)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return mapFromDb(updated)
-}
-
-async function deleteTaskStatus(id: string): Promise<void> {
-  const { error } = await supabase.from('task_statuses').delete().eq('id', id)
-  if (error) throw error
-}
-
-async function toggleTaskStatus(id: string, isActive: boolean): Promise<void> {
-  const { error } = await supabase
-    .from('task_statuses')
-    .update({ is_active: isActive })
-    .eq('id', id)
-
-  if (error) throw error
 }
 
 export const taskStatusService = {
-  list: getTaskStatuses,
-  create: createTaskStatus,
-  update: updateTaskStatus,
-  remove: deleteTaskStatus,
-  toggleActive: toggleTaskStatus,
-}
+  async getTaskStatuses(): Promise<TaskStatusDefinition[]> {
+    const { data, error } = await supabase
+      .from('task_statuses')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-export type TaskStatusService = typeof taskStatusService
+    if (error) throw error
+    return (data || []).map(mapFromDb)
+  },
+
+  async createTaskStatus(payload: TaskStatusInput): Promise<TaskStatusDefinition> {
+    const { data, error } = await supabase
+      .from('task_statuses')
+      .insert(mapToDb(payload))
+      .select()
+      .single()
+
+    if (error) throw error
+    return mapFromDb(data)
+  },
+
+  async updateTaskStatus(id: string, payload: TaskStatusInput): Promise<TaskStatusDefinition> {
+    const { data, error } = await supabase
+      .from('task_statuses')
+      .update(mapToDb(payload))
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return mapFromDb(data)
+  },
+
+  async deleteTaskStatus(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('task_statuses')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  async toggleTaskStatus(id: string, isActive: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('task_statuses')
+      .update({ is_active: isActive })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+}

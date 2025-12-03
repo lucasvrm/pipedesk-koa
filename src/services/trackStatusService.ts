@@ -1,12 +1,10 @@
 import { supabase } from '@/lib/supabaseClient'
+import { TrackStatus } from '@/lib/types'
 
-export interface TrackStatus {
-  id: string
+export interface TrackStatusInput {
   name: string
   description?: string
-  color?: string
-  isActive: boolean
-  createdAt?: string
+  isActive?: boolean
 }
 
 function mapFromDb(item: any): TrackStatus {
@@ -14,76 +12,69 @@ function mapFromDb(item: any): TrackStatus {
     id: item.id,
     name: item.name,
     description: item.description,
-    color: item.color,
-    isActive: item.is_active ?? true,
-    createdAt: item.created_at
+    isActive: item.is_active,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at
   }
 }
 
-function mapToDb(item: Partial<TrackStatus>) {
+function mapToDb(data: TrackStatusInput) {
   return {
-    name: item.name,
-    description: item.description,
-    color: item.color,
-    is_active: item.isActive
+    name: data.name,
+    description: data.description,
+    is_active: data.isActive ?? true
   }
-}
-
-async function getTrackStatuses(): Promise<TrackStatus[]> {
-  const { data, error } = await supabase
-    .from('track_statuses')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data || []).map(mapFromDb)
-}
-
-async function createTrackStatus(data: Partial<TrackStatus>): Promise<TrackStatus> {
-  const payload = mapToDb({ ...data, isActive: data.isActive ?? true })
-  const { data: created, error } = await supabase
-    .from('track_statuses')
-    .insert(payload)
-    .select()
-    .single()
-
-  if (error) throw error
-  return mapFromDb(created)
-}
-
-async function updateTrackStatus(id: string, data: Partial<TrackStatus>): Promise<TrackStatus> {
-  const payload = mapToDb(data)
-  const { data: updated, error } = await supabase
-    .from('track_statuses')
-    .update(payload)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return mapFromDb(updated)
-}
-
-async function deleteTrackStatus(id: string): Promise<void> {
-  const { error } = await supabase.from('track_statuses').delete().eq('id', id)
-  if (error) throw error
-}
-
-async function toggleTrackStatus(id: string, isActive: boolean): Promise<void> {
-  const { error } = await supabase
-    .from('track_statuses')
-    .update({ is_active: isActive })
-    .eq('id', id)
-
-  if (error) throw error
 }
 
 export const trackStatusService = {
-  list: getTrackStatuses,
-  create: createTrackStatus,
-  update: updateTrackStatus,
-  remove: deleteTrackStatus,
-  toggleActive: toggleTrackStatus,
-}
+  async getTrackStatuses(): Promise<TrackStatus[]> {
+    const { data, error } = await supabase
+      .from('track_statuses')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-export type TrackStatusService = typeof trackStatusService
+    if (error) throw error
+    return (data || []).map(mapFromDb)
+  },
+
+  async createTrackStatus(payload: TrackStatusInput): Promise<TrackStatus> {
+    const { data, error } = await supabase
+      .from('track_statuses')
+      .insert(mapToDb(payload))
+      .select()
+      .single()
+
+    if (error) throw error
+    return mapFromDb(data)
+  },
+
+  async updateTrackStatus(id: string, payload: TrackStatusInput): Promise<TrackStatus> {
+    const { data, error } = await supabase
+      .from('track_statuses')
+      .update(mapToDb(payload))
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return mapFromDb(data)
+  },
+
+  async deleteTrackStatus(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('track_statuses')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  async toggleTrackStatus(id: string, isActive: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('track_statuses')
+      .update({ is_active: isActive })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+}
