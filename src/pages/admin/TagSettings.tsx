@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { PencilSimple, Trash, Plus, WarningCircle } from '@phosphor-icons/react';
+import { PencilSimple, Trash, Plus, WarningCircle, Tag as TagIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 // Atenção: PageContainer foi removido daqui. O componente agora apenas
@@ -166,8 +166,69 @@ export default function TagSettings() {
 
   if (tagsLoading) return <div>Carregando tags...</div>;
 
+  // Renderiza uma lista de tags para uma seção específica
+  const renderTagList = (moduleKey: 'deals' | 'tracks' | 'leads', title: string) => {
+    // Filtra tags que devem aparecer nesta seção:
+    // 1. Tags globais
+    // 2. Tags específicas deste módulo (singular: deal, track, lead)
+    const entityTypeSingular = moduleKey === 'deals' ? 'deal' : moduleKey === 'tracks' ? 'track' : 'lead';
+
+    const relevantTags = tags.filter(t =>
+      t.entity_type === 'global' || t.entity_type === entityTypeSingular
+    );
+
+    if (relevantTags.length === 0) {
+      return (
+        <div className="text-sm text-muted-foreground italic p-4 border rounded-md border-dashed">
+          Nenhuma tag disponível para {title}.
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {relevantTags.map(tag => (
+           <div
+             key={tag.id}
+             className="group relative flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card hover:bg-accent/50 transition-colors"
+           >
+             <div
+               className="w-2.5 h-2.5 rounded-full shrink-0"
+               style={{ backgroundColor: tag.color }}
+             />
+             <span className="text-sm font-medium">{tag.name}</span>
+
+             {tag.entity_type === 'global' && (
+               <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                 Global
+               </Badge>
+             )}
+
+             {/* Ações ocultas que aparecem no hover */}
+             <div className="flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+               <button
+                 onClick={() => openEdit(tag)}
+                 className="p-1 hover:bg-background rounded-full text-muted-foreground hover:text-foreground"
+                 title="Editar"
+               >
+                 <PencilSimple size={14} />
+               </button>
+               <button
+                 onClick={() => handleDelete(tag.id)}
+                 className="p-1 hover:bg-red-50 rounded-full text-muted-foreground hover:text-destructive"
+                 title="Excluir"
+               >
+                 <Trash size={14} />
+               </button>
+             </div>
+           </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Gerenciador de Tags</h3>
@@ -201,77 +262,43 @@ export default function TagSettings() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        {(['deals', 'tracks', 'leads'] as const).map((moduleKey) => (
-          <Card
-            key={moduleKey}
-            className={!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <div>
-                <CardTitle className="text-sm">
-                  {moduleLabels[moduleKey]}
-                </CardTitle>
-                <CardDescription>
-                  Habilita tags para {moduleLabels[moduleKey]}.
-                </CardDescription>
-              </div>
-              <Switch
-                checked={tagsConfig.modules[moduleKey] !== false}
-                onCheckedChange={(checked) =>
-                  handleModuleToggle(moduleKey, checked)
-                }
-                disabled={!tagsEnabled}
-                id={`tags-toggle-${moduleKey}`}
-              />
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+      {/* Seção Principal: Cards de Configuração + Listas de Tags */}
+      <div className={`space-y-8 ${!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
 
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${
-          !tagsEnabled ? 'opacity-50 pointer-events-none' : ''
-        }`}
-      >
-        {tags.map((tag) => (
-          <Card key={tag.id} className="group relative">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: tag.color }}
-                />
-                <div className="space-y-1">
-                  <span className="font-medium text-sm block">{tag.name}</span>
-                  <Badge variant="outline" className="text-[10px] capitalize">
-                    {tag.entity_type === 'global'
-                      ? 'Global'
-                      : `Apenas ${tag.entity_type}`}
-                  </Badge>
+        {/* Iteramos sobre os módulos para criar as seções visuais */}
+        {(['deals', 'tracks', 'leads'] as const).map((moduleKey) => (
+          <div key={moduleKey} className="space-y-4">
+             <div className="flex items-center justify-between border-b pb-2">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-primary/10 rounded-md text-primary">
+                      <TagIcon size={20} />
+                   </div>
+                   <div>
+                     <h4 className="font-medium text-base">Tags de {moduleLabels[moduleKey]}</h4>
+                     <p className="text-xs text-muted-foreground">
+                       Tags disponíveis no módulo de {moduleLabels[moduleKey]} (Globais + Específicas)
+                     </p>
+                   </div>
                 </div>
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => openEdit(tag)}
-                >
-                  <PencilSimple />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive"
-                  onClick={() => handleDelete(tag.id)}
-                >
-                  <Trash />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor={`switch-${moduleKey}`} className="text-sm text-muted-foreground">
+                    Habilitar módulo
+                  </Label>
+                  <Switch
+                    id={`switch-${moduleKey}`}
+                    checked={tagsConfig.modules[moduleKey] !== false}
+                    onCheckedChange={(checked) => handleModuleToggle(moduleKey, checked)}
+                  />
+                </div>
+             </div>
+
+             {/* Lista de Tags Visualmente Agradável */}
+             <div className="bg-muted/30 p-4 rounded-lg border border-dashed">
+                {renderTagList(moduleKey, moduleLabels[moduleKey])}
+             </div>
+          </div>
         ))}
+
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -306,6 +333,9 @@ export default function TagSettings() {
                     <SelectItem value="lead">Apenas Leads</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Define onde esta tag será visível.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Cor</Label>
