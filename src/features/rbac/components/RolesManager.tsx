@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRoles, usePermissions, useCreateRole, useUpdateRole, useDeleteRole } from '@/services/roleService';
-import { Role, Permission } from '@/lib/types';
+import { Role } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PencilSimple, Trash, Plus, ShieldCheck } from '@phosphor-icons/react';
+import { PencilSimple, Trash, Plus, ShieldCheck, MagnifyingGlass } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 
 export default function RolesManager() {
   const { data: roles, isLoading: rolesLoading } = useRoles();
@@ -29,11 +35,55 @@ export default function RolesManager() {
   const [roleDesc, setRoleDesc] = useState('');
   const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
 
+  // Filtros de Permissão
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterModule, setFilterModule] = useState<string>('all');
+  const [filterFunction, setFilterFunction] = useState<string>('all');
+
+  // Lógica de Filtros Dinâmicos
+  const { modules, functions, filteredPermissions } = useMemo(() => {
+    if (!allPermissions) return { modules: [], functions: [], filteredPermissions: [] };
+
+    const mods = new Set<string>();
+    const funcs = new Set<string>();
+
+    allPermissions.forEach(p => {
+      const parts = p.code.split('.');
+      if (parts.length > 0) mods.add(parts[0]);
+      if (parts.length > 1) funcs.add(parts[1]);
+    });
+
+    const sortedMods = Array.from(mods).sort();
+    const sortedFuncs = Array.from(funcs).sort();
+
+    const filtered = allPermissions.filter(p => {
+      const parts = p.code.split('.');
+      const pModule = parts[0];
+      const pFunction = parts[1] || '';
+
+      const matchSearch =
+        p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchModule = filterModule === 'all' || pModule === filterModule;
+      const matchFunction = filterFunction === 'all' || pFunction === filterFunction;
+
+      return matchSearch && matchModule && matchFunction;
+    }).sort((a, b) => a.code.localeCompare(b.code));
+
+    return {
+      modules: sortedMods,
+      functions: sortedFuncs,
+      filteredPermissions: filtered
+    };
+  }, [allPermissions, searchTerm, filterModule, filterFunction]);
+
   const openCreate = () => {
     setEditingRole(null);
     setRoleName('');
     setRoleDesc('');
     setSelectedPerms([]);
+    resetFilters();
     setIsDialogOpen(true);
   };
 
@@ -42,7 +92,14 @@ export default function RolesManager() {
     setRoleName(role.name);
     setRoleDesc(role.description || '');
     setSelectedPerms(role.permissions?.map(p => p.id) || []);
+    resetFilters();
     setIsDialogOpen(true);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterModule('all');
+    setFilterFunction('all');
   };
 
   const handleSave = async () => {
@@ -66,7 +123,7 @@ export default function RolesManager() {
         toast.success("Nova função criada!");
       }
       setIsDialogOpen(false);
-    } catch (error) {
+    } catch {
       toast.error("Erro ao salvar função.");
     }
   };
@@ -76,7 +133,7 @@ export default function RolesManager() {
     try {
       await deleteMutation.mutateAsync(id);
       toast.success("Função excluída.");
-    } catch (error) {
+    } catch {
       toast.error("Erro ao excluir. Verifique se há usuários vinculados.");
     }
   };
@@ -165,30 +222,86 @@ export default function RolesManager() {
               </div>
             </div>
 
+            {/* Filtros de Permissão */}
+            <div className="grid grid-cols-4 gap-4 items-end">
+              <div className="col-span-2 space-y-2">
+                <Label>Buscar Permissão</Label>
+                <div className="relative">
+                  <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filtrar por nome ou código..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="col-span-1 space-y-2">
+                <Label>Módulo</Label>
+                <Select value={filterModule} onValueChange={setFilterModule}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {modules.map(mod => (
+                      <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-1 space-y-2">
+                <Label>Função</Label>
+                <Select value={filterFunction} onValueChange={setFilterFunction}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {functions.map(func => (
+                      <SelectItem key={func} value={func}>{func}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="border rounded-md p-4">
-              <Label className="mb-3 block">Permissões do Sistema</Label>
+              <div className="flex justify-between items-center mb-3">
+                 <Label>Permissões do Sistema</Label>
+                 <span className="text-xs text-muted-foreground">
+                   Mostrando {filteredPermissions.length} de {allPermissions?.length || 0}
+                 </span>
+              </div>
+
               <ScrollArea className="h-[300px] pr-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {allPermissions?.map(perm => (
-                    <div key={perm.id} className="flex items-start space-x-2 border p-2 rounded hover:bg-accent/50">
-                      <Checkbox 
-                        id={perm.id} 
-                        checked={selectedPerms.includes(perm.id)}
-                        onCheckedChange={() => togglePerm(perm.id)}
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <label
-                          htmlFor={perm.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {perm.code}
-                        </label>
-                        <p className="text-xs text-muted-foreground">
-                          {perm.description}
-                        </p>
-                      </div>
+                  {filteredPermissions.length === 0 ? (
+                    <div className="col-span-2 text-center text-sm text-muted-foreground py-8">
+                      Nenhuma permissão encontrada com os filtros atuais.
                     </div>
-                  ))}
+                  ) : (
+                    filteredPermissions.map(perm => (
+                      <div key={perm.id} className="flex items-start space-x-2 border p-2 rounded hover:bg-accent/50">
+                        <Checkbox
+                          id={perm.id}
+                          checked={selectedPerms.includes(perm.id)}
+                          onCheckedChange={() => togglePerm(perm.id)}
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                          <label
+                            htmlFor={perm.id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {perm.code}
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            {perm.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </ScrollArea>
             </div>
