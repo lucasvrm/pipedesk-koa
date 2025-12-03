@@ -1,10 +1,10 @@
-import { ReactNode, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
-import { useImpersonation } from '@/contexts/ImpersonationContext'
-import { hasPermission } from '@/lib/permissions'
-import { getInitials } from '@/lib/helpers'
-import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications' 
+import { ReactNode, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
+import { hasPermission } from '@/lib/permissions';
+import { getInitials } from '@/lib/helpers';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import {
   ChartBar,
   Kanban,
@@ -15,93 +15,93 @@ import {
   Users,
   GoogleLogo,
   MagnifyingGlass,
-  ShieldCheck,
   Gear,
-  ListChecks,
   FolderOpen,
-  GitBranch,
   List,
   Question,
   FlowArrow,
-  Clock,
-  Buildings,
-  Briefcase,
-  Eye,
-  EyeSlash,
-  Tag,
   Funnel,
   AddressBook,
-  Database
-} from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+  Database,
+  Briefcase,
+  Buildings,
+  ListChecks
+} from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
-
-import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
-import { SLAConfigManager } from '@/components/SLAConfigManager'
-import GlobalSearch from '@/components/GlobalSearch'
-import InboxPanel from '@/features/inbox/components/InboxPanel'
-import { SLAMonitoringService } from '@/components/SLAMonitoringService'
-import { OnboardingTour } from '@/components/OnboardingTour'
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
+import { SLAConfigManager } from '@/components/SLAConfigManager';
+import GlobalSearch from '@/components/GlobalSearch';
+import InboxPanel from '@/features/inbox/components/InboxPanel';
+import { SLAMonitoringService } from '@/components/SLAMonitoringService';
+import { OnboardingTour } from '@/components/OnboardingTour';
 
 interface LayoutProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile, signOut: authSignOut } = useAuth()
-  const { isImpersonating, setIsImpersonating } = useImpersonation()
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { profile, signOut: authSignOut } = useAuth();
+  const { isImpersonating, setIsImpersonating } = useImpersonation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useRealtimeNotifications(profile?.id);
 
-  const [inboxOpen, setInboxOpen] = useState(false)
-  const [createDealOpen, setCreateDealOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [slaConfigOpen, setSlaConfigOpen] = useState(false)
-  const [compactMode, setCompactMode] = useState(false)
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [createDealOpen, setCreateDealOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [slaConfigOpen, setSlaConfigOpen] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
 
-  const currentUser = profile
-  const unreadCount = 0 
+  const currentUser = profile;
+  const unreadCount = 0;
 
   const handleSignOut = async () => {
-    const success = await authSignOut()
+    const success = await authSignOut();
     if (success) {
-      toast.success('Você saiu do sistema')
-      navigate('/login')
+      toast.success('Você saiu do sistema');
+      navigate('/login');
     } else {
-      toast.error('Erro ao sair do sistema')
+      toast.error('Erro ao sair do sistema');
     }
-  }
+  };
 
-  if (!currentUser) return null
+  if (!currentUser) return null;
 
-  const canManageUsers = hasPermission(currentUser.role, 'MANAGE_USERS')
-  const canViewAnalytics = hasPermission(currentUser.role, 'VIEW_ANALYTICS')
-  const canManageIntegrations = hasPermission(currentUser.role, 'MANAGE_INTEGRATIONS')
-  const canManageSettings = hasPermission(currentUser.role, 'MANAGE_SETTINGS')
+  const canManageUsers = hasPermission(currentUser.role, 'MANAGE_USERS');
+  const canViewAnalytics = hasPermission(currentUser.role, 'VIEW_ANALYTICS');
+  const canManageIntegrations = hasPermission(
+    currentUser.role,
+    'MANAGE_INTEGRATIONS'
+  );
+  const canManageSettings = hasPermission(
+    currentUser.role,
+    'MANAGE_SETTINGS'
+  );
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
+  const isActive = (path: string) =>
+    location.pathname === path ||
+    location.pathname.startsWith(path + '/');
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-6">
-          
           <div className="flex items-center gap-6">
-            <h1 
-              className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity" 
+            <h1
+              className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate('/dashboard')}
             >
               PipeDesk
@@ -130,9 +130,13 @@ export function Layout({ children }: LayoutProps) {
                   Leads
                 </Link>
               </Button>
-              
+
               <Button
-                variant={isActive('/deals') && !isActive('/deals/comparison') ? 'secondary' : 'ghost'}
+                variant={
+                  isActive('/deals') && !isActive('/deals/comparison')
+                    ? 'secondary'
+                    : 'ghost'
+                }
                 size="sm"
                 asChild
                 data-tour="deals-nav"
@@ -239,23 +243,27 @@ export function Layout({ children }: LayoutProps) {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                      <p className="text-sm font-medium">{currentUser.name || 'Usuário'}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">{currentUser.email || ''}</p>
+                      <p className="text-sm font-medium">
+                        {currentUser.name || 'Usuário'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {currentUser.email || ''}
+                      </p>
                     </div>
                   </div>
                 </DropdownMenuLabel>
-                
+
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                   <UserIcon className="mr-2" />
                   Perfil
                 </DropdownMenuItem>
-                
-                {/* Removed direct link to /rbac. Permissions will be handled via Settings tab. */}
 
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Gestão</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
+                  Gestão
+                </DropdownMenuLabel>
 
                 {canViewAnalytics && (
                   <DropdownMenuItem onClick={() => navigate('/analytics')}>
@@ -265,7 +273,9 @@ export function Layout({ children }: LayoutProps) {
                 )}
 
                 {canManageIntegrations && (
-                  <DropdownMenuItem onClick={() => navigate('/admin/integrations/google')}>
+                  <DropdownMenuItem
+                    onClick={() => navigate('/admin/integrations/google')}
+                  >
                     <GoogleLogo className="mr-2" />
                     Google Workspace
                   </DropdownMenuItem>
@@ -286,42 +296,56 @@ export function Layout({ children }: LayoutProps) {
                 {canManageSettings && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Configurações</DropdownMenuLabel>
-                    
-                    <DropdownMenuItem onClick={() => navigate('/custom-fields')}>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
+                      Configurações
+                    </DropdownMenuLabel>
+
+                    <DropdownMenuItem
+                      onClick={() => navigate('/custom-fields')}
+                    >
                       <Gear className="mr-2" />
                       Campos Customizados
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/admin/gerador-dados')}>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/admin/gerador-dados')}
+                    >
                       <Database className="mr-2" />
                       Dados Sintéticos
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/admin/pipeline')}>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/admin/pipeline')}
+                    >
                       <FlowArrow className="mr-2" />
                       Pipeline & Fases
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/admin/settings')}
+                    >
                       <List className="mr-2" />
                       Variáveis Globais
                     </DropdownMenuItem>
 
-                    {/* Removed direct Tags link; tags management is now under Variáveis Globais. */}
+                    {/* O link direto para Tags foi removido; agora, tags são gerenciadas
+                        na aba Tags em Variáveis Globais. */}
                   </>
                 )}
-                
+
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuItem onClick={() => navigate('/help')}>
                   <Question className="mr-2" />
                   Central de Ajuda
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
-                
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleSignOut}>
+
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={handleSignOut}
+                >
                   <SignOut className="mr-2" />
                   Sair
                 </DropdownMenuItem>
@@ -331,9 +355,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       <GlobalSearch
         open={searchOpen}
@@ -341,11 +363,20 @@ export function Layout({ children }: LayoutProps) {
         currentUser={currentUser}
       />
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
-      <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
+      <CreateDealDialog
+        open={createDealOpen}
+        onOpenChange={setCreateDealOpen}
+      />
 
-      {/* SLA Modal Legacy - Kept for backup access if page fails, but menu links to page now */}
+      {/* SLA Modal Legacy */}
       {canManageSettings && (
-        <div className={slaConfigOpen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6 animate-in fade-in duration-200' : 'hidden'}>
+        <div
+          className={
+            slaConfigOpen
+              ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6 animate-in fade-in duration-200'
+              : 'hidden'
+          }
+        >
           <div className="max-w-5xl mx-auto">
             <div className="mb-6 flex items-center gap-4">
               <Button variant="ghost" onClick={() => setSlaConfigOpen(false)}>
@@ -362,22 +393,58 @@ export function Layout({ children }: LayoutProps) {
       <OnboardingTour />
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
-        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
-          <Link to="/dashboard"><ChartBar className="mb-1 h-5 w-5"/><span className="text-[10px]">Dash</span></Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
+        >
+          <Link to="/dashboard">
+            <ChartBar className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Dash</span>
+          </Link>
         </Button>
-        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
-          <Link to="/deals"><Kanban className="mb-1 h-5 w-5"/><span className="text-[10px]">Deals</span></Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
+        >
+          <Link to="/deals">
+            <Kanban className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Deals</span>
+          </Link>
         </Button>
-        <Button size="sm" onClick={() => setCreateDealOpen(true)} className="flex-col h-12 w-12 rounded-full -mt-6 shadow-lg bg-primary text-primary-foreground border-4 border-background hover:bg-primary/90">
+        <Button
+          size="sm"
+          onClick={() => setCreateDealOpen(true)}
+          className="flex-col h-12 w-12 rounded-full -mt-6 shadow-lg bg-primary text-primary-foreground border-4 border-background hover:bg-primary/90"
+        >
           <Plus className="h-6 w-6" />
         </Button>
-        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
-          <Link to="/companies"><Briefcase className="mb-1 h-5 w-5"/><span className="text-[10px]">Empresas</span></Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
+        >
+          <Link to="/companies">
+            <Briefcase className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Empresas</span>
+          </Link>
         </Button>
-        <Button variant="ghost" size="sm" asChild className="flex-col h-full py-1 px-2 rounded-none flex-1">
-          <Link to="/players"><Buildings className="mb-1 h-5 w-5"/><span className="text-[10px]">Players</span></Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="flex-col h-full py-1 px-2 rounded-none flex-1"
+        >
+          <Link to="/players">
+            <Buildings className="mb-1 h-5 w-5" />
+            <span className="text-[10px]">Players</span>
+          </Link>
         </Button>
       </div>
     </div>
-  )
+  );
 }
