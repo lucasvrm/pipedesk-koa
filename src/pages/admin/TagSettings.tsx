@@ -175,7 +175,7 @@ export default function TagSettings() {
     const entityTypeSingular = moduleKey === 'deals' ? 'deal' : moduleKey === 'tracks' ? 'track' : 'lead';
 
     const relevantTags = tags.filter(t =>
-      t.entity_type === 'global' || t.entity_type === entityTypeSingular
+      t.entity_type === 'global' || t.entity_type === null || t.entity_type === entityTypeSingular
     );
 
     if (relevantTags.length === 0) {
@@ -199,7 +199,7 @@ export default function TagSettings() {
              />
              <span className="text-sm font-medium">{tag.name}</span>
 
-             {tag.entity_type === 'global' && (
+             {(tag.entity_type === 'global' || tag.entity_type === null) && (
                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
                  Global
                </Badge>

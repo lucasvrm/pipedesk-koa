@@ -37,12 +37,13 @@ export async function getTags(entityType?: 'deal' | 'track' | 'lead' | 'global')
   let query = supabase.from('tags').select('*').order('name');
 
   if (entityType) {
-    // Se solicitou 'global', traz só global
+    // Se solicitou 'global', traz só global (que agora é null)
     if (entityType === 'global') {
-      query = query.eq('entity_type', 'global');
+      query = query.is('entity_type', null);
     } else {
-      // Se solicitou um tipo específico, traz esse tipo E globais
-      query = query.in('entity_type', [entityType, 'global']);
+      // Se solicitou um tipo específico, traz esse tipo E globais (null)
+      // Usamos .or() para combinar as condições
+      query = query.or(`entity_type.eq.${entityType},entity_type.is.null`);
     }
   }
 
