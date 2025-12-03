@@ -39,8 +39,10 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { PencilSimple, Trash, Plus, WarningCircle, Tag as TagIcon } from '@phosphor-icons/react';
+import { PencilSimple, Plus, WarningCircle, Tag as TagIcon, ListDashes, SquaresFour, MagnifyingGlass } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { TagCard } from './components/TagCard';
+import { TagList } from './components/TagList';
 
 // Atenção: PageContainer foi removido daqui. O componente agora apenas
 // rende as seções internas; a página ou aba que embute TagSettings deve
@@ -55,6 +57,8 @@ export default function TagSettings() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form
   const [tagName, setTagName] = useState('');
@@ -175,87 +179,90 @@ export default function TagSettings() {
 
   if (tagsLoading) return <div>Carregando tags...</div>;
 
-  // Renderiza uma lista de tags para uma seção específica
-  const renderTagList = (moduleKey: 'deals' | 'tracks' | 'leads', title: string) => {
-    // Filtra tags que devem aparecer nesta seção:
-    // 1. Tags globais
-    // 2. Tags específicas deste módulo (singular: deal, track, lead)
+  // Renderiza uma lista de tags para uma seção específica (Grid Mode)
+  const renderTagGrid = (moduleKey: 'deals' | 'tracks' | 'leads', title: string) => {
     const entityTypeSingular = moduleKey === 'deals' ? 'deal' : moduleKey === 'tracks' ? 'track' : 'lead';
 
-    const relevantTags = tags.filter(t =>
+    let relevantTags = tags.filter(t =>
       t.entity_type === 'global' || t.entity_type === null || t.entity_type === entityTypeSingular
     );
 
+    if (searchQuery) {
+        relevantTags = relevantTags.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
     if (relevantTags.length === 0) {
       return (
-        <div className="text-sm text-muted-foreground italic p-4 border rounded-md border-dashed">
-          Nenhuma tag disponível para {title}.
+        <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground border rounded-lg border-dashed bg-muted/10 h-full">
+          <TagIcon size={32} className="opacity-20 mb-2" />
+          <p className="text-sm">Nenhuma tag encontrada para {title}.</p>
         </div>
       );
     }
 
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2">
         {relevantTags.map(tag => (
-           <div
+           <TagCard
              key={tag.id}
-             className="group relative flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card hover:bg-accent/50 transition-colors"
-           >
-             <div
-               className="w-2.5 h-2.5 rounded-full shrink-0"
-               style={{ backgroundColor: tag.color }}
-             />
-             <span className="text-sm font-medium">{tag.name}</span>
-
-             {(tag.entity_type === 'global' || tag.entity_type === null) && (
-               <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-                 Global
-               </Badge>
-             )}
-
-             {/* Ações ocultas que aparecem no hover */}
-             <div className="flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-               <button
-                 onClick={() => openEdit(tag)}
-                 className="p-1 hover:bg-background rounded-full text-muted-foreground hover:text-foreground"
-                 title="Editar"
-               >
-                 <PencilSimple size={14} />
-               </button>
-               <button
-                 onClick={() => setTagToDelete(tag.id)}
-                 className="p-1 hover:bg-red-50 rounded-full text-muted-foreground hover:text-destructive"
-                 title="Excluir"
-               >
-                 <Trash size={14} />
-               </button>
-             </div>
-           </div>
+             tag={tag}
+             onEdit={openEdit}
+             onDelete={(id) => setTagToDelete(id)}
+           />
         ))}
       </div>
     );
   };
 
+  const renderTagList = () => {
+      let filteredTags = tags;
+      if (searchQuery) {
+          filteredTags = filteredTags.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      }
+      return <TagList tags={filteredTags} onEdit={openEdit} onDelete={(id) => setTagToDelete(id)} />
+  };
+
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      {/* Header & Toolbar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h3 className="text-lg font-medium">Gerenciador de Tags</h3>
           <p className="text-sm text-muted-foreground">
-            Crie etiquetas para categorizar Deals, Tracks e Leads.
+            Categorize Deals, Tracks e Leads com etiquetas personalizadas.
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 border px-3 py-1.5 rounded-md bg-background">
-            <Switch
-              checked={tagsEnabled}
-              onCheckedChange={toggleFeature}
-              id="tags-toggle"
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Search */}
+          <div className="relative w-full md:w-64">
+            <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar tags..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Label htmlFor="tags-toggle" className="text-sm cursor-pointer">
-              Módulo Ativo
-            </Label>
           </div>
+
+          {/* View Toggle */}
+          <div className="flex items-center border rounded-md bg-background">
+            <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 hover:bg-accent rounded-l-md transition-colors ${viewMode === 'grid' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}
+                title="Visualização em Grid"
+            >
+                <SquaresFour size={20} />
+            </button>
+            <div className="w-[1px] h-9 bg-border" />
+            <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 hover:bg-accent rounded-r-md transition-colors ${viewMode === 'list' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}
+                title="Visualização em Lista"
+            >
+                <ListDashes size={20} />
+            </button>
+          </div>
+
           <Button onClick={openCreate} disabled={!tagsEnabled}>
             <Plus className="mr-2" /> Nova Tag
           </Button>
@@ -271,40 +278,44 @@ export default function TagSettings() {
         </div>
       )}
 
-      {/* Seção Principal: Cards de Configuração + Listas de Tags */}
-      <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 ${!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      {/* Main Content Area */}
+      <div className={!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}>
+        {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Iteramos sobre os módulos para criar as seções visuais */}
+                {(['leads', 'deals', 'tracks'] as const).map((moduleKey) => (
+                <div key={moduleKey} className="space-y-4">
+                    <div className="flex flex-col items-start gap-4 border-b pb-4">
+                        <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-md text-primary">
+                                <TagIcon size={20} />
+                            </div>
+                            <div>
+                            <h4 className="font-medium text-base">Tags de {moduleLabels[moduleKey]}</h4>
+                            <p className="text-xs text-muted-foreground">
+                                Globais + Específicas
+                            </p>
+                            </div>
+                        </div>
+                        <Switch
+                            id={`switch-${moduleKey}`}
+                            checked={tagsConfig.modules[moduleKey] !== false}
+                            onCheckedChange={(checked) => handleModuleToggle(moduleKey, checked)}
+                        />
+                        </div>
+                    </div>
 
-        {/* Iteramos sobre os módulos para criar as seções visuais */}
-        {(['leads', 'deals', 'tracks'] as const).map((moduleKey) => (
-          <div key={moduleKey} className="space-y-4">
-             <div className="flex flex-col items-start gap-4 border-b pb-4">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-3">
-                     <div className="p-2 bg-primary/10 rounded-md text-primary">
-                        <TagIcon size={20} />
-                     </div>
-                     <div>
-                       <h4 className="font-medium text-base">Tags de {moduleLabels[moduleKey]}</h4>
-                       <p className="text-xs text-muted-foreground">
-                         Globais + Específicas
-                       </p>
-                     </div>
-                  </div>
-                  <Switch
-                    id={`switch-${moduleKey}`}
-                    checked={tagsConfig.modules[moduleKey] !== false}
-                    onCheckedChange={(checked) => handleModuleToggle(moduleKey, checked)}
-                  />
+                    {/* Lista de Tags (Grid Column) */}
+                    <div className="bg-muted/30 p-4 rounded-lg border border-dashed min-h-[150px]">
+                        {renderTagGrid(moduleKey, moduleLabels[moduleKey])}
+                    </div>
                 </div>
-             </div>
-
-             {/* Lista de Tags Visualmente Agradável */}
-             <div className="bg-muted/30 p-4 rounded-lg border border-dashed min-h-[150px]">
-                {renderTagList(moduleKey, moduleLabels[moduleKey])}
-             </div>
-          </div>
-        ))}
-
+                ))}
+            </div>
+        ) : (
+            renderTagList()
+        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
