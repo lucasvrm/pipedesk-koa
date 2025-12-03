@@ -19,8 +19,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -36,13 +47,14 @@ import { toast } from 'sonner';
 // envolver com um PageContainer.
 
 export default function TagSettings() {
-  const { data: tags = [], isLoading: tagsLoading } = useTags('global');
+  const { data: tags = [], isLoading: tagsLoading } = useTags();
   const { data: settings } = useSettings();
   const { create, update, remove } = useTagOperations();
   const updateSetting = useUpdateSetting();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [tagToDelete, setTagToDelete] = useState<string | null>(null);
 
   // Form
   const [tagName, setTagName] = useState('');
@@ -149,18 +161,15 @@ export default function TagSettings() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !confirm(
-        'Excluir esta tag? Ela será removida de todos os itens associados.'
-      )
-    )
-      return;
+  const confirmDelete = async () => {
+    if (!tagToDelete) return;
     try {
-      await remove.mutateAsync(id);
-      toast.success('Tag excluída.');
+      await remove.mutateAsync(tagToDelete);
+      toast.success('Tag excluída com sucesso.');
     } catch (e) {
-      toast.error('Erro ao excluir.');
+      toast.error('Erro ao excluir a tag.');
+    } finally {
+      setTagToDelete(null);
     }
   };
 
@@ -174,7 +183,7 @@ export default function TagSettings() {
     const entityTypeSingular = moduleKey === 'deals' ? 'deal' : moduleKey === 'tracks' ? 'track' : 'lead';
 
     const relevantTags = tags.filter(t =>
-      t.entity_type === 'global' || t.entity_type === entityTypeSingular
+      t.entity_type === 'global' || t.entity_type === null || t.entity_type === entityTypeSingular
     );
 
     if (relevantTags.length === 0) {
@@ -198,7 +207,7 @@ export default function TagSettings() {
              />
              <span className="text-sm font-medium">{tag.name}</span>
 
-             {tag.entity_type === 'global' && (
+             {(tag.entity_type === 'global' || tag.entity_type === null) && (
                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
                  Global
                </Badge>
@@ -214,7 +223,7 @@ export default function TagSettings() {
                  <PencilSimple size={14} />
                </button>
                <button
-                 onClick={() => handleDelete(tag.id)}
+                 onClick={() => setTagToDelete(tag.id)}
                  className="p-1 hover:bg-red-50 rounded-full text-muted-foreground hover:text-destructive"
                  title="Excluir"
                >
@@ -263,27 +272,24 @@ export default function TagSettings() {
       )}
 
       {/* Seção Principal: Cards de Configuração + Listas de Tags */}
-      <div className={`space-y-8 ${!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 ${!tagsEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
 
         {/* Iteramos sobre os módulos para criar as seções visuais */}
-        {(['deals', 'tracks', 'leads'] as const).map((moduleKey) => (
+        {(['leads', 'deals', 'tracks'] as const).map((moduleKey) => (
           <div key={moduleKey} className="space-y-4">
-             <div className="flex items-center justify-between border-b pb-2">
-                <div className="flex items-center gap-3">
-                   <div className="p-2 bg-primary/10 rounded-md text-primary">
-                      <TagIcon size={20} />
-                   </div>
-                   <div>
-                     <h4 className="font-medium text-base">Tags de {moduleLabels[moduleKey]}</h4>
-                     <p className="text-xs text-muted-foreground">
-                       Tags disponíveis no módulo de {moduleLabels[moduleKey]} (Globais + Específicas)
-                     </p>
-                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={`switch-${moduleKey}`} className="text-sm text-muted-foreground">
-                    Habilitar módulo
-                  </Label>
+             <div className="flex flex-col items-start gap-4 border-b pb-4">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                     <div className="p-2 bg-primary/10 rounded-md text-primary">
+                        <TagIcon size={20} />
+                     </div>
+                     <div>
+                       <h4 className="font-medium text-base">Tags de {moduleLabels[moduleKey]}</h4>
+                       <p className="text-xs text-muted-foreground">
+                         Globais + Específicas
+                       </p>
+                     </div>
+                  </div>
                   <Switch
                     id={`switch-${moduleKey}`}
                     checked={tagsConfig.modules[moduleKey] !== false}
@@ -293,7 +299,7 @@ export default function TagSettings() {
              </div>
 
              {/* Lista de Tags Visualmente Agradável */}
-             <div className="bg-muted/30 p-4 rounded-lg border border-dashed">
+             <div className="bg-muted/30 p-4 rounded-lg border border-dashed min-h-[150px]">
                 {renderTagList(moduleKey, moduleLabels[moduleKey])}
              </div>
           </div>
@@ -305,6 +311,9 @@ export default function TagSettings() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingTag ? 'Editar Tag' : 'Nova Tag'}</DialogTitle>
+            <DialogDescription>
+              Preencha os dados abaixo para criar ou editar uma tag. Tags globais ficam disponíveis em todos os módulos.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
@@ -328,9 +337,9 @@ export default function TagSettings() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="global">Global (Todos)</SelectItem>
+                    <SelectItem value="lead">Apenas Leads</SelectItem>
                     <SelectItem value="deal">Apenas Deals</SelectItem>
                     <SelectItem value="track">Apenas Tracks</SelectItem>
-                    <SelectItem value="lead">Apenas Leads</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground mt-1">
@@ -368,6 +377,23 @@ export default function TagSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta tag? Esta ação removerá a tag de todos os itens associados e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
