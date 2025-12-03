@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { useQuery } from '@tanstack/react-query'
 import { OperationTypeRecord } from '@/lib/types'
 
 export interface OperationTypeInput {
@@ -77,4 +78,12 @@ export const operationTypeService = {
 
     if (error) throw error
   }
+}
+
+export function useOperationTypes() {
+  return useQuery({
+    queryKey: ['operation_types'],
+    queryFn: () => operationTypeService.getOperationTypes(),
+    staleTime: 1000 * 60 * 10
+  })
 }

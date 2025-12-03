@@ -80,7 +80,7 @@ export async function deleteComment(commentId: string) {
 
 export function useComments(entityId: string | undefined, entityType: 'deal' | 'track' | 'task' | 'lead' | 'company') {
   return useQuery({
-    queryKey: ['comments', entityId],
+    queryKey: ['comments', entityType, entityId],
     queryFn: () => getComments(entityId!, entityType),
     enabled: !!entityId // Só busca se houver ID, evita erros e loops
   })
@@ -91,7 +91,7 @@ export function useCreateComment() {
   return useMutation({
     mutationFn: createComment,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['comments', variables.entityId] })
+      queryClient.invalidateQueries({ queryKey: ['comments', variables.entityType, variables.entityId] })
     }
   })
 }
@@ -99,9 +99,12 @@ export function useCreateComment() {
 export function useDeleteComment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: deleteComment,
-    onSuccess: () => {
+    mutationFn: ({ commentId }: { commentId: string; entityId?: string; entityType?: string }) => deleteComment(commentId),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['comments'] })
+      if (variables?.entityType && variables?.entityId) {
+        queryClient.invalidateQueries({ queryKey: ['comments', variables.entityType, variables.entityId] })
+      }
     }
   })
 }
