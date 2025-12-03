@@ -23,6 +23,16 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,6 +54,7 @@ export default function TagSettings() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [tagToDelete, setTagToDelete] = useState<string | null>(null);
 
   // Form
   const [tagName, setTagName] = useState('');
@@ -150,18 +161,15 @@ export default function TagSettings() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !confirm(
-        'Excluir esta tag? Ela será removida de todos os itens associados.'
-      )
-    )
-      return;
+  const confirmDelete = async () => {
+    if (!tagToDelete) return;
     try {
-      await remove.mutateAsync(id);
-      toast.success('Tag excluída.');
+      await remove.mutateAsync(tagToDelete);
+      toast.success('Tag excluída com sucesso.');
     } catch (e) {
-      toast.error('Erro ao excluir.');
+      toast.error('Erro ao excluir a tag.');
+    } finally {
+      setTagToDelete(null);
     }
   };
 
@@ -215,7 +223,7 @@ export default function TagSettings() {
                  <PencilSimple size={14} />
                </button>
                <button
-                 onClick={() => handleDelete(tag.id)}
+                 onClick={() => setTagToDelete(tag.id)}
                  className="p-1 hover:bg-red-50 rounded-full text-muted-foreground hover:text-destructive"
                  title="Excluir"
                >
@@ -369,6 +377,23 @@ export default function TagSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta tag? Esta ação removerá a tag de todos os itens associados e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
