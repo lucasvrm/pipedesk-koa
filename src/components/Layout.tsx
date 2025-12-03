@@ -252,13 +252,8 @@ export function Layout({ children }: LayoutProps) {
                   Perfil
                 </DropdownMenuItem>
                 
-                {canManageUsers && (
-                  <DropdownMenuItem onClick={() => navigate('/rbac')}>
-                    <ShieldCheck className="mr-2" />
-                    Painel Admin
-                  </DropdownMenuItem>
-                )}
-                
+                {/* Removed direct link to /rbac. Permissions will be handled via Settings tab. */}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">Gestão</DropdownMenuLabel>
 
@@ -313,10 +308,7 @@ export function Layout({ children }: LayoutProps) {
                       Variáveis Globais
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => navigate('/admin/tags')}>
-                      <Tag className="mr-2" />
-                      Tags
-                    </DropdownMenuItem>
+                    {/* Removed direct Tags link; tags management is now under Variáveis Globais. */}
                   </>
                 )}
                 
