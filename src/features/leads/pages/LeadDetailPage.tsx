@@ -6,6 +6,7 @@ import { useContacts, useCreateContact } from '@/services/contactService'
 import { useUsers } from '@/services/userService'
 import { useAuth } from '@/contexts/AuthContext'
 import { logActivity } from '@/services/activityService'
+import { useEntityTags, useTagOperations } from '@/services/tagService'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,12 +35,12 @@ import {
 } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { LEAD_ORIGIN_LABELS, LEAD_STATUS_LABELS, LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { LEAD_ORIGIN_LABELS, LEAD_STATUS_LABELS, LeadStatus, OPERATION_LABELS, OperationType, Tag } from '@/lib/types'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
-import TagSelector from '@/components/TagSelector'
+import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { PageContainer } from '@/components/PageContainer'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
@@ -47,6 +48,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useOperationTypes } from '@/services/operationTypeService'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -61,6 +63,9 @@ export default function LeadDetailPage() {
   const createContact = useCreateContact()
   const { data: contacts } = useContacts()
   const { data: users } = useUsers()
+  const { data: operationTypes } = useOperationTypes()
+  const { data: leadTags } = useEntityTags(id || '', 'lead')
+  const tagOps = useTagOperations()
 
   const [qualifyOpen, setQualifyOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
@@ -72,6 +77,10 @@ export default function LeadDetailPage() {
   const [selectedContact, setSelectedContact] = useState<string>('')
   const [selectedMember, setSelectedMember] = useState('')
   const [memberRole, setMemberRole] = useState<'owner' | 'collaborator' | 'watcher'>('collaborator')
+  const [tagManagerOpen, setTagManagerOpen] = useState(false)
+  const [editingTag, setEditingTag] = useState<Tag | null>(null)
+  const [editTagForm, setEditTagForm] = useState({ name: '', color: '#3b82f6' })
+  const [deleteTag, setDeleteTag] = useState<Tag | null>(null)
 
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
@@ -115,6 +124,12 @@ export default function LeadDetailPage() {
     )
   }, [lead])
 
+  const operationTypeName = useMemo(() => {
+    if (!lead?.operationType) return ''
+    const found = operationTypes?.find(op => op.id === lead.operationType)
+    return found?.name || OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType
+  }, [lead?.operationType, operationTypes])
+
   if (isLoading) return <div className="p-8">Carregando...</div>
   if (!lead) return <div className="p-8">Lead não encontrado.</div>
 
@@ -128,6 +143,16 @@ export default function LeadDetailPage() {
       toast.success('Status atualizado')
     } catch (error) {
       toast.error('Não foi possível atualizar o status')
+    }
+  }
+
+  const handleOperationTypeChange = async (value: string) => {
+    if (!lead) return
+    try {
+      await updateLead.mutateAsync({ id: lead.id, data: { operationType: value as OperationType } })
+      toast.success('Tipo de operação atualizado')
+    } catch (error) {
+      toast.error('Não foi possível atualizar o tipo de operação')
     }
   }
 
@@ -200,6 +225,48 @@ export default function LeadDetailPage() {
       toast.success('Contato desvinculado')
     } catch (error) {
       toast.error('Não foi possível desvincular o contato')
+    }
+  }
+
+  const handleStartEditTag = (tag: Tag) => {
+    setEditingTag(tag)
+    setEditTagForm({ name: tag.name, color: tag.color || '#3b82f6' })
+  }
+
+  const handleUpdateTag = async () => {
+    if (!editingTag || !editTagForm.name.trim()) return
+    try {
+      await tagOps.update.mutateAsync({ id: editingTag.id, name: editTagForm.name.trim(), color: editTagForm.color })
+      toast.success('Tag atualizada')
+      setEditingTag(null)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tags'] }),
+        queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'lead', lead.id] })
+      ])
+    } catch (error) {
+      toast.error('Não foi possível atualizar a tag')
+    }
+  }
+
+  const handleUnassignTag = (tagId: string) => {
+    tagOps.unassign.mutate({ tagId, entityId: lead.id, entityType: 'lead' }, {
+      onSuccess: () => toast.success('Tag removida da lead'),
+      onError: () => toast.error('Não foi possível remover a tag')
+    })
+  }
+
+  const handleDeleteTag = async () => {
+    if (!deleteTag) return
+    try {
+      await tagOps.remove.mutateAsync(deleteTag.id)
+      toast.success('Tag excluída')
+      setDeleteTag(null)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tags'] }),
+        queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'lead', lead.id] })
+      ])
+    } catch (error) {
+      toast.error('Erro ao excluir tag')
     }
   }
 
@@ -295,7 +362,7 @@ export default function LeadDetailPage() {
                   <div className="flex flex-wrap gap-2 text-xs">
                     <Badge variant="outline">Origem: {LEAD_ORIGIN_LABELS[lead.origin]}</Badge>
                     {lead.operationType && (
-                      <Badge variant="secondary">Operação: {OPERATION_LABELS[lead.operationType as OperationType]}</Badge>
+                      <Badge variant="secondary">Operação: {operationTypeName}</Badge>
                     )}
                   </div>
                 </CardHeader>
@@ -326,7 +393,20 @@ export default function LeadDetailPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Tipo de Operação</Label>
-                    <Input value={lead.operationType ? (OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType) : ''} disabled />
+                    <Select value={lead.operationType || ''} onValueChange={handleOperationTypeChange}>
+                      <SelectTrigger className="bg-background/60">
+                        <SelectValue placeholder="Selecione um tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(operationTypes || [])
+                          .filter(op => op.isActive)
+                          .map(op => (
+                            <SelectItem key={op.id} value={op.id}>
+                              {op.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
@@ -335,14 +415,90 @@ export default function LeadDetailPage() {
                       <Badge variant="outline" className="capitalize">{LEAD_ORIGIN_LABELS[lead.origin]}</Badge>
                     </div>
                   </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <Label>Descrição</Label>
-                    <Textarea value={lead.description || ''} disabled className="min-h-[110px]" />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle>Tags</CardTitle>
+                    <p className="text-sm text-muted-foreground">Organize a lead com rótulos rápidos.</p>
                   </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <Label>Tags</Label>
-                    <TagSelector entityId={lead.id} entityType="lead" />
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setTagManagerOpen(true)} className="gap-2">
+                      <Plus className="h-4 w-4" /> Gerenciar
+                    </Button>
                   </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {leadTags && leadTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {leadTags.map(tag => (
+                        <div
+                          key={tag.id}
+                          className="group inline-flex items-center gap-2 rounded-full border border-muted-foreground/20 bg-muted/50 px-3 py-1 text-sm"
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: tag.color || '#3b82f6' }}
+                            aria-hidden
+                          />
+                          <span className="font-medium" style={{ color: tag.color || undefined }}>{tag.name}</span>
+                          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleStartEditTag(tag)}
+                            >
+                              <PencilSimple className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleUnassignTag(tag.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTag(tag)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                      <span>Nenhuma tag atribuída.</span>
+                      <Button size="sm" variant="secondary" onClick={() => setTagManagerOpen(true)} className="gap-2">
+                        <Plus className="h-4 w-4" /> Adicionar
+                      </Button>
+                    </div>
+                  )}
+
+                  <SmartTagSelector
+                    entityId={lead.id}
+                    entityType="lead"
+                    selectedTagIds={leadTags?.map(tag => tag.id) || []}
+                    open={tagManagerOpen}
+                    onOpenChange={setTagManagerOpen}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Descrição</CardTitle>
+                  <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea value={lead.description || ''} disabled className="min-h-[110px]" />
                 </CardContent>
               </Card>
             </div>
@@ -604,6 +760,63 @@ export default function LeadDetailPage() {
             <Button variant="outline" onClick={() => setMemberModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleAddMember} disabled={!selectedMember || addMemberMutation.isPending}>
               <Plus className="mr-2 h-4 w-4" /> Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingTag} onOpenChange={(open) => { if (!open) setEditingTag(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar tag</DialogTitle>
+            <DialogDescription>Ajuste nome e cor para manter o padrão visual.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={editTagForm.name}
+                onChange={(e) => setEditTagForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Nome da tag"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Cor</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="color"
+                  className="w-20 h-10 p-1"
+                  value={editTagForm.color}
+                  onChange={(e) => setEditTagForm(prev => ({ ...prev, color: e.target.value }))}
+                />
+                <span className="text-sm text-muted-foreground">{editTagForm.color}</span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setEditingTag(null)}>Cancelar</Button>
+            <Button onClick={handleUpdateTag} disabled={tagOps.update.isPending || !editTagForm.name.trim()}>
+              Salvar alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteTag} onOpenChange={(open) => { if (!open) setDeleteTag(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir tag</DialogTitle>
+            <DialogDescription>Essa ação removerá a tag do banco e de todas as entidades.</DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir a tag <span className="font-semibold">{deleteTag?.name}</span>? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setDeleteTag(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDeleteTag} disabled={tagOps.remove.isPending}>
+              Excluir tag
             </Button>
           </DialogFooter>
         </DialogContent>

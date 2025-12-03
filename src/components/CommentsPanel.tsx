@@ -76,6 +76,10 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
 
   const handleSubmit = async () => {
     if (!content.trim()) return
+    if (!currentUser?.id) {
+      toast.error('Sessão inválida. Refaça o login para comentar.')
+      return
+    }
 
     const finalMentions: string[] = []
     mentionedUsersMap.forEach((id, name) => {
@@ -105,7 +109,7 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
 
   const handleDelete = async (commentId: string) => {
     try {
-      await deleteComment.mutateAsync(commentId)
+      await deleteComment.mutateAsync({ commentId, entityId, entityType })
       toast.success('Comentário excluído')
     } catch (error) {
       toast.error('Erro ao excluir')
