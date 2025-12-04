@@ -1,74 +1,103 @@
-# RBAC & Permissions Guide
+# Guia de RBAC e Permissões
 
-## RBAC Contract (Governance)
-This section defines the **desired state** of the permissions system. All development must adhere to these rules.
+## Contrato de RBAC (Governança)
+Esta seção define o **estado desejado** do sistema de permissões. Todo desenvolvimento deve seguir estas regras.
 
-### Permissions List
-| Module | Permission | Description |
-|--------|------------|-------------|
-| **Tracks** | `tracks.view` | View tracks and track details. |
-| | `tracks.create` | Create new tracks. |
-| | `tracks.update` | Update existing tracks. |
-| | `tracks.manage` | Full administration of tracks (includes delete/settings). |
-| **Pipeline** | `pipeline.manage` | Access Pipeline Settings page (`/admin/pipeline`). |
-| | `pipeline.update` | Update stages, SLAs, and transitions. |
-| **Tags** | `tags.manage` | Access Tag Settings page (`/admin/tags`). |
-| | `tags.update` | Create/Edit/Delete global tags. |
-| **Custom Fields**| `custom_fields.manage` | Access Custom Fields Settings page (`/custom-fields`). |
-| **RBAC** | `rbac.manage` | Manage Roles and Permissions (`/rbac` or `/admin/users`). |
-| **Leads** | `leads.view` | View leads list and details. |
-| | `leads.create` | Create new leads. |
-| | `leads.update` | Edit lead details. |
-| | `leads.qualify` | Execute lead qualification (convert to Deal). |
-| | `leads.delete` | Delete leads. |
-| **Contacts** | `contacts.view` | View contacts list and details. |
-| | `contacts.create` | Create new contacts. |
-| | `contacts.update` | Edit contact details. |
-| | `contacts.delete` | Delete contacts. |
-| **Companies** | `companies.view` | View companies list and details. |
-| | `companies.create` | Create new companies. |
-| | `companies.update` | Edit company details. |
-| | `companies.delete` | Delete companies. |
+### Lista de permissões
+A tabela abaixo espelha a lista canônica de permissões **semeadas nas migrações do Supabase**. Use-a para validar se um código realmente existe no banco antes de criar uma nova proteção de UI ou API.
+
+| Módulo | Permissão | Descrição |
+|--------|-----------|-----------|
+| **Tracks** | `tracks.view` | Visualizar tracks e seus detalhes. |
+| | `tracks.create` | Criar novas tracks. |
+| | `tracks.update` | Atualizar tracks existentes. |
+| | `tracks.manage` | Administração completa de tracks (inclui exclusão/configurações). |
+| **Pipeline** | `pipeline.manage` | Acessar a página de configurações do Pipeline (`/admin/pipeline`). |
+| | `pipeline.update` | Atualizar estágios, SLAs e transições. |
+| **Tags** | `tags.manage` | Acessar a página de configurações de tags (`/admin/tags`). |
+| | `tags.update` | Criar/Editar/Excluir tags globais. |
+| **Campos personalizados**| `custom_fields.manage` | Acessar a página de Campos Personalizados (`/custom-fields`). |
+| **RBAC** | `rbac.manage` | Gerenciar papéis e permissões (`/rbac` ou `/admin/users`). |
+| **Leads** | `leads.view` | Visualizar a lista de leads e seus detalhes. |
+| | `leads.create` | Criar novos leads. |
+| | `leads.update` | Editar detalhes do lead. |
+| | `leads.qualify` | Executar a qualificação do lead (converter em Deal). |
+| | `leads.delete` | Excluir leads. |
+| **Contacts** | `contacts.view` | Visualizar lista e detalhes de contatos. |
+| | `contacts.create` | Criar novos contatos. |
+| | `contacts.update` | Editar detalhes do contato. |
+| | `contacts.delete` | Excluir contatos. |
+| **Companies** | `companies.view` | Visualizar lista e detalhes de empresas. |
+| | `companies.create` | Criar novas empresas. |
+| | `companies.update` | Editar detalhes da empresa. |
+| | `companies.delete` | Excluir empresas. |
+
+> **Códigos inexistentes:** As seeds atuais **não** definem `pipeline.create`, `pipeline.delete`, `pipeline.view`, `tags.create`, `tags.delete`, `tags.view` ou `companies.manage`. Se algum desses for necessário, ele deve ser incluído nas migrações (004/006/008) antes de ser referenciado no código.
 
 ---
 
-## Implementation Coverage (Status)
-Current status of enforcement in the codebase.
+## Cobertura de implementação (status)
+Status atual da aplicação das permissões no código.
 
-| Permission | Backend Enforcement (RLS/Service) | Frontend Guard (Route/UI) | Observations |
-|------------|-----------------------------------|---------------------------|--------------|
-| `tracks.*` | ✅ Enforced in DB | ❌ **Missing** | Route `/tracks/:id` has no check. |
-| `pipeline.*` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role) | |
-| `tags.*` | ✅ Enforced in DB | ⚠️ Partial (`admin` Role) | |
-| `custom_fields.*`| ❌ **Missing** | ❌ **Missing** | |
-| `rbac.manage` | ⚠️ Assumed via `admin` role | ⚠️ Partial (`admin` Role) | |
-| `leads.*` | ✅ Enforced in DB (RLS: `010`) | ✅ Fully Enforced | Create/Update/Qualify buttons protected. RPC checked. |
-| `contacts.*` | ✅ Enforced in DB (RLS: `010`) | ✅ Fully Enforced | Create/Edit/Delete buttons protected. |
-| `companies.*` | ✅ Enforced in DB (RLS: `010`) | ⚠️ Partial | List page guarded by role, not permission. |
+| Permissão | Aplicação no backend (RLS/Service) | Proteção no frontend (Rota/UI) | Observações |
+|-----------|------------------------------------|--------------------------------|-------------|
+| `tracks.*` | ✅ Aplicada no banco | ❌ **Faltando** | A rota `/tracks/:id` não tem verificação. |
+| `pipeline.*` | ✅ Aplicada no banco | ⚠️ Parcial (papel `admin`) | |
+| `tags.*` | ✅ Aplicada no banco | ⚠️ Parcial (papel `admin`) | |
+| `custom_fields.*`| ❌ **Faltando** | ❌ **Faltando** | |
+| `rbac.manage` | ⚠️ Pressuposta via papel `admin` | ⚠️ Parcial (papel `admin`) | |
+| `leads.*` | ✅ Aplicada no banco (RLS: `010`) | ✅ Totalmente aplicada | Botões de Criar/Atualizar/Qualificar protegidos. RPC verificado. |
+| `contacts.*` | ✅ Aplicada no banco (RLS: `010`) | ✅ Totalmente aplicada | Botões de Criar/Editar/Excluir protegidos. |
+| `companies.*` | ✅ Aplicada no banco (RLS: `010`) | ⚠️ Parcial | Página de listagem protegida por papel, não por permissão. |
 
-> **Key**:
-> - ✅ = Fully implemented and verified.
-> - ⚠️ = Implemented via "Role" check (Legacy) instead of granular Permission check.
-> - ❌ = Not enforced.
+> **Legenda**:
+> - ✅ = Totalmente implementado e verificado.
+> - ⚠️ = Implementado via verificação por "papel" (legado) em vez de permissão granular.
+> - ❌ = Não aplicado.
 
-## Enforcement Strategy
-The system uses a dual-layer enforcement strategy:
+## Estratégia de aplicação
+O sistema usa uma estratégia de aplicação em duas camadas:
 
-1.  **Frontend (UX):** Use `<RequirePermission>` component to hide/disable UI elements.
+1.  **Frontend (UX):** Use o componente `<RequirePermission>` para ocultar/desabilitar elementos de UI.
     ```tsx
     <RequirePermission permission="leads.qualify">
       <Button>Qualify</Button>
     </RequirePermission>
     ```
 
-2.  **Backend (Security):** Supabase RLS policies using `public.has_permission(code)`.
+2.  **Backend (Segurança):** Políticas de RLS do Supabase usando `public.has_permission(code)`.
     ```sql
     CREATE POLICY "Contacts update" ON contacts
       FOR UPDATE USING (public.has_permission('contacts.update'));
     ```
-    And RPC checks for complex transactions:
+    E verificações em RPCs para transações complexas:
     ```sql
     IF NOT public.has_permission('leads.qualify') THEN
       RAISE EXCEPTION 'Access Denied';
     END IF;
     ```
+
+---
+
+## Plano de melhorias de RBAC (visão do proprietário)
+Se tratássemos RBAC como um produto, estas seriam as próximas melhorias de maior impacto:
+
+### 1) Reforçar o modelo de permissões
+- **Adicionar simetria de CRUD**: introduzir `pipeline.view|create|delete` e `tags.view|create|delete` (mais `companies.manage`) nas seeds e nas políticas de RLS para alinhar com as expectativas de UI e reduzir dependência de verificações por papel.
+- **Escopo explícito para configurações**: dividir `pipeline.manage` e `tags.manage` em permissões de "configurações" vs "dados" para permitir que auditores só leitura inspecionem configurações sem alterá-las.
+- **Namespace de permissões de sistema**: adicionar `system.audit` e `system.impersonate` para acesso a logs de auditoria e suporte a ferramentas administrativas com uso restrito e justificado.
+
+### 2) Fechar lacunas de aplicação
+- **Guarda de rota em todo lugar**: envolver páginas administrativas (`/admin/pipeline`, `/admin/tags`, `/rbac`, `/companies`) com `RequirePermission` em vez de verificações por papel para manter a UX alinhada ao RLS do backend.
+- **Testes de paridade de RLS**: adicionar suítes Vitest que comparem o mapa de permissões do frontend com as seeds de `permissions` do Supabase para detectar divergências.
+- **Lint para proteção em RPCs**: criar uma regra de lint (regra customizada do ESLint ou verificação em CI) que rejeite novas chamadas RPC sem checagem de `has_permission()`.
+
+### 3) Melhorar operabilidade e auditabilidade
+- **Histórico de alterações de permissões**: adicionar uma tabela `audit_permissions` (papel, permissão, autor, data/hora, motivo) e registrar entradas a partir das mutações de API.
+- **Inspector de permissão efetiva**: construir uma UI `/rbac/inspector` que resolva as permissões efetivas de um usuário (grants de papéis + overrides) e mostre por que uma verificação passou ou falhou.
+- **Feature flags para rollout de RBAC**: colocar novas permissões atrás de uma feature flag para permitir migração gradual sem quebrar papéis existentes.
+
+### 4) Ergonomia para desenvolvedores
+- **Constantes de permissão com tipagem**: exportar um `permissions.ts` gerado a partir das seeds para evitar códigos de permissão como strings soltas no frontend e backend.
+- **Geradores de fixture**: adicionar fábricas de teste que criem usuários com pacotes de permissões específicos para reduzir boilerplate em testes de integração.
+- **Documentação como contrato**: manter este arquivo sincronizado com as seeds via script (ex.: `pnpm docs:sync-permissions`) para que o guia seja a única fonte da verdade.
