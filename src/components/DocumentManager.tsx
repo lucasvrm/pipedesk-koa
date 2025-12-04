@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { useFolders } from '@/hooks/useFolders'
+import { useDriveDocuments } from '@/hooks/useDriveDocuments'
 import {
   Folder as FolderIcon,
   FileText,
@@ -21,15 +20,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
@@ -42,25 +38,7 @@ import { toast } from 'sonner'
 import { formatBytes, formatDate } from '@/lib/helpers'
 // MUDANÇA AQUI: Importação corrigida para o novo serviço
 import { logActivity } from '@/services/activityService'
-
-export interface DocumentFile {
-  id: string
-  name: string
-  size: number
-  type: string
-  url: string
-  folderId?: string
-  uploadedBy: string
-  uploadedAt: string
-  entityId: string
-  entityType: string
-}
-
-export interface Folder {
-  id: string
-  name: string
-  parentId?: string
-}
+import { DriveRole } from '@/services/googleDriveService'
 
 interface DocumentManagerProps {
   entityId: string
@@ -75,9 +53,22 @@ export default function DocumentManager({
   currentUser,
   entityName
 }: DocumentManagerProps) {
-  // Estado local simplificado para demonstração (idealmente viria de um hook useDocuments)
-  const [files, setFiles] = useState<DocumentFile[]>([])
-  const { folders, createFolder, deleteFolder } = useFolders(entityId, entityType)
+  const actorRole: DriveRole = (currentUser?.role as DriveRole) || 'client'
+  const {
+    files,
+    folders,
+    rootFolderId,
+    createFolder,
+    uploadFiles,
+    deleteItem,
+    activities,
+  } = useDriveDocuments({
+    entityId,
+    entityType: entityType as any,
+    actorId: currentUser?.id || 'anonymous',
+    actorRole,
+    entityName,
+  })
   
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
@@ -105,49 +96,30 @@ export default function DocumentManager({
   }
 
   // Ações
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files
     if (!uploadedFiles) return
 
-    const newFiles: DocumentFile[] = Array.from(uploadedFiles).map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: URL.createObjectURL(file), // Simulação
-      folderId: currentFolderId,
-      uploadedBy: currentUser.id,
-      uploadedAt: new Date().toISOString(),
-      entityId,
-      entityType
-    }))
+    await uploadFiles(Array.from(uploadedFiles), currentFolderId)
 
-    setFiles(prev => [...prev, ...newFiles])
-    
     // Log de atividade usando o novo serviço
     logActivity(
-      entityId, 
-      entityType, 
+      entityId,
+      entityType,
       'upload de arquivo', 
       currentUser.id, 
-      { count: newFiles.length, names: newFiles.map(f => f.name).join(', ') }
+      { count: uploadedFiles.length, names: Array.from(uploadedFiles).map(f => f.name).join(', ') }
     )
 
-    toast.success(`${newFiles.length} arquivo(s) enviado(s)`)
+    toast.success(`${uploadedFiles.length} arquivo(s) enviado(s)`)
     setIsUploadOpen(false)
   }
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return
-    
+
     try {
-      await createFolder.mutateAsync({
-        name: newFolderName,
-        parentId: currentFolderId,
-        entityId,
-        entityType,
-        type: 'custom'
-      })
+      await createFolder(newFolderName, currentFolderId)
       setNewFolderName('')
       setIsNewFolderOpen(false)
       toast.success('Pasta criada')
@@ -156,8 +128,8 @@ export default function DocumentManager({
     }
   }
 
-  const handleDeleteFile = (fileId: string) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId))
+  const handleDeleteFile = async (fileId: string) => {
+    await deleteItem(fileId)
     toast.success('Arquivo excluído')
   }
 
@@ -211,7 +183,7 @@ export default function DocumentManager({
       <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm">
         {getBreadcrumbs().map((crumb, index, arr) => (
           <div key={crumb.id || 'root'} className="flex items-center">
-            <button 
+            <button
               className="hover:underline hover:text-primary font-medium"
               onClick={() => setCurrentFolderId(crumb.id)}
             >
@@ -222,6 +194,16 @@ export default function DocumentManager({
         ))}
       </div>
 
+      <div className="px-4 py-2 text-xs text-muted-foreground border-b flex items-center justify-between">
+        <span>
+          Pasta raiz: <span className="font-mono text-primary">{rootFolderId || 'provisionando...'}</span>
+        </span>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">Papel: {actorRole}</Badge>
+          <Badge variant="secondary">Auditoria: {activities?.length || 0} eventos</Badge>
+        </div>
+      </div>
+
       {/* Content Area */}
       <ScrollArea className="flex-1 p-4">
         {/* Folders Grid */}
@@ -230,7 +212,7 @@ export default function DocumentManager({
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pastas</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {currentFolders.map(folder => (
-                <div 
+                <div
                   key={folder.id}
                   className="group flex flex-col items-center p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors relative"
                   onClick={() => setCurrentFolderId(folder.id)}
@@ -245,7 +227,7 @@ export default function DocumentManager({
                         <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => deleteFolder.mutate(folder.id)} className="text-destructive">
+                        <DropdownMenuItem onClick={() => deleteItem(folder.id)} className="text-destructive">
                           <Trash className="mr-2 h-4 w-4" /> Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>
