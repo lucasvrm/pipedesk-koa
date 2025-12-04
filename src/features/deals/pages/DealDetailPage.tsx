@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { logActivity } from '@/services/activityService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
+import { cn } from '@/lib/utils'
 import { 
   Plus, Users, ChatCircle, ClockCounterClockwise, 
   FileText, Sparkle, Tag, PencilSimple,
@@ -52,6 +54,7 @@ import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import { toast } from 'sonner'
 import { PageContainer } from '@/components/PageContainer'
+import TagSelector from '@/components/TagSelector'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -66,6 +69,14 @@ export default function DealDetailPage() {
   const [editDealOpen, setEditDealOpen] = useState(false)
   const [docGeneratorOpen, setDocGeneratorOpen] = useState(false)
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
+  const [detailSearch, setDetailSearch] = useState('')
+
+  const normalizedSearch = detailSearch.trim().toLowerCase()
+  const dealTags = deal?.tags || []
+  const filteredDealTags = useMemo(() => {
+    if (!normalizedSearch) return dealTags
+    return dealTags.filter(tag => tag.name.toLowerCase().includes(normalizedSearch))
+  }, [dealTags, normalizedSearch])
 
   const handleOpenAida = () => {
     if (!deal) {
@@ -271,6 +282,42 @@ export default function DealDetailPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Tag className="h-4 w-4" /> Tags do negócio
+            <TagSelector entityId={deal.id} entityType="deal" variant="icon" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {dealTags.length > 0 ? (
+              (normalizedSearch ? filteredDealTags : dealTags).map(tag => {
+                const isMatch = normalizedSearch && tag.name.toLowerCase().includes(normalizedSearch)
+                return (
+                  <Badge
+                    key={tag.id}
+                    variant="outline"
+                    className={cn('text-xs px-2', isMatch ? 'border-primary text-primary' : '')}
+                    style={{ borderColor: tag.color || undefined, color: tag.color || undefined, backgroundColor: tag.color ? `${tag.color}15` : undefined }}
+                  >
+                    {tag.name}
+                  </Badge>
+                )
+              })
+            ) : (
+              <span className="text-sm text-muted-foreground">Nenhuma tag atribuída.</span>
+            )}
+          </div>
+        </div>
+
+        <div className="w-full md:w-80">
+          <Input
+            value={detailSearch}
+            onChange={(e) => setDetailSearch(e.target.value)}
+            placeholder="Buscar por tag ou responsável"
+          />
         </div>
       </div>
 
