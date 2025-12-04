@@ -4,8 +4,9 @@ import { useLeads, useCreateLead, useDeleteLead, LeadFilters } from '@/services/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash, Kanban } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash, Kanban, Tag } from '@phosphor-icons/react'
 import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
+import type { Tag } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -26,10 +27,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { Progress } from '@/components/ui/progress'
-import { useEntityTags } from '@/services/tagService'
+import { useEntityTags, useTags } from '@/services/tagService'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-function LeadTagsCell({ leadId }: { leadId: string }) {
-  const { data: tags, isLoading } = useEntityTags(leadId, 'lead')
+function LeadTagsCell({ leadId, tags: leadTags }: { leadId: string, tags?: Tag[] }) {
+  const { data: tagsFromHook, isLoading } = useEntityTags(leadId, 'lead')
+  const tags = leadTags ?? tagsFromHook
 
   if (isLoading) {
     return <span className="text-xs text-muted-foreground">Carregando...</span>
@@ -81,6 +84,7 @@ export default function LeadsListPage() {
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
+  const [tagFilters, setTagFilters] = useState<string[]>(() => savedPreferences?.tagFilters || [])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -89,8 +93,11 @@ export default function LeadsListPage() {
   const filters: LeadFilters = {
     search: search || undefined,
     status: statusFilter !== 'all' ? [statusFilter] : undefined,
-    origin: originFilter !== 'all' ? [originFilter] : undefined
+    origin: originFilter !== 'all' ? [originFilter] : undefined,
+    tagIds: tagFilters.length > 0 ? tagFilters : undefined
   }
+
+  const { data: availableTags } = useTags('lead')
 
   const { data: leads, isLoading } = useLeads(filters)
   const createLead = useCreateLead()
@@ -106,13 +113,15 @@ export default function LeadsListPage() {
     return { openLeads, createdThisMonth, qualifiedThisMonth }
   }, [leads, monthStart])
 
+  const selectedTagObjects = useMemo(() => (availableTags || []).filter(tag => tagFilters.includes(tag.id)), [availableTags, tagFilters])
+
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, statusFilter, originFilter])
+  }, [search, statusFilter, originFilter, tagFilters])
 
   useEffect(() => {
     setSelectedIds([])
-  }, [viewMode, search, statusFilter, originFilter, currentPage])
+  }, [viewMode, search, statusFilter, originFilter, tagFilters, currentPage])
 
   useEffect(() => {
     const payload = {
@@ -120,10 +129,11 @@ export default function LeadsListPage() {
       search,
       statusFilter,
       originFilter,
-      itemsPerPage
+      itemsPerPage,
+      tagFilters
     }
     localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
-  }, [itemsPerPage, originFilter, search, statusFilter, viewMode])
+  }, [itemsPerPage, originFilter, search, statusFilter, tagFilters, viewMode])
 
   const totalLeads = leads?.length ?? 0
   const totalPages = Math.max(1, Math.ceil(totalLeads / itemsPerPage))
@@ -203,10 +213,15 @@ export default function LeadsListPage() {
     }
   }
 
+  const toggleTagFilter = (tagId: string) => {
+    setTagFilters(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId])
+  }
+
   const clearFilters = () => {
     setSearch('')
     setStatusFilter('all')
     setOriginFilter('all')
+    setTagFilters([])
   }
 
   const getPrimaryContact = (lead: Lead) => {
@@ -249,7 +264,7 @@ export default function LeadsListPage() {
     </RequirePermission>
   )
 
-  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search
+  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search || tagFilters.length > 0
 
   const metrics = (
     <div className="grid gap-4 md:grid-cols-3 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -329,6 +344,56 @@ export default function LeadsListPage() {
               ))}
             </SelectContent>
           </Select>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Tag className="h-4 w-4" />
+                Tags
+                {tagFilters.length > 0 && <Badge variant="secondary" className="ml-1">{tagFilters.length}</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72" align="start">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Filtrar por tags</p>
+                  {tagFilters.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => setTagFilters([])}>Limpar</Button>
+                  )}
+                </div>
+
+                {selectedTagObjects.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTagObjects.map(tag => (
+                      <Badge
+                        key={tag.id}
+                        variant="outline"
+                        className="text-xs"
+                        style={{ color: tag.color, borderColor: tag.color }}
+                      >
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                <div className="max-h-64 space-y-2 overflow-auto pr-1">
+                  {(availableTags || []).map(tag => (
+                    <label key={tag.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                        <span>{tag.name}</span>
+                      </div>
+                      <Checkbox
+                        checked={tagFilters.includes(tag.id)}
+                        onCheckedChange={() => toggleTagFilter(tag.id)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {hasFilters && (
             <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
@@ -502,7 +567,7 @@ export default function LeadsListPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <LeadTagsCell leadId={lead.id} />
+                        <LeadTagsCell leadId={lead.id} tags={lead.tags} />
                       </TableCell>
                       <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
                       <TableCell>

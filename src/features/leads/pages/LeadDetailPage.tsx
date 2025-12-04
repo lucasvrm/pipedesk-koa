@@ -82,6 +82,7 @@ export default function LeadDetailPage() {
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [editTagForm, setEditTagForm] = useState({ name: '', color: '#3b82f6' })
   const [deleteTag, setDeleteTag] = useState<Tag | null>(null)
+  const [detailSearch, setDetailSearch] = useState('')
 
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
@@ -130,6 +131,24 @@ export default function LeadDetailPage() {
     const found = operationTypes?.find(op => op.id === lead.operationType)
     return found?.name || OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType
   }, [lead?.operationType, operationTypes])
+
+  const normalizedDetailSearch = detailSearch.trim().toLowerCase()
+  const filteredLeadTags = useMemo(() => {
+    if (!leadTags) return []
+    if (!normalizedDetailSearch) return leadTags
+    return leadTags.filter(tag => tag.name.toLowerCase().includes(normalizedDetailSearch))
+  }, [leadTags, normalizedDetailSearch])
+
+  const tagMatchesSearch = normalizedDetailSearch.length > 0 && (leadTags || []).some(tag => tag.name.toLowerCase().includes(normalizedDetailSearch))
+  const filteredContacts = useMemo(() => {
+    const contactsList = lead?.contacts || []
+    if (!normalizedDetailSearch) return contactsList
+
+    return contactsList.filter(contact => {
+      const fields = [contact.name, contact.email, contact.phone].filter(Boolean).map(value => value!.toLowerCase())
+      return fields.some(value => value.includes(normalizedDetailSearch)) || tagMatchesSearch
+    })
+  }, [lead?.contacts, normalizedDetailSearch, tagMatchesSearch])
 
   if (isLoading) return <div className="p-8">Carregando...</div>
   if (!lead) return <div className="p-8">Lead não encontrado.</div>
@@ -327,21 +346,32 @@ export default function LeadDetailPage() {
             </Button>
           )}
 
-          {lead.status === 'qualified' ? (
-            <Button variant="secondary" onClick={() => navigate(`/companies/${lead.qualifiedCompanyId}`)}>
-              <Buildings className="mr-2 h-4 w-4" />
-              Ver Empresa
-            </Button>
+      {lead.status === 'qualified' ? (
+        <Button variant="secondary" onClick={() => navigate(`/companies/${lead.qualifiedCompanyId}`)}>
+          <Buildings className="mr-2 h-4 w-4" />
+          Ver Empresa
+        </Button>
           ) : (
             <Button onClick={() => setQualifyOpen(true)} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="mr-2 h-4 w-4" />
               Qualificar
             </Button>
-          )}
-        </div>
+        )}
       </div>
+    </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-muted-foreground">Use a busca para filtrar contatos e tags deste lead.</p>
+      <div className="w-full sm:w-80">
+        <Input
+          value={detailSearch}
+          onChange={(e) => setDetailSearch(e.target.value)}
+          placeholder="Buscar por nome, contato ou tag"
+        />
+      </div>
+    </div>
+
+    <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
           <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
           <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
@@ -433,47 +463,62 @@ export default function LeadDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {leadTags && leadTags.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {leadTags.map(tag => (
-                        <div
-                          key={tag.id}
-                          className="group inline-flex items-center gap-2 rounded-full border border-muted-foreground/20 bg-muted/50 px-3 py-1 text-sm"
-                        >
-                          <span
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: tag.color || '#3b82f6' }}
-                            aria-hidden
-                          />
-                          <span className="font-medium" style={{ color: tag.color || undefined }}>{tag.name}</span>
-                          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleStartEditTag(tag)}
+                    filteredLeadTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredLeadTags.map(tag => {
+                          const isMatch = normalizedDetailSearch && tag.name.toLowerCase().includes(normalizedDetailSearch)
+                          return (
+                            <div
+                              key={tag.id}
+                              className={cn(
+                                'group inline-flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1 text-sm transition-colors',
+                                isMatch ? 'border-primary/50 bg-primary/10 ring-1 ring-primary/30' : 'border-muted-foreground/20'
+                              )}
                             >
-                              <PencilSimple className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              onClick={() => handleUnassignTag(tag.id)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => setDeleteTag(tag)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                              <span
+                                className="h-2 w-2 rounded-full"
+                                style={{ backgroundColor: tag.color || '#3b82f6' }}
+                                aria-hidden
+                              />
+                              <span className="font-medium" style={{ color: tag.color || undefined }}>{tag.name}</span>
+                              <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleStartEditTag(tag)}
+                                >
+                                  <PencilSimple className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleUnassignTag(tag.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteTag(tag)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                        <span>Nenhuma tag corresponde à busca.</span>
+                        <Button size="sm" variant="secondary" onClick={() => setTagManagerOpen(true)} className="gap-2">
+                          <Plus className="h-4 w-4" /> Adicionar
+                        </Button>
+                      </div>
+                    )
                   ) : (
                     <div className="flex items-center justify-between rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                       <span>Nenhuma tag atribuída.</span>
@@ -522,9 +567,9 @@ export default function LeadDetailPage() {
                   <p className="text-sm text-muted-foreground">Gerencie relações sem sair da lead.</p>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {lead.contacts && lead.contacts.length > 0 ? (
+                  {filteredContacts.length > 0 ? (
                     <div className="divide-y">
-                      {lead.contacts.map(contact => (
+                      {filteredContacts.map(contact => (
                         <div key={contact.id} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/40 transition-colors">
                           <div className="flex items-start gap-3">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
@@ -559,7 +604,9 @@ export default function LeadDetailPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="p-5 text-center text-sm text-muted-foreground">Nenhum contato vinculado.</div>
+                    <div className="p-5 text-center text-sm text-muted-foreground">
+                      {normalizedDetailSearch ? 'Nenhum contato corresponde à busca.' : 'Nenhum contato vinculado.'}
+                    </div>
                   )}
                 </CardContent>
               </Card>

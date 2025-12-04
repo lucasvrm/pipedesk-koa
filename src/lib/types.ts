@@ -719,6 +719,7 @@ export interface Lead {
 
   contacts?: Contact[];
   members?: LeadMember[];
+  tags?: Tag[];
   isSynthetic?: boolean;
 }
 

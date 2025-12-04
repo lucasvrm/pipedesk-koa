@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Lead, LeadStatus, LeadMember, Contact, CompanyInput } from '@/lib/types'
+import { Lead, LeadStatus, LeadMember, Contact, CompanyInput, Tag } from '@/lib/types'
 
 // ============================================================================
 // Types
@@ -29,6 +29,7 @@ export interface LeadFilters {
   origin?: string[];
   responsibleId?: string;
   search?: string;
+  tagIds?: string[];
 }
 
 export interface QualifyLeadInput {
@@ -45,6 +46,12 @@ export interface QualifyLeadInput {
 // ============================================================================
 
 function mapLeadFromDB(item: any): Lead {
+  const tags: Tag[] =
+    item.entity_tags?.
+      filter((et: any) => et?.entity_type === 'lead')?.
+      map((et: any) => et.tags)?.
+      filter(Boolean) || [];
+
   return {
     id: item.id,
     legalName: item.legal_name,
@@ -89,7 +96,8 @@ function mapLeadFromDB(item: any): Lead {
         email: lm.profiles.email,
         avatar: lm.profiles.avatar_url
       } : undefined
-    })) || []
+    })) || [],
+    tags
   };
 }
 
@@ -104,7 +112,8 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
       *,
       lead_contacts(is_primary, contacts(*)),
       lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url)),
-      owner:profiles!leads_owner_user_id_fkey(id, name, email, avatar_url)
+      owner:profiles!leads_owner_user_id_fkey(id, name, email, avatar_url),
+      entity_tags:entity_tags!left(entity_id, entity_type, tag_id, tags(*))
     `)
     .is('deleted_at', null);
 
@@ -117,6 +126,9 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
     }
     if (filters.responsibleId) {
       query = query.eq('owner_user_id', filters.responsibleId);
+    }
+    if (filters.tagIds && filters.tagIds.length > 0) {
+      query = query.eq('entity_tags.entity_type', 'lead').in('entity_tags.tag_id', filters.tagIds)
     }
     if (filters.search) {
       // NOTE: Supabase OR with related tables or multiple fields is complex.
@@ -137,9 +149,11 @@ export async function getLead(id: string): Promise<Lead> {
     .select(`
       *,
       lead_contacts(is_primary, contacts(*)),
-      lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url))
+      lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url)),
+      entity_tags:entity_tags!left(entity_id, entity_type, tag_id, tags(*))
     `)
     .eq('id', id)
+    .or('entity_tags.entity_type.eq.lead,entity_tags.entity_type.is.null')
     .single();
 
   if (error) throw error;
@@ -256,8 +270,12 @@ export async function qualifyLead(input: QualifyLeadInput) {
 // ============================================================================
 
 export function useLeads(filters?: LeadFilters) {
+  const normalizedFilters = filters
+    ? { ...filters, tagIds: filters.tagIds ? [...filters.tagIds].sort() : undefined }
+    : undefined
+
   return useQuery({
-    queryKey: ['leads', filters],
+    queryKey: ['leads', normalizedFilters],
     queryFn: () => getLeads(filters)
   });
 }
