@@ -1,0 +1,45 @@
+Contexto,Campo,Existe no DB?,Existe na tela/rota?,Observações
+/Leads/{id} (detalhe),id,Sim,Sim,Chave primária.
+/Leads/{id} (detalhe),legal_name,Sim,Sim,Exibido como "Razão Social".
+/Leads/{id} (detalhe),trade_name,Sim,Sim,Exibido como "Nome Fantasia".
+/Leads/{id} (detalhe),cnpj,Sim,Sim,Exibido em campo dedicado.
+/Leads/{id} (detalhe),website,Sim,Sim,Exibido como "Website".
+/Leads/{id} (detalhe),segment,Sim,Sim,Exibido como "Segmento".
+/Leads/{id} (detalhe),address_city,Sim,Sim,Concatenado com estado.
+/Leads/{id} (detalhe),address_state,Sim,Sim,Concatenado com cidade.
+/Leads/{id} (detalhe),description,Sim,Sim,Exibido como "Descrição".
+/Leads/{id} (detalhe),status,Sim,Sim,Mostrado em badge e seletor.
+/Leads/{id} (detalhe),origin,Sim,Sim,Mostrado em badge e texto.
+/Leads/{id} (detalhe),operation_type,Sim,Sim,Exibido como "Tipo de Operação".
+/Leads/{id} (detalhe),owner_user_id,Sim,Não,Valor carregado no objeto Lead mas não é exibido na UI.
+/Leads/{id} (detalhe),qualified_at,Sim,Não,Retornado no objeto Lead porém não exibido.
+/Leads/{id} (detalhe),qualified_company_id,Sim,Sim,Usado para navegar para a empresa quando qualificado.
+/Leads/{id} (detalhe),qualified_master_deal_id,Sim,Não,Retornado no objeto Lead mas não utilizado.
+/Leads/{id} (detalhe),created_at,Sim,Sim,Exibido como data de criação formatada.
+/Leads/{id} (detalhe),updated_at,Sim,Não,Disponível mas não exibido.
+/Leads/{id} (detalhe),created_by,Sim,Não,Disponível mas não exibido.
+/Leads/{id} (detalhe),deleted_at,Sim,Não,Não mapeado nem exibido.
+/Leads/{id} (detalhe),is_synthetic,Sim,Não,Não mapeado nem exibido.
+/Leads/{id} (detalhe),contacts (join lead_contacts/contacts),Sim,Sim,Listados na seção "Contatos".
+/Leads/{id} (detalhe),lead_members (join),Sim,Sim,Listados na seção "Equipe".
+
+/Leads (modal de edição),legal_name,Sim,Sim,Campo "Razão Social" obrigatório.
+/Leads (modal de edição),trade_name,Sim,Sim,Campo "Nome Fantasia".
+/Leads (modal de edição),cnpj,Sim,Sim,Campo "CNPJ".
+/Leads (modal de edição),website,Sim,Sim,Campo "Site".
+/Leads (modal de edição),segment,Sim,Sim,Campo "Segmento".
+/Leads (modal de edição),status,Sim,Sim,Selecionável na seção Classificação.
+/Leads (modal de edição),origin,Sim,Sim,Selecionável na seção Classificação.
+/Leads (modal de edição),operation_type,Sim,Sim,Selecionável na seção Classificação.
+/Leads (modal de edição),address_city,Sim,Sim,Campo "Cidade".
+/Leads (modal de edição),address_state,Sim,Sim,Campo "Estado".
+/Leads (modal de edição),description,Sim,Sim,Campo "Observações".
+/Leads (modal de edição),owner_user_id,Sim,Não,Não há campo para escolher responsável.
+/Leads (modal de edição),qualified_at,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),qualified_company_id,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),qualified_master_deal_id,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),created_at,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),updated_at,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),created_by,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),deleted_at,Sim,Não,Não exibido nem editável.
+/Leads (modal de edição),is_synthetic,Sim,Não,Não exibido nem editável.
