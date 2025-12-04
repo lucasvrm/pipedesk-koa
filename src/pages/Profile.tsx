@@ -32,6 +32,7 @@ import {
 import { getInitials } from '@/lib/helpers'
 import { ROLE_LABELS } from '@/lib/types'
 import { supabase } from '@/lib/supabaseClient'
+import { googleDriveService } from '@/services/googleDriveService'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -152,27 +153,37 @@ export default function Profile() {
 
   const handleDocumentUpload = async (file: File, column: string, stateKey: string) => {
     if (!profile) return
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${profile.id}/${stateKey}-${Date.now()}.${fileExt}`
 
     try {
       setIsSaving(true)
-      toast.info('Enviando documento...')
-      
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, file)
+      toast.info('Enviando documento para o Drive...')
 
-      if (uploadError) throw uploadError
+      const { hierarchy, folders } = await googleDriveService.listEntityDocuments(
+        profile.id,
+        'user',
+        formData.name || profile.email
+      )
+
+      const uploadsFolderId =
+        folders.find(f => f.parentId === hierarchy.entityFolder.id && f.name === 'Uploads')?.id ||
+        hierarchy.entityFolder.id
+
+      const [uploaded] = await googleDriveService.uploadFiles({
+        files: [file],
+        folderId: uploadsFolderId,
+        entityId: profile.id,
+        entityType: 'user',
+        uploadedBy: profile.id
+      })
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ [column]: fileName })
+        .update({ [column]: uploaded.id })
         .eq('id', profile.id)
 
       if (updateError) throw updateError
 
-      setFormData(prev => ({ ...prev, [stateKey]: fileName }))
+      setFormData(prev => ({ ...prev, [stateKey]: uploaded.id }))
       toast.success('Documento enviado com sucesso!')
     } catch (error) {
       console.error(error)
@@ -228,14 +239,11 @@ export default function Profile() {
     }
   }
 
-  const downloadDocument = async (path: string) => {
+  const downloadDocument = async (fileId: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(path, 60)
-
-      if (error) throw error
-      window.open(data.signedUrl, '_blank')
+      const link = await googleDriveService.getFileLink(fileId)
+      if (!link) throw new Error('Link indisponível')
+      window.open(link, '_blank')
     } catch (e) {
       toast.error('Erro ao baixar documento')
     }

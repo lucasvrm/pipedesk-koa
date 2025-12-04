@@ -1,6 +1,8 @@
-import { useState, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useFolders } from '@/hooks/useFolders'
+import { useDriveDocuments, DriveFolder } from '@/hooks/useDriveDocuments'
+import { googleDriveService } from '@/services/googleDriveService'
+import type { DriveFile } from '@/services/googleDriveService'
 import {
   Folder as FolderIcon,
   FileText,
@@ -14,22 +16,17 @@ import {
   Image as ImageIcon,
   MagnifyingGlass,
   UploadSimple,
-  CaretRight,
-  CaretDown
+  CaretRight
 } from '@phosphor-icons/react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
@@ -42,25 +39,6 @@ import { toast } from 'sonner'
 import { formatBytes, formatDate } from '@/lib/helpers'
 // MUDANÇA AQUI: Importação corrigida para o novo serviço
 import { logActivity } from '@/services/activityService'
-
-export interface DocumentFile {
-  id: string
-  name: string
-  size: number
-  type: string
-  url: string
-  folderId?: string
-  uploadedBy: string
-  uploadedAt: string
-  entityId: string
-  entityType: string
-}
-
-export interface Folder {
-  id: string
-  name: string
-  parentId?: string
-}
 
 interface DocumentManagerProps {
   entityId: string
@@ -75,10 +53,23 @@ export default function DocumentManager({
   currentUser,
   entityName
 }: DocumentManagerProps) {
-  // Estado local simplificado para demonstração (idealmente viria de um hook useDocuments)
-  const [files, setFiles] = useState<DocumentFile[]>([])
-  const { folders, createFolder, deleteFolder } = useFolders(entityId, entityType)
-  
+  const { data: session } = useAuth()
+  const {
+    files,
+    folders,
+    rootFolderId,
+    createFolder,
+    uploadFiles,
+    deleteFile,
+    deleteFolder,
+    isPending
+  } = useDriveDocuments({
+    entityId,
+    entityType,
+    entityName,
+    currentUserId: currentUser?.id || session?.user?.id || ''
+  })
+
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploadOpen, setIsUploadOpen] = useState(false)
@@ -86,14 +77,25 @@ export default function DocumentManager({
   const [newFolderName, setNewFolderName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Filtra arquivos e pastas
-  const filteredFiles = files.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFolder = f.folderId === currentFolderId
-    return matchesSearch && matchesFolder
-  })
+  useEffect(() => {
+    if (rootFolderId) {
+      setCurrentFolderId(rootFolderId)
+    }
+  }, [rootFolderId])
 
-  const currentFolders = (folders || []).filter(f => f.parentId === currentFolderId)
+  // Filtra arquivos e pastas
+  const filteredFiles = useMemo(() => {
+    return files.filter(f => {
+      const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesFolder = f.folderId === currentFolderId
+      return matchesSearch && matchesFolder
+    })
+  }, [files, searchQuery, currentFolderId])
+
+  const currentFolders = useMemo(
+    () => (folders || []).filter(f => f.parentId === currentFolderId),
+    [folders, currentFolderId]
+  )
 
   // Helper para ícones de arquivo
   const getFileIcon = (mimeType: string) => {
@@ -104,49 +106,51 @@ export default function DocumentManager({
     return <FileText size={24} className="text-gray-500" />
   }
 
+  const handleDownload = async (file: DriveFile) => {
+    const link = file.downloadUrl || (await googleDriveService.getFileLink(file.id))
+    if (link) {
+      window.open(link, '_blank')
+      return
+    }
+    toast.error('Link de download não encontrado')
+  }
+
   // Ações
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files
-    if (!uploadedFiles) return
+    const uploaderId = currentUser?.id || session?.user?.id
+    if (!uploadedFiles || !currentFolderId || !uploaderId) {
+      toast.error('Usuário ou pasta não encontrado para o upload')
+      return
+    }
 
-    const newFiles: DocumentFile[] = Array.from(uploadedFiles).map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: URL.createObjectURL(file), // Simulação
-      folderId: currentFolderId,
-      uploadedBy: currentUser.id,
-      uploadedAt: new Date().toISOString(),
-      entityId,
-      entityType
-    }))
+    try {
+      const filesArray = Array.from(uploadedFiles)
+      await uploadFiles.mutateAsync({ files: filesArray, folderId: currentFolderId })
 
-    setFiles(prev => [...prev, ...newFiles])
-    
-    // Log de atividade usando o novo serviço
-    logActivity(
-      entityId, 
-      entityType, 
-      'upload de arquivo', 
-      currentUser.id, 
-      { count: newFiles.length, names: newFiles.map(f => f.name).join(', ') }
-    )
+      logActivity(
+        entityId,
+        entityType,
+        'upload de arquivo',
+        uploaderId,
+        { count: filesArray.length, names: filesArray.map(f => f.name).join(', ') }
+      )
 
-    toast.success(`${newFiles.length} arquivo(s) enviado(s)`)
-    setIsUploadOpen(false)
+      toast.success(`${filesArray.length} arquivo(s) enviado(s)`)
+    } catch (error) {
+      toast.error('Erro ao enviar arquivos')
+    } finally {
+      setIsUploadOpen(false)
+    }
   }
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return
-    
+
     try {
       await createFolder.mutateAsync({
         name: newFolderName,
-        parentId: currentFolderId,
-        entityId,
-        entityType,
-        type: 'custom'
+        parentId: currentFolderId || rootFolderId || ''
       })
       setNewFolderName('')
       setIsNewFolderOpen(false)
@@ -156,22 +160,37 @@ export default function DocumentManager({
     }
   }
 
-  const handleDeleteFile = (fileId: string) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId))
-    toast.success('Arquivo excluído')
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await deleteFile.mutateAsync(fileId)
+      toast.success('Arquivo excluído')
+    } catch (error) {
+      toast.error('Erro ao excluir arquivo')
+    }
+  }
+
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await deleteFolder.mutateAsync(folderId)
+      toast.success('Pasta excluída')
+    } catch (error) {
+      toast.error('Erro ao excluir pasta')
+    }
   }
 
   // Breadcrumbs simplificado
   const getBreadcrumbs = () => {
-    if (!currentFolderId) return [{ id: undefined, name: 'Raiz' }]
-    
-    // Lógica recursiva real seria necessária para breadcrumbs profundos
-    // Aqui mostramos apenas Raiz > Atual para simplificar
-    const current = folders?.find(f => f.id === currentFolderId)
-    return [
-      { id: undefined, name: 'Raiz' },
-      ...(current ? [current] : [])
-    ]
+    if (!currentFolderId) return []
+
+    const breadcrumbs: DriveFolder[] = []
+    let cursor: DriveFolder | undefined = folders.find(f => f.id === currentFolderId)
+
+    while (cursor) {
+      breadcrumbs.unshift(cursor)
+      cursor = cursor.parentId ? folders.find(f => f.id === cursor?.parentId) : undefined
+    }
+
+    return breadcrumbs
   }
 
   return (
@@ -210,8 +229,8 @@ export default function DocumentManager({
       {/* Breadcrumbs */}
       <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm">
         {getBreadcrumbs().map((crumb, index, arr) => (
-          <div key={crumb.id || 'root'} className="flex items-center">
-            <button 
+          <div key={crumb.id} className="flex items-center">
+            <button
               className="hover:underline hover:text-primary font-medium"
               onClick={() => setCurrentFolderId(crumb.id)}
             >
@@ -224,6 +243,10 @@ export default function DocumentManager({
 
       {/* Content Area */}
       <ScrollArea className="flex-1 p-4">
+        {isPending && (
+          <div className="text-sm text-muted-foreground py-4">Sincronizando com o Drive...</div>
+        )}
+
         {/* Folders Grid */}
         {currentFolders && currentFolders.length > 0 && (
           <div className="mb-6">
@@ -245,7 +268,7 @@ export default function DocumentManager({
                         <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => deleteFolder.mutate(folder.id)} className="text-destructive">
+                        <DropdownMenuItem onClick={() => handleDeleteFolder(folder.id)} className="text-destructive">
                           <Trash className="mr-2 h-4 w-4" /> Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -271,7 +294,7 @@ export default function DocumentManager({
                   key={file.id} 
                   className="group flex items-center gap-3 p-3 border rounded-md hover:bg-muted/40 transition-colors"
                 >
-                  <div className="shrink-0">{getFileIcon(file.type)}</div>
+                  <div className="shrink-0">{getFileIcon(file.mimeType)}</div>
                   
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{file.name}</p>
@@ -283,7 +306,13 @@ export default function DocumentManager({
                   </div>
 
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Download">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Download"
+                      onClick={() => handleDownload(file)}
+                    >
                       <DownloadSimple className="h-4 w-4" />
                     </Button>
                     <DropdownMenu>
