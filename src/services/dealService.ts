@@ -113,8 +113,10 @@ function mapDealFromDB(item: DealQueryResult): Deal {
     responsibles.push(profile);
   }
 
-  // Tags removidas temporariamente para evitar erro 400
-  const tags: Tag[] = [];
+  const tags: Tag[] = (item as any).entity_tags?.
+    filter((et: any) => et?.entity_type === 'deal')?.
+    map((et: any) => et.tags)?.
+    filter(Boolean) || [];
 
   return {
     id: item.id,
@@ -146,15 +148,14 @@ function mapDealFromDB(item: DealQueryResult): Deal {
 
 export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
   try {
-    // CORREÇÃO: Removido 'entity_tags!left(...)' que causava erro 400
-    // O Supabase não consegue fazer join sem FK explícita.
     let query = supabase
-        .from('master_deals')
-        .select(`
-          *,
-          createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-          company:companies(id, name, type, site)
-        `);
+      .from('master_deals')
+      .select(`
+        *,
+        createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
+        company:companies(id, name, type, site),
+        entity_tags:entity_tags!left(entity_id, entity_type, tag_id, tags(*))
+      `);
 
     query = withoutDeleted(query);
 
@@ -171,9 +172,9 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
 
       const ids = (matchingIds as EntityTagRow[]).map((r) => r.entity_id);
       if (ids.length > 0) {
-        query = query.in('id', ids);
+        query = query.in('id', ids).eq('entity_tags.entity_type', 'deal');
       } else {
-        return []; 
+        return [];
       }
     }
 
@@ -201,7 +202,8 @@ async function getDealFallback(dealId: string): Promise<Deal> {
       .select(`
         *,
         createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
-        company:companies(id, name, type, site)
+        company:companies(id, name, type, site),
+        entity_tags:entity_tags!left(entity_id, entity_type, tag_id, tags(*))
       `)
       .eq('id', dealId)
   ).single();
@@ -220,11 +222,13 @@ export async function getDeal(dealId: string): Promise<Deal> {
           *,
           createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
           company:companies(id, name, type, site),
+          entity_tags:entity_tags!left(entity_id, entity_type, tag_id, tags(*)),
           deal_members(
             user:profiles(*)
           )
         `)
         .eq('id', dealId)
+        .or('entity_tags.entity_type.eq.deal,entity_tags.entity_type.is.null')
     ).single();
 
     if (error) {
@@ -374,8 +378,10 @@ export async function deleteDeals(ids: string[]): Promise<void> {
 
 // Hook exportado do service (duplicado, mas mantido para compatibilidade)
 export function useDeals(tagIds?: string[]) {
+  const normalizedTagIds = tagIds ? [...tagIds].sort() : undefined;
+
   return useQuery({
-    queryKey: ['deals', tagIds],
+    queryKey: ['deals', normalizedTagIds],
     queryFn: () => getDeals(tagIds)
   });
 }
