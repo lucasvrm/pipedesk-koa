@@ -59,6 +59,7 @@ import { taskStatusService } from '@/services/taskStatusService';
 import { taskPriorityService } from '@/services/taskPriorityService';
 import RolesManager from '@/features/rbac/components/RolesManager';
 import TagSettings from '@/pages/admin/TagSettings';
+import DocumentAutomationSettings from '@/pages/admin/components/DocumentAutomationSettings';
 
 export type SettingType =
   | 'products'
@@ -683,7 +684,7 @@ export default function SettingsPage() {
         </div>
       </div>
       <Tabs defaultValue="business" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
           <TabsTrigger value="business">
             <Globe className="mr-2 h-4 w-4" /> Negócios
           </TabsTrigger>
@@ -701,6 +702,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="comms">
             <Megaphone className="mr-2 h-4 w-4" /> Comms
+          </TabsTrigger>
+          <TabsTrigger value="automation">
+            <Gear className="mr-2 h-4 w-4" /> Documentos
           </TabsTrigger>
           <TabsTrigger value="rbac">
             <ShieldCheck className="mr-2 h-4 w-4" /> Permissões
@@ -1026,6 +1030,9 @@ export default function SettingsPage() {
               }
             ]}
           />
+        </TabsContent>
+        <TabsContent value="automation" className="space-y-6">
+          <DocumentAutomationSettings />
         </TabsContent>
         <TabsContent value="rbac" className="space-y-6">
           <RolesManager />
