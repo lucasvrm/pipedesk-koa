@@ -177,85 +177,80 @@ export default function DealDetailPage() {
   ]
 
   return (
-    <PageContainer>
-      <EntityDetailLayout
-        header={
-          <PipelineVisualizer
-            stages={PIPELINE_STAGES}
-            currentStageId={deal.status}
-            onStageClick={() => {}} // Deals don't change stage by clicking header usually, logic is complex
-            readOnly
-          />
-        }
-        sidebar={
-          <KeyMetricsSidebar
-            title={deal.clientName}
-            subtitle={OPERATION_LABELS[deal.operationType]}
-            statusBadge={
-              <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
-                {STATUS_LABELS[deal.status]}
-              </Badge>
-            }
-            metrics={SIDEBAR_METRICS}
-            actions={
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
-                    <ChartBar className="mr-2 h-4 w-4" /> AIDA
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
-                    <PencilSimple className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Status Actions Dropdown replacement */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      Alterar Status <CaretDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuRadioGroup
-                      value={deal.status}
-                      onValueChange={(v) => handleStatusChange(v as DealStatus)}
-                    >
-                      <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setDocGeneratorOpen(true)}
-                  className="justify-start px-2"
-                >
-                  <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
+    <EntityDetailLayout
+      header={
+        <PipelineVisualizer
+          stages={PIPELINE_STAGES}
+          currentStageId={deal.status}
+          onStageClick={() => {}} // Deals don't change stage by clicking header usually, logic is complex
+          readOnly
+        />
+      }
+      sidebar={
+        <KeyMetricsSidebar
+          title={deal.clientName}
+          subtitle={OPERATION_LABELS[deal.operationType]}
+          statusBadge={
+            <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
+              {STATUS_LABELS[deal.status]}
+            </Badge>
+          }
+          metrics={SIDEBAR_METRICS}
+          actions={
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
+                  <ChartBar className="mr-2 h-4 w-4" /> AIDA
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
+                  <PencilSimple className="h-4 w-4" />
                 </Button>
               </div>
-            }
-          />
-        }
-        content={
-          <Tabs defaultValue="players" className="w-full space-y-6">
-            <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
-              <TabsTrigger value="players" className="py-2 px-4">
-                <Users className="mr-2 h-4 w-4" /> Players
-              </TabsTrigger>
-              <TabsTrigger value="documents" className="py-2 px-4">
-                <FileText className="mr-2 h-4 w-4" /> Docs
-              </TabsTrigger>
-              <TabsTrigger value="comments" className="py-2 px-4">
-                <ChatCircle className="mr-2 h-4 w-4" /> Comentários
-              </TabsTrigger>
-              
-              <TabsTrigger
-                value="ai"
-                disabled
-                className="py-2 px-4 opacity-50 cursor-not-allowed"
+
+              {/* Status Actions Dropdown replacement */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    Alterar Status <CaretDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuRadioGroup value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
+                    <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button variant="ghost" onClick={() => setDocGeneratorOpen(true)} className="justify-start px-2">
+                <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
+              </Button>
+            </div>
+          }
+        />
+      }
+      content={
+        <Tabs defaultValue="players" className="w-full space-y-6">
+          <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
+          <TabsTrigger value="players" className="py-2 px-4"><Users className="mr-2 h-4 w-4" /> Players</TabsTrigger>
+          <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
+          <TabsTrigger value="comments" className="py-2 px-4"><ChatCircle className="mr-2 h-4 w-4" /> Comentários</TabsTrigger>
+          
+          <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
+          <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
+          <TabsTrigger value="activity" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="players" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center bg-muted p-1 rounded-md gap-2">
+              <Button 
+                variant={playersView === 'active' ? 'default' : 'ghost'} 
+                size="sm" 
+                className="h-8 text-xs"
+                onClick={() => setPlayersView('active')}
               >
                 <Sparkle className="mr-2 h-4 w-4" /> IA
               </TabsTrigger>
@@ -352,12 +347,12 @@ export default function DealDetailPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="activity">
-              <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
-            </TabsContent>
-          </Tabs>
-        }
-      />
+        <TabsContent value="activity">
+          <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
+        </TabsContent>
+      </Tabs>
+      }
+    />
 
       <CreatePlayerDialog 
         masterDeal={deal} 
