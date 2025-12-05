@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { logActivity } from '@/services/activityService'
+import { useEntityTags, useTagOperations } from '@/services/tagService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,10 +42,12 @@ import {
   DotsThreeOutline, Wallet, CalendarBlank, WarningCircle,
   FileArrowDown, CheckCircle, PauseCircle, XCircle, PlayCircle,
   ChartBar,
-  CaretDown
+  CaretDown,
+  X
 } from '@phosphor-icons/react'
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
+import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { DroppedPlayersList } from '../components/DroppedPlayersList'
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
@@ -73,11 +76,14 @@ export default function DealDetailPage() {
   ]
   const updateDeal = useUpdateDeal()
   const updateTrack = useUpdateTrack()
+  const { data: dealTags } = useEntityTags(id || '', 'deal')
+  const tagOps = useTagOperations()
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
   const [docGeneratorOpen, setDocGeneratorOpen] = useState(false)
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
+  const [tagManagerOpen, setTagManagerOpen] = useState(false)
 
   const handleOpenAida = () => {
     if (!deal) {
@@ -115,6 +121,14 @@ export default function DealDetailPage() {
   const allDealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
   const activeTracks = allDealTracks.filter(t => t.status !== 'cancelled')
   const droppedTracks = allDealTracks.filter(t => t.status === 'cancelled')
+
+  const handleUnassignTag = (tagId: string) => {
+    if (!deal) return
+    tagOps.unassign.mutate({ tagId, entityId: deal.id, entityType: 'deal' }, {
+      onSuccess: () => toast.success('Tag removida'),
+      onError: () => toast.error('Não foi possível remover a tag')
+    })
+  }
 
   const handleStatusChange = (newStatus: DealStatus) => {
     if (newStatus === 'cancelled') {
@@ -185,55 +199,109 @@ export default function DealDetailPage() {
           />
         }
         sidebar={
-          <KeyMetricsSidebar
-            title={deal.clientName}
-            subtitle={OPERATION_LABELS[deal.operationType]}
-            statusBadge={
-              <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
-                {STATUS_LABELS[deal.status]}
-              </Badge>
-            }
-            metrics={SIDEBAR_METRICS}
-            actions={
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
-                    <ChartBar className="mr-2 h-4 w-4" /> AIDA
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
-                    <PencilSimple className="h-4 w-4" />
+          <>
+            <KeyMetricsSidebar
+              title={deal.clientName}
+              subtitle={OPERATION_LABELS[deal.operationType]}
+              statusBadge={
+                <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
+                  {STATUS_LABELS[deal.status]}
+                </Badge>
+              }
+              metrics={SIDEBAR_METRICS}
+              actions={
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
+                      <ChartBar className="mr-2 h-4 w-4" /> AIDA
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
+                      <PencilSimple className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        Alterar Status <CaretDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuRadioGroup
+                        value={deal.status}
+                        onValueChange={(v) => handleStatusChange(v as DealStatus)}
+                      >
+                        <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => setDocGeneratorOpen(true)}
+                    className="justify-start px-2"
+                  >
+                    <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
                   </Button>
                 </div>
+              }
+            />
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      Alterar Status <CaretDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuRadioGroup
-                      value={deal.status}
-                      onValueChange={(v) => handleStatusChange(v as DealStatus)}
-                    >
-                      <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setDocGeneratorOpen(true)}
-                  className="justify-start px-2"
-                >
-                  <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
-                </Button>
-              </div>
-            }
-          />
+            {/* TAGS SECTION - Persistent in Sidebar */}
+            <Card className="border-l-4 border-l-secondary shadow-sm">
+              <CardHeader className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-primary" /> Tags
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTagManagerOpen(true)}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                {dealTags && dealTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {dealTags.map(tag => (
+                      <div
+                        key={tag.id}
+                        className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }} />
+                        <span className="font-medium max-w-[100px] truncate" style={{ color: tag.color }}>{tag.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleUnassignTag(tag.id)}
+                          title="Remover"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="text-xs text-muted-foreground text-center py-2 border border-dashed rounded cursor-pointer hover:bg-muted/50"
+                    onClick={() => setTagManagerOpen(true)}
+                  >
+                    + Adicionar Tag
+                  </div>
+                )}
+                <SmartTagSelector
+                  entityId={deal.id}
+                  entityType="deal"
+                  selectedTagIds={dealTags?.map(tag => tag.id) || []}
+                  open={tagManagerOpen}
+                  onOpenChange={setTagManagerOpen}
+                />
+              </CardContent>
+            </Card>
+          </>
         }
         content={
           <Tabs defaultValue="players" className="w-full space-y-6">
