@@ -26,6 +26,16 @@ export interface RemoteDriveSnapshot {
   permission: DrivePermission
 }
 
+interface RemoteFileItem {
+  id: string
+  name: string
+  mimeType?: string
+  size?: number | string
+  webViewLink?: string
+  createdTime?: string
+  [key: string]: unknown
+}
+
 /**
  * Normaliza o valor de permissão vindo do backend
  */
@@ -51,8 +61,7 @@ export async function getRemoteEntityDocuments(
   entityType: DriveEntityType,
   entityId: string,
   actorId: string,
-  actorRole: DriveRole,
-  _entityName?: string
+  actorRole: DriveRole
 ): Promise<RemoteDriveSnapshot> {
   if (!BASE_URL) {
     throw new Error(
@@ -75,7 +84,7 @@ export async function getRemoteEntityDocuments(
     )
   }
 
-  const data: { files: any[]; permission?: string } = await res.json()
+  const data: { files: RemoteFileItem[]; permission?: string } = await res.json()
 
   const rootFolderId = `remote:${entityType}:${entityId}`
   const folders: DriveFolder[] = []
