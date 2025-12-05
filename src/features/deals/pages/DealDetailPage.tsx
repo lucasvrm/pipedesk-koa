@@ -40,7 +40,8 @@ import {
   Kanban as KanbanIcon, List as ListIcon, Buildings,
   DotsThreeOutline, Wallet, CalendarBlank, WarningCircle,
   FileArrowDown, CheckCircle, PauseCircle, XCircle, PlayCircle,
-  ChartBar // Ícone AIDA
+  ChartBar, // Ícone AIDA
+  CaretDown, // usado no botão "Alterar Status"
 } from '@phosphor-icons/react'
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
@@ -251,63 +252,100 @@ export default function DealDetailPage() {
                 className="h-8 text-xs"
                 onClick={() => setPlayersView('active')}
               >
-                <KanbanIcon className="mr-2" />
-                Em Negociação ({activeTracks.length})
-              </Button>
-              <Button 
-                variant={playersView === 'dropped' ? 'default' : 'ghost'} 
-                size="sm" 
-                className="h-8 text-xs"
-                onClick={() => setPlayersView('dropped')}
+                <Sparkle className="mr-2 h-4 w-4" /> IA
+              </TabsTrigger>
+              <TabsTrigger
+                value="fields"
+                disabled
+                className="py-2 px-4 opacity-50 cursor-not-allowed"
               >
-                <ListIcon className="mr-2" />
-                Dropped ({droppedTracks.length})
-              </Button>
-            </div>
+                <Tag className="mr-2 h-4 w-4" /> Campos
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="py-2 px-4">
+                <ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades
+              </TabsTrigger>
+            </TabsList>
 
-            <Button onClick={() => setCreatePlayerOpen(true)} size="sm">
-              <Plus className="mr-2" /> Adicionar Player
-            </Button>
-          </div>
-          
-          {playersView === 'active' ? (
-            activeTracks.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
-                <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                <p className="text-muted-foreground">Nenhum player ativo.</p>
-                <Button variant="link" onClick={() => setCreatePlayerOpen(true)}>
-                  Adicionar Primeiro Player
+            <TabsContent value="players" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center bg-muted p-1 rounded-md gap-2">
+                  <Button 
+                    variant={playersView === 'active' ? 'default' : 'ghost'} 
+                    size="sm" 
+                    className="h-8 text-xs"
+                    onClick={() => setPlayersView('active')}
+                  >
+                    <KanbanIcon className="mr-2" />
+                    Em Negociação ({activeTracks.length})
+                  </Button>
+                  <Button 
+                    variant={playersView === 'dropped' ? 'default' : 'ghost'} 
+                    size="sm" 
+                    className="h-8 text-xs"
+                    onClick={() => setPlayersView('dropped')}
+                  >
+                    <ListIcon className="mr-2" />
+                    Dropped ({droppedTracks.length})
+                  </Button>
+                </div>
+
+                <Button onClick={() => setCreatePlayerOpen(true)} size="sm">
+                  <Plus className="mr-2" /> Adicionar Player
                 </Button>
               </div>
-            ) : (
-              <DealPlayersKanban tracks={activeTracks} currentUser={currentUser} />
-            )
-          ) : (
-            <DroppedPlayersList tracks={droppedTracks} />
-          )}
-        </TabsContent>
+              
+              {playersView === 'active' ? (
+                activeTracks.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
+                    <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">Nenhum player ativo.</p>
+                    <Button variant="link" onClick={() => setCreatePlayerOpen(true)}>
+                      Adicionar Primeiro Player
+                    </Button>
+                  </div>
+                ) : (
+                  <DealPlayersKanban tracks={activeTracks} currentUser={currentUser} />
+                )
+              ) : (
+                <DroppedPlayersList tracks={droppedTracks} />
+              )}
+            </TabsContent>
 
-        <TabsContent value="documents">
-          {currentUser && (
-            <DocumentManager 
-              entityId={deal.id} 
-              entityType="deal" 
-              currentUser={currentUser} 
-              entityName={deal.clientName} 
-            />
-          )}
-        </TabsContent>
+            <TabsContent value="documents">
+              {currentUser && (
+                <DocumentManager 
+                  entityId={deal.id} 
+                  entityType="deal" 
+                  currentUser={currentUser} 
+                  entityName={deal.clientName} 
+                />
+              )}
+            </TabsContent>
 
-        <TabsContent value="comments" className="space-y-6">
-          {currentUser && <CommentsPanel entityId={deal.id} entityType="deal" currentUser={currentUser} />}
-        </TabsContent>
+            <TabsContent value="comments" className="space-y-6">
+              {currentUser && (
+                <CommentsPanel
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                />
+              )}
+            </TabsContent>
 
-        <TabsContent value="ai">
-          {currentUser && <AINextSteps dealId={deal.id} />}
-        </TabsContent>
-        <TabsContent value="fields">
-          {currentUser && <CustomFieldsRenderer entityId={deal.id} entityType="deal" currentUser={currentUser} mode="edit" />}
-        </TabsContent>
+            <TabsContent value="ai">
+              {currentUser && <AINextSteps dealId={deal.id} />}
+            </TabsContent>
+
+            <TabsContent value="fields">
+              {currentUser && (
+                <CustomFieldsRenderer
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                  mode="edit"
+                />
+              )}
+            </TabsContent>
 
         <TabsContent value="activity">
           <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
