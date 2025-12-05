@@ -5,6 +5,7 @@ import { DEFAULT_DASHBOARD_CONFIG, WIDGET_REGISTRY } from '@/features/dashboard/
 import { supabase } from '@/lib/supabaseClient';
 import { UserRole } from '@/lib/types';
 import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
 
 const DASHBOARD_GLOBAL_KEY = 'dashboard_global_config';
 
@@ -28,6 +29,9 @@ export function useDashboardLayout() {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
 
+  // Local state to handle optimistic updates or fallback reads
+  const [localPreferences, setLocalPreferences] = useState<DashboardConfig | null>(null);
+
   // 1. Fetch Global Settings (Admin defined availability)
   const { data: globalSettings, isLoading: isLoadingGlobal } = useSetting(DASHBOARD_GLOBAL_KEY);
 
@@ -35,9 +39,23 @@ export function useDashboardLayout() {
   const globalConfig: GlobalDashboardConfig = globalSettings || DEFAULT_GLOBAL_CONFIG;
 
   // 3. Resolve User Preferences
-  // We prioritize: Profile DB -> LocalStorage -> Global Default
-  const userPreferences = profile?.preferences?.dashboard as DashboardConfig | undefined;
+  // Priority: Local State (optimistic) -> Profile DB -> LocalStorage -> Global Default
 
+  // Load from LocalStorage on mount if not in DB
+  useEffect(() => {
+    if (user && !profile?.preferences?.dashboard) {
+        const stored = localStorage.getItem(`dashboard_pref_${user.id}`);
+        if (stored) {
+            try {
+                setLocalPreferences(JSON.parse(stored));
+            } catch (e) {
+                console.error('Invalid JSON in local storage', e);
+            }
+        }
+    }
+  }, [user, profile]);
+
+  const userPreferences = localPreferences || (profile?.preferences?.dashboard as DashboardConfig | undefined);
   const currentLayout: DashboardConfig = userPreferences || globalConfig.defaultConfig;
 
   // Filter out widgets that are not available globally or not permitted for the user
@@ -66,6 +84,9 @@ export function useDashboardLayout() {
     mutationFn: async (newLayout: DashboardConfig) => {
       if (!user) throw new Error('User not logged in');
 
+      // Update local state immediately (Optimistic UI)
+      setLocalPreferences(newLayout);
+
       // 1. Try to update DB
       try {
         const newPreferences = {
@@ -78,28 +99,40 @@ export function useDashboardLayout() {
             .update({ preferences: newPreferences })
             .eq('id', user.id);
 
-        if (error) throw error;
+        if (error) {
+            // Throwing here will trigger the catch block below
+            throw error;
+        }
 
-        // Optimistic update of profile in context would be ideal,
-        // but for now we rely on invalidation or local state if strictly needed.
-        // We will return the newLayout to update local cache.
         return newPreferences;
 
       } catch (err) {
-        console.warn('Failed to save to DB, falling back to LocalStorage', err);
+        console.warn('Failed to save to DB (likely schema missing), using LocalStorage fallback.', err);
+
         // Fallback: LocalStorage
-        localStorage.setItem(`dashboard_pref_${user.id}`, JSON.stringify(newLayout));
-        throw err; // Re-throw to show toast if needed, or handle silently?
+        try {
+            localStorage.setItem(`dashboard_pref_${user.id}`, JSON.stringify(newLayout));
+            // We return success here because for the user, it worked (persisted locally)
+            return { dashboard: newLayout };
+        } catch (lsErr) {
+            console.error('LocalStorage failed too', lsErr);
+            throw lsErr; // Real failure
+        }
       }
     },
     onSuccess: (newPreferences) => {
+      // Logic: If we are here, either DB worked OR LocalStorage worked.
+      // We don't need to invalidate queries if we rely on local state override,
+      // but it's good practice to try reloading profile if it was a DB save.
+
+      // If the profile query is stale, invalidate it
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+
       toast.success('Layout salvo com sucesso!');
-      // Invalidate profile to refetch preferences
-      // Note: AuthContext might not auto-refetch unless we trigger it.
-      // For now, we rely on the fact that next load will get it.
     },
-    onError: () => {
-        toast.error('Erro ao salvar layout. Tentando salvar localmente...');
+    onError: (err) => {
+        toast.error('Não foi possível salvar suas preferências.');
+        console.error(err);
     }
   });
 
