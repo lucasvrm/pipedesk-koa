@@ -1,5 +1,9 @@
 import React from 'react';
-import { KPIOverviewWidget } from './widgets/KPIOverviewWidget';
+import { WeightedPipelineWidget } from './widgets/kpi/WeightedPipelineWidget';
+import { ActiveDealsWidget } from './widgets/kpi/ActiveDealsWidget';
+import { ConversionRateWidget } from './widgets/kpi/ConversionRateWidget';
+import { TotalDealsWidget } from './widgets/kpi/TotalDealsWidget';
+
 import { PortfolioMatrixWidget } from './widgets/PortfolioMatrixWidget';
 import { WeightedForecastWidget } from './widgets/WeightedForecastWidget';
 import { ConversionFunnelWidget } from './widgets/ConversionFunnelWidget';
@@ -21,14 +25,40 @@ export interface WidgetDefinition {
 }
 
 export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
-  'kpi-overview': {
-    id: 'kpi-overview',
-    title: 'KPIs Principais',
-    component: KPIOverviewWidget,
-    defaultSize: 'full',
+  // === Individual KPIs ===
+  'weighted-pipeline': {
+    id: 'weighted-pipeline',
+    title: 'KPI: Pipeline Ponderado',
+    component: WeightedPipelineWidget,
+    defaultSize: 'small',
     category: 'kpi',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
+  'active-deals': {
+    id: 'active-deals',
+    title: 'KPI: Deals Ativos',
+    component: ActiveDealsWidget,
+    defaultSize: 'small',
+    category: 'kpi',
+    requiredPermissions: ['VIEW_ANALYTICS']
+  },
+  'conversion-rate': {
+    id: 'conversion-rate',
+    title: 'KPI: Taxa de Conversão',
+    component: ConversionRateWidget,
+    defaultSize: 'small',
+    category: 'kpi',
+    requiredPermissions: ['VIEW_ANALYTICS']
+  },
+  'total-deals': {
+    id: 'total-deals',
+    title: 'KPI: Total Negócios',
+    component: TotalDealsWidget,
+    defaultSize: 'small',
+    category: 'kpi',
+    requiredPermissions: ['VIEW_ANALYTICS']
+  },
+  // === Operational ===
   'notifications': {
     id: 'notifications',
     title: 'Resumo de Notificações',
@@ -43,6 +73,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultSize: 'small',
     category: 'operational'
   },
+  // === Charts & Lists ===
   'portfolio-matrix': {
     id: 'portfolio-matrix',
     title: 'Matriz de Portfólio',
@@ -92,6 +123,14 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
 };
 
 export const DEFAULT_DASHBOARD_CONFIG = {
-  topWidgets: ['notifications', 'quick-tasks', 'kpi-overview'], // Cards section
-  mainWidgets: ['weighted-forecast', 'portfolio-matrix', 'my-deals'] // Main content grid
+  // New default includes granular KPIs
+  topWidgets: [
+    'notifications',
+    'quick-tasks',
+    'weighted-pipeline',
+    'active-deals',
+    'conversion-rate',
+    'total-deals'
+  ],
+  mainWidgets: ['weighted-forecast', 'portfolio-matrix', 'my-deals']
 };

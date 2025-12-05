@@ -8,19 +8,18 @@ import {
   Briefcase,
   Plus, 
   Gear,
-  Checks
+  Checks,
+  ArrowCounterClockwise
 } from '@phosphor-icons/react'
 import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
-import { WIDGET_REGISTRY } from '@/features/dashboard/registry'
+import { WIDGET_REGISTRY, DEFAULT_DASHBOARD_CONFIG } from '@/features/dashboard/registry'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-// Imports para manter compatibilidade com componentes que ainda não foram migrados totalmente
-// (Se necessário, mas agora estamos usando widgets)
+import { toast } from 'sonner'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
@@ -38,6 +37,20 @@ export default function DashboardPage() {
   const handleSaveCustomize = async () => {
     await saveUserLayout.mutateAsync(tempLayout)
     setIsCustomizing(false)
+  }
+
+  const handleResetDefaults = () => {
+    if (window.confirm('Deseja restaurar as configurações padrão? Suas personalizações serão perdidas.')) {
+        // Reset local state to default
+        setTempLayout(DEFAULT_DASHBOARD_CONFIG);
+        // Persist reset immediately or let user click save?
+        // Better let user click save to confirm, but visually update state now.
+        // Or cleaner: just call save with default.
+        saveUserLayout.mutateAsync(DEFAULT_DASHBOARD_CONFIG).then(() => {
+            setIsCustomizing(false);
+            toast.success('Padrões restaurados.');
+        });
+    }
   }
 
   const toggleWidget = (zone: 'topWidgets' | 'mainWidgets', widgetId: string) => {
@@ -178,11 +191,16 @@ export default function DashboardPage() {
                 </div>
             </Tabs>
 
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCustomizing(false)}>Cancelar</Button>
-                <Button onClick={handleSaveCustomize}>
-                    <Checks className="mr-2" /> Salvar Preferências
+            <DialogFooter className="flex justify-between sm:justify-between w-full">
+                <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleResetDefaults}>
+                    <ArrowCounterClockwise className="mr-2" /> Restaurar Padrões
                 </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsCustomizing(false)}>Cancelar</Button>
+                    <Button onClick={handleSaveCustomize}>
+                        <Checks className="mr-2" /> Salvar
+                    </Button>
+                </div>
             </DialogFooter>
         </DialogContent>
       </Dialog>
