@@ -51,7 +51,7 @@ export function useDriveDocuments({
 
     if (USE_REMOTE_DRIVE) {
       // 🔗 Usa backend pd-google
-      const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole, entityName)
+      const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole)
       setFolders(snapshot.folders)
       setFiles(snapshot.files)
       setRootFolderId(snapshot.rootFolderId)
