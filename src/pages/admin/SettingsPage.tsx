@@ -995,6 +995,9 @@ export default function SettingsPage() {
           <TabsTrigger value="tags" className="py-2">
             <TagIcon className="mr-2 h-4 w-4" /> Tags
           </TabsTrigger>
+          <TabsTrigger value="dashboard">
+            <Layout className="mr-2 h-4 w-4" /> Dashboard
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="system" className="space-y-6 mt-4">
@@ -1082,6 +1085,9 @@ export default function SettingsPage() {
 
         <TabsContent value="tags" className="space-y-6 mt-4">
           <TagSettings />
+        </TabsContent>
+        <TabsContent value="dashboard" className="space-y-6">
+          <DashboardSettingsPage />
         </TabsContent>
       </Tabs>
     </PageContainer>
