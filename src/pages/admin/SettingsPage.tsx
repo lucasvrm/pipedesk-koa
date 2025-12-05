@@ -48,7 +48,8 @@ import {
   FlowArrow,
   ListChecks,
   ShieldCheck,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Layout
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -60,6 +61,7 @@ import { taskPriorityService } from '@/services/taskPriorityService';
 import RolesManager from '@/features/rbac/components/RolesManager';
 import TagSettings from '@/pages/admin/TagSettings';
 import DocumentAutomationSettings from '@/pages/admin/components/DocumentAutomationSettings';
+import DashboardSettingsPage from '@/pages/admin/DashboardSettings'; // Reusing the component here as a tab
 
 export type SettingType =
   | 'products'
@@ -712,6 +714,9 @@ export default function SettingsPage() {
           <TabsTrigger value="tags">
             <TagIcon className="mr-2 h-4 w-4" /> Tags
           </TabsTrigger>
+          <TabsTrigger value="dashboard">
+            <Layout className="mr-2 h-4 w-4" /> Dashboard
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="business" className="space-y-6">
           <SettingsTable
@@ -1039,6 +1044,9 @@ export default function SettingsPage() {
         </TabsContent>
         <TabsContent value="tags" className="space-y-6">
           <TagSettings />
+        </TabsContent>
+        <TabsContent value="dashboard" className="space-y-6">
+          <DashboardSettingsPage />
         </TabsContent>
       </Tabs>
     </PageContainer>

@@ -26,6 +26,7 @@ const SyntheticDataAdminPage = lazy(() => import('@/pages/admin/SyntheticDataAdm
 const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings'))
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
+const DashboardSettingsPage = lazy(() => import('@/pages/admin/DashboardSettings')) // Novo import
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'))
 const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
 const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
@@ -108,6 +109,7 @@ function App() {
             {/* Admin & Settings Routes */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
+            <Route path="/admin/settings/dashboard" element={<ProtectedRoute requiredRole={['admin']}><DashboardSettingsPage /></ProtectedRoute>} /> {/* Nova rota */}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
             {/* Altera a rota antiga /admin/synthetic-data para a nova slug /admin/gerador-dados */}
             <Route path="/admin/gerador-dados" element={<ProtectedRoute requiredRole={['admin']}><SyntheticDataAdminPage /></ProtectedRoute>} />

@@ -44,6 +44,7 @@ export interface User {
   docSocialContractUrl?: string
   docServiceAgreementUrl?: string
   isSynthetic?: boolean
+  preferences?: Record<string, any> // User specific UI preferences
 }
 
 export interface PipelineStage {
