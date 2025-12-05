@@ -518,6 +518,9 @@ export interface PlayerProductCapabilities {
   barter?: BarterSubtype[];
 }
 
+export type BuyingRole = 'decision_maker' | 'influencer' | 'blocker' | 'champion' | 'user' | 'gatekeeper';
+export type ContactSentiment = 'positive' | 'neutral' | 'negative' | 'unknown';
+
 export interface Contact {
   id: string;
   companyId: string | null;
@@ -529,6 +532,10 @@ export interface Contact {
   linkedin?: string;
   notes?: string;
   isPrimary: boolean;
+
+  buyingRole?: BuyingRole;
+  sentiment?: ContactSentiment;
+
   createdAt: string;
   createdBy: string;
   isSynthetic?: boolean;

@@ -210,8 +210,12 @@ export default function DealsView() {
 
   const handleSort = (key: SortKey) => setSortConfig(c => ({ key, direction: c.key === key && c.direction === 'asc' ? 'desc' : 'asc' }))
   
-  const handlePreview = (deal: MasterDeal) => { setSelectedDeal(deal); setIsPreviewOpen(true); }
-  const handleEdit = (deal: MasterDeal) => { setSelectedDeal(deal); setIsPreviewOpen(false); setEditDealOpen(true); }
+  // Alteração: Clique no card/linha vai direto para detalhes
+  const handlePreview = (deal: MasterDeal) => {
+    navigate(`/deals/${deal.id}`)
+  }
+
+  const handleEdit = (deal: MasterDeal) => { setSelectedDeal(deal); setEditDealOpen(true); }
 
   const handleDelete = async () => {
     if (!itemToDelete) return
@@ -269,66 +273,71 @@ export default function DealsView() {
               </div>
             }
             filters={
-              <div className="flex flex-wrap gap-2">
-                <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`h-9 border-dashed ${activeFilterCount > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}
-                    >
-                      <Funnel className="mr-2 h-4 w-4" /> Filtros {activeFilterCount > 0 && <Badge className="ml-2 h-5 px-1">{activeFilterCount}</Badge>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4" align="start">
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Filtros Avançados</h4>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Status</Label>
-                        <Select value={tempFilters.status} onValueChange={(v) => setTempFilters({ ...tempFilters, status: v as any })}>
-                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todos</SelectItem>
-                            <SelectItem value="active">Ativos</SelectItem>
-                            <SelectItem value="concluded">Concluídos</SelectItem>
-                            <SelectItem value="cancelled">Cancelados</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Responsável</Label>
-                        <Select value={tempFilters.responsible} onValueChange={(v) => setTempFilters({ ...tempFilters, responsible: v })}>
-                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todos</SelectItem>
-                            {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {tagsEnabled && (
+              <div className="flex flex-wrap gap-2 items-center">
+                {/* Filtros rápidos fora do Popover para acesso direto */}
+                <Select value={filters.status} onValueChange={(v) => { setFilters({ ...filters, status: v as any }); setCurrentPage(1); }}>
+                  <SelectTrigger className="h-9 w-[130px] border-dashed"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Status</SelectItem>
+                    <SelectItem value="active">Ativos</SelectItem>
+                    <SelectItem value="concluded">Concluídos</SelectItem>
+                    <SelectItem value="cancelled">Cancelados</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.responsible} onValueChange={(v) => { setFilters({ ...filters, responsible: v }); setCurrentPage(1); }}>
+                  <SelectTrigger className="h-9 w-[150px] border-dashed"><SelectValue placeholder="Responsável" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Resp.</SelectItem>
+                    {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                {tagsEnabled && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={`h-9 border-dashed ${filters.tags.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
+                        <TagIcon className="mr-2 h-4 w-4" /> Tags {filters.tags.length > 0 && `(${filters.tags.length})`}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3" align="start">
                         <div className="space-y-2">
-                          <Label className="text-xs">Tags (Qualquer uma)</Label>
-                          <div className="flex flex-wrap gap-1 border p-2 rounded-md max-h-32 overflow-y-auto">
+                          <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
+                          <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
                             {tags.map(tag => (
                               <Badge
                                 key={tag.id}
-                                variant={tempFilters.tags.includes(tag.id) ? 'default' : 'outline'}
-                                className="cursor-pointer"
-                                onClick={() => toggleTagFilter(tag.id)}
-                                style={tempFilters.tags.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
+                                variant={filters.tags.includes(tag.id) ? 'default' : 'outline'}
+                                className="cursor-pointer hover:opacity-80"
+                                onClick={() => {
+                                    const newTags = filters.tags.includes(tag.id)
+                                        ? filters.tags.filter(t => t !== tag.id)
+                                        : [...filters.tags, tag.id];
+                                    setFilters({ ...filters, tags: newTags });
+                                    setCurrentPage(1);
+                                }}
+                                style={filters.tags.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
                               >
                                 {tag.name}
                               </Badge>
                             ))}
-                            {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag criada.</span>}
+                            {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
                           </div>
+                          {filters.tags.length > 0 && (
+                            <Button variant="ghost" size="xs" className="w-full h-6 mt-2 text-xs" onClick={() => setFilters(prev => ({...prev, tags: []}))}>
+                                Limpar Tags
+                            </Button>
+                          )}
                         </div>
-                      )}
-                      <Button className="w-full" size="sm" onClick={applyFilters}>Aplicar</Button>
-                      {activeFilterCount > 0 && <Button variant="ghost" size="sm" className="w-full h-6" onClick={clearFilters}>Limpar</Button>}
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                    </PopoverContent>
+                  </Popover>
+                )}
+
+                {activeFilterCount > 0 && (
+                    <Button variant="ghost" size="sm" className="h-9 text-muted-foreground hover:text-foreground" onClick={clearFilters}>
+                        <Trash className="mr-2 h-3.5 w-3.5" /> Limpar
+                    </Button>
+                )}
               </div>
             }
             viewToggle={
