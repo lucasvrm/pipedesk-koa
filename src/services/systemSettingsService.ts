@@ -27,14 +27,28 @@ export async function getSettings(): Promise<SystemSetting[]> {
 }
 
 export async function getSetting(key: string): Promise<any> {
-  const { data, error } = await supabase
-    .from('system_settings')
-    .select('value')
-    .eq('key', key)
-    .single();
+  try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', key)
+        .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows gracefully without error
 
-  if (error && error.code !== 'PGRST116') throw error; // Allow not found (return null)
-  return data?.value || null;
+      if (error) {
+          // Log but don't crash if it's a 406 or acceptable error
+          if (error.code === 'PGRST116' || error.code === '406') {
+             return null;
+          }
+          console.warn(`Error fetching setting ${key}:`, error);
+          // Return null to allow default fallbacks in UI
+          return null;
+      }
+
+      return data?.value || null;
+  } catch (err) {
+      console.warn(`Unexpected error fetching setting ${key}:`, err);
+      return null;
+  }
 }
 
 export async function updateSetting(key: string, value: any, description?: string) {
@@ -70,6 +84,7 @@ export function useSetting(key: string) {
   return useQuery({
     queryKey: ['settings', key],
     queryFn: () => getSetting(key),
+    // Increase staleTime to avoid hammering if it fails
     staleTime: 1000 * 60 * 5
   });
 }

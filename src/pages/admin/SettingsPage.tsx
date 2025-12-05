@@ -48,7 +48,9 @@ import {
   FlowArrow,
   ListChecks,
   ShieldCheck,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Layout,
+  Briefcase
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -60,6 +62,7 @@ import { taskPriorityService } from '@/services/taskPriorityService';
 import RolesManager from '@/features/rbac/components/RolesManager';
 import TagSettings from '@/pages/admin/TagSettings';
 import DocumentAutomationSettings from '@/pages/admin/components/DocumentAutomationSettings';
+import DashboardSettingsPage from '@/pages/admin/DashboardSettings';
 
 export type SettingType =
   | 'products'
@@ -667,6 +670,297 @@ function SettingsTable({ type, title, description, columns }: GenericTableProps)
   );
 }
 
+// Sub-components for better organization
+function SystemSettingsTab() {
+    return (
+        <Tabs defaultValue="dashboard" className="w-full">
+             <div className="mb-4">
+                <TabsList className="w-full justify-start grid grid-cols-4 bg-muted/20">
+                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                    <TabsTrigger value="comms">Comms & Templates</TabsTrigger>
+                    <TabsTrigger value="rbac">Permissões (RBAC)</TabsTrigger>
+                    <TabsTrigger value="holidays">Feriados</TabsTrigger>
+                </TabsList>
+             </div>
+
+             <TabsContent value="dashboard" className="space-y-6">
+                 <DashboardSettingsPage />
+             </TabsContent>
+
+             <TabsContent value="comms" className="space-y-6">
+                <SettingsTable
+                    type="communication_templates"
+                    title="Templates de Mensagens"
+                    description="Padronização de emails, whatsapps e documentos."
+                    columns={[
+                    {
+                        key: 'title',
+                        label: 'Título',
+                        width: '200px',
+                        render: (i) => (
+                        <span className="font-medium">{i.title}</span>
+                        )
+                    },
+                    {
+                        key: 'type',
+                        label: 'Canal',
+                        width: '100px',
+                        render: (i) => (
+                        <Badge
+                            variant="outline"
+                            className="capitalize"
+                        >
+                            {i.type}
+                        </Badge>
+                        )
+                    },
+                    {
+                        key: 'category',
+                        label: 'Categoria',
+                        width: '150px',
+                        render: (i) => (
+                        <Badge variant="secondary">{i.category}</Badge>
+                        )
+                    },
+                    {
+                        key: 'subject',
+                        label: 'Assunto',
+                        render: (i) => (
+                        <span className="text-muted-foreground text-sm truncate max-w-[200px] block">
+                            {i.subject || '-'}
+                        </span>
+                        )
+                    }
+                    ]}
+                />
+             </TabsContent>
+
+             <TabsContent value="rbac" className="space-y-6">
+                <RolesManager />
+             </TabsContent>
+
+             <TabsContent value="holidays" className="space-y-6">
+                <SettingsTable
+                    type="holidays"
+                    title="Feriados & Dias Não Úteis"
+                    description="Cadastro para cálculo correto de SLA."
+                    columns={[
+                    {
+                        key: 'date',
+                        label: 'Data',
+                        width: '150px',
+                        render: (i) => format(new Date(i.date), 'dd/MM/yyyy')
+                    },
+                    {
+                        key: 'name',
+                        label: 'Feriado',
+                        render: (i) => (
+                        <span className="font-medium">{i.name}</span>
+                        )
+                    },
+                    {
+                        key: 'type',
+                        label: 'Tipo',
+                        width: '150px',
+                        render: (i) => (
+                        <Badge
+                            className={
+                            i.type === 'national'
+                                ? 'bg-blue-500'
+                                : 'bg-orange-500'
+                            }
+                        >
+                            {i.type === 'national' ? 'Nacional' : 'Regional'}
+                        </Badge>
+                        )
+                    }
+                    ]}
+                />
+             </TabsContent>
+        </Tabs>
+    )
+}
+
+function EntitiesSettingsTab() {
+    return (
+        <Tabs defaultValue="business" className="w-full">
+            <div className="mb-4">
+                <TabsList className="w-full justify-start grid grid-cols-3 bg-muted/20">
+                    <TabsTrigger value="business">Negócios & Deals</TabsTrigger>
+                    <TabsTrigger value="players">Players & Categorias</TabsTrigger>
+                    <TabsTrigger value="track-status">Track Status</TabsTrigger>
+                </TabsList>
+            </div>
+
+            <TabsContent value="business" className="space-y-6">
+                <SettingsTable
+                    type="products"
+                    title="Produtos"
+                    description="Defina os produtos financeiros (ex: CRI, CRA, CCB) disponíveis."
+                    columns={[
+                    {
+                        key: 'name',
+                        label: 'Nome',
+                        width: '250px',
+                        render: (i) => <span className="font-medium">{i.name}</span>
+                    },
+                    {
+                        key: 'acronym',
+                        label: 'Sigla',
+                        width: '100px',
+                        render: (i) => (
+                        <Badge variant="outline">{i.acronym}</Badge>
+                        )
+                    },
+                    {
+                        key: 'defaultFeePercentage',
+                        label: 'Fee Padrão',
+                        width: '100px',
+                        render: (i) =>
+                        i.defaultFeePercentage ? `${i.defaultFeePercentage}%` : '-'
+                    },
+                    { key: 'description', label: 'Descrição' }
+                    ]}
+                />
+                <SettingsTable
+                    type="operation_types"
+                    title="Tipos de Operação"
+                    description="Configure os tipos de operação suportados para negócios e deals."
+                    columns={[
+                    {
+                        key: 'name',
+                        label: 'Tipo',
+                        width: '220px',
+                        render: (i) => (
+                        <span className="font-medium">{i.name}</span>
+                        )
+                    },
+                    {
+                        key: 'code',
+                        label: 'Código',
+                        width: '120px',
+                        render: (i) =>
+                        i.code ? (
+                            <Badge
+                            variant="outline"
+                            className="uppercase"
+                            >
+                            {i.code}
+                            </Badge>
+                        ) : (
+                            '-'
+                        )
+                    },
+                    { key: 'description', label: 'Descrição' }
+                    ]}
+                />
+                <SettingsTable
+                    type="loss_reasons"
+                    title="Motivos de Perda"
+                    description="Razões padronizadas para cancelamento de deals (Churn)."
+                    columns={[
+                    {
+                        key: 'name',
+                        label: 'Motivo',
+                        width: '250px',
+                        render: (i) => (
+                        <span className="font-medium">{i.name}</span>
+                        )
+                    },
+                    { key: 'description', label: 'Descrição' }
+                    ]}
+                />
+                <SettingsTable
+                    type="deal_sources"
+                    title="Origens de Deal (Sources)"
+                    description="Canais de aquisição de novos negócios."
+                    columns={[
+                    {
+                        key: 'name',
+                        label: 'Canal',
+                        width: '250px',
+                        render: (i) => (
+                        <span className="font-medium">{i.name}</span>
+                        )
+                    },
+                    {
+                        key: 'type',
+                        label: 'Tipo',
+                        width: '150px',
+                        render: (i) =>
+                        i.type && (
+                            <Badge
+                            variant="secondary"
+                            className="capitalize"
+                            >
+                            {i.type}
+                            </Badge>
+                        )
+                    },
+                    { key: 'description', label: 'Descrição' }
+                    ]}
+                />
+            </TabsContent>
+
+            <TabsContent value="players" className="space-y-6">
+                <SettingsTable
+                    type="player_categories"
+                    title="Categorias de Players"
+                    description="Segmentação de investidores e parceiros."
+                    columns={[
+                    {
+                        key: 'name',
+                        label: 'Categoria',
+                        width: '250px',
+                        render: (i) => (
+                        <span className="font-medium">{i.name}</span>
+                        )
+                    },
+                    { key: 'description', label: 'Descrição' }
+                    ]}
+                />
+            </TabsContent>
+
+            <TabsContent value="track-status" className="space-y-6">
+                <SettingsTable
+                    type="track_statuses"
+                    title="Track Status"
+                    description="Gerencie os status utilizados para os tracks dos players."
+                    columns={[
+                    {
+                        key: 'name',
+                        label: 'Status',
+                        width: '220px',
+                        render: (i) => (
+                        <span className="font-medium">{i.name}</span>
+                        )
+                    },
+                    {
+                        key: 'color',
+                        label: 'Cor',
+                        width: '120px',
+                        render: (i) => {
+                        const color = i.color || '#475569';
+                        return (
+                            <Badge
+                            style={{
+                                backgroundColor: color,
+                                color: '#fff'
+                            }}
+                            >
+                            {i.color || 'Sem cor'}
+                            </Badge>
+                        );
+                        }
+                    },
+                    { key: 'description', label: 'Descrição' }
+                    ]}
+                />
+            </TabsContent>
+        </Tabs>
+    )
+}
+
 export default function SettingsPage() {
   return (
     <PageContainer>
@@ -683,200 +977,39 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
-      <Tabs defaultValue="business" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
-          <TabsTrigger value="business">
-            <Globe className="mr-2 h-4 w-4" /> Negócios
-          </TabsTrigger>
-          <TabsTrigger value="players">
-            <Users className="mr-2 h-4 w-4" /> Players
-          </TabsTrigger>
-          <TabsTrigger value="tracks">
-            <FlowArrow className="mr-2 h-4 w-4" /> Track Status
-          </TabsTrigger>
-          <TabsTrigger value="tasks">
-            <ListChecks className="mr-2 h-4 w-4" /> Tarefas
-          </TabsTrigger>
-          <TabsTrigger value="system">
+
+      <Tabs defaultValue="system" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto py-1">
+          <TabsTrigger value="system" className="py-2">
             <CalendarIcon className="mr-2 h-4 w-4" /> Sistema
           </TabsTrigger>
-          <TabsTrigger value="comms">
-            <Megaphone className="mr-2 h-4 w-4" /> Comms
+          <TabsTrigger value="entities" className="py-2">
+            <Briefcase className="mr-2 h-4 w-4" /> Entidades
           </TabsTrigger>
-          <TabsTrigger value="automation">
+          <TabsTrigger value="automation" className="py-2">
             <Gear className="mr-2 h-4 w-4" /> Documentos
           </TabsTrigger>
-          <TabsTrigger value="rbac">
-            <ShieldCheck className="mr-2 h-4 w-4" /> Permissões
+          <TabsTrigger value="tasks" className="py-2">
+            <ListChecks className="mr-2 h-4 w-4" /> Tarefas
           </TabsTrigger>
-          <TabsTrigger value="tags">
+          <TabsTrigger value="tags" className="py-2">
             <TagIcon className="mr-2 h-4 w-4" /> Tags
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="business" className="space-y-6">
-          <SettingsTable
-            type="products"
-            title="Produtos"
-            description="Defina os produtos financeiros (ex: CRI, CRA, CCB) disponíveis."
-            columns={[
-              {
-                key: 'name',
-                label: 'Nome',
-                width: '250px',
-                render: (i) => <span className="font-medium">{i.name}</span>
-              },
-              {
-                key: 'acronym',
-                label: 'Sigla',
-                width: '100px',
-                render: (i) => (
-                  <Badge variant="outline">{i.acronym}</Badge>
-                )
-              },
-              {
-                key: 'defaultFeePercentage',
-                label: 'Fee Padrão',
-                width: '100px',
-                render: (i) =>
-                  i.defaultFeePercentage ? `${i.defaultFeePercentage}%` : '-'
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
-          <SettingsTable
-            type="operation_types"
-            title="Tipos de Operação"
-            description="Configure os tipos de operação suportados para negócios e deals."
-            columns={[
-              {
-                key: 'name',
-                label: 'Tipo',
-                width: '220px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              {
-                key: 'code',
-                label: 'Código',
-                width: '120px',
-                render: (i) =>
-                  i.code ? (
-                    <Badge
-                      variant="outline"
-                      className="uppercase"
-                    >
-                      {i.code}
-                    </Badge>
-                  ) : (
-                    '-'
-                  )
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
-          <SettingsTable
-            type="loss_reasons"
-            title="Motivos de Perda"
-            description="Razões padronizadas para cancelamento de deals (Churn)."
-            columns={[
-              {
-                key: 'name',
-                label: 'Motivo',
-                width: '250px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
-          <SettingsTable
-            type="deal_sources"
-            title="Origens de Deal (Sources)"
-            description="Canais de aquisição de novos negócios."
-            columns={[
-              {
-                key: 'name',
-                label: 'Canal',
-                width: '250px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              {
-                key: 'type',
-                label: 'Tipo',
-                width: '150px',
-                render: (i) =>
-                  i.type && (
-                    <Badge
-                      variant="secondary"
-                      className="capitalize"
-                    >
-                      {i.type}
-                    </Badge>
-                  )
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
+
+        <TabsContent value="system" className="space-y-6 mt-4">
+            <SystemSettingsTab />
         </TabsContent>
-        <TabsContent value="players" className="space-y-6">
-          <SettingsTable
-            type="player_categories"
-            title="Categorias de Players"
-            description="Segmentação de investidores e parceiros."
-            columns={[
-              {
-                key: 'name',
-                label: 'Categoria',
-                width: '250px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
+
+        <TabsContent value="entities" className="space-y-6 mt-4">
+            <EntitiesSettingsTab />
         </TabsContent>
-        <TabsContent value="tracks" className="space-y-6">
-          <SettingsTable
-            type="track_statuses"
-            title="Track Status"
-            description="Gerencie os status utilizados para os tracks dos players."
-            columns={[
-              {
-                key: 'name',
-                label: 'Status',
-                width: '220px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              {
-                key: 'color',
-                label: 'Cor',
-                width: '120px',
-                render: (i) => {
-                  const color = i.color || '#475569';
-                  return (
-                    <Badge
-                      style={{
-                        backgroundColor: color,
-                        color: '#fff'
-                      }}
-                    >
-                      {i.color || 'Sem cor'}
-                    </Badge>
-                  );
-                }
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
+
+        <TabsContent value="automation" className="space-y-6 mt-4">
+          <DocumentAutomationSettings />
         </TabsContent>
-        <TabsContent value="tasks" className="space-y-6">
+
+        <TabsContent value="tasks" className="space-y-6 mt-4">
           <SettingsTable
             type="task_statuses"
             title="Status de Tarefas"
@@ -946,98 +1079,8 @@ export default function SettingsPage() {
             ]}
           />
         </TabsContent>
-        <TabsContent value="system" className="space-y-6">
-          <SettingsTable
-            type="holidays"
-            title="Feriados & Dias Não Úteis"
-            description="Cadastro para cálculo correto de SLA."
-            columns={[
-              {
-                key: 'date',
-                label: 'Data',
-                width: '150px',
-                render: (i) => format(new Date(i.date), 'dd/MM/yyyy')
-              },
-              {
-                key: 'name',
-                label: 'Feriado',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              {
-                key: 'type',
-                label: 'Tipo',
-                width: '150px',
-                render: (i) => (
-                  <Badge
-                    className={
-                      i.type === 'national'
-                        ? 'bg-blue-500'
-                        : 'bg-orange-500'
-                    }
-                  >
-                    {i.type === 'national' ? 'Nacional' : 'Regional'}
-                  </Badge>
-                )
-              }
-            ]}
-          />
-        </TabsContent>
-        <TabsContent value="comms" className="space-y-6">
-          <SettingsTable
-            type="communication_templates"
-            title="Templates de Mensagens"
-            description="Padronização de emails, whatsapps e documentos."
-            columns={[
-              {
-                key: 'title',
-                label: 'Título',
-                width: '200px',
-                render: (i) => (
-                  <span className="font-medium">{i.title}</span>
-                )
-              },
-              {
-                key: 'type',
-                label: 'Canal',
-                width: '100px',
-                render: (i) => (
-                  <Badge
-                    variant="outline"
-                    className="capitalize"
-                  >
-                    {i.type}
-                  </Badge>
-                )
-              },
-              {
-                key: 'category',
-                label: 'Categoria',
-                width: '150px',
-                render: (i) => (
-                  <Badge variant="secondary">{i.category}</Badge>
-                )
-              },
-              {
-                key: 'subject',
-                label: 'Assunto',
-                render: (i) => (
-                  <span className="text-muted-foreground text-sm truncate max-w-[200px] block">
-                    {i.subject || '-'}
-                  </span>
-                )
-              }
-            ]}
-          />
-        </TabsContent>
-        <TabsContent value="automation" className="space-y-6">
-          <DocumentAutomationSettings />
-        </TabsContent>
-        <TabsContent value="rbac" className="space-y-6">
-          <RolesManager />
-        </TabsContent>
-        <TabsContent value="tags" className="space-y-6">
+
+        <TabsContent value="tags" className="space-y-6 mt-4">
           <TagSettings />
         </TabsContent>
       </Tabs>
