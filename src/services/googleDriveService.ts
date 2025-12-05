@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid'
 
-export type DriveEntityType = 'lead' | 'deal' | 'company' | 'user' | 'track' | 'task'
+export type DriveEntityType = 'lead' | 'deal' | 'company' | 'user' | 'track' | 'task' | 'contact'
 
 export type DriveRole = 'admin' | 'analyst' | 'new_business' | 'client'
 

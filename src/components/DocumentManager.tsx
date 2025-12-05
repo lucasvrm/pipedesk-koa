@@ -42,7 +42,7 @@ import { DriveRole } from '@/services/googleDriveService'
 
 interface DocumentManagerProps {
   entityId: string
-  entityType: 'deal' | 'track' | 'task' | 'lead'
+  entityType: 'deal' | 'track' | 'task' | 'lead' | 'contact' | 'company'
   currentUser: any
   entityName?: string
 }
