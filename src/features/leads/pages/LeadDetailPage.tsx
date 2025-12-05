@@ -22,6 +22,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
 import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
 import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
+import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
+import { UnifiedTimeline } from '@/components/UnifiedTimeline'
 import {
   Buildings,
   ChatCircle,
@@ -470,58 +472,37 @@ export default function LeadDetailPage() {
                 <Card>
                   <CardHeader className="space-y-3 border-b pb-4">
                     <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Contatos</CardTitle>
+                      <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Comitê de Compra</CardTitle>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => setLinkContactOpen(true)}>
-                          Vincular contato existente
+                          Vincular
                         </Button>
                         <Button size="sm" onClick={() => setContactModalOpen(true)}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar novo contato
+                          <Plus className="h-4 w-4" /> Novo
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">Gerencie relações sem sair da lead.</p>
+                    <p className="text-sm text-muted-foreground">Mapeie influenciadores e decisores.</p>
                   </CardHeader>
-                  <CardContent className="p-0">
+                  <CardContent className="p-4 space-y-3">
                     {lead.contacts && lead.contacts.length > 0 ? (
-                      <div className="divide-y">
-                        {lead.contacts.map(contact => (
-                          <div key={contact.id} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/40 transition-colors">
-                            <div className="flex items-start gap-3">
-                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
-                                {contact.name.charAt(0)}
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium leading-tight">{contact.name}</p>
-                                <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo informado'}</p>
-                                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                  {contact.email && (
-                                    <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>
-                                  )}
-                                  {contact.phone && (
-                                    <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {contact.phone}</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {contact.isPrimary && <Badge variant="secondary">Principal</Badge>}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleRemoveContact(contact.id)}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Desvincular
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      lead.contacts.map(contact => (
+                        <div key={contact.id} className="relative">
+                          <BuyingCommitteeCard contact={contact} />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
+                            onClick={() => handleRemoveContact(contact.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))
                     ) : (
-                      <div className="p-5 text-center text-sm text-muted-foreground">Nenhum contato vinculado.</div>
+                      <div className="text-center py-6 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                        Nenhum contato mapeado.
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -575,10 +556,12 @@ export default function LeadDetailPage() {
             </TabsContent>
 
             <TabsContent value="comments" className="space-y-4">
-              {user && <CommentsPanel entityId={lead.id} entityType="lead" currentUser={user} />}
+               {/* Replaced by Unified Timeline */}
+              <UnifiedTimeline entityId={lead.id} entityType="lead" />
             </TabsContent>
 
             <TabsContent value="activity">
+              {/* Legacy Activity kept as backup/alternative view if needed, or redirected to unified */}
               <ActivityHistory entityId={lead.id} entityType="lead" limit={50} />
             </TabsContent>
           </Tabs>

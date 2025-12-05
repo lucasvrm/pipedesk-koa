@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
 import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
 import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
+import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
+import { UnifiedTimeline } from '@/components/UnifiedTimeline'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -392,13 +394,8 @@ export default function DealDetailPage() {
             </TabsContent>
 
             <TabsContent value="comments" className="space-y-6">
-              {currentUser && (
-                <CommentsPanel
-                  entityId={deal.id}
-                  entityType="deal"
-                  currentUser={currentUser}
-                />
-              )}
+               {/* Unified Timeline replaces Comments */}
+              <UnifiedTimeline entityId={deal.id} entityType="deal" />
             </TabsContent>
 
             <TabsContent value="ai">
