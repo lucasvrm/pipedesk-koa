@@ -1,51 +1,90 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageContainer } from '@/components/PageContainer'
 import { Button } from '@/components/ui/button'
 import { 
   HandWaving, 
-  ChartLineUp, 
-  PresentationChart, 
+  Briefcase,
   Plus, 
-  CheckSquare, 
-  Bell, 
-  Briefcase 
+  Gear,
+  Checks,
+  ArrowCounterClockwise
 } from '@phosphor-icons/react'
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-
-// Imports dos componentes internos
-import AnalyticsDashboard from '@/features/analytics/components/AnalyticsDashboard'
-import PlayerIntelligenceDashboard from '@/features/analytics/components/PlayerIntelligenceDashboard'
-import InboxPanel from '@/features/inbox/components/InboxPanel' 
-import { hasPermission } from '@/lib/permissions'
-import { UserRole } from '@/lib/types'
-import { PageContainer } from '@/components/PageContainer'
+import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
+import { WIDGET_REGISTRY, DEFAULT_DASHBOARD_CONFIG } from '@/features/dashboard/registry'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const [inboxOpen, setInboxOpen] = useState(false)
+  const { layout, availableWidgets, allWidgets, saveUserLayout } = useDashboardLayout()
 
-  // Verificação de permissão para exibir abas sensíveis
-  const canViewAnalytics = hasPermission(profile?.role as UserRole, 'VIEW_ANALYTICS')
+  const [isCustomizing, setIsCustomizing] = useState(false)
+  const [tempLayout, setTempLayout] = useState<DashboardConfig>(layout)
+
+  const handleOpenCustomize = () => {
+    setTempLayout(layout) // Reset to current
+    setIsCustomizing(true)
+  }
+
+  const handleSaveCustomize = async () => {
+    await saveUserLayout.mutateAsync(tempLayout)
+    setIsCustomizing(false)
+  }
+
+  const handleResetDefaults = () => {
+    if (window.confirm('Deseja restaurar as configurações padrão? Suas personalizações serão perdidas.')) {
+        // Reset local state to default
+        setTempLayout(DEFAULT_DASHBOARD_CONFIG);
+        // Persist reset immediately or let user click save?
+        // Better let user click save to confirm, but visually update state now.
+        // Or cleaner: just call save with default.
+        saveUserLayout.mutateAsync(DEFAULT_DASHBOARD_CONFIG).then(() => {
+            setIsCustomizing(false);
+            toast.success('Padrões restaurados.');
+        });
+    }
+  }
+
+  const toggleWidget = (zone: 'topWidgets' | 'mainWidgets', widgetId: string) => {
+    setTempLayout(prev => {
+        const list = prev[zone];
+        const exists = list.includes(widgetId);
+        return {
+            ...prev,
+            [zone]: exists
+                ? list.filter(id => id !== widgetId)
+                : [...list, widgetId]
+        }
+    })
+  }
 
   return (
     <PageContainer>
       
-      {/* --- HEADER COM AÇÕES RÁPIDAS --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* --- HEADER --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <HandWaving className="text-yellow-500 animate-pulse" weight="fill" />
             Olá, {profile?.name?.split(' ')[0]}
           </h2>
           <p className="text-muted-foreground mt-1">
-            Aqui está o panorama da sua operação hoje, {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}.
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={handleOpenCustomize} title="Personalizar Dashboard">
+             <Gear className="mr-2 h-4 w-4" /> Personalizar
+          </Button>
           <Button onClick={() => navigate('/deals')} variant="outline" className="hidden md:flex">
             <Briefcase className="mr-2 h-4 w-4" />
             Ver Deals
@@ -57,90 +96,114 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* --- CARDS DE RESUMO RÁPIDO (OPERACIONAL) --- */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-primary/5 border-primary/10 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => setInboxOpen(true)}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Notificações</CardTitle>
-            <Bell className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div> 
-            <p className="text-xs text-muted-foreground">3 não lidas</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/tasks')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Minhas Tarefas</CardTitle>
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">4</div>
-            <p className="text-xs text-muted-foreground">2 vencem hoje</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* --- TOP ZONE (CARDS) --- */}
+      {layout.topWidgets.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6 animate-in fade-in slide-in-from-bottom-2">
+            {layout.topWidgets.map(widgetId => {
+                const widgetDef = WIDGET_REGISTRY[widgetId];
+                if (!widgetDef) return null;
+                const Component = widgetDef.component;
+                return (
+                    <div key={widgetId} className={widgetDef.defaultSize === 'full' ? 'col-span-full' : ''}>
+                        <Component />
+                    </div>
+                )
+            })}
+          </div>
+      )}
 
-      {/* --- ÁREA PRINCIPAL COM ABAS --- */}
-      <Tabs defaultValue={canViewAnalytics ? "analytics" : "my-work"} className="space-y-4">
-        <TabsList className="bg-background border">
-          {canViewAnalytics && (
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-muted">
-              <ChartLineUp className="mr-2 h-4 w-4" /> 
-              Visão Executiva
-            </TabsTrigger>
-          )}
-          
-          <TabsTrigger value="intelligence" className="data-[state=active]:bg-muted">
-            <PresentationChart className="mr-2 h-4 w-4" /> 
-            Inteligência de Mercado
-          </TabsTrigger>
+      {/* --- MAIN ZONE (CONTENT) --- */}
+      {layout.mainWidgets.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             {layout.mainWidgets.map(widgetId => {
+                 const widgetDef = WIDGET_REGISTRY[widgetId];
+                 if (!widgetDef) return null;
+                 const Component = widgetDef.component;
+                 // Se o widget for marcado como full width, ele ocupa 2 colunas no grid
+                 const colSpan = widgetDef.defaultSize === 'full' ? 'lg:col-span-2' : '';
 
-          <TabsTrigger value="my-work" className="data-[state=active]:bg-muted">
-             <CheckSquare className="mr-2 h-4 w-4" />
-             Minha Mesa
-          </TabsTrigger>
-        </TabsList>
+                 return (
+                     <div key={widgetId} className={`min-h-[300px] ${colSpan}`}>
+                         <Component />
+                     </div>
+                 )
+             })}
+          </div>
+      ) : (
+          <div className="text-center py-12 border-2 border-dashed rounded-lg">
+             <p className="text-muted-foreground mb-4">Seu dashboard está vazio.</p>
+             <Button onClick={handleOpenCustomize}>Adicionar Widgets</Button>
+          </div>
+      )}
 
-        {/* CONTEÚDO: ANALYTICS */}
-        {canViewAnalytics && (
-          <TabsContent value="analytics" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-             {profile && <AnalyticsDashboard currentUser={profile} />}
-          </TabsContent>
-        )}
+      {/* --- CUSTOMIZE DIALOG --- */}
+      <Dialog open={isCustomizing} onOpenChange={setIsCustomizing}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Personalizar Dashboard</DialogTitle>
+                <DialogDescription>Escolha quais informações você quer ver.</DialogDescription>
+            </DialogHeader>
 
-        {/* CONTEÚDO: INTELIGÊNCIA */}
-        <TabsContent value="intelligence" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-            <PlayerIntelligenceDashboard />
-        </TabsContent>
+            <Tabs defaultValue="top" className="flex-1 overflow-hidden flex flex-col">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="top">Topo (Resumos)</TabsTrigger>
+                    <TabsTrigger value="main">Principal (Gráficos)</TabsTrigger>
+                </TabsList>
 
-        {/* CONTEÚDO: MINHA MESA */}
-        <TabsContent value="my-work" className="space-y-4">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="h-[400px] overflow-hidden">
-                <CardHeader><CardTitle>Últimas Atualizações</CardTitle></CardHeader>
-                <CardContent className="h-full p-0 relative">
-                  {/* InboxPanel is a Sheet, not an inline component, so we trigger it via state */}
-                  <div className="p-4 flex flex-col items-center justify-center h-full text-muted-foreground">
-                      <Bell size={32} className="mb-2 opacity-50" />
-                      <p>Clique no card de notificações para abrir o painel lateral.</p>
-                      <Button variant="outline" size="sm" className="mt-4" onClick={() => setInboxOpen(true)}>
-                          Abrir Notificações
-                      </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="h-[400px] flex items-center justify-center border-dashed">
-                <p className="text-muted-foreground">Widget de Tarefas Rápidas (To-Do)</p>
-              </Card>
-           </div>
-        </TabsContent>
-      </Tabs>
+                <div className="flex-1 overflow-y-auto py-4 px-1">
+                    <TabsContent value="top" className="space-y-4">
+                        <p className="text-xs text-muted-foreground mb-2">Widgets compactos ideais para o topo da página.</p>
+                        {allWidgets
+                            .filter(w => w.category === 'operational' || w.category === 'kpi')
+                            .filter(w => availableWidgets.includes(w.id)) // Only global allowed
+                            .map(widget => (
+                            <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">{widget.title}</Label>
+                                    <p className="text-xs text-muted-foreground">Tamanho: {widget.defaultSize}</p>
+                                </div>
+                                <Switch
+                                    checked={tempLayout.topWidgets.includes(widget.id)}
+                                    onCheckedChange={() => toggleWidget('topWidgets', widget.id)}
+                                />
+                            </div>
+                        ))}
+                    </TabsContent>
 
-      {/* Sheet de Notificações */}
-      <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
+                    <TabsContent value="main" className="space-y-4">
+                        <p className="text-xs text-muted-foreground mb-2">Gráficos e tabelas detalhadas.</p>
+                        {allWidgets
+                            .filter(w => w.category === 'chart' || w.category === 'list')
+                            .filter(w => availableWidgets.includes(w.id)) // Only global allowed
+                            .map(widget => (
+                            <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">{widget.title}</Label>
+                                    <p className="text-xs text-muted-foreground">Tamanho: {widget.defaultSize}</p>
+                                </div>
+                                <Switch
+                                    checked={tempLayout.mainWidgets.includes(widget.id)}
+                                    onCheckedChange={() => toggleWidget('mainWidgets', widget.id)}
+                                />
+                            </div>
+                        ))}
+                    </TabsContent>
+                </div>
+            </Tabs>
+
+            <DialogFooter className="flex justify-between sm:justify-between w-full">
+                <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleResetDefaults}>
+                    <ArrowCounterClockwise className="mr-2" /> Restaurar Padrões
+                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsCustomizing(false)}>Cancelar</Button>
+                    <Button onClick={handleSaveCustomize}>
+                        <Checks className="mr-2" /> Salvar
+                    </Button>
+                </div>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   )
 }
