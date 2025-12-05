@@ -6,11 +6,28 @@ import {
   DriveFile,
   DriveRole,
 } from '@/services/googleDriveService'
+import { supabase } from '@/lib/supabaseClient'
 
-const BASE_URL = import.meta.env.VITE_PD_GOOGLE_BASE_URL as string | undefined
+// A URL base agora aponta para a Edge Function do Supabase
+// Ex: https://<project>.supabase.co/functions/v1/proxy-drive
+// Isso é construído dinamicamente a partir da URL do Supabase
+const SUPABASE_PROJECT_URL = import.meta.env.VITE_SUPABASE_URL
+const FUNCTION_URL = SUPABASE_PROJECT_URL ? `${SUPABASE_PROJECT_URL}/functions/v1/proxy-drive` : ''
+
+// Mantemos o check do VITE_PD_GOOGLE_BASE_URL apenas para saber se a integração está "ativa" conceitualmente,
+// mas a URL real usada será a do Proxy.
+const REMOTE_ENABLED = Boolean(import.meta.env.VITE_PD_GOOGLE_BASE_URL)
 
 if (typeof window !== 'undefined') {
-  if (!BASE_URL) {
+  console.log('[pdGoogleDriveApi] Configuration Loaded:', {
+    SUPABASE_PROJECT_URL,
+    FUNCTION_URL,
+    REMOTE_ENABLED,
+    PROXY_TARGET: 'Supabase Edge Function',
+    ORIGINAL_ENV: import.meta.env.VITE_PD_GOOGLE_BASE_URL
+  })
+
+  if (!REMOTE_ENABLED) {
     console.info(
       '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não está definida. O modo remoto de Drive permanecerá desativado.'
     )
@@ -50,7 +67,28 @@ function normalizePermission(value: string | undefined): DrivePermission {
  * Verifica se o modo remoto está habilitado
  */
 export function isRemoteDriveEnabled(): boolean {
-  return Boolean(BASE_URL)
+  return REMOTE_ENABLED
+}
+
+async function fetchWithProxy(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  if (!FUNCTION_URL) throw new Error('[pdGoogleDriveApi] URL do Supabase não configurada.')
+
+  // Usa a sessão do Supabase para autenticar a chamada à Edge Function
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+
+  const headers = new Headers(options.headers)
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  return fetch(`${FUNCTION_URL}${path}`, {
+    ...options,
+    headers
+  })
 }
 
 /**
@@ -63,13 +101,13 @@ export async function getRemoteEntityDocuments(
   actorId: string,
   actorRole: DriveRole
 ): Promise<RemoteDriveSnapshot> {
-  if (!BASE_URL) {
+  if (!REMOTE_ENABLED) {
     throw new Error(
       '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não configurada, mas getRemoteEntityDocuments foi chamado.'
     )
   }
 
-  const res = await fetch(`${BASE_URL}/drive/${entityType}/${entityId}`, {
+  const res = await fetchWithProxy(`/drive/${entityType}/${entityId}`, {
     method: 'GET',
     headers: {
       'x-user-id': actorId,
@@ -143,13 +181,13 @@ export async function createRemoteFolder(
   actorId: string,
   actorRole: DriveRole
 ): Promise<void> {
-  if (!BASE_URL) {
+  if (!REMOTE_ENABLED) {
     throw new Error(
       '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não configurada, mas createRemoteFolder foi chamado.'
     )
   }
 
-  const res = await fetch(`${BASE_URL}/drive/${entityType}/${entityId}/folder`, {
+  const res = await fetchWithProxy(`/drive/${entityType}/${entityId}/folder`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -178,7 +216,7 @@ export async function uploadRemoteFiles(
   actorId: string,
   actorRole: DriveRole
 ): Promise<void> {
-  if (!BASE_URL) {
+  if (!REMOTE_ENABLED) {
     throw new Error(
       '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não configurada, mas uploadRemoteFiles foi chamado.'
     )
@@ -188,7 +226,7 @@ export async function uploadRemoteFiles(
     const formData = new FormData()
     formData.append('file', file)
 
-    const res = await fetch(`${BASE_URL}/drive/${entityType}/${entityId}/upload`, {
+    const res = await fetchWithProxy(`/drive/${entityType}/${entityId}/upload`, {
       method: 'POST',
       headers: {
         'x-user-id': actorId,
