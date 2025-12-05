@@ -40,8 +40,8 @@ import {
   Kanban as KanbanIcon, List as ListIcon, Buildings,
   DotsThreeOutline, Wallet, CalendarBlank, WarningCircle,
   FileArrowDown, CheckCircle, PauseCircle, XCircle, PlayCircle,
-  ChartBar, // Ícone AIDA
-  CaretDown, // usado no botão "Alterar Status"
+  ChartBar,
+  CaretDown
 } from '@phosphor-icons/react'
 
 import DealPlayersKanban from '../components/DealPlayersKanban' 
@@ -63,9 +63,7 @@ export default function DealDetailPage() {
   const { profile: currentUser } = useAuth()
   const { data: deal, isLoading } = useDeal(id || null)
   const { data: playerTracks } = useTracks()
-  // No caso real, esses estágios viriam do banco (pipeline_stages).
-  // Vou mockar aqui baseado na memória ou lógica existente, mas idealmente usaria `usePipelineStages`.
-  // Como não quero adicionar chamadas novas que possam falhar, vou usar um set padrão robusto.
+
   const PIPELINE_STAGES = [
     { id: 'analysis', label: 'Análise' },
     { id: 'tease', label: 'Tease' },
@@ -165,7 +163,6 @@ export default function DealDetailPage() {
   const feeDisplay = deal.feePercentage ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}` : '—';
   
   const isDeadlineOverdue = deal.deadline ? isOverdue(deal.deadline.toString()) : false;
-  const deadlineColorClass = isDeadlineOverdue ? 'border-l-red-500' : 'border-l-slate-400';
   const deadlineIconColor = isDeadlineOverdue ? 'text-red-500' : 'text-slate-500';
 
   const SIDEBAR_METRICS = [
@@ -177,80 +174,84 @@ export default function DealDetailPage() {
   ]
 
   return (
-    <EntityDetailLayout
-      header={
-        <PipelineVisualizer
-          stages={PIPELINE_STAGES}
-          currentStageId={deal.status}
-          onStageClick={() => {}} // Deals don't change stage by clicking header usually, logic is complex
-          readOnly
-        />
-      }
-      sidebar={
-        <KeyMetricsSidebar
-          title={deal.clientName}
-          subtitle={OPERATION_LABELS[deal.operationType]}
-          statusBadge={
-            <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
-              {STATUS_LABELS[deal.status]}
-            </Badge>
-          }
-          metrics={SIDEBAR_METRICS}
-          actions={
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
-                  <ChartBar className="mr-2 h-4 w-4" /> AIDA
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
-                  <PencilSimple className="h-4 w-4" />
+    <PageContainer>
+      <EntityDetailLayout
+        header={
+          <PipelineVisualizer
+            stages={PIPELINE_STAGES}
+            currentStageId={deal.status}
+            onStageClick={() => {}}
+            readOnly
+          />
+        }
+        sidebar={
+          <KeyMetricsSidebar
+            title={deal.clientName}
+            subtitle={OPERATION_LABELS[deal.operationType]}
+            statusBadge={
+              <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
+                {STATUS_LABELS[deal.status]}
+              </Badge>
+            }
+            metrics={SIDEBAR_METRICS}
+            actions={
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
+                    <ChartBar className="mr-2 h-4 w-4" /> AIDA
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
+                    <PencilSimple className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      Alterar Status <CaretDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuRadioGroup
+                      value={deal.status}
+                      onValueChange={(v) => handleStatusChange(v as DealStatus)}
+                    >
+                      <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => setDocGeneratorOpen(true)}
+                  className="justify-start px-2"
+                >
+                  <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
                 </Button>
               </div>
+            }
+          />
+        }
+        content={
+          <Tabs defaultValue="players" className="w-full space-y-6">
+            <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
+              <TabsTrigger value="players" className="py-2 px-4">
+                <Users className="mr-2 h-4 w-4" /> Players
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="py-2 px-4">
+                <FileText className="mr-2 h-4 w-4" /> Docs
+              </TabsTrigger>
+              <TabsTrigger value="comments" className="py-2 px-4">
+                <ChatCircle className="mr-2 h-4 w-4" /> Comentários
+              </TabsTrigger>
 
-              {/* Status Actions Dropdown replacement */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    Alterar Status <CaretDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuRadioGroup value={deal.status} onValueChange={(v) => handleStatusChange(v as DealStatus)}>
-                    <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button variant="ghost" onClick={() => setDocGeneratorOpen(true)} className="justify-start px-2">
-                <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
-              </Button>
-            </div>
-          }
-        />
-      }
-      content={
-        <Tabs defaultValue="players" className="w-full space-y-6">
-          <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
-          <TabsTrigger value="players" className="py-2 px-4"><Users className="mr-2 h-4 w-4" /> Players</TabsTrigger>
-          <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
-          <TabsTrigger value="comments" className="py-2 px-4"><ChatCircle className="mr-2 h-4 w-4" /> Comentários</TabsTrigger>
-          
-          <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
-          <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
-          <TabsTrigger value="activity" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="players" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center bg-muted p-1 rounded-md gap-2">
-              <Button 
-                variant={playersView === 'active' ? 'default' : 'ghost'} 
-                size="sm" 
-                className="h-8 text-xs"
-                onClick={() => setPlayersView('active')}
+              <TabsTrigger
+                value="ai"
+                disabled
+                className="py-2 px-4 opacity-50 cursor-not-allowed"
               >
                 <Sparkle className="mr-2 h-4 w-4" /> IA
               </TabsTrigger>
@@ -269,18 +270,18 @@ export default function DealDetailPage() {
             <TabsContent value="players" className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center bg-muted p-1 rounded-md gap-2">
-                  <Button 
-                    variant={playersView === 'active' ? 'default' : 'ghost'} 
-                    size="sm" 
+                  <Button
+                    variant={playersView === 'active' ? 'default' : 'ghost'}
+                    size="sm"
                     className="h-8 text-xs"
                     onClick={() => setPlayersView('active')}
                   >
                     <KanbanIcon className="mr-2" />
                     Em Negociação ({activeTracks.length})
                   </Button>
-                  <Button 
-                    variant={playersView === 'dropped' ? 'default' : 'ghost'} 
-                    size="sm" 
+                  <Button
+                    variant={playersView === 'dropped' ? 'default' : 'ghost'}
+                    size="sm"
                     className="h-8 text-xs"
                     onClick={() => setPlayersView('dropped')}
                   >
@@ -293,7 +294,7 @@ export default function DealDetailPage() {
                   <Plus className="mr-2" /> Adicionar Player
                 </Button>
               </div>
-              
+
               {playersView === 'active' ? (
                 activeTracks.length === 0 ? (
                   <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
@@ -313,11 +314,11 @@ export default function DealDetailPage() {
 
             <TabsContent value="documents">
               {currentUser && (
-                <DocumentManager 
-                  entityId={deal.id} 
-                  entityType="deal" 
-                  currentUser={currentUser} 
-                  entityName={deal.clientName} 
+                <DocumentManager
+                  entityId={deal.id}
+                  entityType="deal"
+                  currentUser={currentUser}
+                  entityName={deal.clientName}
                 />
               )}
             </TabsContent>
@@ -347,12 +348,12 @@ export default function DealDetailPage() {
               )}
             </TabsContent>
 
-        <TabsContent value="activity">
-          <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
-        </TabsContent>
-      </Tabs>
-      }
-    />
+            <TabsContent value="activity">
+              <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
+            </TabsContent>
+          </Tabs>
+        }
+      />
 
       <CreatePlayerDialog 
         masterDeal={deal} 
