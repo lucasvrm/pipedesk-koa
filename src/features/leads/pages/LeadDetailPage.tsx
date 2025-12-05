@@ -19,6 +19,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
+import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
+import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
 import {
   Buildings,
   ChatCircle,
@@ -38,7 +41,7 @@ import {
 } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Tag } from '@/lib/types'
+import type { Tag as TagType } from '@/lib/types'
 import { LEAD_ORIGIN_LABELS, LEAD_STATUS_LABELS, LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import CommentsPanel from '@/components/CommentsPanel'
@@ -82,9 +85,9 @@ export default function LeadDetailPage() {
   const [selectedMember, setSelectedMember] = useState('')
   const [memberRole, setMemberRole] = useState<'owner' | 'collaborator' | 'watcher'>('collaborator')
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
-  const [editingTag, setEditingTag] = useState<Tag | null>(null)
+  const [editingTag, setEditingTag] = useState<TagType | null>(null)
   const [editTagForm, setEditTagForm] = useState({ name: '', color: '#3b82f6' })
-  const [deleteTag, setDeleteTag] = useState<Tag | null>(null)
+  const [deleteTag, setDeleteTag] = useState<TagType | null>(null)
 
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
@@ -232,7 +235,7 @@ export default function LeadDetailPage() {
     }
   }
 
-  const handleStartEditTag = (tag: Tag) => {
+  const handleStartEditTag = (tag: TagType) => {
     setEditingTag(tag)
     setEditTagForm({ name: tag.name, color: tag.color || '#3b82f6' })
   }
@@ -292,293 +295,295 @@ export default function LeadDetailPage() {
   ]
 
   return (
-    <EntityDetailLayout
-      header={
-        <PipelineVisualizer
-          stages={PIPELINE_STAGES}
-          currentStageId={lead.status}
-          onStageClick={(id) => handleStatusChange(id as LeadStatus)}
-        />
-      }
-      sidebar={
-        <>
-          <KeyMetricsSidebar
-            title={lead.legalName}
-            subtitle={lead.tradeName}
-            statusBadge={statusBadge}
-            metrics={SIDEBAR_METRICS}
-            actions={
-              <div className="flex flex-col gap-2">
-                {lead.status === 'qualified' ? (
-                  <Button variant="default" className="w-full bg-green-600 hover:bg-green-700" onClick={() => navigate(`/companies/${lead.qualifiedCompanyId}`)}>
-                    <Buildings className="mr-2 h-4 w-4" />
-                    Ver Empresa
-                  </Button>
-                ) : (
-                  <Button onClick={() => setQualifyOpen(true)} className="w-full bg-green-600 hover:bg-green-700">
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Qualificar
-                  </Button>
-                )}
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" onClick={() => setEditOpen(true)}>
-                    <PencilSimple className="mr-2 h-4 w-4" /> Editar
-                  </Button>
-                  {(lead.status === 'new' || lead.status === 'contacted') && (
-                    <Button variant="outline" className="text-destructive hover:text-destructive border-destructive/30" onClick={handleDisqualify}>
-                      <XCircle className="mr-2 h-4 w-4" /> Desq.
+    <PageContainer>
+      <EntityDetailLayout
+        header={
+          <PipelineVisualizer
+            stages={PIPELINE_STAGES}
+            currentStageId={lead.status}
+            onStageClick={(id) => handleStatusChange(id as LeadStatus)}
+          />
+        }
+        sidebar={
+          <>
+            <KeyMetricsSidebar
+              title={lead.legalName}
+              subtitle={lead.tradeName}
+              statusBadge={statusBadge}
+              metrics={SIDEBAR_METRICS}
+              actions={
+                <div className="flex flex-col gap-2">
+                  {lead.status === 'qualified' ? (
+                    <Button variant="default" className="w-full bg-green-600 hover:bg-green-700" onClick={() => navigate(`/companies/${lead.qualifiedCompanyId}`)}>
+                      <Buildings className="mr-2 h-4 w-4" />
+                      Ver Empresa
+                    </Button>
+                  ) : (
+                    <Button onClick={() => setQualifyOpen(true)} className="w-full bg-green-600 hover:bg-green-700">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Qualificar
                     </Button>
                   )}
-                </div>
-                <Button variant="ghost" className="text-destructive hover:text-destructive w-full" onClick={() => setDeleteOpen(true)}>
-                  <Trash className="mr-2 h-4 w-4" /> Excluir Lead
-                </Button>
-              </div>
-            }
-          />
 
-          {/* TAGS SECTION - Persistent in Sidebar */}
-          <Card className="border-l-4 border-l-secondary shadow-sm">
-            <CardHeader className="py-3 px-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-primary" /> Tags
-                </CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTagManagerOpen(true)}>
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
-              {leadTags && leadTags.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {leadTags.map(tag => (
-                    <div
-                      key={tag.id}
-                      className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }} />
-                      <span className="font-medium max-w-[100px] truncate" style={{ color: tag.color }}>{tag.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleUnassignTag(tag.id)}
-                        title="Remover"
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={() => setEditOpen(true)}>
+                      <PencilSimple className="mr-2 h-4 w-4" /> Editar
+                    </Button>
+                    {(lead.status === 'new' || lead.status === 'contacted') && (
+                      <Button variant="outline" className="text-destructive hover:text-destructive border-destructive/30" onClick={handleDisqualify}>
+                        <XCircle className="mr-2 h-4 w-4" /> Desq.
+                      </Button>
+                    )}
+                  </div>
+                  <Button variant="ghost" className="text-destructive hover:text-destructive w-full" onClick={() => setDeleteOpen(true)}>
+                    <Trash className="mr-2 h-4 w-4" /> Excluir Lead
+                  </Button>
+                </div>
+              }
+            />
+
+            {/* TAGS SECTION - Persistent in Sidebar */}
+            <Card className="border-l-4 border-l-secondary shadow-sm">
+              <CardHeader className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-primary" /> Tags
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTagManagerOpen(true)}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                {leadTags && leadTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {leadTags.map(tag => (
+                      <div
+                        key={tag.id}
+                        className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }} />
+                        <span className="font-medium max-w-[100px] truncate" style={{ color: tag.color }}>{tag.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleUnassignTag(tag.id)}
+                          title="Remover"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="text-xs text-muted-foreground text-center py-2 border border-dashed rounded cursor-pointer hover:bg-muted/50"
+                    onClick={() => setTagManagerOpen(true)}
+                  >
+                    + Adicionar Tag
+                  </div>
+                )}
+                <SmartTagSelector
+                  entityId={lead.id}
+                  entityType="lead"
+                  selectedTagIds={leadTags?.map(tag => tag.id) || []}
+                  open={tagManagerOpen}
+                  onOpenChange={setTagManagerOpen}
+                />
+              </CardContent>
+            </Card>
+          </>
+        }
+        content={
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
+              <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
+              <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
+              <TabsTrigger value="comments" className="py-2 px-4"><ChatCircle className="mr-2 h-4 w-4" /> Comentários</TabsTrigger>
+              <TabsTrigger value="activity" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
+              <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
+              <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              {/* Main Content Area - Reduced clutter since key info is in sidebar */}
+              <div className="grid grid-cols-1 gap-6">
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dados Principais</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Razão Social</Label>
+                      <Input value={lead.legalName} disabled />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className="text-xs text-muted-foreground text-center py-2 border border-dashed rounded cursor-pointer hover:bg-muted/50"
-                  onClick={() => setTagManagerOpen(true)}
-                >
-                  + Adicionar Tag
-                </div>
-              )}
-              <SmartTagSelector
-                entityId={lead.id}
-                entityType="lead"
-                selectedTagIds={leadTags?.map(tag => tag.id) || []}
-                open={tagManagerOpen}
-                onOpenChange={setTagManagerOpen}
-              />
-            </CardContent>
-          </Card>
-        </>
-      }
-      content={
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
-            <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
-            <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
-            <TabsTrigger value="comments" className="py-2 px-4"><ChatCircle className="mr-2 h-4 w-4" /> Comentários</TabsTrigger>
-            <TabsTrigger value="activity" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
-            <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
-            <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            {/* Main Content Area - Reduced clutter since key info is in sidebar */}
-            <div className="grid grid-cols-1 gap-6">
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dados Principais</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Razão Social</Label>
-                    <Input value={lead.legalName} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nome Fantasia</Label>
-                    <Input value={lead.tradeName || ''} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CNPJ</Label>
-                    <Input value={lead.cnpj || ''} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Segmento</Label>
-                    <Input value={lead.segment || ''} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Website</Label>
-                    <Input value={lead.website || ''} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tipo de Operação</Label>
-                    <Select value={lead.operationType || ''} onValueChange={handleOperationTypeChange}>
-                      <SelectTrigger className="bg-background/60">
-                        <SelectValue placeholder="Selecione um tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(operationTypes || [])
-                          .filter(op => op.isActive)
-                          .map(op => (
-                            <SelectItem key={op.id} value={op.id}>
-                              {op.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Descrição</CardTitle>
-                  <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
-                </CardHeader>
-                <CardContent>
-                  <Textarea value={lead.description || ''} disabled className="min-h-[110px]" />
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="space-y-3 border-b pb-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Contatos</CardTitle>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setLinkContactOpen(true)}>
-                        Vincular contato existente
-                      </Button>
-                      <Button size="sm" onClick={() => setContactModalOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar novo contato
-                      </Button>
+                    <div className="space-y-2">
+                      <Label>Nome Fantasia</Label>
+                      <Input value={lead.tradeName || ''} disabled />
                     </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Gerencie relações sem sair da lead.</p>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {lead.contacts && lead.contacts.length > 0 ? (
-                    <div className="divide-y">
-                      {lead.contacts.map(contact => (
-                        <div key={contact.id} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/40 transition-colors">
-                          <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
-                              {contact.name.charAt(0)}
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-tight">{contact.name}</p>
-                              <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo informado'}</p>
-                              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                {contact.email && (
-                                  <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>
-                                )}
-                                {contact.phone && (
-                                  <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {contact.phone}</span>
-                                )}
+                    <div className="space-y-2">
+                      <Label>CNPJ</Label>
+                      <Input value={lead.cnpj || ''} disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Segmento</Label>
+                      <Input value={lead.segment || ''} disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Website</Label>
+                      <Input value={lead.website || ''} disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Tipo de Operação</Label>
+                      <Select value={lead.operationType || ''} onValueChange={handleOperationTypeChange}>
+                        <SelectTrigger className="bg-background/60">
+                          <SelectValue placeholder="Selecione um tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(operationTypes || [])
+                            .filter(op => op.isActive)
+                            .map(op => (
+                              <SelectItem key={op.id} value={op.id}>
+                                {op.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Descrição</CardTitle>
+                    <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea value={lead.description || ''} disabled className="min-h-[110px]" />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="space-y-3 border-b pb-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Contatos</CardTitle>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setLinkContactOpen(true)}>
+                          Vincular contato existente
+                        </Button>
+                        <Button size="sm" onClick={() => setContactModalOpen(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar novo contato
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Gerencie relações sem sair da lead.</p>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {lead.contacts && lead.contacts.length > 0 ? (
+                      <div className="divide-y">
+                        {lead.contacts.map(contact => (
+                          <div key={contact.id} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/40 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+                                {contact.name.charAt(0)}
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium leading-tight">{contact.name}</p>
+                                <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo informado'}</p>
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                  {contact.email && (
+                                    <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>
+                                  )}
+                                  {contact.phone && (
+                                    <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {contact.phone}</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              {contact.isPrimary && <Badge variant="secondary">Principal</Badge>}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleRemoveContact(contact.id)}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Desvincular
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {contact.isPrimary && <Badge variant="secondary">Principal</Badge>}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-5 text-center text-sm text-muted-foreground">Nenhum contato vinculado.</div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="space-y-3 border-b pb-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Equipe</CardTitle>
+                      <Button variant="outline" size="sm" onClick={() => setMemberModalOpen(true)}>
+                        Vincular usuário existente
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Controle de responsáveis e colaboradores.</p>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {lead.members && lead.members.length > 0 ? (
+                      <div className="divide-y">
+                        {lead.members.map(member => (
+                          <div key={member.userId} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
+                                {member.user?.name?.charAt(0) || 'U'}
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium leading-tight">{member.user?.name || 'Usuário'}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                              </div>
+                            </div>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-destructive hover:text-destructive"
-                              onClick={() => handleRemoveContact(contact.id)}
+                              onClick={() => handleRemoveMember(member.userId)}
                             >
                               <X className="h-4 w-4 mr-1" />
                               Desvincular
                             </Button>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-5 text-center text-sm text-muted-foreground">Nenhum contato vinculado.</div>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-5 text-center text-sm text-muted-foreground">Nenhum membro vinculado.</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
-              <Card>
-                <CardHeader className="space-y-3 border-b pb-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Equipe</CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => setMemberModalOpen(true)}>
-                      Vincular usuário existente
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Controle de responsáveis e colaboradores.</p>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {lead.members && lead.members.length > 0 ? (
-                    <div className="divide-y">
-                      {lead.members.map(member => (
-                        <div key={member.userId} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
-                              {member.user?.name?.charAt(0) || 'U'}
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-tight">{member.user?.name || 'Usuário'}</p>
-                              <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleRemoveMember(member.userId)}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Desvincular
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-5 text-center text-sm text-muted-foreground">Nenhum membro vinculado.</div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
+            <TabsContent value="documents">
+              {profile && <DocumentManager entityId={lead.id} entityType="lead" currentUser={profile} entityName={lead.legalName} />}
+            </TabsContent>
 
-        <TabsContent value="documents">
-          {profile && <DocumentManager entityId={lead.id} entityType="lead" currentUser={profile} entityName={lead.legalName} />}
-        </TabsContent>
+            <TabsContent value="comments" className="space-y-4">
+              {user && <CommentsPanel entityId={lead.id} entityType="lead" currentUser={user} />}
+            </TabsContent>
 
-        <TabsContent value="comments" className="space-y-4">
-          {user && <CommentsPanel entityId={lead.id} entityType="lead" currentUser={user} />}
-        </TabsContent>
-
-        <TabsContent value="activity">
-          <ActivityHistory entityId={lead.id} entityType="lead" limit={50} />
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="activity">
+              <ActivityHistory entityId={lead.id} entityType="lead" limit={50} />
+            </TabsContent>
+          </Tabs>
+        }
+      />
 
       {user && (
         <QualifyLeadDialog
