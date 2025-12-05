@@ -78,8 +78,10 @@ export default function DealDetailPage() {
   ]
   const updateDeal = useUpdateDeal()
   const updateTrack = useUpdateTrack()
-  const { data: dealTags } = useEntityTags(id || '', 'deal')
+  const { data: dealTags, isLoading: isLoadingTags } = useEntityTags(id || '', 'deal')
   const tagOps = useTagOperations()
+
+  console.log('[DealDetailPage] Tags:', { dealTags, isLoadingTags, dealId: id })
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)

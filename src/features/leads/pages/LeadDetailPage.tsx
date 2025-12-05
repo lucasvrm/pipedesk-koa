@@ -402,8 +402,7 @@ export default function LeadDetailPage() {
             <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
               <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
               <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
-              <TabsTrigger value="comments" className="py-2 px-4"><ChatCircle className="mr-2 h-4 w-4" /> Comentários</TabsTrigger>
-              <TabsTrigger value="activity" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
+            <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
               <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
               <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
             </TabsList>
@@ -555,14 +554,8 @@ export default function LeadDetailPage() {
               {profile && <DocumentManager entityId={lead.id} entityType="lead" currentUser={profile} entityName={lead.legalName} />}
             </TabsContent>
 
-            <TabsContent value="comments" className="space-y-4">
-               {/* Replaced by Unified Timeline */}
+            <TabsContent value="timeline" className="space-y-4">
               <UnifiedTimeline entityId={lead.id} entityType="lead" />
-            </TabsContent>
-
-            <TabsContent value="activity">
-              {/* Legacy Activity kept as backup/alternative view if needed, or redirected to unified */}
-              <ActivityHistory entityId={lead.id} entityType="lead" limit={50} />
             </TabsContent>
           </Tabs>
         }

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useComments } from '@/services/commentService'
-import { useActivityLogs } from '@/services/activityService' // Supondo que exista ou similar
+import { useActivities } from '@/services/activityService'
 import { Comment } from '@/lib/types'
 
 export type TimelineItemType = 'comment' | 'activity' | 'system'
@@ -20,14 +20,12 @@ export interface TimelineItem {
 export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead' | 'company') {
   // Fetch data
   const { data: comments, isLoading: commentsLoading } = useComments(entityId, entityType)
-
-  // Mock de activities se não tiver hook pronto, ou usar activityService se ele exportar hook
-  // Vou assumir que activityService tem uma função de fetch e vou criar um hook simples aqui ou mockar
-  // Para o MVP, vou focar em comentários e simular algumas activities para mostrar a funcionalidade
+  const { data: activities, isLoading: activitiesLoading } = useActivities(entityId, entityType)
 
   const timelineItems = useMemo(() => {
     const items: TimelineItem[] = []
 
+    // Process Comments
     if (comments) {
       comments.forEach(c => {
         items.push({
@@ -43,12 +41,39 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
       })
     }
 
+    // Process Activities
+    if (activities) {
+      activities.forEach(a => {
+        // Formata o conteúdo da atividade
+        let content = a.action;
+        if (a.changes && Object.keys(a.changes).length > 0) {
+           const details = Object.entries(a.changes)
+             .filter(([k, v]) => v && k !== 'updated_at')
+             .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+             .join(', ');
+           if (details) content += ` (${details})`;
+        }
+
+        items.push({
+          id: a.id,
+          type: 'system', // Mapeia tudo que vem de activities como 'system' para o filtro funcionar
+          date: a.created_at,
+          author: {
+            name: a.user?.name || 'Sistema',
+            avatar: a.user?.avatar_url
+          },
+          content: content,
+          metadata: a.changes
+        })
+      })
+    }
+
     // Sort by date desc
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [comments])
+  }, [comments, activities])
 
   return {
     items: timelineItems,
-    isLoading: commentsLoading
+    isLoading: commentsLoading || activitiesLoading
   }
 }
