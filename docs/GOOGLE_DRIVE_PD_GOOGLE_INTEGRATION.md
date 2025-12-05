@@ -4,7 +4,7 @@
 
 A integração de documentos do PipeDesk com Google Drive é feita através do serviço `pd-google` (FastAPI), exposto como um microsserviço independente.
 
-O frontend (`pipedesk-koa`) **não fala diretamente com a API do Google Drive**.  
+O frontend (`pipedesk-koa`) **não fala diretamente com a API do Google Drive**.
 Ele consome endpoints HTTP do `pd-google`, que encapsula:
 
 - Criação da pasta raiz da entidade
@@ -50,7 +50,7 @@ O **contrato** é:
 
 ## 2. Autenticação e Identidade (Headers)
 
-O `pd-google` **não lida com login/autenticação** diretamente.  
+O `pd-google` **não lida com login/autenticação** diretamente.
 Ele recebe a identidade do usuário através de headers HTTP, enviados pelo frontend.
 
 ### 2.1. Headers utilizados
