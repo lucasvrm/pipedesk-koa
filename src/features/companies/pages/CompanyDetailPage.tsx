@@ -18,12 +18,13 @@ import {
 } from '@/components/ui/dialog'
 import {
   ArrowLeft, FloppyDisk, Buildings, User, Plus, Trash,
-  Phone, Envelope, Star, PencilSimple, X, ChartBar
+  Phone, Envelope, Star, PencilSimple, X, ChartBar, FileText
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { Company, COMPANY_TYPE_LABELS, CompanyType, STATUS_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
+import DocumentManager from '@/components/DocumentManager'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -163,9 +164,10 @@ export default function CompanyDetailPage() {
         {/* Coluna Principal */}
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="info">Informações</TabsTrigger>
-              <TabsTrigger value="deals" disabled={isNew}>Deals ({companyDeals.length})</TabsTrigger>
+            <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg mb-4">
+              <TabsTrigger value="info" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Informações</TabsTrigger>
+              <TabsTrigger value="deals" disabled={isNew} className="py-2 px-4"><ChartBar className="mr-2 h-4 w-4" /> Deals ({companyDeals.length})</TabsTrigger>
+              <TabsTrigger value="documents" disabled={isNew} className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Documentos</TabsTrigger>
             </TabsList>
 
             {/* Aba Informações */}
@@ -269,6 +271,18 @@ export default function CompanyDetailPage() {
                   </Table>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Aba Documentos */}
+            <TabsContent value="documents">
+              {profile && company && (
+                <DocumentManager
+                  entityId={company.id}
+                  entityType="company"
+                  currentUser={profile}
+                  entityName={company.name}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </div>
