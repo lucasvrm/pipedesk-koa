@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { trackStatusMap } from '@/lib/statusMaps'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -220,9 +222,10 @@ export default function PlayerTrackDetailDialog({ track, open, onOpenChange, cur
 
               <DialogDescription className="space-y-1">
                 <div className="flex items-center gap-3 text-sm flex-wrap">
-                  <Badge className={track.status === 'active' ? 'status-active' : track.status === 'cancelled' ? 'status-cancelled' : 'status-concluded'}>
-                    {STATUS_LABELS[track.status]}
-                  </Badge>
+                  <StatusBadge
+                    semanticStatus={trackStatusMap(track.status)}
+                    label={STATUS_LABELS[track.status]}
+                  />
                   <Badge variant="outline" style={{ borderColor: currentStageInfo?.color, color: currentStageInfo?.color }}>
                     {stageName}
                   </Badge>

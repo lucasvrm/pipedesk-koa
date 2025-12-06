@@ -1,6 +1,8 @@
 import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS, PipelineStage, SlaPolicy } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { dealStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
@@ -101,9 +103,11 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
                  <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-slate-200">
                     {OPERATION_LABELS[deal.operationType]}
                  </Badge>
-                 <Badge variant={deal.status === 'active' ? 'default' : 'secondary'} className="text-[10px] h-5">
-                    {STATUS_LABELS[deal.status]}
-                 </Badge>
+                 <StatusBadge
+                   semanticStatus={dealStatusMap(deal.status)}
+                   label={STATUS_LABELS[deal.status]}
+                   className="text-[10px] h-5"
+                 />
               </div>
 
               <div className="pl-2">

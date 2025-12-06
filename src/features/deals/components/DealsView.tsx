@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { dealStatusMap } from '@/lib/statusMaps'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -58,16 +60,6 @@ interface FilterState {
 
 const INITIAL_FILTERS: FilterState = {
   status: 'all', type: 'all', responsible: 'all', minVolume: '', maxVolume: '', tags: []
-}
-
-const getStatusBadgeClass = (status: DealStatus) => {
-    switch (status) {
-        case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
-        case 'concluded': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-        case 'cancelled': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
-        case 'on_hold': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-        default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
 }
 
 export default function DealsView() {
@@ -444,7 +436,13 @@ export default function DealsView() {
                       </TableCell>
                       <TableCell className="align-top"><Badge variant="outline" className="font-normal text-muted-foreground border-slate-200">{OPERATION_LABELS[deal.operationType]}</Badge></TableCell>
                       <TableCell className="align-top font-medium text-slate-700 dark:text-slate-200">{formatCurrency(deal.volume)}</TableCell>
-                      <TableCell className="align-top"><Badge className={`font-normal rounded-full px-2 ${getStatusBadgeClass(deal.status)}`}>{STATUS_LABELS[deal.status]}</Badge></TableCell>
+                      <TableCell className="align-top">
+                        <StatusBadge
+                          semanticStatus={dealStatusMap(deal.status)}
+                          label={STATUS_LABELS[deal.status]}
+                          className="font-normal rounded-full px-2"
+                        />
+                      </TableCell>
                       <TableCell className="text-right align-top">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setTagsOpen(true); setSelectedDeal(deal); }}><TagIcon size={16} /></Button>

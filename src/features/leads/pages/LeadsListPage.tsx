@@ -9,6 +9,8 @@ import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, Operati
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { leadStatusMap } from '@/lib/statusMaps'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
@@ -226,9 +228,10 @@ export default function LeadsListPage() {
   }
 
   const renderStatusBadge = (status: string) => (
-    <Badge variant={status === 'qualified' ? 'default' : status === 'disqualified' ? 'destructive' : 'secondary'}>
-      {LEAD_STATUS_LABELS[status as keyof typeof LEAD_STATUS_LABELS] || status}
-    </Badge>
+    <StatusBadge
+      semanticStatus={leadStatusMap(status as LeadStatus)}
+      label={LEAD_STATUS_LABELS[status as keyof typeof LEAD_STATUS_LABELS] || status}
+    />
   )
 
   const renderOriginBadge = (origin: string) => (
