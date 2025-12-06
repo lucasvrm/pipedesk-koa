@@ -188,8 +188,9 @@ export async function uploadDriveFile(
       formData.append('folderId', folderId);
     }
 
-    // Note: For progress tracking, you might need to use XMLHttpRequest instead of fetch
-    // This is a simplified version without progress tracking
+    // Note: This implementation doesn't support real-time progress tracking.
+    // For real progress tracking, consider implementing a custom fetch wrapper
+    // that uses ReadableStream or XMLHttpRequest with progress events.
     const response = await driveApiFetch('/api/drive/files', {
       method: 'POST',
       body: formData,
@@ -202,6 +203,8 @@ export async function uploadDriveFile(
 
     const data = await response.json();
     
+    // Call progress callback after completion if provided
+    // Note: This only indicates completion (100%), not real-time progress
     if (onProgress) {
       onProgress(100);
     }

@@ -137,7 +137,7 @@ async function uploadDriveFile(
 **Parâmetros:**
 - `file`: Objeto File a ser enviado
 - `folderId` (opcional): ID da pasta onde o arquivo deve ser armazenado
-- `onProgress` (opcional): Callback para acompanhar o progresso (0-100)
+- `onProgress` (opcional): Callback para acompanhar o progresso. **Nota:** Atualmente só é chamado ao finalizar (100%). Para progresso em tempo real, uma implementação customizada seria necessária.
 
 **Retorno:**
 ```typescript
@@ -166,12 +166,13 @@ const file = fileInput.files[0];
 const result = await uploadDriveFile(file);
 console.log(`Arquivo enviado: ${result.file.url}`);
 
-// Upload com pasta específica e progresso
+// Upload com pasta específica e callback de conclusão
 const uploadWithProgress = await uploadDriveFile(
   file,
   'pasta-123',
   (progress) => {
-    console.log(`Progresso: ${progress}%`);
+    // Atualmente chamado apenas com 100% ao finalizar
+    console.log(`Upload completo: ${progress}%`);
   }
 );
 ```
@@ -344,7 +345,7 @@ export default DriveExplorer;
 - O cliente usa `safeFetch` internamente para garantir tratamento adequado de respostas HTML inesperadas
 - Todos os logs de erro são prefixados com `[DriveClient]` para facilitar debugging
 - As requisições são autenticadas automaticamente usando o token do Supabase
-- O progresso de upload é limitado (callback chamado apenas ao completar), mas pode ser estendido para suportar progresso real usando XMLHttpRequest
+- O callback `onProgress` da função `uploadDriveFile` é atualmente limitado a indicar apenas a conclusão (100%). Para progresso em tempo real, seria necessária uma implementação customizada usando ReadableStream ou XMLHttpRequest com eventos de progresso.
 
 ## Próximos Passos
 
