@@ -1,3 +1,26 @@
+# Product Requirements Document (PRD) - PipeDesk
+
+> ⚠️ **AVISO IMPORTANTE - DEZEMBRO 2025**
+> 
+> Este documento foi criado durante o planejamento inicial do projeto e contém algumas **discrepâncias com a implementação real**.
+> 
+> **Para informações PRECISAS e ATUALIZADAS:**
+> - ✅ **Status Real das Features:** [FEATURES_STATUS.md](FEATURES_STATUS.md)
+> - 📋 **Roadmap Atualizado:** [ROADMAP.md](ROADMAP.md)
+> - 🔍 **Auditoria Completa:** [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md)
+> 
+> **Principais Discrepâncias Neste Documento:**
+> - ❌ "Global Search" marcado como implementado → **NÃO implementado**
+> - ❌ "Bulk Operations" marcado como implementado → **NÃO implementado**
+> - ❌ "File Upload" marcado como implementado → **PARCIALMENTE implementado**
+> - ✅ "Custom Fields" marcado como planejado → **JÁ IMPLEMENTADO**
+> - ⚠️ "Google Integration" marcado como completo → **PARCIALMENTE implementado**
+> - ⚠️ "AI Features" marcado como completo → **PARCIALMENTE implementado**
+> 
+> Este documento está sendo mantido por **referência histórica**. Use FEATURES_STATUS.md para decisões baseadas no estado atual.
+
+---
+
 ## Implementation Status
 
 ### ✅ Completed Features
@@ -40,7 +63,7 @@
    - Navigate to context on click
    - Mark as read/unread functionality
    - Unread count indicators
-8. **Google Workspace Integration** - Complete OAuth flow and sync features ✨
+7. **Google Workspace Integration** - ⚠️ **PARCIALMENTE IMPLEMENTADO** (OAuth e schema existem, funcionalidades completas incertas)
    - OAuth connection management with token tracking
    - Drive folder automation with custom naming patterns
    - Calendar sync with configurable intervals
@@ -48,46 +71,51 @@
    - Folder hierarchy (Master > Player)
    - Event creation for deadlines and milestones
    - Token expiration warnings
-9. **Comments System with Mentions** - Full-featured commenting with @mentions
+   - **Status Real:** Ver [FEATURES_STATUS.md](FEATURES_STATUS.md#23-google-workspace-integration-)
+8. **Comments System with Mentions** - Full-featured commenting with @mentions ✅
    - Real-time mention detection and autocomplete
    - User notifications for mentions
-   - Comment thread AI summarization
+   - Comment thread AI summarization (se configurado)
    - Rich comment display with mention highlighting
-10. **AI-Powered Intelligence** - Advanced AI features implemented
+9. **AI-Powered Intelligence** - ⚠️ **PARCIALMENTE IMPLEMENTADO** (componente existe, integração LLM incerta)
    - Comment thread summarization
    - Next-step suggestions based on deal/track context
    - Context-aware recommendations by stage
    - Priority and category classification
-11. **Global Search** - Comprehensive search across all entities
-   - Search deals, players, tasks, and comments
-   - Grouped results by entity type
-   - Click-to-navigate to results
-   - Respects player anonymization rules
-12. **Activity History/Audit Log** - Complete audit trail
+   - **Status Real:** Ver [FEATURES_STATUS.md](FEATURES_STATUS.md#24-ai-powered-intelligence-)
+10. **Global Search** - ❌ **NÃO IMPLEMENTADO** (marcado incorretamente como completo)
+   - ~~Search deals, players, tasks, and comments~~
+   - ~~Grouped results by entity type~~
+   - ~~Click-to-navigate to results~~
+   - ~~Respects player anonymization rules~~
+   - **Status Real:** Feature não encontrada no código. Ver [ROADMAP.md](ROADMAP.md#2-global-search-completo) para planos
+11. **Activity History/Audit Log** - Complete audit trail ✅
    - All CRUD operations logged
    - User attribution and timestamps
    - Filterable by entity
    - Activity grouping by date
    - Detailed metadata capture
-13. **Master Kanban View** - Grid visualization of deals and players
+12. **Master Kanban View** - Grid visualization of deals and players ✅
    - Stage-based kanban layout
    - Desktop grid with drill-down cells
    - Mobile carousel adaptation
    - Weighted pipeline calculations per deal
    - Click-through to player details
-14. **File Upload and Document Management** - Secure document handling
-   - Multi-file upload support
-   - File type detection and icons
-   - Document preview and download
-   - Activity logging for uploads
-   - Size validation (10MB limit)
-15. **Bulk Operations** - Efficient multi-entity management
-   - Bulk delete, status change, stage change
-   - Bulk assignment and task completion
-   - Confirmation dialogs
-   - Activity logging for all operations
-   - Smart entity selection
-16. **Task Management System** - Comprehensive task tracking and workflow ✨
+13. **File Upload and Document Management** - ⚠️ **PARCIALMENTE IMPLEMENTADO** (DataRoom existe, funcionalidades completas incertas)
+   - ~~Multi-file upload support~~
+   - ~~File type detection and icons~~
+   - ~~Document preview and download~~
+   - ~~Activity logging for uploads~~
+   - ~~Size validation (10MB limit)~~
+   - **Status Real:** Ver [FEATURES_STATUS.md](FEATURES_STATUS.md#25-document-management--data-room-)
+14. **Bulk Operations** - ❌ **NÃO IMPLEMENTADO** (marcado incorretamente como completo)
+   - ~~Bulk delete, status change, stage change~~
+   - ~~Bulk assignment and task completion~~
+   - ~~Confirmation dialogs~~
+   - ~~Activity logging for all operations~~
+   - ~~Smart entity selection~~
+   - **Status Real:** Componentes não encontrados no código. Ver [ROADMAP.md](ROADMAP.md#3-bulk-operations) para planos
+15. **Task Management System** - Comprehensive task tracking and workflow ✅
    - Centralized task view with filtering and search
    - Multiple view modes (List, Kanban)
    - Task status tracking (To Do, In Progress, Blocked, Completed)
@@ -99,7 +127,7 @@
    - Comments integration
    - Quick complete/uncomplete actions
    - Mobile-responsive design
-17. **Cross-Tagging (Multi-Homing)** - Wrike-inspired organizational flexibility ✨
+16. **Cross-Tagging (Multi-Homing)** - Wrike-inspired organizational flexibility ✅
    - Single entity appears in multiple folders simultaneously
    - Primary folder designation with star indicator
    - Hierarchical folder structure (Projects, Teams, Sprints, Categories)
@@ -110,7 +138,7 @@
    - Supports deals, player tracks, and tasks
    - Zero data duplication with single source of truth
    - Tag management dialog with multi-select interface
-18. **Phase Validation with Conditional Requirements** - Pipefy-inspired process engineering ✨
+17. **Phase Validation with Conditional Requirements** - Pipefy-inspired process engineering ✅
    - Configure rules that block phase transitions based on field conditions
    - Multiple validation operators (equals, greater_than, less_than, contains, is_filled, is_empty)
    - Support for both track and deal fields in validation rules
@@ -121,11 +149,27 @@
    - Prevents human error by enforcing compliance requirements
    - Guarantees critical information is collected before advancing
    - Admin-configurable validation rules
+18. **Custom Fields/Metadata** - ✅ **JÁ IMPLEMENTADO** (marcado incorretamente como planejado)
+   - ✅ Extensible data model for dynamic field definitions
+   - ✅ Field types: text, number, date, select, multiselect, boolean, url, email
+   - ✅ Entity types: deal, track, task
+   - ✅ Required/optional fields
+   - ✅ Admin UI at `/settings/custom-fields`
+   - **Status Real:** Feature COMPLETA. Ver [FEATURES_STATUS.md](FEATURES_STATUS.md#15-custom-fields-)
 
 ### 🚧 Planned for Future Iterations
 
-19. **Custom Fields/Metadata** - Extensible data model for dynamic field definitions
-19. **Advanced Edge Case Handling**
+19. **Companies & Contacts Management** - ✅ **JÁ IMPLEMENTADO** (não estava no PRD original!)
+   - ✅ Companies CRUD com types e relationship levels
+   - ✅ Contacts CRUD com linking para companies
+   - ✅ Páginas em `/companies` e `/contacts`
+   - **Status Real:** Ver [FEATURES_STATUS.md](FEATURES_STATUS.md)
+20. **Leads Management** - ✅ **JÁ IMPLEMENTADO** (não estava no PRD original!)
+   - ✅ Leads CRUD com qualification workflow
+   - ✅ Status: new, contacted, qualified, disqualified
+   - ✅ Página em `/leads`
+   - **Status Real:** Ver [FEATURES_STATUS.md](FEATURES_STATUS.md)
+21. **Advanced Edge Case Handling** - 📋 Planejado
    - Orphaned task recovery with soft delete
    - Concurrent edit detection with conflict UI
    - Offline edit queue with sync on reconnect
