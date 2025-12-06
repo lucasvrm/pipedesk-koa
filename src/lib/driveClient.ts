@@ -83,6 +83,9 @@ const getDriveApiUrl = (): string => {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
+// Default role to use when user profile is not found or has no role
+const DEFAULT_USER_ROLE = 'client';
+
 // Helper function to get authentication and user info from Supabase
 const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole: string }> => {
   const {
@@ -103,6 +106,9 @@ const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole:
   const token = session.access_token;
 
   // Fetch user profile to get the role
+  // Note: This query is executed on every API call. In the future, consider implementing
+  // a caching mechanism to avoid repeated database queries for the same user session.
+  // However, the current approach ensures we always have the most up-to-date role information.
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
@@ -111,11 +117,11 @@ const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole:
 
   if (profileError || !profile) {
     console.error('[DriveClient] Error fetching user profile:', profileError);
-    // Default to 'client' role if profile not found
-    return { token, userId, userRole: 'client' };
+    // Default to DEFAULT_USER_ROLE if profile not found
+    return { token, userId, userRole: DEFAULT_USER_ROLE };
   }
 
-  return { token, userId, userRole: profile.role || 'client' };
+  return { token, userId, userRole: profile.role || DEFAULT_USER_ROLE };
 };
 
 // Helper function to make authenticated requests to Drive API
