@@ -1,11 +1,13 @@
 import { ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MetricCard, EntityColor } from '@/components/ui/MetricCard'
 import { cn } from '@/lib/utils'
 
 interface MetricItem {
   label: string
   value: ReactNode
   icon?: ReactNode
+  color?: EntityColor
 }
 
 interface KeyMetricsSidebarProps {
@@ -38,17 +40,15 @@ export function KeyMetricsSidebar({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Metrics Grid */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {metrics.map((metric, idx) => (
-            <div key={idx} className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                {metric.icon}
-                {metric.label}
-              </span>
-              <div className="text-sm font-medium break-words">
-                {metric.value}
-              </div>
-            </div>
+            <MetricCard
+              key={idx}
+              icon={metric.icon}
+              label={metric.label}
+              value={metric.value}
+              color={metric.color || 'neutral'}
+            />
           ))}
         </div>
 
