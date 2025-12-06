@@ -414,8 +414,9 @@ Negócios > [Empresa] > [Nome do Cliente] > Docs (aba ativa)
 
 Possíveis extensões da funcionalidade:
 
+- [x] Upload de novos documentos
+- [x] Criação de pastas
 - [ ] Ações inline (download, visualizar, excluir)
-- [ ] Upload de novos documentos
 - [ ] Navegação em subpastas
 - [ ] Busca/filtro de documentos
 - [ ] Ordenação de colunas
@@ -424,23 +425,345 @@ Possíveis extensões da funcionalidade:
 - [ ] Gestão de permissões
 - [ ] Integração com DocumentManager para funcionalidades avançadas
 
-## Diferenças: DealDocumentsList vs DocumentManager
+## Interações de Escrita
+
+### Visão Geral
+
+A partir da versão 1.1.0, o componente `DealDocumentsList` suporta operações de escrita, permitindo que os usuários criem pastas e façam upload de arquivos diretamente na aba de documentos.
+
+### Funcionalidades
+
+#### 1. Criar Pasta
+
+**Acesso:** Botão "Criar Pasta" no cabeçalho da seção de documentos
+
+**Fluxo:**
+1. Usuário clica no botão "Criar Pasta"
+2. Modal simples é exibido solicitando o nome da pasta
+3. Usuário informa o nome e clica em "Criar Pasta"
+4. Sistema chama `createDriveFolderForEntity("deal", deal.id, name)`
+5. Ao completar com sucesso:
+   - Toast de sucesso é exibido
+   - Modal é fechado
+   - Lista de documentos é recarregada via `listDriveItems("deal", deal.id)`
+
+**Estados:**
+
+- **Normal:** Modal fechado, botão habilitado
+- **Modal Aberto:** Campo de texto para nome da pasta, botões Cancelar e Criar Pasta
+- **Criando:** Botão mostra "Criando...", campo desabilitado durante criação
+- **Sucesso:** Toast verde com mensagem "Pasta '{nome}' criada com sucesso"
+- **Erro:** Toast vermelho com mensagem de erro específica
+
+**Exemplo Visual - Modal de Criar Pasta:**
+
+```
+╔════════════════════════════════════════════════════════╗
+║  Criar Nova Pasta                                  [X] ║
+╠════════════════════════════════════════════════════════╣
+║                                                        ║
+║  Informe o nome da pasta que deseja criar no Drive.  ║
+║                                                        ║
+║  ┌────────────────────────────────────────────────┐  ║
+║  │ Nome da Pasta                                  │  ║
+║  │ ┌────────────────────────────────────────────┐ │  ║
+║  │ │ Ex: Contratos, Propostas...                │ │  ║
+║  │ └────────────────────────────────────────────┘ │  ║
+║  └────────────────────────────────────────────────┘  ║
+║                                                        ║
+║                              [Cancelar] [Criar Pasta] ║
+╚════════════════════════════════════════════════════════╝
+```
+
+**Validações:**
+- Nome da pasta não pode estar vazio
+- Botão "Criar Pasta" desabilitado se campo vazio
+- Enter no campo de texto aciona a criação
+
+#### 2. Upload de Arquivo
+
+**Acesso:** Botão "Upload" no cabeçalho da seção de documentos
+
+**Fluxo:**
+1. Usuário clica no botão "Upload"
+2. Modal é exibido com seletor de arquivos
+3. Usuário seleciona um arquivo
+4. Preview do arquivo selecionado é mostrado (nome e tamanho)
+5. Usuário clica em "Upload"
+6. Sistema chama `uploadDriveFileForEntity("deal", deal.id, file)`
+7. Ao completar com sucesso:
+   - Toast de sucesso é exibido
+   - Modal é fechado
+   - Lista de documentos é recarregada via `listDriveItems("deal", deal.id)`
+
+**Estados:**
+
+- **Normal:** Modal fechado, botão habilitado
+- **Modal Aberto:** Seletor de arquivo, botões Cancelar e Upload
+- **Arquivo Selecionado:** Preview mostrando nome e tamanho do arquivo
+- **Enviando:** Botão mostra "Enviando...", seletor desabilitado durante upload
+- **Sucesso:** Toast verde com mensagem "Arquivo '{nome}' enviado com sucesso"
+- **Erro:** Toast vermelho com mensagem de erro específica
+
+**Exemplo Visual - Modal de Upload:**
+
+```
+╔════════════════════════════════════════════════════════╗
+║  Upload de Arquivo                                 [X] ║
+╠════════════════════════════════════════════════════════╣
+║                                                        ║
+║  Selecione um arquivo para fazer upload no Drive.     ║
+║                                                        ║
+║  ┌────────────────────────────────────────────────┐  ║
+║  │ Arquivo                                        │  ║
+║  │ ┌────────────────────────────────────────────┐ │  ║
+║  │ │ [Escolher arquivo]  proposta.pdf           │ │  ║
+║  │ └────────────────────────────────────────────┘ │  ║
+║  │                                                │  ║
+║  │ Arquivo selecionado: proposta.pdf (1.5 MB)    │  ║
+║  └────────────────────────────────────────────────┘  ║
+║                                                        ║
+║                                  [Cancelar] [Upload]  ║
+╚════════════════════════════════════════════════════════╝
+```
+
+**Validações:**
+- Arquivo deve ser selecionado para habilitar botão Upload
+- Botão "Upload" desabilitado se nenhum arquivo selecionado
+- Todos os tipos de arquivo são aceitos
+
+### Código de Exemplo
+
+#### Criar Pasta
+
+```typescript
+const handleCreateFolder = async () => {
+  if (!folderName.trim()) {
+    toast.error('Por favor, informe o nome da pasta')
+    return
+  }
+
+  setCreatingFolder(true)
+  try {
+    await createDriveFolderForEntity('deal', dealId, folderName)
+    toast.success(`Pasta "${folderName}" criada com sucesso`)
+    setCreateFolderOpen(false)
+    setFolderName('')
+    // Reload the list after successful creation
+    await loadDocuments()
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Erro ao criar pasta'
+    toast.error(errorMessage)
+    console.error('[DealDocumentsList] Error creating folder:', err)
+  } finally {
+    setCreatingFolder(false)
+  }
+}
+```
+
+#### Upload de Arquivo
+
+```typescript
+const handleUploadFile = async () => {
+  if (!selectedFile) {
+    toast.error('Por favor, selecione um arquivo')
+    return
+  }
+
+  setUploading(true)
+  try {
+    await uploadDriveFileForEntity('deal', dealId, selectedFile)
+    toast.success(`Arquivo "${selectedFile.name}" enviado com sucesso`)
+    setUploadOpen(false)
+    setSelectedFile(null)
+    // Reload the list after successful upload
+    await loadDocuments()
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Erro ao fazer upload do arquivo'
+    toast.error(errorMessage)
+    console.error('[DealDocumentsList] Error uploading file:', err)
+  } finally {
+    setUploading(false)
+  }
+}
+```
+
+### Exemplos de Estados de Sucesso
+
+#### Sucesso ao Criar Pasta
+
+**Interface:**
+- Modal fecha automaticamente
+- Toast verde aparece no canto superior direito
+- Mensagem: "Pasta 'Contratos' criada com sucesso"
+- Lista de documentos atualiza mostrando a nova pasta
+- Nova linha aparece na tabela com ícone de pasta amarelo
+
+**Console:**
+```
+[DriveClient] createDriveFolderForEntity success: { folder: { id: '...', name: 'Contratos', ... } }
+[DealDocumentsList] Folder created successfully, reloading documents
+[DriveClient] listDriveItems success: { items: [...], total: 4 }
+```
+
+#### Sucesso ao Fazer Upload
+
+**Interface:**
+- Modal fecha automaticamente
+- Toast verde aparece no canto superior direito
+- Mensagem: "Arquivo 'proposta.pdf' enviado com sucesso"
+- Lista de documentos atualiza mostrando o novo arquivo
+- Nova linha aparece na tabela com ícone de arquivo azul
+
+**Console:**
+```
+[DriveClient] uploadDriveFileForEntity success: { file: { id: '...', name: 'proposta.pdf', size: 1572864, ... } }
+[DealDocumentsList] File uploaded successfully, reloading documents
+[DriveClient] listDriveItems success: { items: [...], total: 5 }
+```
+
+### Exemplos de Estados de Erro
+
+#### Erro ao Criar Pasta - Nome Duplicado
+
+**Interface:**
+- Modal permanece aberto
+- Toast vermelho aparece
+- Mensagem: "Failed to create folder for deal: 409 Folder with this name already exists"
+- Campo de texto mantém o valor digitado
+- Botão volta ao estado normal ("Criar Pasta")
+
+**Console:**
+```
+[DriveClient] createDriveFolderForEntity error: DriveApiError: Failed to create folder for deal: 409 Folder with this name already exists
+[DealDocumentsList] Error creating folder: DriveApiError: Failed to create folder for deal: 409 Folder with this name already exists
+```
+
+#### Erro ao Fazer Upload - Arquivo Muito Grande
+
+**Interface:**
+- Modal permanece aberto
+- Toast vermelho aparece
+- Mensagem: "Failed to upload file for deal: 413 File too large (max 50MB)"
+- Arquivo selecionado permanece visível
+- Botão volta ao estado normal ("Upload")
+
+**Console:**
+```
+[DriveClient] uploadDriveFileForEntity error: DriveApiError: Failed to upload file for deal: 413 File too large (max 50MB)
+[DealDocumentsList] Error uploading file: DriveApiError: Failed to upload file for deal: 413 File too large (max 50MB)
+```
+
+#### Erro de Autenticação
+
+**Interface:**
+- Modal permanece aberto
+- Toast vermelho aparece
+- Mensagem: "No authentication token available. Please sign in."
+- Sugere ao usuário fazer login novamente
+
+**Console:**
+```
+[DriveClient] Error getting session: No active session
+[DriveClient] createDriveFolderForEntity error: Error: No authentication token available. Please sign in.
+```
+
+#### Erro de Rede / API Indisponível
+
+**Interface:**
+- Modal permanece aberto
+- Toast vermelho aparece
+- Mensagem: "Drive API URL not configured. Please set VITE_DRIVE_API_URL environment variable."
+- Sugere verificação de configuração
+
+**Console:**
+```
+[DriveClient] Error: Drive API URL not configured
+[DealDocumentsList] Error creating folder: Error: Drive API URL not configured. Please set VITE_DRIVE_API_URL environment variable.
+```
+
+### Tratamento de Erros
+
+Todos os erros são capturados e tratados de forma consistente:
+
+1. **Erro é capturado** no bloco try-catch
+2. **Mensagem é extraída** do erro (se for uma instância de Error)
+3. **Toast de erro** é exibido com mensagem específica
+4. **Console.error** registra o erro completo para debug
+5. **Estado da UI** retorna ao normal (botões habilitados, loading false)
+6. **Modal permanece aberto** para permitir correção
+
+### API Backend Esperada
+
+#### Criar Pasta
+
+```
+POST /api/drive/folders
+Content-Type: application/json
+Authorization: Bearer {token}
+
+Body:
+{
+  "name": "Contratos",
+  "entityType": "deal",
+  "entityId": "deal-123"
+}
+
+Response (201 Created):
+{
+  "folder": {
+    "id": "folder-abc",
+    "name": "Contratos",
+    "parentId": null,
+    "createdAt": "2024-12-06T20:00:00Z",
+    "permission": "write"
+  }
+}
+```
+
+#### Upload de Arquivo
+
+```
+POST /api/drive/files
+Content-Type: multipart/form-data
+Authorization: Bearer {token}
+
+Form Data:
+- file: [binary file data]
+- entityType: "deal"
+- entityId: "deal-123"
+
+Response (201 Created):
+{
+  "file": {
+    "id": "file-xyz",
+    "name": "proposta.pdf",
+    "size": 1572864,
+    "mimeType": "application/pdf",
+    "url": "https://drive.google.com/file/d/...",
+    "createdAt": "2024-12-06T20:05:00Z",
+    "permission": "write"
+  }
+}
+```
+
+### Diferenças: DealDocumentsList vs DocumentManager (Atualizado)
 
 | Característica | DealDocumentsList | DocumentManager |
 |----------------|-------------------|-----------------|
 | Complexidade | Simples | Completa |
 | API Utilizada | driveClient.ts | useDriveDocuments hook |
-| Upload | ❌ Não | ✅ Sim |
-| Criação de pastas | ❌ Não | ✅ Sim |
+| Upload | ✅ Sim (v1.1.0+) | ✅ Sim |
+| Criação de pastas | ✅ Sim (v1.1.0+) | ✅ Sim |
 | Exclusão | ❌ Não | ✅ Sim |
 | Navegação em pastas | ❌ Não | ✅ Sim |
 | Preview | ❌ Não | ✅ Sim |
 | Drag & Drop | ❌ Não | ✅ Sim |
 | Filtros | ❌ Não | ✅ Sim (PDF, imagens, etc) |
 | Visualização | Tabela | Grid + Lista |
-| Objetivo | Listagem simples | Gerenciamento completo |
+| Objetivo | Listagem + Operações Básicas | Gerenciamento completo |
 
-**DealDocumentsList** foi criado para atender especificamente o requisito de usar `driveClient.ts` diretamente e fornecer uma visualização simples de documentos.
+**DealDocumentsList** foi criado para atender especificamente o requisito de usar `driveClient.ts` diretamente e fornecer uma visualização simples de documentos com operações básicas de escrita.
 
 ## Troubleshooting
 
@@ -485,6 +808,35 @@ Possíveis extensões da funcionalidade:
 2. Verificar papel (role) do usuário
 3. Contatar administrador do sistema
 
+### Problema: Erro ao criar pasta - Nome duplicado
+
+**Causa:** Já existe uma pasta com o mesmo nome
+
+**Solução:**
+1. Escolher um nome diferente para a pasta
+2. Verificar a lista de pastas existentes
+3. Adicionar sufixo ou prefixo ao nome (ex: "Contratos 2024")
+
+### Problema: Erro ao fazer upload - Arquivo muito grande
+
+**Causa:** Arquivo excede o limite de tamanho permitido pelo backend
+
+**Solução:**
+1. Verificar o tamanho máximo permitido (normalmente 50MB)
+2. Comprimir o arquivo antes de fazer upload
+3. Dividir arquivos grandes em partes menores
+4. Contatar administrador se necessário aumentar o limite
+
+### Problema: Upload falha sem mensagem específica
+
+**Causa:** Erro de rede ou timeout
+
+**Solução:**
+1. Verificar conexão com a internet
+2. Tentar novamente após alguns segundos
+3. Verificar se o backend está online
+4. Verificar logs do navegador (Console > Network)
+
 ## Referências
 
 - [Drive Client Documentation](./drive_client.md)
@@ -492,6 +844,25 @@ Possíveis extensões da funcionalidade:
 - [Google Drive Integration](../archive/reports/GOOGLE_DRIVE_PD_GOOGLE_INTEGRATION.md)
 
 ## Changelog
+
+### v1.1.0 - 2024-12-06
+
+**Adicionado:**
+- ✅ Interações de escrita (criar pasta e upload)
+- ✅ Extensão de `driveClient.ts` com funções `createDriveFolderForEntity` e `uploadDriveFileForEntity`
+- ✅ Modal de criação de pasta com validação
+- ✅ Modal de upload de arquivo com preview
+- ✅ Recarga automática da lista após operações bem-sucedidas
+- ✅ Tratamento robusto de erros com mensagens específicas
+- ✅ Documentação completa de fluxos e estados de sucesso/erro
+- ✅ Botões de ação no cabeçalho da seção de documentos
+
+**Implementado conforme requisitos:**
+- ✅ Botão "Criar Pasta" que abre modal e chama `createDriveFolderForEntity("deal", deal.id, name)`
+- ✅ Botão "Upload" que abre seletor e chama `uploadDriveFileForEntity("deal", deal.id, file)`
+- ✅ Recarga da lista via `listDriveItems("deal", deal.id)` após sucesso
+- ✅ Uso de componentes de modal existentes no app (Dialog do Radix UI)
+- ✅ Documentação atualizada em `docs/frontend/deal_documents.md`
 
 ### v1.0.0 - 2024-12-06
 
