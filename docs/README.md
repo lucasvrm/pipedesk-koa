@@ -31,6 +31,8 @@ PipeDesk is a modern Deal Flow Management Platform designed for investment banki
 
 ### Features (Implemented)
 Documentação de features implementadas:
+- [Deals Management](features/deals.md) - ✅ Master Deals e Player Tracks (NOVO!)
+- [Companies & Contacts](features/companies-contacts.md) - ✅ CRM completo (NOVO!)
 - [RBAC & Permissions](features/rbac.md) - ✅ Role-based access control completo
 - [Cross-Tagging Guide](CROSS_TAGGING_GUIDE.md) - ✅ Sistema de multi-homing (mover para features/)
 - [Task Management](TASK_MANAGEMENT_GUIDE.md) - ✅ Gestão de tasks (mover para features/)
@@ -39,9 +41,9 @@ Documentação de features implementadas:
 
 ### Features (Need Documentation)
 Features implementadas mas sem documentação:
-- Deals Management - ❌ Precisa criar `features/deals.md`
-- Companies Management - ❌ Precisa criar `features/companies.md`
-- Contacts Management - ❌ Precisa criar `features/contacts.md`
+- ~~Deals Management~~ - ✅ CRIADO: `features/deals.md`
+- ~~Companies Management~~ - ✅ CRIADO: `features/companies-contacts.md`
+- ~~Contacts Management~~ - ✅ CRIADO: `features/companies-contacts.md`
 - Analytics Dashboard - ❌ Precisa criar `features/analytics.md`
 - Custom Fields - ❌ Precisa criar `features/custom-fields.md`
 - Google Integration - ❌ Precisa criar `features/google-integration.md`

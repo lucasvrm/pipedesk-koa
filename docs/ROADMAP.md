@@ -605,4 +605,5 @@ Apps nativos iOS e Android.
 
 **Última atualização:** 06 de dezembro de 2025  
 **Mantido por:** PipeDesk Core Team  
-**Próxima revisão:** Janeiro 2026
+**Próxima revisão:** Janeiro 2026  
+**Versão do Roadmap:** 1.0

@@ -604,6 +604,6 @@ WHERE master_deal_id = 'uuid-here' AND status = 'active';
 
 ---
 
-**Última atualização:** 06/12/2025  
+**Última atualização:** 06 de dezembro de 2025  
 **Status:** ✅ Feature completamente implementada  
 **Mantido por:** PipeDesk Team
