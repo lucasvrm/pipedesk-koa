@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useTasks, useUpdateTask } from '@/services/taskService'
+import { useTasks, useUpdateTask, useDeleteTask } from '@/services/taskService'
 import { useTracks } from '@/services/trackService'
 import { useDeals } from '@/services/dealService'
 import { useUsers } from '@/services/userService'
@@ -38,6 +38,8 @@ import CreateTaskDialog from './CreateTaskDialog'
 import TaskDetailDialog from './TaskDetailDialog'
 import TaskKanbanView from './TaskKanbanView'
 import { PageContainer } from '@/components/PageContainer'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getTaskQuickActions } from '@/hooks/useQuickActions'
 
 interface TaskManagementViewProps {
   currentUser: User
@@ -53,6 +55,7 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
   const { data: masterDeals } = useDeals()
   const { data: users } = useUsers()
   const updateTask = useUpdateTask()
+  const deleteTask = useDeleteTask()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filter, setFilter] = useState<TaskFilter>('all')
@@ -477,6 +480,17 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
                                 </Badge>
                               )}
                             </div>
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                            <QuickActionsMenu
+                              actions={getTaskQuickActions({
+                                task,
+                                updateTask,
+                                deleteTask,
+                                profileId: currentUser?.id,
+                                onEdit: () => setSelectedTask(task),
+                              })}
+                            />
                           </div>
                         </div>
                       </CardContent>

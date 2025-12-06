@@ -8,6 +8,11 @@ import { canViewPlayerName } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import PlayerTrackDetailDialog from './PlayerTrackDetailDialog'
 import { useStages } from '@/services/pipelineService'
+import { useNavigate } from 'react-router-dom'
+import { useUpdateTrack, useDeleteTrack } from '@/services/trackService'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getTrackQuickActions } from '@/hooks/useQuickActions'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface PlayerTracksListProps {
   tracks: PlayerTrack[]
@@ -17,6 +22,10 @@ interface PlayerTracksListProps {
 export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksListProps) {
   const [selectedTrack, setSelectedTrack] = useState<PlayerTrack | null>(null)
   const { data: stages = [] } = useStages()
+  const navigate = useNavigate()
+  const updateTrack = useUpdateTrack()
+  const deleteTrack = useDeleteTrack()
+  const { profile } = useAuth()
 
   const canViewRealNames = currentUser ? canViewPlayerName(currentUser.role) : true
 
@@ -72,10 +81,24 @@ export default function PlayerTracksList({ tracks, currentUser }: PlayerTracksLi
                     )}
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-medium whitespace-nowrap">{probability}% prob.</div>
-                  <div className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatCurrency(weighted)} ponderado
+                <div className="flex items-start gap-2 flex-shrink-0">
+                  <div className="text-right">
+                    <div className="text-sm font-medium whitespace-nowrap">{probability}% prob.</div>
+                    <div className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatCurrency(weighted)} ponderado
+                    </div>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <QuickActionsMenu
+                      actions={getTrackQuickActions({
+                        track,
+                        navigate,
+                        updateTrack,
+                        deleteTrack,
+                        profileId: profile?.id,
+                        onEdit: () => setSelectedTrack(track),
+                      })}
+                    />
                   </div>
                 </div>
               </div>
