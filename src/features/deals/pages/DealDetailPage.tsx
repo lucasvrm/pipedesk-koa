@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
@@ -66,6 +66,8 @@ import { toast } from 'sonner'
 import { PageContainer } from '@/components/PageContainer'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
+import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/components/ui/RelationshipMap'
+import { useLeads } from '@/services/leadService'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -73,6 +75,9 @@ export default function DealDetailPage() {
   const { profile: currentUser } = useAuth()
   const { data: deal, isLoading } = useDeal(id || null)
   const { data: playerTracks } = useTracks()
+  
+  // Fetch related data for RelationshipMap
+  const { data: allLeads } = useLeads()
 
   const PIPELINE_STAGES = [
     { id: 'analysis', label: 'Análise' },
@@ -144,6 +149,80 @@ export default function DealDetailPage() {
   const allDealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
   const activeTracks = allDealTracks.filter(t => t.status !== 'cancelled')
   const droppedTracks = allDealTracks.filter(t => t.status === 'cancelled')
+
+  // Build RelationshipMap data
+  const relationshipData = useMemo(() => {
+    if (!deal) return { nodes: [], edges: [] }
+
+    const nodes: RelationshipNode[] = []
+    const edges: RelationshipEdge[] = []
+    const addedPlayerIds = new Set<string>() // Track added players for O(1) lookup
+
+    // Add deal node (always present)
+    nodes.push({
+      id: deal.id,
+      label: deal.clientName,
+      type: 'deal'
+    })
+
+    // Add company node if available
+    if (deal.company) {
+      const companyId = deal.company.id
+      nodes.push({
+        id: companyId,
+        label: deal.company.name,
+        type: 'company'
+      })
+      edges.push({
+        from: companyId,
+        to: deal.id
+      })
+
+      // Find leads that qualified to this company
+      const relatedLeads = allLeads?.filter(lead => lead.qualifiedCompanyId === companyId) || []
+      relatedLeads.forEach(lead => {
+        nodes.push({
+          id: lead.id,
+          label: lead.legalName,
+          type: 'lead'
+        })
+        edges.push({
+          from: lead.id,
+          to: companyId
+        })
+      })
+    }
+
+    // Add players/tracks for this deal
+    allDealTracks.forEach(track => {
+      if (track.playerId && !addedPlayerIds.has(track.playerId)) {
+        addedPlayerIds.add(track.playerId)
+        nodes.push({
+          id: track.playerId,
+          label: track.playerName,
+          type: 'player'
+        })
+      }
+      if (track.playerId) {
+        edges.push({
+          from: deal.id,
+          to: track.playerId
+        })
+      }
+    })
+
+    return { nodes, edges }
+  }, [deal, allLeads, allDealTracks])
+
+  const handleNodeClick = (node: RelationshipNode) => {
+    const routes: Record<typeof node.type, string> = {
+      lead: `/leads/${node.id}`,
+      company: `/companies/${node.id}`,
+      deal: `/deals/${node.id}`,
+      player: `/players/${node.id}`
+    }
+    navigate(routes[node.type])
+  }
 
   const handleUnassignTag = (tagId: string) => {
     if (!deal) return
@@ -367,6 +446,27 @@ export default function DealDetailPage() {
             </TabsList>
 
             <TabsContent value="players" className="space-y-4">
+              {/* Relationship Map - Show only if we have relationships beyond the current entity */}
+              {relationshipData.nodes.length > 1 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Mapa de Relacionamentos</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Visualização da cadeia Lead → Empresa → Negócio → Player
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[400px]">
+                      <RelationshipMap
+                        nodes={relationshipData.nodes}
+                        edges={relationshipData.edges}
+                        onNodeClick={handleNodeClick}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="flex justify-between items-center">
                 <div className="flex items-center bg-muted p-1 rounded-md gap-2">
                   <Button
