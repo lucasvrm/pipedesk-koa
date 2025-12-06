@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { dealStatusMap } from '@/lib/statusMaps'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -168,15 +170,10 @@ export default function DealDetailDialog({ deal, open, onOpenChange, currentUser
 
                 <DialogDescription className="space-y-1">
                   <div className="flex items-center gap-3 text-sm">
-                    <Badge
-                      className={
-                        deal.status === 'active' ? 'status-active' :
-                          deal.status === 'cancelled' ? 'status-cancelled' :
-                            'status-concluded'
-                      }
-                    >
-                      {STATUS_LABELS[deal.status]}
-                    </Badge>
+                    <StatusBadge
+                      semanticStatus={dealStatusMap(deal.status)}
+                      label={STATUS_LABELS[deal.status]}
+                    />
                     <span>{OPERATION_LABELS[deal.operationType]}</span>
                   </div>
                 </DialogDescription>

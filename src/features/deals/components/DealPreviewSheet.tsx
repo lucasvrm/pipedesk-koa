@@ -1,6 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { dealStatusMap } from '@/lib/statusMaps'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -91,12 +93,11 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
 
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-2">
-              <Badge 
-                variant={deal.status === 'active' ? 'default' : 'secondary'} 
+              <StatusBadge
+                semanticStatus={dealStatusMap(deal.status)}
+                label={STATUS_LABELS[deal.status]}
                 className="rounded-full px-3 font-medium capitalize"
-              >
-                {STATUS_LABELS[deal.status]}
-              </Badge>
+              />
               <Badge variant="outline" className="rounded-full px-3 font-normal text-muted-foreground bg-background">
                 {OPERATION_LABELS[deal.operationType]}
               </Badge>

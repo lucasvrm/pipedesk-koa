@@ -7,6 +7,8 @@ import { useEntityTags, useTagOperations } from '@/services/tagService'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { dealStatusMap } from '@/lib/statusMaps'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -184,16 +186,6 @@ export default function DealDetailPage() {
     }
   }
 
-  const getStatusColor = (status: DealStatus) => {
-    switch (status) {
-      case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
-      case 'concluded': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
-      case 'on_hold': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  }
-
   const feeValue = deal.feePercentage && deal.volume ? (deal.volume * (deal.feePercentage / 100)) : 0;
   const feeDisplay = deal.feePercentage ? `${deal.feePercentage.toFixed(2).replace('.', ',')}%  |  ${formatCurrency(feeValue)}` : '—';
   
@@ -256,9 +248,11 @@ export default function DealDetailPage() {
               }
               subtitle={OPERATION_LABELS[deal.operationType]}
               statusBadge={
-                <Badge className={`font-normal ${getStatusColor(deal.status)}`}>
-                  {STATUS_LABELS[deal.status]}
-                </Badge>
+                <StatusBadge
+                  semanticStatus={dealStatusMap(deal.status)}
+                  label={STATUS_LABELS[deal.status]}
+                  className="font-normal"
+                />
               }
               metrics={SIDEBAR_METRICS}
               actions={

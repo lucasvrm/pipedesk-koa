@@ -9,6 +9,8 @@ import { logActivity } from '@/services/activityService'
 import { useEntityTags, useTagOperations } from '@/services/tagService'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { leadStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -133,11 +135,12 @@ export default function LeadDetailPage() {
 
   const statusBadge = useMemo(() => {
     if (!lead) return null
-    const variant = lead.status === 'qualified' ? 'default' : lead.status === 'disqualified' ? 'destructive' : 'secondary'
     return (
-      <Badge variant={variant} className="text-sm">
-        {LEAD_STATUS_LABELS[lead.status]}
-      </Badge>
+      <StatusBadge
+        semanticStatus={leadStatusMap(lead.status)}
+        label={LEAD_STATUS_LABELS[lead.status]}
+        className="text-sm"
+      />
     )
   }, [lead])
 

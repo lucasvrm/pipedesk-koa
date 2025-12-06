@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { trackStatusMap } from '@/lib/statusMaps'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import {
@@ -143,17 +145,6 @@ export default function TrackDetailPage() {
     return new Date(task.dueDate) < today
   }
 
-  // Helper de Cores
-  const getStatusColor = (status: PlayerTrackStatus) => {
-    switch (status) {
-      case 'active': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100';
-      case 'concluded': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
-      case 'on_hold': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  }
-
   // Cálculo do Fee do Track
   const trackFee = deal?.feePercentage 
     ? (track.trackVolume * (deal.feePercentage / 100)) 
@@ -203,9 +194,11 @@ export default function TrackDetailPage() {
               </Link>
               {renderNewBadge(track.createdAt)}
               {renderUpdatedTodayBadge(track.updatedAt)}
-              <Badge className={`font-normal ${getStatusColor(track.status)}`}>
-                {STATUS_LABELS[track.status]}
-              </Badge>
+              <StatusBadge
+                semanticStatus={trackStatusMap(track.status)}
+                label={STATUS_LABELS[track.status]}
+                className="font-normal"
+              />
             </div>
 
             {deal && (

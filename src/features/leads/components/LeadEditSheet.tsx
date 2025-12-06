@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { leadStatusMap } from '@/lib/statusMaps'
 import { Separator } from '@/components/ui/separator'
 import { Lead, LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useForm } from 'react-hook-form'
@@ -77,7 +79,10 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
           </div>
           {lead && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline">Status: {LEAD_STATUS_LABELS[lead.status]}</Badge>
+              <StatusBadge
+                semanticStatus={leadStatusMap(lead.status)}
+                label={`Status: ${LEAD_STATUS_LABELS[lead.status]}`}
+              />
               <Badge variant="secondary">Origem: {LEAD_ORIGIN_LABELS[lead.origin]}</Badge>
             </div>
           )}
