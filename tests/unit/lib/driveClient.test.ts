@@ -16,6 +16,13 @@ vi.mock('@/lib/supabaseClient', () => ({
     auth: {
       getSession: vi.fn(),
     },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(),
+        })),
+      })),
+    })),
   },
 }));
 
@@ -26,6 +33,8 @@ vi.mock('@/lib/safeFetch', () => ({
 describe('DriveClient', () => {
   const mockToken = 'mock-auth-token';
   const mockBaseUrl = 'https://test-drive-api.com';
+  const mockUserId = 'user-123';
+  const mockUserRole = 'admin';
 
   beforeEach(() => {
     // Mock environment variable
@@ -39,11 +48,24 @@ describe('DriveClient', () => {
           refresh_token: 'refresh',
           expires_in: 3600,
           token_type: 'bearer',
-          user: {} as any,
+          user: { id: mockUserId } as any,
         },
       },
       error: null,
     });
+
+    // Mock profile fetch
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn().mockResolvedValue({
+            data: { role: mockUserRole },
+            error: null,
+          }),
+        })),
+      })),
+    }));
+    vi.mocked(supabaseClient.supabase.from).mockImplementation(mockFrom as any);
   });
 
   afterEach(() => {
@@ -79,6 +101,8 @@ describe('DriveClient', () => {
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: `Bearer ${mockToken}`,
+            'x-user-id': mockUserId,
+            'x-user-role': mockUserRole,
           }),
         })
       );

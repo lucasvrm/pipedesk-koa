@@ -102,6 +102,36 @@ const getAuthToken = async (): Promise<string> => {
   return session.access_token;
 };
 
+// Helper function to get user profile information
+const getUserProfile = async (): Promise<{ userId: string; userRole: string }> => {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !session?.user) {
+    console.error('[DriveClient] Error getting user session:', sessionError);
+    throw new Error('User not authenticated');
+  }
+
+  const userId = session.user.id;
+
+  // Fetch user profile to get the role
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single<{ role: string }>();
+
+  if (profileError || !profile) {
+    console.error('[DriveClient] Error fetching user profile:', profileError);
+    // Default to 'client' role if profile not found
+    return { userId, userRole: 'client' };
+  }
+
+  return { userId, userRole: profile.role || 'client' };
+};
+
 // Helper function to make authenticated requests to Drive API
 const driveApiFetch = async (
   endpoint: string,
@@ -109,10 +139,13 @@ const driveApiFetch = async (
 ): Promise<Response> => {
   const baseUrl = getDriveApiUrl();
   const token = await getAuthToken();
+  const { userId, userRole } = await getUserProfile();
 
   const url = `${baseUrl}${endpoint}`;
   const headers = {
     'Authorization': `Bearer ${token}`,
+    'x-user-id': userId,
+    'x-user-role': userRole,
     ...options.headers,
   };
 
