@@ -159,6 +159,82 @@ export default function LeadDetailPage() {
     return found?.name || OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType
   }, [lead?.operationType, operationTypes])
 
+  // Build RelationshipMap data - Must be called before any early returns to follow Rules of Hooks
+  const relationshipData = useMemo(() => {
+    if (!lead) return { nodes: [], edges: [] }
+
+    const nodes: RelationshipNode[] = []
+    const edges: RelationshipEdge[] = []
+    const addedPlayerIds = new Set<string>() // Track added players for O(1) lookup
+
+    // Add lead node (always present)
+    nodes.push({
+      id: lead.id,
+      label: lead.legalName,
+      type: 'lead'
+    })
+
+    // Add company node if lead is qualified
+    if (lead.qualifiedCompanyId && company) {
+      nodes.push({
+        id: company.id,
+        label: company.name,
+        type: 'company'
+      })
+      edges.push({
+        from: lead.id,
+        to: company.id
+      })
+
+      // Add deals associated with the company
+      const companyDeals = allDeals?.filter(deal => 
+        deal.companyId === company.id || deal.company_id === company.id
+      ) || []
+      companyDeals.forEach(deal => {
+        nodes.push({
+          id: deal.id,
+          label: deal.clientName,
+          type: 'deal'
+        })
+        edges.push({
+          from: company.id,
+          to: deal.id
+        })
+
+        // Add players/tracks for each deal
+        const dealTracks = allTracks?.filter(track => track.masterDealId === deal.id) || []
+        dealTracks.forEach(track => {
+          if (track.playerId && !addedPlayerIds.has(track.playerId)) {
+            addedPlayerIds.add(track.playerId)
+            nodes.push({
+              id: track.playerId,
+              label: track.playerName,
+              type: 'player'
+            })
+          }
+          if (track.playerId) {
+            edges.push({
+              from: deal.id,
+              to: track.playerId
+            })
+          }
+        })
+      })
+    }
+
+    return { nodes, edges }
+  }, [lead, company, allDeals, allTracks])
+
+  const handleNodeClick = (node: RelationshipNode) => {
+    const routes: Record<typeof node.type, string> = {
+      lead: `/leads/${node.id}`,
+      company: `/companies/${node.id}`,
+      deal: `/deals/${node.id}`,
+      player: `/players/${node.id}`
+    }
+    navigate(routes[node.type])
+  }
+
   if (isLoading) return (
     <PageContainer>
       <Breadcrumb className="mb-6">
@@ -319,82 +395,6 @@ export default function LeadDetailPage() {
 
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
-
-  // Build RelationshipMap data
-  const relationshipData = useMemo(() => {
-    if (!lead) return { nodes: [], edges: [] }
-
-    const nodes: RelationshipNode[] = []
-    const edges: RelationshipEdge[] = []
-    const addedPlayerIds = new Set<string>() // Track added players for O(1) lookup
-
-    // Add lead node (always present)
-    nodes.push({
-      id: lead.id,
-      label: lead.legalName,
-      type: 'lead'
-    })
-
-    // Add company node if lead is qualified
-    if (lead.qualifiedCompanyId && company) {
-      nodes.push({
-        id: company.id,
-        label: company.name,
-        type: 'company'
-      })
-      edges.push({
-        from: lead.id,
-        to: company.id
-      })
-
-      // Add deals associated with the company
-      const companyDeals = allDeals?.filter(deal => 
-        deal.companyId === company.id || deal.company_id === company.id
-      ) || []
-      companyDeals.forEach(deal => {
-        nodes.push({
-          id: deal.id,
-          label: deal.clientName,
-          type: 'deal'
-        })
-        edges.push({
-          from: company.id,
-          to: deal.id
-        })
-
-        // Add players/tracks for each deal
-        const dealTracks = allTracks?.filter(track => track.masterDealId === deal.id) || []
-        dealTracks.forEach(track => {
-          if (track.playerId && !addedPlayerIds.has(track.playerId)) {
-            addedPlayerIds.add(track.playerId)
-            nodes.push({
-              id: track.playerId,
-              label: track.playerName,
-              type: 'player'
-            })
-          }
-          if (track.playerId) {
-            edges.push({
-              from: deal.id,
-              to: track.playerId
-            })
-          }
-        })
-      })
-    }
-
-    return { nodes, edges }
-  }, [lead, company, allDeals, allTracks])
-
-  const handleNodeClick = (node: RelationshipNode) => {
-    const routes: Record<typeof node.type, string> = {
-      lead: `/leads/${node.id}`,
-      company: `/companies/${node.id}`,
-      deal: `/deals/${node.id}`,
-      player: `/players/${node.id}`
-    }
-    navigate(routes[node.type])
-  }
 
   const PIPELINE_STAGES = [
     { id: 'new', label: 'Novo', color: 'bg-slate-500' },
