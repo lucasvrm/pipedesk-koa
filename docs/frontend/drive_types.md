@@ -54,9 +54,10 @@ export interface DriveItem {
   type: 'file' | 'folder';
   size?: number;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   parentId?: string;
   url?: string;
+  permission?: 'read' | 'write' | 'admin';
 }
 ```
 
@@ -66,9 +67,10 @@ export interface DriveItem {
 - `type` ('file' | 'folder'): Tipo do item - arquivo ou pasta
 - `size` (number, opcional): Tamanho em bytes (apenas para arquivos)
 - `createdAt` (string): Data/hora de criação (ISO 8601)
-- `updatedAt` (string): Data/hora da última atualização (ISO 8601)
+- `updatedAt` (string, opcional): Data/hora da última atualização (ISO 8601)
 - `parentId` (string, opcional): ID da pasta pai (se não for item raiz)
 - `url` (string, opcional): URL de acesso ao item (principalmente para arquivos)
+- `permission` ('read' | 'write' | 'admin', opcional): Nível de permissão do usuário atual sobre o item
 
 **Relação com Backend:**
 O backend retorna este tipo ao listar itens de uma pasta. O campo `type` permite diferenciar arquivos de pastas em listagens mistas.

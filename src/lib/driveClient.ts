@@ -20,9 +20,10 @@ export interface DriveItem {
   type: 'file' | 'folder';
   size?: number;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   parentId?: string;
   url?: string;
+  permission?: 'read' | 'write' | 'admin';
 }
 
 export interface DriveFolder {
