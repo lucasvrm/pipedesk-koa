@@ -1,6 +1,18 @@
 import { supabase } from './supabaseClient';
 import { safeFetch } from './safeFetch';
 
+// Custom error class for Drive API errors
+export class DriveApiError extends Error {
+  constructor(
+    message: string,
+    public statusCode?: number,
+    public response?: string
+  ) {
+    super(message);
+    this.name = 'DriveApiError';
+  }
+}
+
 // Types for Drive API responses
 export interface DriveItem {
   id: string;
@@ -18,6 +30,8 @@ export interface DriveFolder {
   name: string;
   parentId?: string;
   createdAt: string;
+  updatedAt?: string;
+  permission?: 'read' | 'write' | 'admin';
 }
 
 export interface DriveFile {
@@ -28,6 +42,17 @@ export interface DriveFile {
   url: string;
   folderId?: string;
   createdAt: string;
+  updatedAt?: string;
+  permission?: 'read' | 'write' | 'admin';
+}
+
+export interface DriveListResponse {
+  files: DriveItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  permission?: 'read' | 'write' | 'admin';
 }
 
 export interface ListDriveItemsResponse {
@@ -102,6 +127,7 @@ const driveApiFetch = async (
  * @param page - Optional page number for pagination (default: 1)
  * @param limit - Optional items per page (default: 50)
  * @returns Promise with list of drive items
+ * @throws {DriveApiError} If the API request fails
  */
 export async function listDriveItems(
   folderId?: string,
@@ -122,7 +148,11 @@ export async function listDriveItems(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to list drive items: ${response.status} ${errorText}`);
+      throw new DriveApiError(
+        `Failed to list drive items: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
     }
 
     const data = await response.json();
@@ -138,6 +168,7 @@ export async function listDriveItems(
  * @param name - Folder name
  * @param parentId - Optional parent folder ID
  * @returns Promise with created folder information
+ * @throws {DriveApiError} If the API request fails
  */
 export async function createDriveFolder(
   name: string,
@@ -157,7 +188,11 @@ export async function createDriveFolder(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to create folder: ${response.status} ${errorText}`);
+      throw new DriveApiError(
+        `Failed to create folder: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
     }
 
     const data = await response.json();
@@ -174,6 +209,7 @@ export async function createDriveFolder(
  * @param folderId - Optional folder ID where the file should be uploaded
  * @param onProgress - Optional callback for upload progress (0-100)
  * @returns Promise with uploaded file information
+ * @throws {DriveApiError} If the API request fails
  */
 export async function uploadDriveFile(
   file: File,
@@ -198,7 +234,11 @@ export async function uploadDriveFile(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
+      throw new DriveApiError(
+        `Failed to upload file: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
     }
 
     const data = await response.json();
@@ -220,6 +260,7 @@ export async function uploadDriveFile(
  * Delete a file from Drive
  * @param fileId - ID of the file to delete
  * @returns Promise with deletion result
+ * @throws {DriveApiError} If the API request fails
  */
 export async function deleteDriveFile(fileId: string): Promise<DeleteResponse> {
   try {
@@ -229,7 +270,11 @@ export async function deleteDriveFile(fileId: string): Promise<DeleteResponse> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to delete file: ${response.status} ${errorText}`);
+      throw new DriveApiError(
+        `Failed to delete file: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
     }
 
     const data = await response.json();
@@ -245,6 +290,7 @@ export async function deleteDriveFile(fileId: string): Promise<DeleteResponse> {
  * @param folderId - ID of the folder to delete
  * @param recursive - Whether to delete folder contents recursively (default: false)
  * @returns Promise with deletion result
+ * @throws {DriveApiError} If the API request fails
  */
 export async function deleteDriveFolder(
   folderId: string,
@@ -263,7 +309,11 @@ export async function deleteDriveFolder(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to delete folder: ${response.status} ${errorText}`);
+      throw new DriveApiError(
+        `Failed to delete folder: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
     }
 
     const data = await response.json();
