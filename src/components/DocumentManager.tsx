@@ -228,7 +228,7 @@ export default function DocumentManager({
   const confirmDelete = async () => {
     if (!itemToDelete) return
 
-    await deleteItem(itemToDelete.id)
+    await deleteItem(itemToDelete.id, itemToDelete.type)
     toast.success(`${itemToDelete.type === 'folder' ? 'Pasta excluída' : 'Arquivo excluído'}`)
     setItemToDelete(null)
   }

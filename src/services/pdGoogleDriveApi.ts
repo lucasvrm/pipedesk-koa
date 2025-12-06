@@ -1,4 +1,3 @@
-// src/services/pdGoogleDriveApi.ts
 
 import {
   DriveEntityType,
@@ -8,28 +7,21 @@ import {
 } from '@/services/googleDriveService'
 import { supabase } from '@/lib/supabaseClient'
 
-// A URL base agora aponta para a Edge Function do Supabase
-// Ex: https://<project>.supabase.co/functions/v1/proxy-drive
-// Isso é construído dinamicamente a partir da URL do Supabase
-const SUPABASE_PROJECT_URL = import.meta.env.VITE_SUPABASE_URL
-const FUNCTION_URL = SUPABASE_PROJECT_URL ? `${SUPABASE_PROJECT_URL}/functions/v1/proxy-drive` : ''
-
-// Mantemos o check do VITE_PD_GOOGLE_BASE_URL apenas para saber se a integração está "ativa" conceitualmente,
-// mas a URL real usada será a do Proxy.
-const REMOTE_ENABLED = Boolean(import.meta.env.VITE_PD_GOOGLE_BASE_URL)
+// URL base do Backend Python no Render
+// Ex: https://pipedesk-drive-backend.onrender.com
+const REMOTE_API_URL = import.meta.env.VITE_DRIVE_API_URL
+const REMOTE_ENABLED = Boolean(REMOTE_API_URL)
 
 if (typeof window !== 'undefined') {
   console.log('[pdGoogleDriveApi] Configuration Loaded:', {
-    SUPABASE_PROJECT_URL,
-    FUNCTION_URL,
+    REMOTE_API_URL,
     REMOTE_ENABLED,
-    PROXY_TARGET: 'Supabase Edge Function',
-    ORIGINAL_ENV: import.meta.env.VITE_PD_GOOGLE_BASE_URL
+    PROXY_TARGET: 'Render Python Backend',
   })
 
   if (!REMOTE_ENABLED) {
     console.info(
-      '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não está definida. O modo remoto de Drive permanecerá desativado.'
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não está definida. O modo remoto de Drive permanecerá desativado.'
     )
   }
 }
@@ -70,22 +62,35 @@ export function isRemoteDriveEnabled(): boolean {
   return REMOTE_ENABLED
 }
 
-async function fetchWithProxy(
+/**
+ * Realiza fetch para a API do Render.
+ * Envia headers de autenticação (JWT) e legado (x-user-id) para compatibilidade.
+ */
+async function fetchFromDriveApi(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  actorId?: string,
+  actorRole?: string
 ): Promise<Response> {
-  if (!FUNCTION_URL) throw new Error('[pdGoogleDriveApi] URL do Supabase não configurada.')
+  if (!REMOTE_API_URL) throw new Error('[pdGoogleDriveApi] URL do Backend Drive não configurada.')
 
-  // Usa a sessão do Supabase para autenticar a chamada à Edge Function
+  // Autenticação: Sessão Supabase
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token
 
   const headers = new Headers(options.headers)
+
+  // Header Seguro (Futuro)
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  return fetch(`${FUNCTION_URL}${path}`, {
+  // Headers Legados (Compatibilidade Atual)
+  // O backend confia nestes headers por enquanto. Devem ser removidos após a implementação da validação de JWT no backend.
+  if (actorId) headers.set('x-user-id', actorId)
+  if (actorRole) headers.set('x-user-role', actorRole)
+
+  return fetch(`${REMOTE_API_URL}${path}`, {
     ...options,
     headers
   })
@@ -94,6 +99,7 @@ async function fetchWithProxy(
 /**
  * Carrega documentos de uma entidade a partir do backend pd-google.
  * Mapeia a resposta para DriveFolder/DriveFile usados na UI.
+ * GET /drive/:entityType/:entityId
  */
 export async function getRemoteEntityDocuments(
   entityType: DriveEntityType,
@@ -103,17 +109,13 @@ export async function getRemoteEntityDocuments(
 ): Promise<RemoteDriveSnapshot> {
   if (!REMOTE_ENABLED) {
     throw new Error(
-      '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não configurada, mas getRemoteEntityDocuments foi chamado.'
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas getRemoteEntityDocuments foi chamado.'
     )
   }
 
-  const res = await fetchWithProxy(`/drive/${entityType}/${entityId}`, {
+  const res = await fetchFromDriveApi(`/drive/${entityType}/${entityId}`, {
     method: 'GET',
-    headers: {
-      'x-user-id': actorId,
-      'x-user-role': actorRole,
-    },
-  })
+  }, actorId, actorRole)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -136,7 +138,7 @@ export async function getRemoteEntityDocuments(
       const folder: DriveFolder = {
         id: item.id,
         name: item.name,
-        // Por enquanto, tratamos tudo como estando na raiz (sem navegação por subpastas).
+        // Por enquanto, tratamos tudo como estando na raiz (sem navegação por subpastas aninhadas no frontend atual).
         parentId: undefined,
         entityId,
         entityType,
@@ -150,7 +152,7 @@ export async function getRemoteEntityDocuments(
         size: Number(item.size ?? 0),
         type: mime || 'application/octet-stream',
         url: item.webViewLink || '#',
-        folderId: undefined, // tudo na raiz por enquanto
+        folderId: undefined,
         uploadedBy: 'remote',
         uploadedAt: item.createdTime || new Date().toISOString(),
         entityId,
@@ -172,7 +174,7 @@ export async function getRemoteEntityDocuments(
 
 /**
  * Cria uma subpasta na pasta raiz da entidade.
- * No backend atual, sempre cria direto na raiz da entidade.
+ * POST /drive/:entityType/:entityId/folder
  */
 export async function createRemoteFolder(
   entityType: DriveEntityType,
@@ -183,19 +185,17 @@ export async function createRemoteFolder(
 ): Promise<void> {
   if (!REMOTE_ENABLED) {
     throw new Error(
-      '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não configurada, mas createRemoteFolder foi chamado.'
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas createRemoteFolder foi chamado.'
     )
   }
 
-  const res = await fetchWithProxy(`/drive/${entityType}/${entityId}/folder`, {
+  const res = await fetchFromDriveApi(`/drive/${entityType}/${entityId}/folder`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': actorId,
-      'x-user-role': actorRole,
     },
     body: JSON.stringify({ name }),
-  })
+  }, actorId, actorRole)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -207,7 +207,7 @@ export async function createRemoteFolder(
 
 /**
  * Faz upload de um ou mais arquivos para a pasta raiz da entidade.
- * O backend atual não suporta escolher subpastas, então sempre envia para a raiz.
+ * POST /drive/:entityType/:entityId/upload
  */
 export async function uploadRemoteFiles(
   entityType: DriveEntityType,
@@ -218,7 +218,7 @@ export async function uploadRemoteFiles(
 ): Promise<void> {
   if (!REMOTE_ENABLED) {
     throw new Error(
-      '[pdGoogleDriveApi] VITE_PD_GOOGLE_BASE_URL não configurada, mas uploadRemoteFiles foi chamado.'
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas uploadRemoteFiles foi chamado.'
     )
   }
 
@@ -226,14 +226,10 @@ export async function uploadRemoteFiles(
     const formData = new FormData()
     formData.append('file', file)
 
-    const res = await fetchWithProxy(`/drive/${entityType}/${entityId}/upload`, {
+    const res = await fetchFromDriveApi(`/drive/${entityType}/${entityId}/upload`, {
       method: 'POST',
-      headers: {
-        'x-user-id': actorId,
-        'x-user-role': actorRole,
-      },
       body: formData,
-    })
+    }, actorId, actorRole)
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
@@ -241,5 +237,39 @@ export async function uploadRemoteFiles(
         `[pdGoogleDriveApi] Erro ao fazer upload de arquivo "${file.name}" (${res.status}): ${text}`
       )
     }
+  }
+}
+
+/**
+ * Deleta um arquivo ou pasta.
+ * DELETE /drive/{entity_type}/{entity_id}/files/{file_id}
+ * DELETE /drive/{entity_type}/{entity_id}/folders/{folder_id}
+ */
+export async function deleteRemoteEntry(
+  entityType: DriveEntityType,
+  entityId: string,
+  targetId: string,
+  type: 'file' | 'folder',
+  actorId: string,
+  actorRole: DriveRole
+): Promise<void> {
+  if (!REMOTE_ENABLED) {
+    throw new Error(
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas deleteRemoteEntry foi chamado.'
+    )
+  }
+
+  const endpointType = type === 'folder' ? 'folders' : 'files'
+  const path = `/drive/${entityType}/${entityId}/${endpointType}/${targetId}`
+
+  const res = await fetchFromDriveApi(path, {
+    method: 'DELETE',
+  }, actorId, actorRole)
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(
+      `[pdGoogleDriveApi] Erro ao deletar ${type} remoto (${res.status}): ${text}`
+    )
   }
 }
