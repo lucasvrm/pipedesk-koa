@@ -83,8 +83,11 @@ const getDriveApiUrl = (): string => {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
-// Helper function to get the current user's token from Supabase
-const getAuthToken = async (): Promise<string> => {
+// Default role to use when user profile is not found or has no role
+const DEFAULT_USER_ROLE = 'client';
+
+// Helper function to get authentication and user info from Supabase
+const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole: string }> => {
   const {
     data: { session },
     error,
@@ -95,11 +98,30 @@ const getAuthToken = async (): Promise<string> => {
     throw new Error(`Authentication error: ${error.message}`);
   }
 
-  if (!session?.access_token) {
+  if (!session?.access_token || !session?.user) {
     throw new Error('No authentication token available. Please sign in.');
   }
 
-  return session.access_token;
+  const userId = session.user.id;
+  const token = session.access_token;
+
+  // Fetch user profile to get the role
+  // Note: This query is executed on every API call. In the future, consider implementing
+  // a caching mechanism to avoid repeated database queries for the same user session.
+  // However, the current approach ensures we always have the most up-to-date role information.
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single<{ role: string }>();
+
+  if (profileError || !profile) {
+    console.error('[DriveClient] Error fetching user profile:', profileError);
+    // Default to DEFAULT_USER_ROLE if profile not found
+    return { token, userId, userRole: DEFAULT_USER_ROLE };
+  }
+
+  return { token, userId, userRole: profile.role || DEFAULT_USER_ROLE };
 };
 
 // Helper function to make authenticated requests to Drive API
@@ -108,11 +130,13 @@ const driveApiFetch = async (
   options: RequestInit = {}
 ): Promise<Response> => {
   const baseUrl = getDriveApiUrl();
-  const token = await getAuthToken();
+  const { token, userId, userRole } = await getAuthInfo();
 
   const url = `${baseUrl}${endpoint}`;
   const headers = {
     'Authorization': `Bearer ${token}`,
+    'x-user-id': userId,
+    'x-user-role': userRole,
     ...options.headers,
   };
 
