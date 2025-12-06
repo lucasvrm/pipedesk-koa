@@ -334,3 +334,95 @@ export async function deleteDriveFolder(
     throw error;
   }
 }
+
+/**
+ * Create a folder for an entity (deal, lead, company, etc.)
+ * @param entityType - Type of entity (e.g., "deal", "lead", "company")
+ * @param entityId - ID of the entity
+ * @param name - Name of the folder to create
+ * @returns Promise with created folder information
+ * @throws {DriveApiError} If the API request fails
+ */
+export async function createDriveFolderForEntity(
+  entityType: string,
+  entityId: string,
+  name: string
+): Promise<CreateDriveFolderResponse> {
+  try {
+    const response = await driveApiFetch('/api/drive/folders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        entityType,
+        entityId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new DriveApiError(
+        `Failed to create folder for ${entityType}: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('[DriveClient] createDriveFolderForEntity error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload a file for an entity (deal, lead, company, etc.)
+ * @param entityType - Type of entity (e.g., "deal", "lead", "company")
+ * @param entityId - ID of the entity
+ * @param file - File object to upload
+ * @param onProgress - Optional callback for upload progress (0-100). Note: Currently only called at 100% after completion. Real-time progress tracking requires implementation of a custom fetch wrapper with ReadableStream or XMLHttpRequest.
+ * @returns Promise with uploaded file information
+ * @throws {DriveApiError} If the API request fails
+ */
+export async function uploadDriveFileForEntity(
+  entityType: string,
+  entityId: string,
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<UploadDriveFileResponse> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('entityType', entityType);
+    formData.append('entityId', entityId);
+
+    const response = await driveApiFetch('/api/drive/files', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new DriveApiError(
+        `Failed to upload file for ${entityType}: ${response.status} ${errorText}`,
+        response.status,
+        errorText
+      );
+    }
+
+    const data = await response.json();
+    
+    // Call progress callback after completion if provided
+    if (onProgress) {
+      onProgress(100);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('[DriveClient] uploadDriveFileForEntity error:', error);
+    throw error;
+  }
+}
