@@ -31,6 +31,7 @@ Core features of PipeDesk:
 - [Google Integration](features/google-integration.md) - Google Workspace sync
 - [Cross-Tagging](features/cross-tagging.md) - Organizational tagging system
 - [Audit Log](features/audit-log.md) - Activity tracking and compliance
+- [UI Components](features/ui-components.md) - Shared UI components and patterns
 
 ### Development
 For developers and contributors:
