@@ -193,11 +193,11 @@ export default function DealDetailPage() {
   const deadlineIconColor = isDeadlineOverdue ? 'text-red-500' : 'text-slate-500';
 
   const SIDEBAR_METRICS = [
-    { label: 'Volume Total', value: formatCurrency(deal.volume), icon: <Wallet className="h-3 w-3" /> },
-    { label: 'Fee Estimado', value: feeDisplay, icon: <Sparkle className="h-3 w-3" /> },
-    { label: 'Prazo', value: formatDate(deal.deadline), icon: isDeadlineOverdue ? <WarningCircle className="h-3 w-3 text-red-500" /> : <CalendarBlank className="h-3 w-3" /> },
-    { label: 'Players Ativos', value: activeTracks.filter(t => t.status === 'active').length, icon: <Users className="h-3 w-3" /> },
-    { label: 'Empresa', value: deal.company ? deal.company.name : '—', icon: <Buildings className="h-3 w-3" /> }
+    { label: 'Volume Total', value: formatCurrency(deal.volume), icon: <Wallet className="h-3 w-3" />, color: 'deal' as const },
+    { label: 'Fee Estimado', value: feeDisplay, icon: <Sparkle className="h-3 w-3" />, color: 'deal' as const },
+    { label: 'Prazo', value: formatDate(deal.deadline), icon: isDeadlineOverdue ? <WarningCircle className="h-3 w-3 text-red-500" /> : <CalendarBlank className="h-3 w-3" />, color: 'deal' as const },
+    { label: 'Players Ativos', value: activeTracks.filter(t => t.status === 'active').length, icon: <Users className="h-3 w-3" />, color: 'deal' as const },
+    { label: 'Empresa', value: deal.company ? deal.company.name : '—', icon: <Buildings className="h-3 w-3" />, color: 'company' as const }
   ]
 
   return (

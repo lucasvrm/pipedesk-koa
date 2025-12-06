@@ -319,10 +319,10 @@ export default function LeadDetailPage() {
   ]
 
   const SIDEBAR_METRICS = [
-    { label: 'Origem', value: LEAD_ORIGIN_LABELS[lead.origin], icon: <Sparkle className="h-3 w-3" /> },
-    { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" /> },
-    { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" /> },
-    { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" /> }
+    { label: 'Origem', value: LEAD_ORIGIN_LABELS[lead.origin], icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
   ]
 
   return (
