@@ -1,0 +1,132 @@
+import { ReactNode } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu"
+import { Button } from '@/components/ui/button'
+import { DotsThreeOutline } from '@phosphor-icons/react'
+
+export interface QuickAction {
+  id: string
+  label: string
+  icon?: ReactNode
+  onClick: () => void
+  variant?: 'default' | 'destructive'
+  disabled?: boolean
+  subActions?: QuickAction[]
+}
+
+export interface QuickActionsMenuProps {
+  actions: QuickAction[]
+  label?: string
+  triggerIcon?: ReactNode
+  triggerVariant?: 'default' | 'outline' | 'ghost' | 'secondary'
+  triggerSize?: 'default' | 'sm' | 'lg' | 'icon'
+  align?: 'start' | 'center' | 'end'
+}
+
+/**
+ * QuickActionsMenu - Reusable dropdown menu component for entity quick actions
+ * 
+ * Provides a consistent UX for common entity operations across the application.
+ * Supports nested actions via subActions property.
+ * 
+ * @example
+ * ```tsx
+ * <QuickActionsMenu
+ *   label="Ações"
+ *   actions={[
+ *     { id: 'edit', label: 'Editar', icon: <PencilSimple />, onClick: handleEdit },
+ *     { id: 'delete', label: 'Excluir', icon: <Trash />, onClick: handleDelete, variant: 'destructive' }
+ *   ]}
+ * />
+ * ```
+ */
+export function QuickActionsMenu({
+  actions,
+  label,
+  triggerIcon = <DotsThreeOutline className="h-4 w-4" />,
+  triggerVariant = 'ghost',
+  triggerSize = 'icon',
+  align = 'end'
+}: QuickActionsMenuProps) {
+  
+  const renderAction = (action: QuickAction) => {
+    // If action has sub-actions, render as submenu
+    if (action.subActions && action.subActions.length > 0) {
+      return (
+        <DropdownMenuSub key={action.id}>
+          <DropdownMenuSubTrigger disabled={action.disabled}>
+            {action.icon && <span className="mr-2">{action.icon}</span>}
+            {action.label}
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {action.subActions.map(subAction => (
+              <DropdownMenuItem
+                key={subAction.id}
+                onClick={subAction.onClick}
+                disabled={subAction.disabled}
+                className={subAction.variant === 'destructive' ? 'text-red-600 focus:text-red-600' : ''}
+              >
+                {subAction.icon && <span className="mr-2">{subAction.icon}</span>}
+                {subAction.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+      )
+    }
+
+    // Regular menu item
+    return (
+      <DropdownMenuItem
+        key={action.id}
+        onClick={action.onClick}
+        disabled={action.disabled}
+        className={action.variant === 'destructive' ? 'text-red-600 focus:text-red-600' : ''}
+      >
+        {action.icon && <span className="mr-2">{action.icon}</span>}
+        {action.label}
+      </DropdownMenuItem>
+    )
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant={triggerVariant} 
+          size={triggerSize}
+          className="focus-visible:ring-1"
+        >
+          {triggerIcon}
+          {label && <span className="ml-2">{label}</span>}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={align} className="w-56">
+        {label && (
+          <>
+            <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {actions.map((action, index) => (
+          <div key={action.id}>
+            {renderAction(action)}
+            {/* Add separator after groups of related actions */}
+            {index < actions.length - 1 && action.id.includes('separator') && (
+              <DropdownMenuSeparator />
+            )}
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
