@@ -52,14 +52,13 @@ export interface DeleteResponse {
 const getDriveApiUrl = (): string => {
   const url = import.meta.env.VITE_DRIVE_API_URL;
   if (!url) {
-    console.warn('[DriveClient] VITE_DRIVE_API_URL not configured');
-    return '';
+    throw new Error('Drive API URL not configured. Please set VITE_DRIVE_API_URL environment variable.');
   }
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
 // Helper function to get the current user's token from Supabase
-const getAuthToken = async (): Promise<string | null> => {
+const getAuthToken = async (): Promise<string> => {
   const {
     data: { session },
     error,
@@ -67,10 +66,14 @@ const getAuthToken = async (): Promise<string | null> => {
 
   if (error) {
     console.error('[DriveClient] Error getting session:', error);
-    return null;
+    throw new Error(`Authentication error: ${error.message}`);
   }
 
-  return session?.access_token || null;
+  if (!session?.access_token) {
+    throw new Error('No authentication token available. Please sign in.');
+  }
+
+  return session.access_token;
 };
 
 // Helper function to make authenticated requests to Drive API
@@ -79,14 +82,7 @@ const driveApiFetch = async (
   options: RequestInit = {}
 ): Promise<Response> => {
   const baseUrl = getDriveApiUrl();
-  if (!baseUrl) {
-    throw new Error('Drive API URL not configured');
-  }
-
   const token = await getAuthToken();
-  if (!token) {
-    throw new Error('No authentication token available');
-  }
 
   const url = `${baseUrl}${endpoint}`;
   const headers = {

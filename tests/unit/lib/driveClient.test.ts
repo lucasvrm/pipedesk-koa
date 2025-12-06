@@ -382,7 +382,7 @@ describe('DriveClient', () => {
         error: { message: 'Auth error', name: 'AuthError' } as any,
       });
 
-      await expect(listDriveItems()).rejects.toThrow();
+      await expect(listDriveItems()).rejects.toThrow('Authentication error: Auth error');
     });
   });
 });
