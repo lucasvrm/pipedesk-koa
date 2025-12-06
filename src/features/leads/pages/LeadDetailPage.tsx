@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLead, useUpdateLead, useLeadContacts, addLeadMember, removeLeadMember, useDeleteLead } from '@/services/leadService'
 import { useContacts, useCreateContact } from '@/services/contactService'
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
 import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
 import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
@@ -19,11 +20,16 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
-import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
-import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { UnifiedTimeline } from '@/components/UnifiedTimeline'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import {
   Buildings,
   ChatCircle,
@@ -139,7 +145,25 @@ export default function LeadDetailPage() {
     return found?.name || OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType
   }, [lead?.operationType, operationTypes])
 
-  if (isLoading) return <div className="p-8">Carregando...</div>
+  if (isLoading) return (
+    <PageContainer>
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <Skeleton className="h-5 w-20" />
+        </BreadcrumbList>
+      </Breadcrumb>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    </PageContainer>
+  )
   if (!lead) return <div className="p-8">Lead não encontrado.</div>
 
   const handleStatusChange = async (value: LeadStatus) => {
@@ -298,6 +322,21 @@ export default function LeadDetailPage() {
 
   return (
     <PageContainer>
+      {/* Breadcrumbs */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/leads">Leads</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{lead.legalName}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <EntityDetailLayout
         header={
           <PipelineVisualizer
@@ -403,8 +442,6 @@ export default function LeadDetailPage() {
               <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
               <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
             <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
-              <TabsTrigger value="ai" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Sparkle className="mr-2 h-4 w-4" /> IA</TabsTrigger>
-              <TabsTrigger value="fields" disabled className="py-2 px-4 opacity-50 cursor-not-allowed"><Tag className="mr-2 h-4 w-4" /> Campos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">

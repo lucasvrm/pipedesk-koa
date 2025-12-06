@@ -9,11 +9,20 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
 import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
 import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { UnifiedTimeline } from '@/components/UnifiedTimeline'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,14 +36,6 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { 
@@ -107,9 +108,23 @@ export default function DealDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
+      <PageContainer>
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <Skeleton className="h-5 w-24" />
+          </BreadcrumbList>
+        </Breadcrumb>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </PageContainer>
     )
   }
 
@@ -193,6 +208,31 @@ export default function DealDetailPage() {
 
   return (
     <PageContainer>
+      {/* Breadcrumbs */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/deals">Negócios</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          {deal.company && (
+            <>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to={`/companies/${deal.company.id}`}>{deal.company.name}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+            </>
+          )}
+          <BreadcrumbItem>
+            <BreadcrumbPage>{deal.clientName}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <EntityDetailLayout
         header={
           <PipelineVisualizer
@@ -318,21 +358,6 @@ export default function DealDetailPage() {
               </TabsTrigger>
               <TabsTrigger value="comments" className="py-2 px-4">
                 <ChatCircle className="mr-2 h-4 w-4" /> Comentários
-              </TabsTrigger>
-
-              <TabsTrigger
-                value="ai"
-                disabled
-                className="py-2 px-4 opacity-50 cursor-not-allowed"
-              >
-                <Sparkle className="mr-2 h-4 w-4" /> IA
-              </TabsTrigger>
-              <TabsTrigger
-                value="fields"
-                disabled
-                className="py-2 px-4 opacity-50 cursor-not-allowed"
-              >
-                <Tag className="mr-2 h-4 w-4" /> Campos
               </TabsTrigger>
               <TabsTrigger value="activity" className="py-2 px-4">
                 <ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades
