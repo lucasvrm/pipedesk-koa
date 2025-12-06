@@ -2,6 +2,21 @@
 
 ## December 2025 - Complete Documentation Overhaul
 
+### Latest Updates
+
+#### December 6, 2025 - RelationshipMap Component Documentation
+- **Added**: Comprehensive documentation for RelationshipMap component in `docs/features/ui-components.md`
+- **Sections Added**:
+  - Component overview and location
+  - Node types and color coding
+  - Usage examples and integration patterns
+  - Performance optimizations
+  - Props interface documentation
+  - Best practices and design principles
+  - Future enhancement ideas
+- **Implementation Details**: Documented integration in LeadDetailPage and DealDetailPage
+- **Related PR**: Integration of RelationshipMap in Lead and Deal detail pages
+
 ### Summary
 Complete refactoring of PipeDesk documentation to reflect current state of the application, removing obsolete information and creating a clear, navigable documentation structure.
 
