@@ -83,8 +83,8 @@ const getDriveApiUrl = (): string => {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
-// Helper function to get the current user's token from Supabase
-const getAuthToken = async (): Promise<string> => {
+// Helper function to get authentication and user info from Supabase
+const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole: string }> => {
   const {
     data: { session },
     error,
@@ -95,26 +95,12 @@ const getAuthToken = async (): Promise<string> => {
     throw new Error(`Authentication error: ${error.message}`);
   }
 
-  if (!session?.access_token) {
+  if (!session?.access_token || !session?.user) {
     throw new Error('No authentication token available. Please sign in.');
   }
 
-  return session.access_token;
-};
-
-// Helper function to get user profile information
-const getUserProfile = async (): Promise<{ userId: string; userRole: string }> => {
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  if (sessionError || !session?.user) {
-    console.error('[DriveClient] Error getting user session:', sessionError);
-    throw new Error('User not authenticated');
-  }
-
   const userId = session.user.id;
+  const token = session.access_token;
 
   // Fetch user profile to get the role
   const { data: profile, error: profileError } = await supabase
@@ -126,10 +112,10 @@ const getUserProfile = async (): Promise<{ userId: string; userRole: string }> =
   if (profileError || !profile) {
     console.error('[DriveClient] Error fetching user profile:', profileError);
     // Default to 'client' role if profile not found
-    return { userId, userRole: 'client' };
+    return { token, userId, userRole: 'client' };
   }
 
-  return { userId, userRole: profile.role || 'client' };
+  return { token, userId, userRole: profile.role || 'client' };
 };
 
 // Helper function to make authenticated requests to Drive API
@@ -138,8 +124,7 @@ const driveApiFetch = async (
   options: RequestInit = {}
 ): Promise<Response> => {
   const baseUrl = getDriveApiUrl();
-  const token = await getAuthToken();
-  const { userId, userRole } = await getUserProfile();
+  const { token, userId, userRole } = await getAuthInfo();
 
   const url = `${baseUrl}${endpoint}`;
   const headers = {
