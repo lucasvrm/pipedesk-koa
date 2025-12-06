@@ -68,6 +68,10 @@ import { toast } from 'sonner'
 import { useOperationTypes } from '@/services/operationTypeService'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
+import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/components/ui/RelationshipMap'
+import { useCompany } from '@/services/companyService'
+import { useDeals } from '@/services/dealService'
+import { useTracks } from '@/services/trackService'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -84,6 +88,11 @@ export default function LeadDetailPage() {
   const { data: users } = useUsers()
   const { data: operationTypes } = useOperationTypes()
   const { data: leadTags } = useEntityTags(id || '', 'lead')
+  
+  // Fetch related data for RelationshipMap
+  const { data: company } = useCompany(lead?.qualifiedCompanyId)
+  const { data: allDeals } = useDeals()
+  const { data: allTracks } = useTracks()
   const tagOps = useTagOperations()
 
   const [qualifyOpen, setQualifyOpen] = useState(false)
@@ -311,6 +320,80 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
 
+  // Build RelationshipMap data
+  const relationshipData = useMemo(() => {
+    if (!lead) return { nodes: [], edges: [] }
+
+    const nodes: RelationshipNode[] = []
+    const edges: RelationshipEdge[] = []
+
+    // Add lead node (always present)
+    nodes.push({
+      id: lead.id,
+      label: lead.legalName,
+      type: 'lead'
+    })
+
+    // Add company node if lead is qualified
+    if (lead.qualifiedCompanyId && company) {
+      nodes.push({
+        id: company.id,
+        label: company.name,
+        type: 'company'
+      })
+      edges.push({
+        from: lead.id,
+        to: company.id
+      })
+
+      // Add deals associated with the company
+      const companyDeals = allDeals?.filter(deal => deal.companyId === company.id) || []
+      companyDeals.forEach(deal => {
+        nodes.push({
+          id: deal.id,
+          label: deal.clientName,
+          type: 'deal'
+        })
+        edges.push({
+          from: company.id,
+          to: deal.id
+        })
+
+        // Add players/tracks for each deal
+        const dealTracks = allTracks?.filter(track => track.masterDealId === deal.id) || []
+        dealTracks.forEach(track => {
+          if (track.playerId) {
+            // Check if player node already exists
+            const existingPlayerNode = nodes.find(n => n.id === track.playerId && n.type === 'player')
+            if (!existingPlayerNode) {
+              nodes.push({
+                id: track.playerId,
+                label: track.playerName,
+                type: 'player'
+              })
+            }
+            edges.push({
+              from: deal.id,
+              to: track.playerId
+            })
+          }
+        })
+      })
+    }
+
+    return { nodes, edges }
+  }, [lead, company, allDeals, allTracks])
+
+  const handleNodeClick = (node: RelationshipNode) => {
+    const routes: Record<typeof node.type, string> = {
+      lead: `/leads/${node.id}`,
+      company: `/companies/${node.id}`,
+      deal: `/deals/${node.id}`,
+      player: `/players/${node.id}`
+    }
+    navigate(routes[node.type])
+  }
+
   const PIPELINE_STAGES = [
     { id: 'new', label: 'Novo', color: 'bg-slate-500' },
     { id: 'contacted', label: 'Contatado', color: 'bg-blue-500' },
@@ -513,6 +596,27 @@ export default function LeadDetailPage() {
                     <Textarea value={lead.description || ''} disabled className="min-h-[110px]" />
                   </CardContent>
                 </Card>
+
+                {/* Relationship Map - Show if we have nodes to display */}
+                {relationshipData.nodes.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Mapa de Relacionamentos</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Visualização da cadeia Lead → Empresa → Negócio → Player
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[400px]">
+                        <RelationshipMap
+                          nodes={relationshipData.nodes}
+                          edges={relationshipData.edges}
+                          onNodeClick={handleNodeClick}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <div className="space-y-4">
