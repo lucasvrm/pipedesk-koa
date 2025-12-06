@@ -128,6 +128,16 @@ export function DealDocumentsList({ dealId }: DealDocumentsListProps) {
     }
   }
 
+  const handleCancelCreateFolder = () => {
+    setCreateFolderOpen(false)
+    setFolderName('')
+  }
+
+  const handleCancelUpload = () => {
+    setUploadOpen(false)
+    setSelectedFile(null)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -279,6 +289,7 @@ export function DealDocumentsList({ dealId }: DealDocumentsListProps) {
                 onChange={(e) => setFolderName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
+                    e.preventDefault()
                     handleCreateFolder()
                   }
                 }}
@@ -289,10 +300,7 @@ export function DealDocumentsList({ dealId }: DealDocumentsListProps) {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => {
-                setCreateFolderOpen(false)
-                setFolderName('')
-              }}
+              onClick={handleCancelCreateFolder}
               disabled={creatingFolder}
             >
               Cancelar
@@ -324,6 +332,7 @@ export function DealDocumentsList({ dealId }: DealDocumentsListProps) {
                 type="file"
                 onChange={handleFileSelect}
                 disabled={uploading}
+                multiple={false}
               />
               {selectedFile && (
                 <div className="text-sm text-muted-foreground">
@@ -335,10 +344,7 @@ export function DealDocumentsList({ dealId }: DealDocumentsListProps) {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => {
-                setUploadOpen(false)
-                setSelectedFile(null)
-              }}
+              onClick={handleCancelUpload}
               disabled={uploading}
             >
               Cancelar

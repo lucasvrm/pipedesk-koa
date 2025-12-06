@@ -383,7 +383,7 @@ export async function createDriveFolderForEntity(
  * @param entityType - Type of entity (e.g., "deal", "lead", "company")
  * @param entityId - ID of the entity
  * @param file - File object to upload
- * @param onProgress - Optional callback for upload progress (0-100)
+ * @param onProgress - Optional callback for upload progress (0-100). Note: Currently only called at 100% after completion. Real-time progress tracking requires implementation of a custom fetch wrapper with ReadableStream or XMLHttpRequest.
  * @returns Promise with uploaded file information
  * @throws {DriveApiError} If the API request fails
  */
