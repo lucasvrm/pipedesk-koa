@@ -143,8 +143,8 @@ export async function listDriveItems(
       limit: limit.toString(),
     });
 
-    // Check if this is an entity-based query (entityId is a number or second param exists and first is entity type)
-    const isEntityQuery = entityId !== undefined && typeof entityId !== 'undefined';
+    // Check if this is an entity-based query (entityId is provided)
+    const isEntityQuery = entityId !== undefined;
     
     if (isEntityQuery) {
       // Entity-based query: /api/drive/items?entityType=deal&entityId=123
