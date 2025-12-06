@@ -180,7 +180,7 @@ export function RelationshipMap({
       .data(simulationNodes)
       .join('g')
       .attr('cursor', 'pointer')
-       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .call(
         d3
           .drag<SVGGElement, SimulationNode>()
@@ -208,7 +208,7 @@ export function RelationshipMap({
       .attr('font-weight', 500)
 
     // Node event handlers
-     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     node
       .on('mouseenter', function (this: any, _event: any, d: any) {
         setHoveredNode(d.id)
