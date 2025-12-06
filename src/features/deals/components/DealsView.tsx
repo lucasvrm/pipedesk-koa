@@ -39,6 +39,8 @@ import { DealsMetrics } from './DealsMetrics'
 import { DealPreviewSheet } from './DealPreviewSheet'
 import DealsList from './DealsList'
 import { PageContainer } from '@/components/PageContainer'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { useDealQuickActions } from '@/hooks/useQuickActions'
 
 // --- Tipos Locais ---
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
@@ -443,12 +445,14 @@ export default function DealsView() {
                           className="font-normal rounded-full px-2"
                         />
                       </TableCell>
-                      <TableCell className="text-right align-top">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); setTagsOpen(true); setSelectedDeal(deal); }}><TagIcon size={16} /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(deal); }}><PencilSimple size={16} /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); setItemToDelete(deal.id); setDeleteDialogOpen(true); }}><Trash size={16} /></Button>
-                        </div>
+                      <TableCell className="text-right align-top" onClick={e => e.stopPropagation()}>
+                        <QuickActionsMenu
+                          actions={useDealQuickActions({
+                            deal,
+                            onEdit: () => handleEdit(deal),
+                            onManageTags: () => { setTagsOpen(true); setSelectedDeal(deal); },
+                          })}
+                        />
                       </TableCell>
                     </TableRow>
                   )

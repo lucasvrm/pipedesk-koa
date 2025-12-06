@@ -57,6 +57,8 @@ import { formatCurrency, formatDate } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { useCompanyQuickActions } from '@/hooks/useQuickActions'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -548,29 +550,12 @@ export default function CompaniesListPage() {
                         </TableCell>
 
                         <TableCell>
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => navigate(`/companies/${company.id}`)}
-                            >
-                              <PencilSimple className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive/90"
-                              onClick={() => {
-                                setItemToDelete(company.id)
-                                setIsDeleteAlertOpen(true)
-                              }}
-                              title="Excluir Empresa"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <QuickActionsMenu
+                            actions={useCompanyQuickActions({
+                              company,
+                              onEdit: () => navigate(`/companies/${company.id}`),
+                            })}
+                          />
                         </TableCell>
                       </TableRow>
                     );
