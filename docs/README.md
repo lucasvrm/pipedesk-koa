@@ -9,9 +9,11 @@ PipeDesk is a modern Deal Flow Management Platform designed for investment banki
 ## 🚀 Quick Links
 
 - **New to PipeDesk?** Start with [Installation Guide](getting-started/installation.md)
+- **What's implemented?** See [Features Status](FEATURES_STATUS.md)
+- **What's planned?** Check [Roadmap](ROADMAP.md)
 - **Want to contribute?** Read [Contributing Guidelines](CONTRIBUTING.md)
 - **Security concerns?** Check [Security Policy](SECURITY.md)
-- **Testing the app?** See [Testing Guide](development/testing.md)
+- **Testing the app?** See [Testing Guide](TESTING.md)
 
 ## 📚 Documentation Structure
 
@@ -20,78 +22,106 @@ PipeDesk is a modern Deal Flow Management Platform designed for investment banki
 - [Quick Start Guide](getting-started/quick-start.md) - Get up and running in minutes
 - [Configuration](getting-started/configuration.md) - Environment variables and Supabase setup
 
-### Features
-Core features of PipeDesk:
-- [Deals Management](features/deals.md) - Master Deals and Player Tracks
-- [Companies & Contacts](features/companies-contacts.md) - Relationship management
-- [Leads](features/leads.md) - Lead capture and qualification
-- [Tasks](features/tasks.md) - Task management with dependencies
-- [Analytics](features/analytics.md) - Dashboard and reporting
-- [RBAC & Permissions](features/rbac.md) - Role-based access control
-- [Google Integration](features/google-integration.md) - Google Workspace sync
-- [Cross-Tagging](features/cross-tagging.md) - Organizational tagging system
-- [Audit Log](features/audit-log.md) - Activity tracking and compliance
+### Core Documentation
+- [Features Status](FEATURES_STATUS.md) - ✅ **O que está implementado** (lista completa com status real)
+- [Roadmap](ROADMAP.md) - 📋 **O que está planejado** (features futuras por prioridade)
+- [Documentation Audit](DOCUMENTATION_AUDIT.md) - 🔍 Auditoria completa da documentação
+- [Product Requirements](PRD.md) - Requisitos do produto (⚠️ precisa atualização)
+- [Current Status](CURRENT_STATUS.md) - Status geral do projeto (⚠️ precisa atualização)
+
+### Features (Implemented)
+Documentação de features implementadas:
+- [Deals Management](features/deals.md) - ✅ Master Deals e Player Tracks (NOVO!)
+- [Companies & Contacts](features/companies-contacts.md) - ✅ CRM completo (NOVO!)
+- [RBAC & Permissions](features/rbac.md) - ✅ Role-based access control completo
+- [Cross-Tagging Guide](CROSS_TAGGING_GUIDE.md) - ✅ Sistema de multi-homing (mover para features/)
+- [Task Management](TASK_MANAGEMENT_GUIDE.md) - ✅ Gestão de tasks (mover para features/)
+- [Audit Log](VDR_AUDIT_LOG_GUIDE.md) - ✅ Activity tracking (mover para features/)
+- [Leads Schema](leads-schema.md) - ✅ Schema de leads (expandir e mover para features/)
+
+### Features (Need Documentation)
+Features implementadas mas sem documentação:
+- ~~Deals Management~~ - ✅ CRIADO: `features/deals.md`
+- ~~Companies Management~~ - ✅ CRIADO: `features/companies-contacts.md`
+- ~~Contacts Management~~ - ✅ CRIADO: `features/companies-contacts.md`
+- Analytics Dashboard - ❌ Precisa criar `features/analytics.md`
+- Custom Fields - ❌ Precisa criar `features/custom-fields.md`
+- Google Integration - ❌ Precisa criar `features/google-integration.md`
+- Document Management - ❌ Precisa criar `features/dataroom.md`
+- Notifications & Inbox - ❌ Precisa criar `features/inbox.md`
 
 ### Development
 For developers and contributors:
-- [Architecture](development/architecture.md) - System design and structure
-- [Database Schema](development/database-schema.md) - Supabase tables and relationships
-- [Testing](development/testing.md) - Testing strategy and guidelines
-- [Troubleshooting](development/troubleshooting.md) - Common issues and solutions
+- [Testing Guide](TESTING.md) - Testing strategy and guidelines
+- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
+- [Security Policy](SECURITY.md) - Security guidelines
+- Architecture - ❌ Precisa criar `development/architecture.md`
+- Database Schema - ❌ Precisa criar `development/database-schema.md`
+- Troubleshooting - ❌ Precisa criar `development/troubleshooting.md`
 
 ### API Reference
-- [Supabase API](api/supabase-api.md) - Database API and RLS policies
+- Supabase API - ❌ Precisa criar `api/supabase-api.md`
 
 ## 🎯 Key Features
 
-### ✅ Implemented Features
+### ✅ Core Features (Implementadas)
 
-1. **Master Deal Management**
-   - Create and track parent-level deals
-   - AI-powered descriptions
-   - Volume, operation type, and deadline tracking
-   - Status management (active, cancelled, concluded)
+**Deal Flow Management:**
+- Master Deal Management - Negócios principais com volume, tipo, deadline
+- Player Track System - Negociações individuais com probability tracking
+- Multi-View Workspace - Kanban, List, Gantt, Calendar views
+- Master Matrix View - Grid visualization de deals x players
 
-2. **Player Track System**
-   - Child entities for individual negotiations
-   - Stage-based probability calculations
-   - Weighted forecast calculations
-   - Win/cancel cascading logic
+**CRM:**
+- Companies Management - Gestão de empresas com types e relationship levels
+- Contacts Management - Gestão de contatos com linking para companies
+- Leads Management - Pipeline de qualificação de leads
+- Lead Qualification - Workflow de lead → company + deal
 
-3. **Task Dependencies & Milestones**
-   - Task creation with dependency linking
-   - Milestone markers
-   - Circular dependency detection
-   - Visual blocked indicators
+**Task & Project Management:**
+- Task Management System - Tasks com dependências e milestones
+- Cross-Tagging (Multi-Homing) - Organização flexível com folders
+- Phase Validation - Regras configuráveis bloqueando transitions
+- Bulk Operations - ❌ **Não implementado** (documentado incorretamente no PRD)
 
-4. **Role-Based Access Control (RBAC)**
-   - Four-tier permission system (Admin, Analyst, New Business, Client)
-   - Magic link authentication
-   - Email invitation system
-   - Player name anonymization for clients
+**Analytics & Reporting:**
+- Analytics Dashboard - Métricas em tempo real
+- Pipeline Metrics - Volume, conversion rates, weighted forecasts
+- Time Tracking - Time-in-stage e SLA monitoring
+- Team Analytics - Workload distribution
 
-5. **Multi-View Workspace**
-   - Kanban board with drag-and-drop
-   - List view with inline editing
-   - Gantt chart with D3 timeline
-   - Calendar view for deadlines
+**Security & Governance:**
+- RBAC (Role-Based Access Control) - 4 níveis de permissão
+- RLS Policies - Row-level security no Supabase
+- Player Anonymization - Proteção de dados para clientes
+- Audit Trail - Log completo de atividades
 
-6. **Advanced Analytics**
-   - Real-time pipeline metrics
-   - Time-in-stage tracking
-   - SLA monitoring
-   - Team workload distribution
+**Collaboration:**
+- Comments System - Comentários com @mentions
+- Notifications - In-app notification center
+- Email Digest - ❌ **Não implementado**
+- Q&A System - 🔒 **Schema existe, UI não implementada**
 
-7. **Google Workspace Integration**
-   - OAuth connection management
-   - Drive folder automation
-   - Calendar sync
-   - Gmail thread sync (beta)
+**Administration:**
+- User Management - CRUD de usuários e roles
+- Custom Fields - Campos customizáveis por entity type
+- Pipeline Settings - Configuração de stages
+- Tag Settings - Gestão de tags organizacionais
 
-8. **Leads & Contact Management**
-   - Lead capture and qualification
-   - Contact relationship tracking
-   - Company profiles
+### ⚠️ Features Parcialmente Implementadas
+
+1. **Google Workspace Integration** - OAuth e schema existem, funcionalidades completas incertas
+2. **AI-Powered Intelligence** - Componente existe, integração LLM não clara
+3. **Document Management** - DataRoom existe, funcionalidades completas incertas
+
+### ❌ Features Não Implementadas (mas documentadas como implementadas)
+
+1. **Global Search** - Não encontrado no código
+2. **Bulk Operations** - Não encontrado no código
+3. **File Upload Completo** - Parcialmente implementado
+4. **Email Notifications** - Inbox existe, email sending não
+
+**Ver lista completa:** [FEATURES_STATUS.md](FEATURES_STATUS.md)
 
 ## 🏗️ Technical Stack
 
@@ -154,9 +184,20 @@ See [Testing Guide](development/testing.md) for more information.
 ## 📊 Project Status
 
 **Current Version**: 0.3.0  
-**Overall Completion**: ~85%
+**Features Status:**
+- ✅ Implementadas: 22/30 (73%)
+- ⚠️ Parciais: 3/30 (10%)
+- ❌ Não Implementadas: 5/30 (17%)
 
-See [CURRENT_STATUS.md](CURRENT_STATUS.md) for detailed status information.
+**Documentação:**
+- ✅ Documentos Corretos: 8/19 (42%)
+- ⚠️ Documentos Desatualizados: 6/19 (32%)
+- ❌ Features sem Docs: 12 features
+
+**Ver detalhes:**
+- [FEATURES_STATUS.md](FEATURES_STATUS.md) - Status detalhado de cada feature
+- [ROADMAP.md](ROADMAP.md) - Roadmap de features planejadas
+- [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md) - Auditoria completa
 
 ## 🤝 Contributing
 
