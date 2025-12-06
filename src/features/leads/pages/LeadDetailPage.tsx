@@ -326,6 +326,7 @@ export default function LeadDetailPage() {
 
     const nodes: RelationshipNode[] = []
     const edges: RelationshipEdge[] = []
+    const addedPlayerIds = new Set<string>() // Track added players for O(1) lookup
 
     // Add lead node (always present)
     nodes.push({
@@ -362,16 +363,15 @@ export default function LeadDetailPage() {
         // Add players/tracks for each deal
         const dealTracks = allTracks?.filter(track => track.masterDealId === deal.id) || []
         dealTracks.forEach(track => {
+          if (track.playerId && !addedPlayerIds.has(track.playerId)) {
+            addedPlayerIds.add(track.playerId)
+            nodes.push({
+              id: track.playerId,
+              label: track.playerName,
+              type: 'player'
+            })
+          }
           if (track.playerId) {
-            // Check if player node already exists
-            const existingPlayerNode = nodes.find(n => n.id === track.playerId && n.type === 'player')
-            if (!existingPlayerNode) {
-              nodes.push({
-                id: track.playerId,
-                label: track.playerName,
-                type: 'player'
-              })
-            }
             edges.push({
               from: deal.id,
               to: track.playerId
@@ -597,8 +597,8 @@ export default function LeadDetailPage() {
                   </CardContent>
                 </Card>
 
-                {/* Relationship Map - Show if we have nodes to display */}
-                {relationshipData.nodes.length > 0 && (
+                {/* Relationship Map - Show only if we have relationships beyond the current entity */}
+                {relationshipData.nodes.length > 1 && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Mapa de Relacionamentos</CardTitle>
