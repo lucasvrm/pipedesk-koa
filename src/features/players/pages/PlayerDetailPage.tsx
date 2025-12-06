@@ -53,6 +53,7 @@ import {
 import { formatCurrency } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/PageContainer'
+import { EmptyState } from '@/components/EmptyState'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -809,7 +810,7 @@ export default function PlayerDetailPage() {
                 <CardContent>
                   {isLoadingTracks ? (
                     <div className="text-center py-8 text-muted-foreground">Carregando deals...</div>
-                  ) : (
+                  ) : processedDeals.length > 0 ? (
                     <div className="rounded-md border">
                       <Table>
                         <TableHeader>
@@ -842,7 +843,7 @@ export default function PlayerDetailPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {processedDeals.length > 0 ? processedDeals.map((track) => (
+                          {processedDeals.map((track) => (
                             <TableRow 
                                 key={track.id} 
                                 className="cursor-pointer hover:bg-muted/50"
@@ -879,16 +880,20 @@ export default function PlayerDetailPage() {
                                 </Button>
                               </TableCell>
                             </TableRow>
-                          )) : (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                Nenhum deal vinculado a este player.
-                              </TableCell>
-                            </TableRow>
-                          )}
+                          ))}
                         </TableBody>
                       </Table>
                     </div>
+                  ) : (
+                    <EmptyState
+                      icon={<Buildings className="h-12 w-12" />}
+                      title="Nenhum deal vinculado"
+                      description="Vincule deals existentes ou crie novos para apresentar a este player."
+                      primaryAction={{
+                        label: "Vincular Deal",
+                        onClick: () => setIsLinkDealModalOpen(true)
+                      }}
+                    />
                   )}
                 </CardContent>
               </Card>

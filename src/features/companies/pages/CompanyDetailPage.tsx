@@ -34,6 +34,7 @@ import { Company, COMPANY_TYPE_LABELS, CompanyType, STATUS_LABELS } from '@/lib/
 import { formatCurrency } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
 import DocumentManager from '@/components/DocumentManager'
+import { EmptyState } from '@/components/EmptyState'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -278,38 +279,42 @@ export default function CompanyDetailPage() {
                   <CardDescription>Histórico de oportunidades vinculadas.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome do Deal</TableHead>
-                        <TableHead>Volume</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {companyDeals.length > 0 ? companyDeals.map(deal => (
-                        <TableRow key={deal.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/deals/${deal.id}`)}>
-                          <TableCell className="font-medium">{deal.clientName}</TableCell>
-                          <TableCell>{formatCurrency(deal.volume)}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant="secondary" 
-                              className={
-                                deal.status === 'active' ? 'bg-green-100 text-green-700' : 
-                                deal.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                              }
-                            >
-                              {STATUS_LABELS[deal.status]}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      )) : (
+                  {companyDeals.length > 0 ? (
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Nenhum deal encontrado.</TableCell>
+                          <TableHead>Nome do Deal</TableHead>
+                          <TableHead>Volume</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {companyDeals.map(deal => (
+                          <TableRow key={deal.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/deals/${deal.id}`)}>
+                            <TableCell className="font-medium">{deal.clientName}</TableCell>
+                            <TableCell>{formatCurrency(deal.volume)}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant="secondary" 
+                                className={
+                                  deal.status === 'active' ? 'bg-green-100 text-green-700' : 
+                                  deal.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                }
+                              >
+                                {STATUS_LABELS[deal.status]}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <EmptyState
+                      icon={<ChartBar className="h-12 w-12" />}
+                      title="Nenhum deal encontrado"
+                      description="Esta empresa ainda não possui deals vinculados."
+                    />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
