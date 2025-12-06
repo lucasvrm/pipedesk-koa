@@ -99,58 +99,24 @@ export default function DealDetailPage() {
   const [playersView, setPlayersView] = useState<'active' | 'dropped'>('active')
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
 
-  const handleOpenAida = () => {
-    if (!deal) {
-      toast.error('Negócio não carregado. Tente novamente.')
-      return
-    }
+  // Memoize allDealTracks to ensure stable reference for relationshipData dependency
+  // Must be called before any early returns to follow Rules of Hooks
+  const allDealTracks = useMemo(() => 
+    (playerTracks || []).filter(t => t.masterDealId === deal?.id),
+    [playerTracks, deal?.id]
+  )
+  
+  const activeTracks = useMemo(() => 
+    allDealTracks.filter(t => t.status !== 'cancelled'),
+    [allDealTracks]
+  )
+  
+  const droppedTracks = useMemo(() => 
+    allDealTracks.filter(t => t.status === 'cancelled'),
+    [allDealTracks]
+  )
 
-    const projectId = deal.company?.id || deal.companyId
-
-    if (!projectId) {
-      toast.error('Vincule uma empresa ao negócio para abrir a Análise AIDA.')
-      return
-    }
-
-    navigate(`/aida/${projectId}`)
-  }
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList>
-            <Skeleton className="h-5 w-24" />
-          </BreadcrumbList>
-        </Breadcrumb>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-96 w-full" />
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        </div>
-      </PageContainer>
-    )
-  }
-
-  if (!deal) {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold mb-2">Negócio não encontrado</h2>
-        <Button onClick={() => navigate('/deals')}>Voltar para Lista</Button>
-      </div>
-    )
-  }
-
-  const allDealTracks = (playerTracks || []).filter(t => t.masterDealId === deal.id)
-  const activeTracks = allDealTracks.filter(t => t.status !== 'cancelled')
-  const droppedTracks = allDealTracks.filter(t => t.status === 'cancelled')
-
-  // Build RelationshipMap data
+  // Build RelationshipMap data - Must be called before any early returns to follow Rules of Hooks
   const relationshipData = useMemo(() => {
     if (!deal) return { nodes: [], edges: [] }
 
@@ -222,6 +188,53 @@ export default function DealDetailPage() {
       player: `/players/${node.id}`
     }
     navigate(routes[node.type])
+  }
+
+  const handleOpenAida = () => {
+    if (!deal) {
+      toast.error('Negócio não carregado. Tente novamente.')
+      return
+    }
+
+    const projectId = deal.company?.id || deal.companyId
+
+    if (!projectId) {
+      toast.error('Vincule uma empresa ao negócio para abrir a Análise AIDA.')
+      return
+    }
+
+    navigate(`/aida/${projectId}`)
+  }
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <Skeleton className="h-5 w-24" />
+          </BreadcrumbList>
+        </Breadcrumb>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!deal) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold mb-2">Negócio não encontrado</h2>
+        <Button onClick={() => navigate('/deals')}>Voltar para Lista</Button>
+      </div>
+    )
   }
 
   const handleUnassignTag = (tagId: string) => {
