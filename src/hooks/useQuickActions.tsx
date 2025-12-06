@@ -1,13 +1,6 @@
-import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useUpdateDeal, useDeleteDeal } from '@/services/dealService'
-import { useUpdateTrack, useDeleteTrack } from '@/services/trackService'
-import { useUpdateTask, useDeleteTask } from '@/services/taskService'
-import { useDeleteCompany } from '@/services/companyService'
-import { useDeleteContact } from '@/services/contactService'
-import { useUpdateLead, useDeleteLead } from '@/services/leadService'
+import { NavigateFunction } from 'react-router-dom'
+import { UseMutationResult } from '@tanstack/react-query'
 import { logActivity } from '@/services/activityService'
-import { useAuth } from '@/contexts/AuthContext'
 import { QuickAction } from '@/components/QuickActionsMenu'
 import {
   PencilSimple,
@@ -45,8 +38,12 @@ import {
 } from '@/lib/types'
 import { toast } from 'sonner'
 
-interface UseDealQuickActionsProps {
+interface GetDealQuickActionsProps {
   deal: MasterDeal
+  navigate: NavigateFunction
+  updateDeal: UseMutationResult<any, Error, { dealId: string; updates: any }, unknown>
+  deleteDeal: UseMutationResult<any, Error, string, unknown>
+  profileId?: string
   onEdit?: () => void
   onAddPlayer?: () => void
   onGenerateDoc?: () => void
@@ -56,22 +53,22 @@ interface UseDealQuickActionsProps {
 }
 
 /**
- * Hook that returns quick actions for a Deal entity
+ * Factory function that returns quick actions for a Deal entity
+ * Note: This is NOT a React hook - call it inside your component render
  */
-export function useDealQuickActions({
+export function getDealQuickActions({
   deal,
+  navigate,
+  updateDeal,
+  deleteDeal,
+  profileId,
   onEdit,
   onAddPlayer,
   onGenerateDoc,
   onManageTags,
   onViewAnalytics,
   onDuplicate,
-}: UseDealQuickActionsProps): QuickAction[] {
-  const navigate = useNavigate()
-  const { profile } = useAuth()
-  const updateDeal = useUpdateDeal()
-  const deleteDeal = useDeleteDeal()
-
+}: GetDealQuickActionsProps): QuickAction[] {
   const handleStatusChange = (newStatus: DealStatus) => {
     updateDeal.mutate(
       {
@@ -81,12 +78,12 @@ export function useDealQuickActions({
       {
         onSuccess: () => {
           toast.success(`Status alterado para ${STATUS_LABELS[newStatus]}`)
-          if (profile) {
+          if (profileId) {
             logActivity(
               deal.id,
               'deal',
               `Status alterado para ${STATUS_LABELS[newStatus]}`,
-              profile.id
+              profileId
             )
           }
         },
@@ -107,8 +104,7 @@ export function useDealQuickActions({
     })
   }
 
-  return useMemo<QuickAction[]>(
-    () => [
+  return [
       {
         id: 'edit',
         label: 'Editar Negócio',
@@ -201,15 +197,17 @@ export function useDealQuickActions({
         onClick: handleDelete,
         variant: 'destructive',
       },
-    ],
-    [deal, onEdit, onAddPlayer, onGenerateDoc, onManageTags, onViewAnalytics, onDuplicate]
-  )
+    ]
 }
 
 // ===== TRACK/PLAYER QUICK ACTIONS =====
 
-interface UseTrackQuickActionsProps {
+interface GetTrackQuickActionsProps {
   track: PlayerTrack
+  navigate: NavigateFunction
+  updateTrack: UseMutationResult<any, Error, { trackId: string; updates: any }, unknown>
+  deleteTrack: UseMutationResult<any, Error, string, unknown>
+  profileId?: string
   onEdit?: () => void
   onAddTask?: () => void
   onUpdateProbability?: () => void
@@ -217,20 +215,19 @@ interface UseTrackQuickActionsProps {
 }
 
 /**
- * Hook that returns quick actions for a Track/Player entity
+ * Factory function that returns quick actions for a Track/Player entity
  */
-export function useTrackQuickActions({
+export function getTrackQuickActions({
   track,
+  navigate,
+  updateTrack,
+  deleteTrack,
+  profileId,
   onEdit,
   onAddTask,
   onUpdateProbability,
   onAssignResponsible,
-}: UseTrackQuickActionsProps): QuickAction[] {
-  const navigate = useNavigate()
-  const { profile } = useAuth()
-  const updateTrack = useUpdateTrack()
-  const deleteTrack = useDeleteTrack()
-
+}: GetTrackQuickActionsProps): QuickAction[] {
   const handleStageChange = (newStage: string) => {
     updateTrack.mutate(
       {
@@ -240,7 +237,7 @@ export function useTrackQuickActions({
       {
         onSuccess: () => {
           toast.success(`Stage alterado para ${newStage}`)
-          if (profile) logActivity(track.id, 'track', `Stage alterado para ${newStage}`, profile.id)
+          if (profileId) logActivity(track.id, 'track', `Stage alterado para ${newStage}`, profileId)
         },
         onError: () => toast.error('Erro ao atualizar stage'),
       }
@@ -256,7 +253,7 @@ export function useTrackQuickActions({
       {
         onSuccess: () => {
           toast.success('Player marcado como Ganho!')
-          if (profile) logActivity(track.id, 'track', 'Player marcado como ganho', profile.id)
+          if (profileId) logActivity(track.id, 'track', 'Player marcado como ganho', profileId)
         },
         onError: () => toast.error('Erro ao marcar como ganho'),
       }
@@ -272,7 +269,7 @@ export function useTrackQuickActions({
       {
         onSuccess: () => {
           toast.success('Player marcado como Perdido')
-          if (profile) logActivity(track.id, 'track', 'Player marcado como perdido', profile.id)
+          if (profileId) logActivity(track.id, 'track', 'Player marcado como perdido', profileId)
         },
         onError: () => toast.error('Erro ao marcar como perdido'),
       }
@@ -290,8 +287,7 @@ export function useTrackQuickActions({
     })
   }
 
-  return useMemo<QuickAction[]>(
-    () => [
+  return [
       {
         id: 'edit',
         label: 'Editar Player',
@@ -374,15 +370,16 @@ export function useTrackQuickActions({
         onClick: handleDelete,
         variant: 'destructive',
       },
-    ],
-    [track, onEdit, onAddTask, onUpdateProbability, onAssignResponsible]
-  )
+    ]
 }
 
 // ===== TASK QUICK ACTIONS =====
 
-interface UseTaskQuickActionsProps {
+interface GetTaskQuickActionsProps {
   task: Task
+  updateTask: UseMutationResult<any, Error, { taskId: string; updates: any }, unknown>
+  deleteTask: UseMutationResult<any, Error, string, unknown>
+  profileId?: string
   onEdit?: () => void
   onSetDueDate?: () => void
   onAddDependency?: () => void
@@ -390,19 +387,18 @@ interface UseTaskQuickActionsProps {
 }
 
 /**
- * Hook that returns quick actions for a Task entity
+ * Factory function that returns quick actions for a Task entity
  */
-export function useTaskQuickActions({
+export function getTaskQuickActions({
   task,
+  updateTask,
+  deleteTask,
+  profileId,
   onEdit,
   onSetDueDate,
   onAddDependency,
   onReassign,
-}: UseTaskQuickActionsProps): QuickAction[] {
-  const { profile } = useAuth()
-  const updateTask = useUpdateTask()
-  const deleteTask = useDeleteTask()
-
+}: GetTaskQuickActionsProps): QuickAction[] {
   const handleToggleComplete = () => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed'
     updateTask.mutate(
@@ -413,7 +409,7 @@ export function useTaskQuickActions({
       {
         onSuccess: () => {
           toast.success(newStatus === 'completed' ? 'Tarefa concluída!' : 'Tarefa reaberta')
-          if (profile) logActivity(task.id, 'task', `Status alterado para ${newStatus}`, profile.id)
+          if (profileId) logActivity(task.id, 'task', `Status alterado para ${newStatus}`, profileId)
         },
         onError: () => toast.error('Erro ao atualizar tarefa'),
       }
@@ -429,7 +425,7 @@ export function useTaskQuickActions({
       {
         onSuccess: () => {
           toast.success('Status atualizado')
-          if (profile) logActivity(task.id, 'task', `Status alterado para ${newStatus}`, profile.id)
+          if (profileId) logActivity(task.id, 'task', `Status alterado para ${newStatus}`, profileId)
         },
         onError: () => toast.error('Erro ao atualizar status'),
       }
@@ -445,7 +441,7 @@ export function useTaskQuickActions({
       {
         onSuccess: () => {
           toast.success('Prioridade atualizada')
-          if (profile) logActivity(task.id, 'task', `Prioridade alterada para ${newPriority}`, profile.id)
+          if (profileId) logActivity(task.id, 'task', `Prioridade alterada para ${newPriority}`, profileId)
         },
         onError: () => toast.error('Erro ao atualizar prioridade'),
       }
@@ -475,8 +471,7 @@ export function useTaskQuickActions({
     })
   }
 
-  return useMemo<QuickAction[]>(
-    () => [
+  return [
       {
         id: 'toggle-complete',
         label: task.status === 'completed' ? 'Marcar como Incompleta' : 'Marcar como Completa',
@@ -558,15 +553,15 @@ export function useTaskQuickActions({
         onClick: handleDelete,
         variant: 'destructive',
       },
-    ],
-    [task, onEdit, onSetDueDate, onAddDependency, onReassign]
-  )
+    ]
 }
 
 // ===== COMPANY QUICK ACTIONS =====
 
-interface UseCompanyQuickActionsProps {
+interface GetCompanyQuickActionsProps {
   company: Company
+  navigate: NavigateFunction
+  deleteCompany: UseMutationResult<any, Error, string, unknown>
   onEdit?: () => void
   onAddContact?: () => void
   onCreateDeal?: () => void
@@ -574,18 +569,17 @@ interface UseCompanyQuickActionsProps {
 }
 
 /**
- * Hook that returns quick actions for a Company entity
+ * Factory function that returns quick actions for a Company entity
  */
-export function useCompanyQuickActions({
+export function getCompanyQuickActions({
   company,
+  navigate,
+  deleteCompany,
   onEdit,
   onAddContact,
   onCreateDeal,
   onManageTags,
-}: UseCompanyQuickActionsProps): QuickAction[] {
-  const navigate = useNavigate()
-  const deleteCompany = useDeleteCompany()
-
+}: GetCompanyQuickActionsProps): QuickAction[] {
   const handleDelete = () => {
     if (!confirm('Tem certeza que deseja excluir esta empresa?')) return
     deleteCompany.mutate(company.id, {
@@ -597,8 +591,7 @@ export function useCompanyQuickActions({
     })
   }
 
-  return useMemo<QuickAction[]>(
-    () => [
+  return [
       {
         id: 'edit',
         label: 'Editar Empresa',
@@ -650,32 +643,31 @@ export function useCompanyQuickActions({
         onClick: handleDelete,
         variant: 'destructive',
       },
-    ],
-    [company, onEdit, onAddContact, onCreateDeal, onManageTags]
-  )
+    ]
 }
 
 // ===== CONTACT QUICK ACTIONS =====
 
-interface UseContactQuickActionsProps {
+interface GetContactQuickActionsProps {
   contact: Contact
+  navigate: NavigateFunction
+  deleteContact: UseMutationResult<any, Error, string, unknown>
   onEdit?: () => void
   onLinkToCompany?: () => void
   onAddToLead?: () => void
 }
 
 /**
- * Hook that returns quick actions for a Contact entity
+ * Factory function that returns quick actions for a Contact entity
  */
-export function useContactQuickActions({
+export function getContactQuickActions({
   contact,
+  navigate,
+  deleteContact,
   onEdit,
   onLinkToCompany,
   onAddToLead,
-}: UseContactQuickActionsProps): QuickAction[] {
-  const navigate = useNavigate()
-  const deleteContact = useDeleteContact()
-
+}: GetContactQuickActionsProps): QuickAction[] {
   const handleSendEmail = () => {
     if (contact.email) {
       window.location.href = `mailto:${contact.email}`
@@ -703,8 +695,7 @@ export function useContactQuickActions({
     })
   }
 
-  return useMemo<QuickAction[]>(
-    () => [
+  return [
       {
         id: 'edit',
         label: 'Editar Contato',
@@ -757,15 +748,17 @@ export function useContactQuickActions({
         onClick: handleDelete,
         variant: 'destructive',
       },
-    ],
-    [contact, onEdit, onLinkToCompany, onAddToLead]
-  )
+    ]
 }
 
 // ===== LEAD QUICK ACTIONS =====
 
-interface UseLeadQuickActionsProps {
+interface GetLeadQuickActionsProps {
   lead: Lead
+  navigate: NavigateFunction
+  updateLead: UseMutationResult<any, Error, { leadId: string; updates: any }, unknown>
+  deleteLead: UseMutationResult<any, Error, string, unknown>
+  profileId?: string
   onEdit?: () => void
   onQualify?: () => void
   onAddContact?: () => void
@@ -775,22 +768,21 @@ interface UseLeadQuickActionsProps {
 }
 
 /**
- * Hook that returns quick actions for a Lead entity
+ * Factory function that returns quick actions for a Lead entity
  */
-export function useLeadQuickActions({
+export function getLeadQuickActions({
   lead,
+  navigate,
+  updateLead,
+  deleteLead,
+  profileId,
   onEdit,
   onQualify,
   onAddContact,
   onAssignOwner,
   onAddMember,
   onManageTags,
-}: UseLeadQuickActionsProps): QuickAction[] {
-  const navigate = useNavigate()
-  const { profile } = useAuth()
-  const updateLead = useUpdateLead()
-  const deleteLead = useDeleteLead()
-
+}: GetLeadQuickActionsProps): QuickAction[] {
   const handleStatusChange = (newStatus: LeadStatus) => {
     updateLead.mutate(
       {
@@ -800,8 +792,8 @@ export function useLeadQuickActions({
       {
         onSuccess: () => {
           toast.success(`Status alterado para ${LEAD_STATUS_LABELS[newStatus]}`)
-          if (profile) {
-            logActivity(lead.id, 'lead', `Status alterado para ${LEAD_STATUS_LABELS[newStatus]}`, profile.id)
+          if (profileId) {
+            logActivity(lead.id, 'lead', `Status alterado para ${LEAD_STATUS_LABELS[newStatus]}`, profileId)
           }
         },
         onError: () => toast.error('Erro ao atualizar status'),
@@ -820,8 +812,7 @@ export function useLeadQuickActions({
     })
   }
 
-  return useMemo<QuickAction[]>(
-    () => [
+  return [
       {
         id: 'qualify',
         label: 'Qualificar Lead',
@@ -898,7 +889,5 @@ export function useLeadQuickActions({
         onClick: handleDelete,
         variant: 'destructive',
       },
-    ],
-    [lead, onEdit, onQualify, onAddContact, onAssignOwner, onAddMember, onManageTags]
-  )
+    ]
 }

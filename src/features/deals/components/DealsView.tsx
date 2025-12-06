@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDeals, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
+import { useDeals, useUpdateDeal, useDeleteDeal, useDeleteDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
 import { useUsers } from '@/services/userService'
 import { useStages } from '@/services/pipelineService'
@@ -40,7 +40,8 @@ import { DealPreviewSheet } from './DealPreviewSheet'
 import DealsList from './DealsList'
 import { PageContainer } from '@/components/PageContainer'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
-import { useDealQuickActions } from '@/hooks/useQuickActions'
+import { getDealQuickActions } from '@/hooks/useQuickActions'
+import { useAuth } from '@/contexts/AuthContext'
 
 // --- Tipos Locais ---
 type SortKey = 'clientName' | 'companyName' | 'volume' | 'status' | 'operationType' | 'trackStatus';
@@ -72,6 +73,11 @@ export default function DealsView() {
   const { data: stages = [] } = useStages()
   const { data: tags = [] } = useTags('deal')
   const { data: settings } = useSettings()
+  const { profile } = useAuth()
+  
+  // Mutations for quick actions
+  const updateDealMutation = useUpdateDeal()
+  const deleteDealMutation = useDeleteDeal()
 
   // State for filters
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
@@ -447,8 +453,12 @@ export default function DealsView() {
                       </TableCell>
                       <TableCell className="text-right align-top" onClick={e => e.stopPropagation()}>
                         <QuickActionsMenu
-                          actions={useDealQuickActions({
+                          actions={getDealQuickActions({
                             deal,
+                            navigate,
+                            updateDeal: updateDealMutation,
+                            deleteDeal: deleteDealMutation,
+                            profileId: profile?.id,
                             onEdit: () => handleEdit(deal),
                             onManageTags: () => { setTagsOpen(true); setSelectedDeal(deal); },
                           })}
