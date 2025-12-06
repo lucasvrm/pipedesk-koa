@@ -19,8 +19,19 @@ export interface TimelineItem {
 
 export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead' | 'company') {
   // Fetch data
-  const { data: comments, isLoading: commentsLoading } = useComments(entityId, entityType)
-  const { data: activities, isLoading: activitiesLoading } = useActivities(entityId, entityType)
+  const { 
+    data: comments, 
+    isLoading: commentsLoading, 
+    error: commentsError,
+    refetch: refetchComments 
+  } = useComments(entityId, entityType)
+  
+  const { 
+    data: activities, 
+    isLoading: activitiesLoading,
+    error: activitiesError,
+    refetch: refetchActivities
+  } = useActivities(entityId, entityType)
 
   const timelineItems = useMemo(() => {
     const items: TimelineItem[] = []
@@ -28,10 +39,15 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
     // Process Comments
     if (comments) {
       comments.forEach(c => {
+        const timestamp = c.createdAt || c.created_at
+        if (!timestamp) {
+          console.warn('Comment missing timestamp:', c.id)
+        }
+        
         items.push({
           id: c.id,
           type: 'comment',
-          date: c.createdAt || c.created_at,
+          date: timestamp || new Date(0).toISOString(), // Use epoch time for missing timestamps
           author: {
             name: c.author?.name || 'Usuário',
             avatar: c.author?.avatar
@@ -72,8 +88,14 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [comments, activities])
 
+  const refetch = async () => {
+    await Promise.all([refetchComments(), refetchActivities()])
+  }
+
   return {
     items: timelineItems,
-    isLoading: commentsLoading || activitiesLoading
+    isLoading: commentsLoading || activitiesLoading,
+    error: commentsError || activitiesError,
+    refetch
   }
 }
