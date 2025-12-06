@@ -18,14 +18,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -35,8 +27,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { 
   CheckSquare, ChatCircle, ClockCounterClockwise, 
-  FileText, Buildings, CalendarBlank, Wallet, Percent, PresentationChart, PencilSimple,
-  DotsThreeOutline
+  FileText, Buildings, CalendarBlank, Wallet, Percent, PresentationChart, PencilSimple
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 

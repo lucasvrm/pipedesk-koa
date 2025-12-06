@@ -522,16 +522,19 @@ export default function LeadsListPage() {
                         ) : <span className="text-muted-foreground text-xs">-</span>}
                       </TableCell>
                       <TableCell onClick={e => e.stopPropagation()} className="text-right">
-                        <QuickActionsMenu
-                          actions={getLeadQuickActions({
-                            lead,
-                            navigate,
-                            updateLead,
-                            deleteLead,
-                            profileId: profile?.id,
-                            onEdit: () => openEdit(lead),
-                          })}
-                        />
+                        <div className="flex justify-end gap-1">
+                          <TagSelector entityId={lead.id} entityType="lead" variant="icon" />
+                          <QuickActionsMenu
+                            actions={getLeadQuickActions({
+                              lead,
+                              navigate,
+                              updateLead,
+                              deleteLead,
+                              profileId: profile?.id,
+                              onEdit: () => openEdit(lead),
+                            })}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
