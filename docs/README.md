@@ -22,33 +22,18 @@ PipeDesk is a modern Deal Flow Management Platform designed for investment banki
 - [Quick Start Guide](getting-started/quick-start.md) - Get up and running in minutes
 - [Configuration](getting-started/configuration.md) - Environment variables and Supabase setup
 
-### Core Documentation
-- [Features Status](FEATURES_STATUS.md) - ✅ **O que está implementado** (lista completa com status real)
-- [Roadmap](ROADMAP.md) - 📋 **O que está planejado** (features futuras por prioridade)
-- [Documentation Audit](DOCUMENTATION_AUDIT.md) - 🔍 Auditoria completa da documentação
-- [Product Requirements](PRD.md) - Requisitos do produto (⚠️ precisa atualização)
-- [Current Status](CURRENT_STATUS.md) - Status geral do projeto (⚠️ precisa atualização)
-
-### Features (Implemented)
-Documentação de features implementadas:
-- [Deals Management](features/deals.md) - ✅ Master Deals e Player Tracks (NOVO!)
-- [Companies & Contacts](features/companies-contacts.md) - ✅ CRM completo (NOVO!)
-- [RBAC & Permissions](features/rbac.md) - ✅ Role-based access control completo
-- [Cross-Tagging Guide](CROSS_TAGGING_GUIDE.md) - ✅ Sistema de multi-homing (mover para features/)
-- [Task Management](TASK_MANAGEMENT_GUIDE.md) - ✅ Gestão de tasks (mover para features/)
-- [Audit Log](VDR_AUDIT_LOG_GUIDE.md) - ✅ Activity tracking (mover para features/)
-- [Leads Schema](leads-schema.md) - ✅ Schema de leads (expandir e mover para features/)
-
-### Features (Need Documentation)
-Features implementadas mas sem documentação:
-- ~~Deals Management~~ - ✅ CRIADO: `features/deals.md`
-- ~~Companies Management~~ - ✅ CRIADO: `features/companies-contacts.md`
-- ~~Contacts Management~~ - ✅ CRIADO: `features/companies-contacts.md`
-- Analytics Dashboard - ❌ Precisa criar `features/analytics.md`
-- Custom Fields - ❌ Precisa criar `features/custom-fields.md`
-- Google Integration - ❌ Precisa criar `features/google-integration.md`
-- Document Management - ❌ Precisa criar `features/dataroom.md`
-- Notifications & Inbox - ❌ Precisa criar `features/inbox.md`
+### Features
+Core features of PipeDesk:
+- [Deals Management](features/deals.md) - Master Deals and Player Tracks
+- [Companies & Contacts](features/companies-contacts.md) - Relationship management
+- [Leads](features/leads.md) - Lead capture and qualification
+- [Tasks](features/tasks.md) - Task management with dependencies
+- [Analytics](features/analytics.md) - Dashboard and reporting
+- [RBAC & Permissions](features/rbac.md) - Role-based access control
+- [Google Integration](features/google-integration.md) - Google Workspace sync
+- [Cross-Tagging](features/cross-tagging.md) - Organizational tagging system
+- [Audit Log](features/audit-log.md) - Activity tracking and compliance
+- [UI Components](features/ui-components.md) - Shared UI components and patterns
 
 ### Development
 For developers and contributors:

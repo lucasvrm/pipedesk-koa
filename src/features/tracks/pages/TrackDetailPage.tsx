@@ -50,6 +50,7 @@ import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
 import { PageContainer } from '@/components/PageContainer'
+import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 export default function TrackDetailPage() {
   const { id } = useParams()
@@ -190,7 +191,7 @@ export default function TrackDetailPage() {
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
               <Link 
                 to={`/players/${track.playerId}`} 
                 className="hover:text-primary transition-colors"
@@ -200,6 +201,8 @@ export default function TrackDetailPage() {
                   {track.playerName}
                 </h1>
               </Link>
+              {renderNewBadge(track.createdAt)}
+              {renderUpdatedTodayBadge(track.updatedAt)}
               <Badge className={`font-normal ${getStatusColor(track.status)}`}>
                 {STATUS_LABELS[track.status]}
               </Badge>

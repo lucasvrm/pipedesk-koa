@@ -35,6 +35,7 @@ import { formatCurrency } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
 import DocumentManager from '@/components/DocumentManager'
 import { EmptyState } from '@/components/EmptyState'
+import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -168,10 +169,18 @@ export default function CompanyDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Buildings className="text-primary" />
-              {isNew ? 'Nova Empresa' : (company?.name || formData.name)}
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Buildings className="text-primary" />
+                {isNew ? 'Nova Empresa' : (company?.name || formData.name)}
+              </h1>
+              {!isNew && company && (
+                <>
+                  {renderNewBadge(company.createdAt)}
+                  {renderUpdatedTodayBadge(company.updatedAt)}
+                </>
+              )}
+            </div>
             <p className="text-muted-foreground">
               {isNew ? 'Cadastre um novo cliente' : 'Gestão de cliente'}
             </p>

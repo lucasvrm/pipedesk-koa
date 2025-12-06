@@ -54,6 +54,7 @@ import { formatCurrency } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/PageContainer'
 import { EmptyState } from '@/components/EmptyState'
+import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -470,10 +471,18 @@ export default function PlayerDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Buildings className="text-primary" />
-              {isNew ? 'Novo Player' : (player?.name || formData.name)}
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Buildings className="text-primary" />
+                {isNew ? 'Novo Player' : (player?.name || formData.name)}
+              </h1>
+              {!isNew && player && (
+                <>
+                  {renderNewBadge(player.createdAt)}
+                  {renderUpdatedTodayBadge(player.updatedAt)}
+                </>
+              )}
+            </div>
             <p className="text-muted-foreground">
               {isNew ? 'Adicione uma nova entidade à base' : `Visualizando informações de ${player?.name}`}
             </p>

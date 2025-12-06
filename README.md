@@ -6,7 +6,14 @@
 
 A modern Deal Flow Management Platform for investment banking and M&A professionals.
 
-## 🎯 Sobre o PipeDesk
+## 🏷️ Activity Badges
+- **Purpose:** Visual indicators for item freshness across detail pages
+- **Badges:** "Novo" (created within 24h) and "Atualizado hoje" (updated today)
+- **Location:** Headers of Lead, Deal, Contact, Company, Player, and Track detail pages
+- **Implementation:** Uses `ActivityBadges` component and `dateUtils` utilities
+- **Documentation:** See [UI Components Guide](./docs/features/ui-components.md)
+
+## 🚀 Governance & RBAC
 
 PipeDesk é uma plataforma completa de gestão de fluxo de negócios (deal flow) projetada para bancos de investimento e profissionais de M&A. Com foco em privacidade, controle de acesso e colaboração, o PipeDesk permite gerenciar negociações complexas multi-partes com anonimização de dados para clientes externos.
 
