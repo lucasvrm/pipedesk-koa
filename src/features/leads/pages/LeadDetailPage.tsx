@@ -348,7 +348,9 @@ export default function LeadDetailPage() {
       })
 
       // Add deals associated with the company
-      const companyDeals = allDeals?.filter(deal => deal.companyId === company.id) || []
+      const companyDeals = allDeals?.filter(deal => 
+        deal.companyId === company.id || deal.company_id === company.id
+      ) || []
       companyDeals.forEach(deal => {
         nodes.push({
           id: deal.id,
