@@ -20,6 +20,7 @@ import {
   getRemoteEntityDocuments,
   createRemoteFolder,
   uploadRemoteFiles,
+  deleteRemoteEntry,
 } from '@/services/pdGoogleDriveApi'
 
 interface UseDriveDocumentsParams {
@@ -105,17 +106,18 @@ export function useDriveDocuments({
   )
 
   const deleteItem = useCallback(
-    async (targetId: string) => {
+    async (targetId: string, type: 'file' | 'folder') => {
       if (USE_REMOTE_DRIVE) {
-        // Ainda não temos delete no backend – por enquanto mantemos comportamento local somente
-        console.warn('[useDriveDocuments] deleteItem remoto ainda não implementado no backend')
+        await deleteRemoteEntry(entityType, entityId, targetId, type, actorId, actorRole)
+        await load()
         return
       }
 
+      // O serviço local (googleDriveService) gerencia exclusão recursiva e não precisa do type
       await deleteEntry(entityType, entityId, targetId, actorId)
       await load()
     },
-    [actorId, entityId, entityType, load]
+    [actorId, actorRole, entityId, entityType, load]
   )
 
   const generateLink = useCallback(
