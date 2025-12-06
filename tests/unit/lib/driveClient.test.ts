@@ -108,7 +108,7 @@ describe('DriveClient', () => {
         json: async () => mockResponse,
       } as Response);
 
-      await listDriveItems(undefined, 2, 25);
+      await listDriveItems(undefined, undefined, 2, 25);
 
       expect(safeFetchModule.safeFetch).toHaveBeenCalledWith(
         expect.stringContaining('page=2'),
@@ -116,6 +116,26 @@ describe('DriveClient', () => {
       );
       expect(safeFetchModule.safeFetch).toHaveBeenCalledWith(
         expect.stringContaining('limit=25'),
+        expect.any(Object)
+      );
+    });
+
+    it('should list items with entity type and entity ID', async () => {
+      const mockResponse = { items: [], total: 0 };
+
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      await listDriveItems('deal', 'deal-123');
+
+      expect(safeFetchModule.safeFetch).toHaveBeenCalledWith(
+        expect.stringContaining('entityType=deal'),
+        expect.any(Object)
+      );
+      expect(safeFetchModule.safeFetch).toHaveBeenCalledWith(
+        expect.stringContaining('entityId=deal-123'),
         expect.any(Object)
       );
     });

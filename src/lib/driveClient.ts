@@ -124,14 +124,16 @@ const driveApiFetch = async (
 
 /**
  * List items in a Drive folder
- * @param folderId - Optional folder ID to list items from. If not provided, lists root items.
+ * @param folderIdOrEntityType - Folder ID or entity type (e.g., "deal", "lead")
+ * @param entityId - Entity ID when first parameter is entity type
  * @param page - Optional page number for pagination (default: 1)
  * @param limit - Optional items per page (default: 50)
  * @returns Promise with list of drive items
  * @throws {DriveApiError} If the API request fails
  */
 export async function listDriveItems(
-  folderId?: string,
+  folderIdOrEntityType?: string,
+  entityId?: string | number,
   page: number = 1,
   limit: number = 50
 ): Promise<ListDriveItemsResponse> {
@@ -141,8 +143,16 @@ export async function listDriveItems(
       limit: limit.toString(),
     });
 
-    if (folderId) {
-      params.append('folderId', folderId);
+    // Check if this is an entity-based query (entityId is a number or second param exists and first is entity type)
+    const isEntityQuery = entityId !== undefined && typeof entityId !== 'undefined';
+    
+    if (isEntityQuery) {
+      // Entity-based query: /api/drive/items?entityType=deal&entityId=123
+      params.append('entityType', folderIdOrEntityType || '');
+      params.append('entityId', entityId.toString());
+    } else if (folderIdOrEntityType) {
+      // Folder-based query: /api/drive/items?folderId=abc123
+      params.append('folderId', folderIdOrEntityType);
     }
 
     const response = await driveApiFetch(`/api/drive/items?${params.toString()}`);
