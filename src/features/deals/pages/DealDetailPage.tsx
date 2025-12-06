@@ -62,6 +62,7 @@ import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import { toast } from 'sonner'
 import { PageContainer } from '@/components/PageContainer'
+import { EmptyState } from '@/components/EmptyState'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -394,13 +395,15 @@ export default function DealDetailPage() {
 
               {playersView === 'active' ? (
                 activeTracks.length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
-                    <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                    <p className="text-muted-foreground">Nenhum player ativo.</p>
-                    <Button variant="link" onClick={() => setCreatePlayerOpen(true)}>
-                      Adicionar Primeiro Player
-                    </Button>
-                  </div>
+                  <EmptyState
+                    icon={<Users className="h-12 w-12" />}
+                    title="Nenhum player ativo"
+                    description="Adicione players para iniciar negociações e acompanhar propostas."
+                    primaryAction={{
+                      label: "Adicionar Primeiro Player",
+                      onClick: () => setCreatePlayerOpen(true)
+                    }}
+                  />
                 ) : (
                   <DealPlayersKanban tracks={activeTracks} currentUser={currentUser} />
                 )

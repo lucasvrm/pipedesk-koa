@@ -64,6 +64,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useOperationTypes } from '@/services/operationTypeService'
+import { EmptyState } from '@/components/EmptyState'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -536,9 +537,15 @@ export default function LeadDetailPage() {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-6 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                        Nenhum contato mapeado.
-                      </div>
+                      <EmptyState
+                        icon={<Users className="h-12 w-12" />}
+                        title="Nenhum contato mapeado"
+                        description="Mapeie influenciadores e decisores do comitê de compra."
+                        primaryAction={{
+                          label: "Adicionar Contato",
+                          onClick: () => setContactModalOpen(true)
+                        }}
+                      />
                     )}
                   </CardContent>
                 </Card>
