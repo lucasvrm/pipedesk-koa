@@ -41,7 +41,7 @@ import {
 import { STATUS_LABELS, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { 
-  Plus, Users, ChatCircle, ClockCounterClockwise, 
+  Plus, Users, ClockCounterClockwise, 
   FileText, Sparkle, Tag, PencilSimple,
   Kanban as KanbanIcon, List as ListIcon, Buildings,
   DotsThreeOutline, Wallet, CalendarBlank, WarningCircle,
@@ -56,8 +56,6 @@ import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { DroppedPlayersList } from '../components/DroppedPlayersList'
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
-import CommentsPanel from '@/components/CommentsPanel'
-import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
@@ -433,10 +431,7 @@ export default function DealDetailPage() {
               <TabsTrigger value="documents" className="py-2 px-4">
                 <FileText className="mr-2 h-4 w-4" /> Docs
               </TabsTrigger>
-              <TabsTrigger value="comments" className="py-2 px-4">
-                <ChatCircle className="mr-2 h-4 w-4" /> Comentários
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="py-2 px-4">
+              <TabsTrigger value="timeline" className="py-2 px-4">
                 <ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades
               </TabsTrigger>
             </TabsList>
@@ -520,8 +515,7 @@ export default function DealDetailPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="comments" className="space-y-6">
-               {/* Unified Timeline replaces Comments */}
+            <TabsContent value="timeline" className="space-y-4">
               <UnifiedTimeline entityId={deal.id} entityType="deal" />
             </TabsContent>
 
@@ -538,10 +532,6 @@ export default function DealDetailPage() {
                   mode="edit"
                 />
               )}
-            </TabsContent>
-
-            <TabsContent value="activity">
-              <ActivityHistory entityId={deal.id} entityType="deal" limit={50} />
             </TabsContent>
           </Tabs>
         }
