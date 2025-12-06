@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useDeal, useUpdateDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
@@ -67,7 +67,6 @@ import { PageContainer } from '@/components/PageContainer'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/components/ui/RelationshipMap'
-import { useMemo } from 'react'
 import { useLeads } from '@/services/leadService'
 
 export default function DealDetailPage() {
@@ -167,18 +166,19 @@ export default function DealDetailPage() {
 
     // Add company node if available
     if (deal.company) {
+      const companyId = deal.company.id
       nodes.push({
-        id: deal.company.id,
+        id: companyId,
         label: deal.company.name,
         type: 'company'
       })
       edges.push({
-        from: deal.company.id,
+        from: companyId,
         to: deal.id
       })
 
       // Find leads that qualified to this company
-      const relatedLeads = allLeads?.filter(lead => lead.qualifiedCompanyId === deal.company?.id) || []
+      const relatedLeads = allLeads?.filter(lead => lead.qualifiedCompanyId === companyId) || []
       relatedLeads.forEach(lead => {
         nodes.push({
           id: lead.id,
@@ -187,7 +187,7 @@ export default function DealDetailPage() {
         })
         edges.push({
           from: lead.id,
-          to: deal.company!.id
+          to: companyId
         })
       })
     }
