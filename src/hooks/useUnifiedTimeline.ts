@@ -39,10 +39,15 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
     // Process Comments
     if (comments) {
       comments.forEach(c => {
+        const timestamp = c.createdAt || c.created_at
+        if (!timestamp) {
+          console.warn('Comment missing timestamp:', c.id)
+        }
+        
         items.push({
           id: c.id,
           type: 'comment',
-          date: c.createdAt || c.created_at || new Date().toISOString(),
+          date: timestamp || new Date(0).toISOString(), // Use epoch time for missing timestamps
           author: {
             name: c.author?.name || 'Usuário',
             avatar: c.author?.avatar

@@ -60,85 +60,6 @@ function groupItemsByDate(items: TimelineItem[]): Map<string, TimelineItem[]> {
   return groups
 }
 
-// Get icon for activity type
-function getActivityIcon(item: TimelineItem) {
-  if (item.type === 'comment') {
-    return <ChatCircle className="h-4 w-4" weight="fill" />
-  }
-
-  const action = item.content.toLowerCase()
-
-  if (action.includes('status') || action.includes('fase') || action.includes('stage')) {
-    return <ArrowRight className="h-4 w-4" weight="bold" />
-  }
-  if (action.includes('criou') || action.includes('criado') || action.includes('adicionou')) {
-    return <Plus className="h-4 w-4" weight="bold" />
-  }
-  if (action.includes('edit') || action.includes('atualiz')) {
-    return <PencilSimple className="h-4 w-4" weight="bold" />
-  }
-  if (action.includes('exclu') || action.includes('delet') || action.includes('removeu')) {
-    return <Trash className="h-4 w-4" weight="bold" />
-  }
-  if (action.includes('arquivo') || action.includes('upload') || action.includes('documento')) {
-    return <FileArrowUp className="h-4 w-4" weight="bold" />
-  }
-  if (action.includes('conclu') || action.includes('finaliz') || action.includes('completou')) {
-    return <CheckCircle className="h-4 w-4" weight="bold" />
-  }
-  if (action.includes('cancel') || action.includes('rejeit')) {
-    return <XCircle className="h-4 w-4" weight="bold" />
-  }
-
-  return <Lightning className="h-4 w-4" weight="fill" />
-}
-
-// Get color classes for activity type
-function getActivityColor(item: TimelineItem) {
-  if (item.type === 'comment') {
-    return 'bg-blue-500 text-white'
-  }
-
-  const action = item.content.toLowerCase()
-
-  if (action.includes('status') || action.includes('fase') || action.includes('stage')) {
-    return 'bg-amber-500 text-white'
-  }
-  if (action.includes('criou') || action.includes('criado') || action.includes('adicionou')) {
-    return 'bg-emerald-500 text-white'
-  }
-  if (action.includes('edit') || action.includes('atualiz')) {
-    return 'bg-blue-500 text-white'
-  }
-  if (action.includes('exclu') || action.includes('delet') || action.includes('removeu')) {
-    return 'bg-red-500 text-white'
-  }
-  if (action.includes('arquivo') || action.includes('upload') || action.includes('documento')) {
-    return 'bg-indigo-500 text-white'
-  }
-  if (action.includes('conclu') || action.includes('finaliz') || action.includes('completou')) {
-    return 'bg-green-600 text-white'
-  }
-  if (action.includes('cancel') || action.includes('rejeit')) {
-    return 'bg-red-600 text-white'
-  }
-
-  return 'bg-slate-500 text-white'
-}
-
-// Check if activity is important
-function isImportantActivity(item: TimelineItem): boolean {
-  const action = item.content.toLowerCase()
-  return (
-    action.includes('fechou') ||
-    action.includes('concluiu') ||
-    action.includes('ganhou') ||
-    action.includes('perdeu') ||
-    action.includes('qualificou') ||
-    (action.includes('status') && (action.includes('fechado') || action.includes('ganho') || action.includes('perdido')))
-  )
-}
-
 export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) {
   const { profile } = useAuth()
   const { items, isLoading, error, refetch } = useUnifiedTimeline(entityId, entityType)
@@ -155,6 +76,55 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
   const groupedItems = useMemo(() => {
     return groupItemsByDate(filteredItems)
   }, [filteredItems])
+
+  // Helper to get activity properties efficiently
+  const getActivityProperties = useMemo(() => {
+    return (item: TimelineItem) => {
+      const lowerContent = item.content.toLowerCase()
+      
+      let icon, color
+      
+      if (item.type === 'comment') {
+        icon = <ChatCircle className="h-4 w-4" weight="fill" />
+        color = 'bg-blue-500 text-white'
+      } else if (lowerContent.includes('status') || lowerContent.includes('fase') || lowerContent.includes('stage')) {
+        icon = <ArrowRight className="h-4 w-4" weight="bold" />
+        color = 'bg-amber-500 text-white'
+      } else if (lowerContent.includes('criou') || lowerContent.includes('criado') || lowerContent.includes('adicionou')) {
+        icon = <Plus className="h-4 w-4" weight="bold" />
+        color = 'bg-emerald-500 text-white'
+      } else if (lowerContent.includes('edit') || lowerContent.includes('atualiz')) {
+        icon = <PencilSimple className="h-4 w-4" weight="bold" />
+        color = 'bg-blue-500 text-white'
+      } else if (lowerContent.includes('exclu') || lowerContent.includes('delet') || lowerContent.includes('removeu')) {
+        icon = <Trash className="h-4 w-4" weight="bold" />
+        color = 'bg-red-500 text-white'
+      } else if (lowerContent.includes('arquivo') || lowerContent.includes('upload') || lowerContent.includes('documento')) {
+        icon = <FileArrowUp className="h-4 w-4" weight="bold" />
+        color = 'bg-indigo-500 text-white'
+      } else if (lowerContent.includes('conclu') || lowerContent.includes('finaliz') || lowerContent.includes('completou')) {
+        icon = <CheckCircle className="h-4 w-4" weight="bold" />
+        color = 'bg-green-600 text-white'
+      } else if (lowerContent.includes('cancel') || lowerContent.includes('rejeit')) {
+        icon = <XCircle className="h-4 w-4" weight="bold" />
+        color = 'bg-red-600 text-white'
+      } else {
+        icon = <Lightning className="h-4 w-4" weight="fill" />
+        color = 'bg-slate-500 text-white'
+      }
+      
+      const isImportant = (
+        lowerContent.includes('fechou') ||
+        lowerContent.includes('concluiu') ||
+        lowerContent.includes('ganhou') ||
+        lowerContent.includes('perdeu') ||
+        lowerContent.includes('qualificou') ||
+        (lowerContent.includes('status') && (lowerContent.includes('fechado') || lowerContent.includes('ganho') || lowerContent.includes('perdido')))
+      )
+      
+      return { icon, color, isImportant }
+    }
+  }, [])
 
   const handleSendComment = async () => {
     if (!profile || !newComment.trim()) return
@@ -309,7 +279,7 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                 {/* Items for this date */}
                 <div className="relative space-y-4 before:absolute before:top-2 before:bottom-2 before:left-4 before:w-0.5 before:bg-border">
                   {dateItems.map((item, idx) => {
-                    const isImportant = isImportantActivity(item)
+                    const { icon, color, isImportant } = getActivityProperties(item)
                     const { text: truncatedContent, isTruncated } = truncateText(item.content, 200)
                     const isExpanded = expandedItems.has(item.id)
                     const displayContent = isExpanded || !isTruncated ? item.content : truncatedContent
@@ -319,10 +289,10 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                         {/* Timeline Icon */}
                         <div className={cn(
                           "absolute left-0 top-1 h-8 w-8 rounded-full border-2 border-background flex items-center justify-center z-10 transition-transform group-hover:scale-110",
-                          getActivityColor(item),
+                          color,
                           isImportant && "ring-2 ring-offset-2 ring-amber-400"
                         )}>
-                          {getActivityIcon(item)}
+                          {icon}
                         </div>
 
                         {/* Content Card */}

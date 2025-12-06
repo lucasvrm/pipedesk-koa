@@ -18,8 +18,8 @@ import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
 interface ActivityHistoryProps {
-  entityId?: string
-  entityType?: ActivityEntityType
+  entityId: string
+  entityType: ActivityEntityType
   limit?: number
   showUser?: boolean
   disableScroll?: boolean
