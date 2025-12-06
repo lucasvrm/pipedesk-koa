@@ -3,8 +3,8 @@
  * Maps entity-specific statuses to semantic colors for StatusBadge component
  */
 
-import { SemanticStatus } from '@/components/ui/StatusBadge'
-import { LeadStatus, DealStatus } from './types'
+import type { SemanticStatus } from '@/components/ui/StatusBadge'
+import type { LeadStatus, DealStatus } from './types'
 
 /**
  * Maps Lead status to semantic status colors

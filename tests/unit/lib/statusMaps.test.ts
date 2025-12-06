@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { leadStatusMap, dealStatusMap, trackStatusMap } from '@/lib/statusMaps'
 import type { LeadStatus, DealStatus } from '@/lib/types'
+import type { SemanticStatus } from '@/components/ui/StatusBadge'
 
 describe('statusMaps', () => {
   describe('leadStatusMap', () => {
+    it('should return a valid SemanticStatus type', () => {
+      const result: SemanticStatus = leadStatusMap('new' as LeadStatus)
+      expect(['success', 'warning', 'error', 'info', 'neutral']).toContain(result)
+    })
+
     it('should map "new" to "info"', () => {
       expect(leadStatusMap('new' as LeadStatus)).toBe('info')
     })
