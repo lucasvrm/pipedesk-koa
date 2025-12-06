@@ -1,180 +1,97 @@
-# PipeDesk
+# PipeDesk Documentation
 
-A specialized hierarchical project management system for investment banking professionals to manage complex multi-party financial deals with strict privacy controls and client anonymization.
+Welcome to the PipeDesk documentation! This guide will help you understand, set up, and use PipeDesk effectively.
 
-## 🌟 Key Features
+## 📖 What is PipeDesk?
 
-### ✅ Implemented (Iteration 3)
+PipeDesk is a modern Deal Flow Management Platform designed for investment banking and financial deal management. It provides a comprehensive solution for managing complex multi-party financial deals with strict privacy controls, role-based access, and collaborative features.
+
+## 🚀 Quick Links
+
+- **New to PipeDesk?** Start with [Installation Guide](getting-started/installation.md)
+- **Want to contribute?** Read [Contributing Guidelines](CONTRIBUTING.md)
+- **Security concerns?** Check [Security Policy](SECURITY.md)
+- **Testing the app?** See [Testing Guide](development/testing.md)
+
+## 📚 Documentation Structure
+
+### Getting Started
+- [Installation & Setup](getting-started/installation.md) - Install dependencies and configure the application
+- [Quick Start Guide](getting-started/quick-start.md) - Get up and running in minutes
+- [Configuration](getting-started/configuration.md) - Environment variables and Supabase setup
+
+### Features
+Core features of PipeDesk:
+- [Deals Management](features/deals.md) - Master Deals and Player Tracks
+- [Companies & Contacts](features/companies-contacts.md) - Relationship management
+- [Leads](features/leads.md) - Lead capture and qualification
+- [Tasks](features/tasks.md) - Task management with dependencies
+- [Analytics](features/analytics.md) - Dashboard and reporting
+- [RBAC & Permissions](features/rbac.md) - Role-based access control
+- [Google Integration](features/google-integration.md) - Google Workspace sync
+- [Cross-Tagging](features/cross-tagging.md) - Organizational tagging system
+- [Audit Log](features/audit-log.md) - Activity tracking and compliance
+
+### Development
+For developers and contributors:
+- [Architecture](development/architecture.md) - System design and structure
+- [Database Schema](development/database-schema.md) - Supabase tables and relationships
+- [Testing](development/testing.md) - Testing strategy and guidelines
+- [Troubleshooting](development/troubleshooting.md) - Common issues and solutions
+
+### API Reference
+- [Supabase API](api/supabase-api.md) - Database API and RLS policies
+
+## 🎯 Key Features
+
+### ✅ Implemented Features
 
 1. **Master Deal Management**
-   - Create and track parent-level deals representing client needs
-   - AI-powered description generation
+   - Create and track parent-level deals
+   - AI-powered descriptions
    - Volume, operation type, and deadline tracking
    - Status management (active, cancelled, concluded)
 
 2. **Player Track System**
-   - Child entities for individual investor/bank negotiations
+   - Child entities for individual negotiations
    - Stage-based probability calculations
    - Weighted forecast calculations
    - Win/cancel cascading logic
 
 3. **Task Dependencies & Milestones**
    - Task creation with dependency linking
-   - Milestone markers and celebration
+   - Milestone markers
    - Circular dependency detection
    - Visual blocked indicators
-   - Kanban and list views
 
-4. **Role-Based Access Control** ⭐ NEW
+4. **Role-Based Access Control (RBAC)**
    - Four-tier permission system (Admin, Analyst, New Business, Client)
-   - Magic link authentication with secure tokens
-   - Email invitation system with customizable expiration
-   - Token management dashboard with revocation
-   - Player name anonymization for external clients
-   - Permission-based UI rendering
-   - See [RBAC_GUIDE.md](./RBAC_GUIDE.md) for details
+   - Magic link authentication
+   - Email invitation system
+   - Player name anonymization for clients
 
 5. **Multi-View Workspace**
    - Kanban board with drag-and-drop
    - List view with inline editing
    - Gantt chart with D3 timeline
    - Calendar view for deadlines
-   - Per-track view state persistence
 
 6. **Advanced Analytics**
    - Real-time pipeline metrics
    - Time-in-stage tracking
    - SLA monitoring
    - Team workload distribution
-   - Weighted forecast calculations
 
-7. **Centralized Inbox**
-   - Unified notification center
-   - Assignment and status change alerts
-   - Mark as read/unread
-   - SLA breach notifications
-
-8. **Google Workspace Integration**
+7. **Google Workspace Integration**
    - OAuth connection management
    - Drive folder automation
    - Calendar sync
    - Gmail thread sync (beta)
 
-9. **Guided Onboarding** 🎯
-   - Interactive product tour using react-joyride
-   - Step-by-step walkthrough of key features
-   - Automatic trigger for new users
-   - Completion tracking
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Modern browser with JavaScript enabled
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/lucasvrm/pipedesk-koa.git
-cd pipedesk-koa
-
-# Install dependencies
-# Note: Use --legacy-peer-deps flag due to React 19 compatibility with react-joyride
-npm install --legacy-peer-deps
-
-# Create .env file (optional - for Supabase integration)
-cp .env.example .env
-# Edit .env with your Supabase credentials
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Run tests
-npm run test:run
-
-# Run tests with coverage
-npm run test:coverage
-```
-
-### React 19 and react-joyride Compatibility
-
-This project uses **React 19** for the latest features and performance improvements. The onboarding tour feature relies on **react-joyride v2.9.3**, which currently lists React 15-18 as peer dependencies.
-
-**Current Status:**
-- ✅ react-joyride works correctly with React 19 in runtime
-- ⚠️ npm install requires `--legacy-peer-deps` flag to bypass peer dependency warnings
-- ✅ No functional issues detected - the onboarding tour works as expected
-- ✅ All tests passing, no runtime errors
-
-**Why we use --legacy-peer-deps:**
-React-joyride's internal dependency `react-floater` specifies React 15-18 as peer dependencies. However, testing confirms the library is compatible with React 19. We use `--legacy-peer-deps` as a conscious decision to proceed with this setup while awaiting an official React 19-compatible release.
-
-**Future considerations:**
-- Monitor [react-joyride repository](https://github.com/gilbarbara/react-joyride) for React 19 support
-- Consider alternative onboarding libraries if issues arise
-- Current approach is production-ready but requires documentation for new developers
-
-### Onboarding Tour Setup
-
-The application includes an interactive onboarding tour that automatically launches for new users. The tour is implemented using **react-joyride** and guides users through key features.
-
-**Tour Features:**
-- ✨ Automatic detection of first-time users
-- 🎯 Step-by-step walkthrough of main features
-- ⏭️ Skippable at any time
-- ✅ Completion tracking in user profile
-- 🔄 Can be re-triggered from Help Center
-
-**Tour Steps:**
-1. Welcome message
-2. Create Deal button
-3. Deals navigation
-4. Kanban view
-5. Analytics dashboard
-6. Notification center
-
-**Configuration:**
-The tour steps are defined in `/src/components/OnboardingTour.tsx`. To customize:
-
-```typescript
-const tourSteps: Step[] = [
-  {
-    target: 'body',
-    content: <div>Your custom content</div>,
-    placement: 'center',
-  },
-  // Add more steps...
-]
-```
-
-### Default Admin Account
-- **Email**: joao.silva@empresa.com
-- **Name**: João Silva
-- **Role**: Admin
-
-### Inviting Users
-
-1. Navigate to your avatar → **Gerenciar Usuários**
-2. Click **Enviar Convite**
-3. Fill in user details and select role
-4. Copy magic link and send to user
-5. User clicks link to authenticate
-
-See [RBAC_GUIDE.md](./RBAC_GUIDE.md) for complete authentication documentation.
-
-## 📊 Permission Levels
-
-| Role | Description | Key Permissions |
-|------|-------------|----------------|
-| **Admin** | Full system access | User management, integrations, data export |
-| **Analyst** | Deal management | Create/edit deals, assign tasks, analytics |
-| **New Business** | View-only access | See all data without modifications |
-| **Client** | Limited external access | Anonymized player names, read-only |
+8. **Leads & Contact Management**
+   - Lead capture and qualification
+   - Contact relationship tracking
+   - Company profiles
 
 ## 🏗️ Technical Stack
 
@@ -183,376 +100,86 @@ See [RBAC_GUIDE.md](./RBAC_GUIDE.md) for complete authentication documentation.
 - **Components**: shadcn/ui v4
 - **Icons**: Phosphor Icons
 - **Charts**: D3.js, Recharts
-- **Onboarding**: react-joyride v2.9.3
-- **State**: React hooks + `@github/spark/hooks`
-- **Persistence**: Spark KV store + Supabase
+- **State**: React hooks + TanStack Query
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Realtime)
 - **Build**: Vite 6.4.1
-- **Testing**: Vitest 4.0.12 + Testing Library
+- **Testing**: Vitest 4.0.12 + Playwright
 
-## 🎯 Performance Optimizations
+## 📦 Quick Start
 
-### Code Splitting & Lazy Loading
+```bash
+# Clone the repository
+git clone https://github.com/lucasvrm/pipedesk-koa.git
+cd pipedesk-koa
 
-The application uses advanced code splitting to optimize bundle size and initial load time:
+# Install dependencies
+npm install --legacy-peer-deps
 
-**Bundle Breakdown:**
-- Main chunk: **476.86 kB (145.33 kB gzip)** ✨ 82.7% smaller than original
-- Vendor chunks separated by category:
-  - React core: 12.34 kB
-  - UI components: 120.17 kB  
-  - Charts (D3/Recharts): 423.47 kB
-- Feature chunks loaded on-demand:
-  - Analytics: 993.54 kB
-  - Deals: 182.90 kB
-  - Tasks: 19.00 kB
-  - Data Room: 436.49 kB
-  - Audit Log: 80.17 kB
+# Set up environment
+cp .env.example .env
+# Edit .env with your Supabase credentials
 
-**Benefits:**
-- Fast initial page load
-- Heavy features only downloaded when needed
-- Better caching strategy
-- Improved user experience on slow connections
+# Start development server
+npm run dev
+
+# Run tests
+npm run test:run
+```
+
+For detailed instructions, see the [Installation Guide](getting-started/installation.md).
+
+## 🔐 Security
+
+PipeDesk takes security seriously:
+- Secure magic link authentication
+- Row-level security (RLS) in Supabase
+- Role-based access control
+- Player name anonymization for external clients
+- Audit logging for compliance
+
+See [Security Policy](SECURITY.md) for more details.
 
 ## 🧪 Testing
 
-Coverage is enforced in CI via `npm run test:coverage` (Vitest + V8 thresholds: **45%** lines/statements, **35%** branches/functions).
+PipeDesk uses Vitest for unit tests and Playwright for E2E tests:
 
-The suites prioritize critical business flows:
-
-- **RBAC/Permissions**: permission matrices and player anonymization
-- **Deals**: create/update service flows and player track seeding
-- **Analytics Calculations**: pipeline KPIs and fee/win-rate math
-- **Task Dependencies**: circular detection, blocking, and prioritization
-- **Shared UI/Auth**: AuthContext and empty-state rendering
-
-**Running Tests:**
 ```bash
-# Run all tests
-npm run test:run
-
-# Run all tests with coverage (CI default)
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test
-
-# Run tests with UI
-npm run test:ui
-```
-- **Build**: Vite
-- **Testing**: Vitest + React Testing Library
-- **Linting**: ESLint + typescript-eslint
-
-## ⚙️ Runtime Requirements
-
-**⚠️ IMPORTANT**: This application is designed to run in the **GitHub Spark** runtime environment.
-
-### GitHub Spark Integration
-
-The application relies on GitHub Spark's Key-Value (KV) store for data persistence, which is accessed through the `/_spark/kv/*` endpoints. These endpoints are **only available when running in the GitHub Spark environment**.
-
-**What this means:**
-- ✅ The app works fully when deployed to GitHub Spark
-- ⚠️ Local development will show 403 errors for KV endpoints
-- ⚠️ Some features may not work completely in local development
-
-### Local Development Limitations
-
-When running locally (`npm run dev`), you will see errors like:
-```
-Failed to load resource: the server responded with a status of 403 (Forbidden)
-- http://localhost:5000/_spark/kv/notifications
-- http://localhost:5000/_spark/loaded
+npm run test:run        # Run unit tests
+npm run test:coverage   # Run with coverage
+npm run test:e2e        # Run E2E tests
 ```
 
-This is **expected behavior** - these endpoints require the Spark runtime.
+See [Testing Guide](development/testing.md) for more information.
 
-## 📁 Project Structure
+## 📊 Project Status
 
-```
-src/
-├── components/
-│   ├── ui/                    # shadcn components
-│   ├── OnboardingTour.tsx     # Product tour ⭐
-│   ├── HelpCenter.tsx         # Help and documentation
-│   └── ...
-├── features/
-│   ├── analytics/             # Analytics dashboard and calculations
-│   │   ├── components/
-│   │   └── utils/
-│   ├── deals/                 # Deal management
-│   │   ├── components/
-│   │   └── hooks/
-│   ├── tasks/                 # Task management with dependencies
-│   │   ├── components/
-│   │   └── utils/
-│   ├── rbac/                  # Role-based access control
-│   │   ├── components/
-│   │   └── hooks/
-│   └── inbox/                 # Notifications
-├── tests/
-│   ├── setup.ts               # Global Vitest + Testing Library setup
-│   └── unit/
-│       ├── auth/
-│       ├── components/
-│       ├── features/          # Analytics, deals, tasks
-│       ├── lib/               # RBAC + shared helpers
-│       └── services/          # Supabase/data services
-├── lib/
-│   ├── auth.ts                # Auth utilities ⭐
-│   ├── permissions.ts         # RBAC system ⭐
-│   ├── types.ts               # TypeScript types
-│   ├── helpers.ts             # Utility functions
-├── contexts/
-│   ├── AuthContext.tsx        # Authentication state
-│   └── ImpersonationContext.tsx
-└── App.tsx                    # Main app with lazy loading
-```
-
-## 📖 Documentation
-
-- [PRD.md](./PRD.md) - Product Requirements Document
-- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) - Feature completion status
-- [RBAC_GUIDE.md](./RBAC_GUIDE.md) - Authentication & permissions guide ⭐
-- [QA_REPORT.md](./QA_REPORT.md) - Quality assurance report
-
-## 🎯 Current Progress
-
+**Current Version**: 0.3.0  
 **Overall Completion**: ~85%
 
-- ✅ Master Deal Management
-- ✅ Player Track System  
-- ✅ Task Dependencies & Milestones
-- ✅ Role-Based Access Control ⭐
-- ✅ Multi-View Workspace
-- ✅ Analytics Dashboard
-- ✅ Centralized Inbox
-- ✅ Google Workspace Integration
-- ✅ Guided Onboarding Tour ⭐
-- ✅ Code Splitting & Performance ⭐
-- 🔄 Comments & Mentions (planned)
-- 🔄 Document Management (planned)
-- 🔄 Activity Audit Log (planned)
+See [CURRENT_STATUS.md](CURRENT_STATUS.md) for detailed status information.
 
-## 🔐 Security Features
+## 🤝 Contributing
 
-- Secure magic link tokens (64-character)
-- One-time use authentication
-- Token expiration and revocation
-- Player name anonymization for clients
-- Permission-based access control
-- Session management with persistence
-
-## 🛠️ Development
-
-### Setup Instructions
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/lucasvrm/pipedesk-koa.git
-   cd pipedesk-koa
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install --legacy-peer-deps
-   ```
-   
-   ⚠️ The `--legacy-peer-deps` flag is required due to React 19 compatibility issues with `react-joyride` (used for onboarding tours). This is a non-critical feature and does not affect core functionality.
-
-3. **Create environment file**
-   
-   Create a `.env` file in the root directory:
-   ```bash
-   # Supabase Configuration (use dummy values for local testing)
-   VITE_SUPABASE_URL=https://dummy-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=dummy_anon_key_for_local_testing_only
-   ```
-
-4. **Run development server**
-   ```bash
-   npm run dev
-   ```
-   
-   The app will be available at `http://localhost:5000/`
-
-5. **Build for production**
-   ```bash
-   npm run build
-   ```
-
-6. **Run tests**
-   ```bash
-   npm run test:run    # Run all tests
-   npm run test        # Run tests in watch mode
-   npm run test:ui     # Run tests with UI
-   ```
-
-7. **Lint code**
-   ```bash
-   npm run lint
-   ```
-
-8. **Type checking**
-   ```bash
-   npx tsc --noEmit
-   ```
-
-### Key Points
-- Uses `useKV` for persistent data storage
-- Supabase integration for production data
-- Hot reload enabled for fast development
-- TypeScript with strict mode
-- ESLint for code quality
-- Vitest for testing
-- Uses `useKV` from `@github/spark/hooks` for persistent data storage
-- Data persists in Spark KV (when in Spark environment) or Supabase
-- Hot reload enabled for fast development
-- TypeScript with type-safe development
-
-### Adding Dependencies
-
-**For most packages:**
-```bash
-npm install package-name --legacy-peer-deps
-```
-
-**Why --legacy-peer-deps?**
-Required due to React 19 compatibility with react-joyride. This is a temporary workaround until the library officially supports React 19.
-
-### Build & Deploy
-
-```bash
-# Production build
-npm run build
-
-# Preview production build
-npm run preview
-
-# Analyze bundle size
-npm run build && ls -lh dist/assets/
-```
-
-## 🐛 Troubleshooting
-
-### Installation Issues
-
-**Problem:** npm install fails with peer dependency errors
-```bash
-npm ERR! ERESOLVE could not resolve
-npm ERR! peer react@"15 - 18" from react-joyride@2.9.3
-```
-
-**Solution:** Use the `--legacy-peer-deps` flag:
-```bash
-npm install --legacy-peer-deps
-```
-
-### Onboarding Tour Not Showing
-
-**Problem:** Tour doesn't launch for new users
-
-**Possible causes:**
-1. User profile has `has_completed_onboarding: true`
-2. DOM elements with `data-tour` attributes are missing
-3. Browser console shows react-joyride errors
-
-**Solution:** 
-- Check user profile in database/KV store
-- Verify tour target elements have correct `data-tour` attributes
-- Check browser console for errors
-
-### Code Coverage Not Generating
-
-**Problem:** Coverage reports are missing
-
-**Solution:**
-```bash
-# Install coverage provider
-npm install --save-dev @vitest/coverage-v8 --legacy-peer-deps
-
-# Run tests with coverage
-npx vitest run --coverage
-npm install --legacy-peer-deps package-name
-```
-
-Always use `--legacy-peer-deps` to avoid peer dependency conflicts.
-
-## 🧪 Testing
-
-See [TESTING.md](./TESTING.md) for detailed testing documentation.
-
-### Quick Test Commands
-```bash
-npm run test:run     # Run all tests once
-npm run test         # Watch mode
-npm run test:ui      # Interactive UI
-```
-
-Current test coverage: ~5% (2 test files, 5 tests)
-Target: 30%+ coverage on critical features
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### 403 Forbidden on `/_spark/kv/*` endpoints
-
-**Symptom**: Console shows errors like:
-```
-Failed to fetch KV key: Forbidden
-GET http://localhost:5000/_spark/kv/notifications 403
-```
-
-**Cause**: You're running the app locally, but Spark KV endpoints are only available in the GitHub Spark runtime.
-
-**Solution**: This is expected behavior for local development. The app is designed to run in GitHub Spark. Core UI and navigation will still work, but data persistence features will be limited.
-
-#### npm install errors (peer dependency conflicts)
-
-**Symptom**: npm install fails with peer dependency errors
-
-**Solution**: Use `npm install --legacy-peer-deps`
-
-**Reason**: react-joyride@2.9.3 requires React 15-18, but the project uses React 19. This is a non-critical dependency used only for onboarding tours.
-
-#### TypeScript errors
-
-**Symptom**: TypeScript compiler shows errors
-
-**Solution**: Run `npx tsc --noEmit` to see all type errors. The codebase currently has 0 TypeScript errors.
-
-#### Build warnings about chunk size
-
-**Symptom**: 
-```
-(!) Some chunks are larger than 500 kB after minification
-dist/assets/index-*.js: 2,754 kB (gzip: 826 kB)
-```
-
-**Solution**: This is a known issue. The bundle size is large due to:
-- D3.js and Recharts for visualizations
-- Multiple Radix UI components
-- Full feature set loaded eagerly
-
-**Future improvement**: Implement code splitting and lazy loading (see Phase 7 of QA roadmap).
-
-### Getting Help
-
-1. Check existing documentation:
-   - [PRD.md](./PRD.md) - Product requirements
-   - [RBAC_GUIDE.md](./RBAC_GUIDE.md) - Authentication guide
-   - [TESTING.md](./TESTING.md) - Testing guide (if available)
-   
-2. Check the [QA_REPORT.md](./QA_REPORT.md) for known issues and improvement roadmap
-
-3. Open an issue on GitHub with:
-   - Description of the problem
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Environment details (Node version, OS, etc.)
+We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## 📝 License
 
-The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📞 Support
+
+- **Documentation**: This documentation
+- **Issues**: [GitHub Issues](https://github.com/lucasvrm/pipedesk-koa/issues)
+- **Archive**: Historical documentation is in [/docs/archive](archive/)
+
+## 🗂️ Archive
+
+Historical documentation (migration guides, phase reports, audits) has been moved to `/docs/archive` for reference:
+- `archive/migrations/` - Database and system migration guides
+- `archive/phases/` - Phase implementation summaries
+- `archive/reports/` - QA reports and audit results
+
+---
+
+**Last Updated**: December 2025  
+**Maintained by**: PipeDesk Team
