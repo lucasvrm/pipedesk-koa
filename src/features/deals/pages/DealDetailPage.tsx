@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useDeal, useUpdateDeal } from '@/services/dealService'
+import { useDeal, useUpdateDeal, useDeleteDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { logActivity } from '@/services/activityService'
 import { useEntityTags, useTagOperations } from '@/services/tagService'
@@ -68,6 +68,8 @@ import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/components/ui/RelationshipMap'
 import { useLeads } from '@/services/leadService'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getDealQuickActions } from '@/hooks/useQuickActions'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -87,6 +89,7 @@ export default function DealDetailPage() {
     { id: 'concluded', label: 'Concluído' }
   ]
   const updateDeal = useUpdateDeal()
+  const deleteDeal = useDeleteDeal()
   const updateTrack = useUpdateTrack()
   const { data: dealTags, isLoading: isLoadingTags } = useEntityTags(id || '', 'deal')
   const tagOps = useTagOperations()
@@ -348,43 +351,23 @@ export default function DealDetailPage() {
               }
               metrics={SIDEBAR_METRICS}
               actions={
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <Button variant="default" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleOpenAida}>
-                      <ChartBar className="mr-2 h-4 w-4" /> AIDA
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => setEditDealOpen(true)} title="Editar">
-                      <PencilSimple className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between">
-                        Alterar Status <CaretDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuRadioGroup
-                        value={deal.status}
-                        onValueChange={(v) => handleStatusChange(v as DealStatus)}
-                      >
-                        <DropdownMenuRadioItem value="active">Ativo</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="on_hold">Em Espera</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="concluded">Concluído</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="cancelled">Cancelado</DropdownMenuRadioItem>
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <Button
-                    variant="ghost"
-                    onClick={() => setDocGeneratorOpen(true)}
-                    className="justify-start px-2"
-                  >
-                    <FileArrowDown className="mr-2 h-4 w-4" /> Gerar Documento
-                  </Button>
-                </div>
+                <QuickActionsMenu
+                  label="Ações"
+                  triggerVariant="outline"
+                  triggerSize="default"
+                  actions={getDealQuickActions({
+                    deal,
+                    navigate,
+                    updateDeal,
+                    deleteDeal,
+                    profileId: currentUser?.id,
+                    onEdit: () => setEditDealOpen(true),
+                    onAddPlayer: () => setCreatePlayerOpen(true),
+                    onGenerateDoc: () => setDocGeneratorOpen(true),
+                    onManageTags: () => setTagManagerOpen(true),
+                    onViewAnalytics: handleOpenAida,
+                  })}
+                />
               }
             />
 

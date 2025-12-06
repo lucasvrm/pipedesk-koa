@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useLeads, useCreateLead, useDeleteLead, LeadFilters } from '@/services/leadService'
+import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -29,6 +29,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { Progress } from '@/components/ui/progress'
 import { useEntityTags } from '@/services/tagService'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getLeadQuickActions } from '@/hooks/useQuickActions'
 
 function LeadTagsCell({ leadId }: { leadId: string }) {
   const { data: tags, isLoading } = useEntityTags(leadId, 'lead')
@@ -97,6 +99,7 @@ export default function LeadsListPage() {
   const { data: leads, isLoading } = useLeads(filters)
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
+  const updateLead = useUpdateLead()
 
   const leadMetrics = useMemo(() => {
     const openLeads = leads?.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
@@ -521,26 +524,16 @@ export default function LeadsListPage() {
                       <TableCell onClick={e => e.stopPropagation()} className="text-right">
                         <div className="flex justify-end gap-1">
                           <TagSelector entityId={lead.id} entityType="lead" variant="icon" />
-                          <RequirePermission permission="leads.update">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-primary"
-                              onClick={() => openEdit(lead)}
-                            >
-                              <PencilSimple className="h-4 w-4" />
-                            </Button>
-                          </RequirePermission>
-                          <RequirePermission permission="leads.delete">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                              onClick={() => openDelete(lead)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </RequirePermission>
+                          <QuickActionsMenu
+                            actions={getLeadQuickActions({
+                              lead,
+                              navigate,
+                              updateLead,
+                              deleteLead,
+                              profileId: profile?.id,
+                              onEdit: () => openEdit(lead),
+                            })}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -563,27 +556,16 @@ export default function LeadsListPage() {
                         {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{lead.tradeName}</p>}
                       </div>
                       <div onClick={e => e.stopPropagation()} className="flex gap-1">
-                        <TagSelector entityId={lead.id} entityType="lead" variant="icon" />
-                        <RequirePermission permission="leads.update">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => openEdit(lead)}
-                          >
-                            <PencilSimple className="h-4 w-4" />
-                          </Button>
-                        </RequirePermission>
-                        <RequirePermission permission="leads.delete">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => openDelete(lead)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </RequirePermission>
+                        <QuickActionsMenu
+                          actions={getLeadQuickActions({
+                            lead,
+                            navigate,
+                            updateLead,
+                            deleteLead,
+                            profileId: profile?.id,
+                            onEdit: () => openEdit(lead),
+                          })}
+                        />
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">

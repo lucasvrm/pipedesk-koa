@@ -72,6 +72,8 @@ import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/component
 import { useCompany } from '@/services/companyService'
 import { useDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getLeadQuickActions } from '@/hooks/useQuickActions'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -449,33 +451,21 @@ export default function LeadDetailPage() {
               statusBadge={statusBadge}
               metrics={SIDEBAR_METRICS}
               actions={
-                <div className="flex flex-col gap-2">
-                  {lead.status === 'qualified' ? (
-                    <Button variant="default" className="w-full bg-green-600 hover:bg-green-700" onClick={() => navigate(`/companies/${lead.qualifiedCompanyId}`)}>
-                      <Buildings className="mr-2 h-4 w-4" />
-                      Ver Empresa
-                    </Button>
-                  ) : (
-                    <Button onClick={() => setQualifyOpen(true)} className="w-full bg-green-600 hover:bg-green-700">
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Qualificar
-                    </Button>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={() => setEditOpen(true)}>
-                      <PencilSimple className="mr-2 h-4 w-4" /> Editar
-                    </Button>
-                    {(lead.status === 'new' || lead.status === 'contacted') && (
-                      <Button variant="outline" className="text-destructive hover:text-destructive border-destructive/30" onClick={handleDisqualify}>
-                        <XCircle className="mr-2 h-4 w-4" /> Desq.
-                      </Button>
-                    )}
-                  </div>
-                  <Button variant="ghost" className="text-destructive hover:text-destructive w-full" onClick={() => setDeleteOpen(true)}>
-                    <Trash className="mr-2 h-4 w-4" /> Excluir Lead
-                  </Button>
-                </div>
+                <QuickActionsMenu
+                  label="Ações"
+                  triggerVariant="outline"
+                  triggerSize="default"
+                  actions={getLeadQuickActions({
+                    lead,
+                    navigate,
+                    updateLead,
+                    deleteLead,
+                    profileId: profile?.id,
+                    onEdit: () => setEditOpen(true),
+                    onQualify: () => setQualifyOpen(true),
+                    onManageTags: () => setTagManagerOpen(true),
+                  })}
+                />
               }
             />
 

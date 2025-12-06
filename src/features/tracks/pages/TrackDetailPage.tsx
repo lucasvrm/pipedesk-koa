@@ -18,14 +18,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -35,8 +27,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { 
   CheckSquare, ChatCircle, ClockCounterClockwise, 
-  FileText, Buildings, CalendarBlank, Wallet, Percent, PresentationChart, PencilSimple,
-  DotsThreeOutline
+  FileText, Buildings, CalendarBlank, Wallet, Percent, PresentationChart, PencilSimple
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -53,9 +44,14 @@ import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
 import { PageContainer } from '@/components/PageContainer'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getTrackQuickActions } from '@/hooks/useQuickActions'
+import { useNavigate } from 'react-router-dom'
+import { useDeleteTrack } from '@/services/trackService'
 
 export default function TrackDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { profile: currentUser } = useAuth()
   
   // Data Fetching
@@ -66,6 +62,7 @@ export default function TrackDetailPage() {
   const { data: stages = [], isLoading: stagesLoading } = useStages() // Hook Dinâmico
   
   const updateTrack = useUpdateTrack()
+  const deleteTrack = useDeleteTrack()
   const updateTask = useUpdateTask()
 
   // UI States
@@ -248,20 +245,16 @@ export default function TrackDetailPage() {
                 </div>
                 
                 {/* Menu de Ações Secundárias */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-9 w-9">
-                            <DotsThreeOutline weight="fill" className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações do Track</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setEditTrackOpen(true)}>
-                            <PencilSimple className="mr-2 h-4 w-4" /> Editar Track
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <QuickActionsMenu
+                  actions={getTrackQuickActions({
+                    track,
+                    navigate,
+                    updateTrack,
+                    deleteTrack,
+                    profileId: currentUser?.id,
+                    onEdit: () => setEditTrackOpen(true),
+                  })}
+                />
             </div>
             
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full border">

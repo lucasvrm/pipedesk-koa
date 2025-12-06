@@ -20,6 +20,8 @@ import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { getContactQuickActions } from '@/hooks/useQuickActions'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
@@ -346,18 +348,14 @@ export default function ContactsPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <RequirePermission permission="contacts.update">
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(contact)}>
-                              <PencilSimple className="h-4 w-4" />
-                            </Button>
-                          </RequirePermission>
-                          <RequirePermission permission="contacts.delete">
-                            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => openDelete(contact.id)}>
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </RequirePermission>
-                        </div>
+                        <QuickActionsMenu
+                          actions={getContactQuickActions({
+                            contact,
+                            navigate,
+                            deleteContact: deleteContact,
+                            onEdit: () => openEdit(contact),
+                          })}
+                        />
                       </TableCell>
                     </TableRow>
                   )
