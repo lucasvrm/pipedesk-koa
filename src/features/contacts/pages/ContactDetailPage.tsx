@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageContainer } from '@/components/PageContainer'
 import { useAuth } from '@/contexts/AuthContext'
 import DocumentManager from '@/components/DocumentManager'
+import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -97,7 +98,11 @@ export default function ContactDetailPage() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">
-           <h1 className="text-3xl font-bold tracking-tight">{contact.name}</h1>
+           <div className="flex items-center gap-2 flex-wrap">
+             <h1 className="text-3xl font-bold tracking-tight">{contact.name}</h1>
+             {renderNewBadge(contact.createdAt)}
+             {renderUpdatedTodayBadge(contact.updatedAt)}
+           </div>
            {companyName ? (
              <div
                 className="flex items-center gap-1 text-muted-foreground hover:text-primary cursor-pointer w-fit"

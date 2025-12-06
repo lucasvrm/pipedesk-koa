@@ -63,6 +63,7 @@ import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
 import { toast } from 'sonner'
 import { PageContainer } from '@/components/PageContainer'
 import { EmptyState } from '@/components/EmptyState'
+import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -246,7 +247,13 @@ export default function DealDetailPage() {
         sidebar={
           <>
             <KeyMetricsSidebar
-              title={deal.clientName}
+              title={
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span>{deal.clientName}</span>
+                  {renderNewBadge(deal.createdAt)}
+                  {renderUpdatedTodayBadge(deal.updatedAt)}
+                </div>
+              }
               subtitle={OPERATION_LABELS[deal.operationType]}
               statusBadge={
                 <Badge className={`font-normal ${getStatusColor(deal.status)}`}>

@@ -65,6 +65,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useOperationTypes } from '@/services/operationTypeService'
 import { EmptyState } from '@/components/EmptyState'
+import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -349,7 +350,13 @@ export default function LeadDetailPage() {
         sidebar={
           <>
             <KeyMetricsSidebar
-              title={lead.legalName}
+              title={
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span>{lead.legalName}</span>
+                  {renderNewBadge(lead.createdAt)}
+                  {renderUpdatedTodayBadge(lead.updatedAt)}
+                </div>
+              }
               subtitle={lead.tradeName}
               statusBadge={statusBadge}
               metrics={SIDEBAR_METRICS}
