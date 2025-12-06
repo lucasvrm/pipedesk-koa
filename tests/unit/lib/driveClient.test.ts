@@ -5,6 +5,7 @@ import {
   uploadDriveFile,
   deleteDriveFile,
   deleteDriveFolder,
+  DriveApiError,
 } from '@/lib/driveClient';
 import * as supabaseClient from '@/lib/supabaseClient';
 import * as safeFetchModule from '@/lib/safeFetch';
@@ -383,6 +384,67 @@ describe('DriveClient', () => {
       });
 
       await expect(listDriveItems()).rejects.toThrow('Authentication error: Auth error');
+    });
+  });
+
+  describe('DriveApiError', () => {
+    it('should throw DriveApiError with status code on API failure', async () => {
+      import.meta.env.VITE_DRIVE_API_URL = mockBaseUrl;
+
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: async () => 'Not Found',
+      } as Response);
+
+      try {
+        await listDriveItems();
+        expect.fail('Should have thrown DriveApiError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(DriveApiError);
+        expect((error as DriveApiError).statusCode).toBe(404);
+        expect((error as DriveApiError).response).toBe('Not Found');
+        expect((error as DriveApiError).name).toBe('DriveApiError');
+      }
+    });
+
+    it('should include status code in error for folder creation failure', async () => {
+      import.meta.env.VITE_DRIVE_API_URL = mockBaseUrl;
+
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: false,
+        status: 409,
+        text: async () => 'Folder already exists',
+      } as Response);
+
+      try {
+        await createDriveFolder('Test Folder');
+        expect.fail('Should have thrown DriveApiError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(DriveApiError);
+        expect((error as DriveApiError).statusCode).toBe(409);
+        expect((error as DriveApiError).response).toBe('Folder already exists');
+      }
+    });
+
+    it('should include status code in error for upload failure', async () => {
+      import.meta.env.VITE_DRIVE_API_URL = mockBaseUrl;
+      const mockFile = new File(['content'], 'test.txt', { type: 'text/plain' });
+
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: false,
+        status: 413,
+        text: async () => 'File too large',
+      } as Response);
+
+      try {
+        await uploadDriveFile(mockFile);
+        expect.fail('Should have thrown DriveApiError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(DriveApiError);
+        expect((error as DriveApiError).statusCode).toBe(413);
+        expect((error as DriveApiError).response).toBe('File too large');
+      }
     });
   });
 });
