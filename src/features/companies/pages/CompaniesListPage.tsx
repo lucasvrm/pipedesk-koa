@@ -58,7 +58,7 @@ import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
-import { useCompanyQuickActions } from '@/hooks/useQuickActions'
+import { getCompanyQuickActions } from '@/hooks/useQuickActions'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -551,8 +551,10 @@ export default function CompaniesListPage() {
 
                         <TableCell>
                           <QuickActionsMenu
-                            actions={useCompanyQuickActions({
+                            actions={getCompanyQuickActions({
                               company,
+                              navigate,
+                              deleteCompany: deleteCompanyMutation,
                               onEdit: () => navigate(`/companies/${company.id}`),
                             })}
                           />
