@@ -57,7 +57,6 @@ export function useDriveDocuments({
       enabled: USE_REMOTE_DRIVE,
       baseUrl: import.meta.env.VITE_DRIVE_API_URL,
       entityType,
-      entityId,
     })
 
     if (USE_REMOTE_DRIVE) {
@@ -100,9 +99,9 @@ export function useDriveDocuments({
   }, [actorId, actorRole, entityId, entityType, entityName])
 
   useEffect(() => {
-    load().catch(err => {
-      // Error is already logged in load(), just prevent unhandled rejection
-      console.error('[useDriveDocuments] useEffect caught error:', err)
+    // Silently catch errors that are already logged and handled in load()
+    load().catch(() => {
+      // Error is already logged in load() and set in error state
     })
   }, [load])
 
