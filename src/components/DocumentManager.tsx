@@ -160,8 +160,18 @@ export default function DocumentManager({
   // Filtra arquivos e pastas
   const filteredFiles = files.filter(f => {
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
-    // API already filters by folderId, so we don't need to filter here
-    return matchesSearch
+    
+    // Filter by type if not 'all'
+    let matchesType = true
+    if (filterType !== 'all') {
+      const mime = f.type.toLowerCase()
+      if (filterType === 'pdf') matchesType = mime.includes('pdf')
+      else if (filterType === 'image') matchesType = mime.includes('image')
+      else if (filterType === 'sheet') matchesType = mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')
+      else if (filterType === 'doc') matchesType = mime.includes('document') || mime.includes('word') || mime.includes('text')
+    }
+    
+    return matchesSearch && matchesType
   })
 
   const currentFolders = (folders || []).filter(f => f.parentId === currentFolderId)
@@ -370,6 +380,7 @@ export default function DocumentManager({
               className={`hover:underline ${index === arr.length - 1 ? 'font-bold text-foreground' : 'text-muted-foreground hover:text-primary'}`}
               onClick={() => navigateToFolder(crumb.id || undefined)}
               disabled={index === arr.length - 1}
+              title={index === arr.length - 1 ? 'Localização atual' : `Navegar para ${crumb.name}`}
             >
               {crumb.name}
             </button>
@@ -565,10 +576,10 @@ export default function DocumentManager({
                   </div>
                   <div className="col-span-2 text-xs text-muted-foreground">-</div>
                   <div className="col-span-3 text-xs text-muted-foreground">-</div>
-                  <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                  <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100">
                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}><DotsThreeVertical /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
