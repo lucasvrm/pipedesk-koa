@@ -27,11 +27,17 @@ if (typeof window !== 'undefined') {
 
 export type DrivePermission = 'owner' | 'writer' | 'reader'
 
+export interface Breadcrumb {
+  id: string | null
+  name: string
+}
+
 export interface RemoteDriveSnapshot {
   rootFolderId: string
   folders: DriveFolder[]
   files: DriveFile[]
   permission: DrivePermission
+  breadcrumbs: Breadcrumb[]
 }
 
 interface RemoteFileItem {
@@ -108,7 +114,8 @@ export async function getRemoteEntityDocuments(
   entityType: DriveEntityType,
   entityId: string,
   actorId: string,
-  actorRole: DriveRole
+  actorRole: DriveRole,
+  folderId?: string
 ): Promise<RemoteDriveSnapshot> {
   if (!REMOTE_ENABLED) {
     throw new Error(
@@ -116,8 +123,13 @@ export async function getRemoteEntityDocuments(
     )
   }
 
+  let path = `/drive/${entityType}/${entityId}`
+  if (folderId) {
+    path += `?folder_id=${folderId}`
+  }
+
   const res = await fetchFromDriveApi(
-    `/drive/${entityType}/${entityId}`,
+    path,
     {
       method: 'GET',
     },
@@ -132,7 +144,7 @@ export async function getRemoteEntityDocuments(
     )
   }
 
-  const data: { files: RemoteFileItem[]; permission?: string } = await res.json()
+  const data: { files: RemoteFileItem[]; permission?: string; breadcrumbs?: { id: string | null; name: string }[] } = await res.json()
 
   const rootFolderId = `remote:${entityType}:${entityId}`
   const folders: DriveFolder[] = []
@@ -146,8 +158,7 @@ export async function getRemoteEntityDocuments(
       const folder: DriveFolder = {
         id: item.id,
         name: item.name,
-        // Por enquanto, tratamos tudo como estando na raiz (sem navegação por subpastas aninhadas no frontend atual).
-        parentId: undefined,
+        parentId: folderId, // Agora suportamos navegação real
         entityId,
         entityType,
         type: 'custom',
@@ -160,7 +171,7 @@ export async function getRemoteEntityDocuments(
         size: Number(item.size ?? 0),
         type: mime || 'application/octet-stream',
         url: item.webViewLink || '#',
-        folderId: undefined,
+        folderId: folderId,
         uploadedBy: 'remote',
         uploadedAt: item.createdTime || new Date().toISOString(),
         entityId,
@@ -177,11 +188,12 @@ export async function getRemoteEntityDocuments(
     folders,
     files,
     permission: normalizePermission(data.permission),
+    breadcrumbs: data.breadcrumbs || [],
   }
 }
 
 /**
- * Cria uma subpasta na pasta raiz da entidade.
+ * Cria uma subpasta na pasta raiz ou especificada da entidade.
  * POST /drive/:entityType/:entityId/folder
  */
 export async function createRemoteFolder(
@@ -189,12 +201,18 @@ export async function createRemoteFolder(
   entityId: string,
   name: string,
   actorId: string,
-  actorRole: DriveRole
+  actorRole: DriveRole,
+  parentId?: string
 ): Promise<void> {
   if (!REMOTE_ENABLED) {
     throw new Error(
       '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas createRemoteFolder foi chamado.'
     )
+  }
+
+  const body: any = { name }
+  if (parentId) {
+    body.parent_id = parentId
   }
 
   const res = await fetchFromDriveApi(
@@ -204,7 +222,7 @@ export async function createRemoteFolder(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify(body),
     },
     actorId,
     actorRole
@@ -219,7 +237,7 @@ export async function createRemoteFolder(
 }
 
 /**
- * Faz upload de um ou mais arquivos para a pasta raiz da entidade.
+ * Faz upload de um ou mais arquivos para a pasta raiz ou especificada da entidade.
  * POST /drive/:entityType/:entityId/upload
  */
 export async function uploadRemoteFiles(
@@ -227,7 +245,8 @@ export async function uploadRemoteFiles(
   entityId: string,
   files: File[],
   actorId: string,
-  actorRole: DriveRole
+  actorRole: DriveRole,
+  parentId?: string
 ): Promise<void> {
   if (!REMOTE_ENABLED) {
     throw new Error(
@@ -238,6 +257,9 @@ export async function uploadRemoteFiles(
   for (const file of files) {
     const formData = new FormData()
     formData.append('file', file)
+    if (parentId) {
+      formData.append('parent_id', parentId)
+    }
 
     const res = await fetchFromDriveApi(
       `/drive/${entityType}/${entityId}/upload`,
@@ -255,6 +277,45 @@ export async function uploadRemoteFiles(
         `[pdGoogleDriveApi] Erro ao fazer upload de arquivo "${file.name}" (${res.status}): ${text}`
       )
     }
+  }
+}
+
+/**
+ * Renomeia um arquivo ou pasta.
+ * PUT /drive/{entity_type}/{entity_id}/files/{file_id}/rename
+ */
+export async function renameRemoteEntry(
+  entityType: DriveEntityType,
+  entityId: string,
+  fileId: string,
+  newName: string,
+  actorId: string,
+  actorRole: DriveRole
+): Promise<void> {
+  if (!REMOTE_ENABLED) {
+    throw new Error(
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas renameRemoteEntry foi chamado.'
+    )
+  }
+
+  const res = await fetchFromDriveApi(
+    `/drive/${entityType}/${entityId}/files/${fileId}/rename`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: newName }),
+    },
+    actorId,
+    actorRole
+  )
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(
+      `[pdGoogleDriveApi] Erro ao renomear item (${res.status}): ${text}`
+    )
   }
 }
 
