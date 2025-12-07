@@ -57,7 +57,6 @@ import { DroppedPlayersList } from '../components/DroppedPlayersList'
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
 import DocumentManager from '@/components/DocumentManager'
-import { DealDocumentsList } from '../components/DealDocumentsList'
 import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
@@ -506,7 +505,12 @@ export default function DealDetailPage() {
             </TabsContent>
 
             <TabsContent value="documents">
-              <DealDocumentsList dealId={deal.id} />
+              <DocumentManager 
+                entityId={deal.id} 
+                entityType="deal" 
+                currentUser={currentUser}
+                entityName={deal.clientName}
+              />
             </TabsContent>
 
             <TabsContent value="timeline" className="space-y-4">
