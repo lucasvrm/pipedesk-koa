@@ -21,6 +21,8 @@ import {
   createRemoteFolder,
   uploadRemoteFiles,
   deleteRemoteEntry,
+  renameRemoteEntry,
+  Breadcrumb,
 } from '@/services/pdGoogleDriveApi'
 
 interface UseDriveDocumentsParams {
@@ -29,6 +31,7 @@ interface UseDriveDocumentsParams {
   actorId: string
   actorRole: DriveRole
   entityName?: string
+  initialFolderId?: string
 }
 
 // Use the same env variable as pdGoogleDriveApi for consistency
@@ -40,15 +43,18 @@ export function useDriveDocuments({
   actorId,
   actorRole,
   entityName,
+  initialFolderId,
 }: UseDriveDocumentsParams) {
   const [folders, setFolders] = useState<DriveFolder[]>([])
   const [files, setFiles] = useState<DriveFile[]>([])
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
+  const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([])
   const [activities, setActivities] = useState<DriveActivityEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(initialFolderId)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (folderId: string | undefined = currentFolderId) => {
     setLoading(true)
     setError(null)
 
@@ -57,15 +63,17 @@ export function useDriveDocuments({
       enabled: USE_REMOTE_DRIVE,
       baseUrl: import.meta.env.VITE_DRIVE_API_URL,
       entityType,
+      folderId,
     })
 
     if (USE_REMOTE_DRIVE) {
       // 🔗 Usa backend pd-google
       try {
-        const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole)
+        const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole, folderId)
         setFolders(snapshot.folders)
         setFiles(snapshot.files)
         setRootFolderId(snapshot.rootFolderId)
+        setBreadcrumbs(snapshot.breadcrumbs)
         // activity ainda é local-only, por isso fica vazio aqui
         setActivities([])
         setLoading(false)
@@ -88,6 +96,8 @@ export function useDriveDocuments({
       setFiles(snapshot.files)
       setRootFolderId(snapshot.rootFolderId)
       setActivities(snapshot.activity)
+      // Mock breadcrumbs for local dev
+      setBreadcrumbs([{ id: null, name: 'Raiz' }])
       setLoading(false)
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err))
@@ -96,58 +106,75 @@ export function useDriveDocuments({
       setLoading(false)
       throw error
     }
-  }, [actorId, actorRole, entityId, entityType, entityName])
+  }, [actorId, actorRole, entityId, entityType, entityName, currentFolderId])
 
   useEffect(() => {
     // Silently catch errors that are already logged and handled in load()
-    load().catch(() => {
+    load(currentFolderId).catch(() => {
       // Error is already logged in load() and set in error state
     })
-  }, [load])
+  }, [load, currentFolderId])
+
+  const navigateToFolder = (folderId: string | undefined) => {
+    setCurrentFolderId(folderId)
+  }
 
   const createFolder = useCallback(
     async (name: string, parentId?: string) => {
       if (USE_REMOTE_DRIVE) {
-        await createRemoteFolder(entityType, entityId, name, actorId, actorRole)
-        await load()
+        await createRemoteFolder(entityType, entityId, name, actorId, actorRole, parentId)
+        await load(currentFolderId)
         return
       }
 
       const folder = await createDriveFolder(entityType, entityId, name, parentId, actorId, entityName)
-      await load()
+      await load(currentFolderId)
       return folder
     },
-    [actorId, actorRole, entityId, entityName, entityType, load]
+    [actorId, actorRole, entityId, entityName, entityType, load, currentFolderId]
   )
 
   const uploadFiles = useCallback(
     async (selectedFiles: File[], parentId?: string) => {
       if (USE_REMOTE_DRIVE) {
-        await uploadRemoteFiles(entityType, entityId, selectedFiles, actorId, actorRole)
-        await load()
+        await uploadRemoteFiles(entityType, entityId, selectedFiles, actorId, actorRole, parentId)
+        await load(currentFolderId)
         return
       }
 
       const uploaded = await uploadDriveFiles(entityType, entityId, selectedFiles, parentId, actorId, actorRole, entityName)
-      await load()
+      await load(currentFolderId)
       return uploaded
     },
-    [actorId, actorRole, entityId, entityName, entityType, load]
+    [actorId, actorRole, entityId, entityName, entityType, load, currentFolderId]
+  )
+
+  const renameItem = useCallback(
+    async (fileId: string, newName: string) => {
+      if (USE_REMOTE_DRIVE) {
+        await renameRemoteEntry(entityType, entityId, fileId, newName, actorId, actorRole)
+        await load(currentFolderId)
+        return
+      }
+      // Local rename not implemented in mock service as per code inspection, but assuming it exists for interface parity or simple no-op
+      console.warn('Renaming is only supported in Remote Drive mode')
+    },
+    [actorId, actorRole, entityId, entityType, load, currentFolderId]
   )
 
   const deleteItem = useCallback(
     async (targetId: string, type: 'file' | 'folder') => {
       if (USE_REMOTE_DRIVE) {
         await deleteRemoteEntry(entityType, entityId, targetId, type, actorId, actorRole)
-        await load()
+        await load(currentFolderId)
         return
       }
 
       // O serviço local (googleDriveService) gerencia exclusão recursiva e não precisa do type
       await deleteEntry(entityType, entityId, targetId, actorId)
-      await load()
+      await load(currentFolderId)
     },
-    [actorId, actorRole, entityId, entityType, load]
+    [actorId, actorRole, entityId, entityType, load, currentFolderId]
   )
 
   const generateLink = useCallback(
@@ -158,10 +185,10 @@ export function useDriveDocuments({
       }
 
       const link = await generateDriveLink(entityType, entityId, fileId, visibility)
-      await load()
+      await load(currentFolderId)
       return link
     },
-    [entityId, entityType, load]
+    [entityId, entityType, load, currentFolderId]
   )
 
   const applyPermissions = useCallback(
@@ -172,9 +199,9 @@ export function useDriveDocuments({
       }
 
       await applyInheritedPermissions(entityType, entityId, actorRole, targetIds, actorId)
-      await load()
+      await load(currentFolderId)
     },
-    [actorId, actorRole, entityId, entityType, load]
+    [actorId, actorRole, entityId, entityType, load, currentFolderId]
   )
 
   const refreshActivity = useCallback(async () => {
@@ -192,15 +219,19 @@ export function useDriveDocuments({
     folders,
     files,
     rootFolderId,
+    breadcrumbs,
     activities,
     loading,
     error,
+    currentFolderId,
+    navigateToFolder,
     createFolder,
     uploadFiles,
+    renameItem,
     deleteItem,
     generateLink,
     applyPermissions,
     refreshActivity,
-    reload: load,
+    reload: () => load(currentFolderId),
   }
 }
