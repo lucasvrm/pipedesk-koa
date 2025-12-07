@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Company, CompanyType, PlayerContact, RelationshipLevel, MasterDeal } from '@/lib/types'
+import { syncRemoteEntityName } from './pdGoogleDriveApi'
 
 // ============================================================================
 // Types
@@ -127,6 +128,13 @@ export async function updateCompany(id: string, updates: CompanyUpdate) {
     .single()
 
   if (error) throw error
+
+  // --- GOOGLE DRIVE SYNC START ---
+  if (updates.name) {
+    syncRemoteEntityName('company', id);
+  }
+  // --- GOOGLE DRIVE SYNC END ---
+
   return mapCompanyFromDB(data)
 }
 

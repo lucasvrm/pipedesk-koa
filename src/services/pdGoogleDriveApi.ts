@@ -1,4 +1,3 @@
-
 import {
   DriveEntityType,
   DriveFolder,
@@ -72,10 +71,14 @@ async function fetchFromDriveApi(
   actorId?: string,
   actorRole?: string
 ): Promise<Response> {
-  if (!REMOTE_API_URL) throw new Error('[pdGoogleDriveApi] URL do Backend Drive não configurada.')
+  if (!REMOTE_API_URL) {
+    throw new Error('[pdGoogleDriveApi] URL do Backend Drive não configurada.')
+  }
 
   // Autenticação: Sessão Supabase
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   const token = session?.access_token
 
   const headers = new Headers(options.headers)
@@ -92,7 +95,7 @@ async function fetchFromDriveApi(
 
   return fetch(`${REMOTE_API_URL}${path}`, {
     ...options,
-    headers
+    headers,
   })
 }
 
@@ -113,9 +116,14 @@ export async function getRemoteEntityDocuments(
     )
   }
 
-  const res = await fetchFromDriveApi(`/drive/${entityType}/${entityId}`, {
-    method: 'GET',
-  }, actorId, actorRole)
+  const res = await fetchFromDriveApi(
+    `/drive/${entityType}/${entityId}`,
+    {
+      method: 'GET',
+    },
+    actorId,
+    actorRole
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -189,13 +197,18 @@ export async function createRemoteFolder(
     )
   }
 
-  const res = await fetchFromDriveApi(`/drive/${entityType}/${entityId}/folder`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const res = await fetchFromDriveApi(
+    `/drive/${entityType}/${entityId}/folder`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
     },
-    body: JSON.stringify({ name }),
-  }, actorId, actorRole)
+    actorId,
+    actorRole
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -226,10 +239,15 @@ export async function uploadRemoteFiles(
     const formData = new FormData()
     formData.append('file', file)
 
-    const res = await fetchFromDriveApi(`/drive/${entityType}/${entityId}/upload`, {
-      method: 'POST',
-      body: formData,
-    }, actorId, actorRole)
+    const res = await fetchFromDriveApi(
+      `/drive/${entityType}/${entityId}/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+      actorId,
+      actorRole
+    )
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
@@ -262,14 +280,61 @@ export async function deleteRemoteEntry(
   const endpointType = type === 'folder' ? 'folders' : 'files'
   const path = `/drive/${entityType}/${entityId}/${endpointType}/${targetId}`
 
-  const res = await fetchFromDriveApi(path, {
-    method: 'DELETE',
-  }, actorId, actorRole)
+  const res = await fetchFromDriveApi(
+    path,
+    {
+      method: 'DELETE',
+    },
+    actorId,
+    actorRole
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(
       `[pdGoogleDriveApi] Erro ao deletar ${type} remoto (${res.status}): ${text}`
     )
+  }
+}
+
+/**
+ * Solicita sincronização do nome da pasta remota com o nome da entidade no banco.
+ * Fire-and-forget: não trava a UI em caso de erro.
+ * POST /api/drive/sync-name
+ */
+export async function syncRemoteEntityName(
+  entityType: 'deal' | 'lead' | 'company',
+  entityId: string
+): Promise<void> {
+  try {
+    if (!isRemoteDriveEnabled()) return
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    const userId = session?.user?.id
+
+    if (!userId) return
+
+    // Chamada em background
+    fetchFromDriveApi(
+      '/api/drive/sync-name',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entity_type: entityType,
+          entity_id: entityId,
+        }),
+      },
+      userId,
+      'writer'
+    ).catch((err) => {
+      console.warn('[pdGoogleDriveApi] Background sync name failed (ignoring):', err)
+    })
+  } catch (error) {
+    console.warn('[pdGoogleDriveApi] Error dispatching sync:', error)
   }
 }

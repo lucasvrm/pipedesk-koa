@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MasterDealDB, CompanyDB, ProfileDB } from '@/lib/databaseTypes';
 import { MasterDeal, OperationType, DealStatus, Company, User, Tag, UserRole } from '@/lib/types';
+import { syncRemoteEntityName } from './pdGoogleDriveApi';
 
 // ============================================================================
 // Query Helpers
@@ -336,6 +337,12 @@ export async function updateDeal(dealId: string, updates: DealUpdate): Promise<D
       .single();
 
     if (error) throw error;
+
+    // --- GOOGLE DRIVE SYNC START ---
+    if (updates.clientName) {
+      syncRemoteEntityName('deal', dealId);
+    }
+    // --- GOOGLE DRIVE SYNC END ---
 
     return mapDealFromDB(data as DealQueryResult);
   } catch (error) {
