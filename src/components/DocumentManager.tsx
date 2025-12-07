@@ -24,7 +24,8 @@ import {
   ListDashes,
   Eye,
   CloudArrowUp,
-  Info
+  Info,
+  PencilSimple
 } from '@phosphor-icons/react'
 import {
   DropdownMenu,
@@ -85,9 +86,13 @@ export default function DocumentManager({
     files,
     folders,
     rootFolderId,
+    breadcrumbs,
+    currentFolderId,
+    navigateToFolder,
     createFolder,
     uploadFiles,
     deleteItem,
+    renameItem,
     activities,
     loading,
     error
@@ -98,12 +103,16 @@ export default function DocumentManager({
     actorRole,
     entityName,
   })
-  
-  const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  
+  // States for Rename
+  const [isRenameOpen, setIsRenameOpen] = useState(false)
+  const [itemToRename, setItemToRename] = useState<{ id: string, name: string } | null>(null)
+  const [newName, setNewName] = useState('')
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [isDragging, setIsDragging] = useState(false)
@@ -152,7 +161,8 @@ export default function DocumentManager({
   const filteredFiles = files.filter(f => {
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesFolder = f.folderId === currentFolderId
-
+    
+    // Filter by type if not 'all'
     let matchesType = true
     if (filterType !== 'all') {
       const mime = f.type.toLowerCase()
@@ -161,7 +171,7 @@ export default function DocumentManager({
       else if (filterType === 'sheet') matchesType = mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')
       else if (filterType === 'doc') matchesType = mime.includes('document') || mime.includes('word') || mime.includes('text')
     }
-
+    
     return matchesSearch && matchesFolder && matchesType
   })
 
@@ -226,25 +236,31 @@ export default function DocumentManager({
     }
   }
 
+  // Rename logic
+  const openRenameDialog = (id: string, currentName: string) => {
+    setItemToRename({ id, name: currentName })
+    setNewName(currentName)
+    setIsRenameOpen(true)
+  }
+
+  const handleRename = async () => {
+    if (!itemToRename || !newName.trim()) return
+    try {
+      await renameItem(itemToRename.id, newName)
+      toast.success('Renomeado com sucesso')
+      setIsRenameOpen(false)
+      setItemToRename(null)
+    } catch (error) {
+      toast.error('Erro ao renomear')
+    }
+  }
+
   const confirmDelete = async () => {
     if (!itemToDelete) return
 
     await deleteItem(itemToDelete.id, itemToDelete.type)
     toast.success(`${itemToDelete.type === 'folder' ? 'Pasta excluída' : 'Arquivo excluído'}`)
     setItemToDelete(null)
-  }
-
-  // Breadcrumbs simplificado
-  const getBreadcrumbs = () => {
-    if (!currentFolderId) return [{ id: undefined, name: 'Raiz' }]
-    
-    // Lógica recursiva real seria necessária para breadcrumbs profundos
-    // Aqui mostramos apenas Raiz > Atual para simplificar
-    const current = folders?.find(f => f.id === currentFolderId)
-    return [
-      { id: undefined, name: 'Raiz' },
-      ...(current ? [current] : [])
-    ]
   }
 
   return (
@@ -358,18 +374,25 @@ export default function DocumentManager({
         </div>
       </div>
       {/* Breadcrumbs */}
-      <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm">
-        {getBreadcrumbs().map((crumb, index, arr) => (
-          <div key={crumb.id || 'root'} className="flex items-center">
-            <button
-              className="hover:underline hover:text-primary font-medium"
-              onClick={() => setCurrentFolderId(crumb.id)}
-            >
-              {crumb.name}
-            </button>
-            {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
-          </div>
-        ))}
+      <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm overflow-x-auto whitespace-nowrap">
+        {breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs.map((crumb, index, arr) => {
+          const isCurrentLocation = index === arr.length - 1
+          return (
+            <div key={crumb.id || 'root'} className="flex items-center">
+              <button
+                className={isCurrentLocation ? 'font-bold text-foreground' : 'hover:underline text-muted-foreground hover:text-primary'}
+                onClick={() => navigateToFolder(crumb.id || undefined)}
+                disabled={isCurrentLocation}
+                title={isCurrentLocation ? 'Localização atual' : `Navegar para ${crumb.name}`}
+              >
+                {crumb.name}
+              </button>
+              {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
+            </div>
+          )
+        }) : (
+          <span className="text-muted-foreground text-xs">Carregando caminho...</span>
+        )}
       </div>
 
       <div className="px-4 py-2 text-xs text-muted-foreground border-b flex items-center justify-between">
@@ -430,7 +453,7 @@ export default function DocumentManager({
                     <div
                       key={folder.id}
                       className="group flex flex-col items-center p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors relative"
-                      onClick={() => setCurrentFolderId(folder.id)}
+                      onClick={() => navigateToFolder(folder.id)}
                     >
                       <FolderIcon size={48} weight="fill" className="text-yellow-400 mb-2 drop-shadow-sm" />
                       <span className="text-sm font-medium text-center truncate w-full">{folder.name}</span>
@@ -442,6 +465,9 @@ export default function DocumentManager({
                             <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
+                              <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                            </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
                           className="text-destructive"
@@ -506,6 +532,9 @@ export default function DocumentManager({
                              <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
                                 <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
                              </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
+                                <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
                               className="text-destructive cursor-pointer"
@@ -543,7 +572,7 @@ export default function DocumentManager({
                <div
                   key={folder.id}
                   className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 cursor-pointer border-b last:border-0 transition-colors group"
-                  onClick={() => setCurrentFolderId(folder.id)}
+                  onClick={() => navigateToFolder(folder.id)}
                 >
                   <div className="col-span-6 flex items-center gap-3">
                      <FolderIcon size={20} weight="fill" className="text-yellow-400" />
@@ -554,9 +583,12 @@ export default function DocumentManager({
                   <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100">
                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}><DotsThreeVertical /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
+                          <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
                           className="text-destructive"
@@ -594,6 +626,9 @@ export default function DocumentManager({
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
                            <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
+                           <PencilSimple className="mr-2 h-4 w-4" /> Renomear
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
@@ -649,6 +684,27 @@ export default function DocumentManager({
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNewFolderOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreateFolder}>Criar Pasta</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear Item</DialogTitle>
+            <DialogDescription>Digite o novo nome para o item.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              value={newName} 
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleRename()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenameOpen(false)}>Cancelar</Button>
+            <Button onClick={handleRename}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
