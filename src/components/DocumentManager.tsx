@@ -89,7 +89,8 @@ export default function DocumentManager({
     uploadFiles,
     deleteItem,
     activities,
-    loading
+    loading,
+    error
   } = useDriveDocuments({
     entityId,
     entityType: entityType as any,
@@ -395,6 +396,25 @@ export default function DocumentManager({
                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
                ))}
             </div>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="rounded-full bg-destructive/10 p-3 mb-4">
+              <Info className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar documentos</h3>
+            <p className="text-sm text-muted-foreground mb-1 max-w-md">
+              {error.message}
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Verifique se a API do Drive está configurada corretamente e se há conexão com o servidor.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+            >
+              Tentar Novamente
+            </Button>
           </div>
         ) : (
           <>

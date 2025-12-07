@@ -31,8 +31,8 @@ interface UseDriveDocumentsParams {
   entityName?: string
 }
 
-const PD_GOOGLE_BASE_URL = import.meta.env.VITE_PD_GOOGLE_BASE_URL
-const USE_REMOTE_DRIVE = Boolean(PD_GOOGLE_BASE_URL)
+// Use the same env variable as pdGoogleDriveApi for consistency
+const USE_REMOTE_DRIVE = Boolean(import.meta.env.VITE_DRIVE_API_URL)
 
 export function useDriveDocuments({
   entityId,
@@ -46,33 +46,63 @@ export function useDriveDocuments({
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [activities, setActivities] = useState<DriveActivityEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
+    setError(null)
+
+    // Diagnostic logging to confirm backend URL and decision
+    console.log('[useDriveDocuments] Remote drive:', {
+      enabled: USE_REMOTE_DRIVE,
+      baseUrl: import.meta.env.VITE_DRIVE_API_URL,
+      entityType,
+    })
 
     if (USE_REMOTE_DRIVE) {
       // 🔗 Usa backend pd-google
-      const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole)
-      setFolders(snapshot.folders)
-      setFiles(snapshot.files)
-      setRootFolderId(snapshot.rootFolderId)
-      // activity ainda é local-only, por isso fica vazio aqui
-      setActivities([])
-      setLoading(false)
+      try {
+        const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole)
+        setFolders(snapshot.folders)
+        setFiles(snapshot.files)
+        setRootFolderId(snapshot.rootFolderId)
+        // activity ainda é local-only, por isso fica vazio aqui
+        setActivities([])
+        setLoading(false)
+      } catch (err) {
+        // Log the full error for debugging
+        const error = err instanceof Error ? err : new Error(String(err))
+        console.error('[useDriveDocuments] Error loading remote documents:', error)
+        setError(error)
+        setLoading(false)
+        // Re-throw to allow components to handle the error
+        throw error
+      }
       return
     }
 
     // 🧪 Mock local padrão (completo)
-    const snapshot = await getEntityDocuments(entityType, entityId, entityName)
-    setFolders(snapshot.folders)
-    setFiles(snapshot.files)
-    setRootFolderId(snapshot.rootFolderId)
-    setActivities(snapshot.activity)
-    setLoading(false)
+    try {
+      const snapshot = await getEntityDocuments(entityType, entityId, entityName)
+      setFolders(snapshot.folders)
+      setFiles(snapshot.files)
+      setRootFolderId(snapshot.rootFolderId)
+      setActivities(snapshot.activity)
+      setLoading(false)
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
+      console.error('[useDriveDocuments] Error loading local documents:', error)
+      setError(error)
+      setLoading(false)
+      throw error
+    }
   }, [actorId, actorRole, entityId, entityType, entityName])
 
   useEffect(() => {
-    load()
+    // Silently catch errors that are already logged and handled in load()
+    load().catch(() => {
+      // Error is already logged in load() and set in error state
+    })
   }, [load])
 
   const createFolder = useCallback(
@@ -164,6 +194,7 @@ export function useDriveDocuments({
     rootFolderId,
     activities,
     loading,
+    error,
     createFolder,
     uploadFiles,
     deleteItem,
