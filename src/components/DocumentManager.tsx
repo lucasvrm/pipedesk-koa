@@ -160,6 +160,7 @@ export default function DocumentManager({
   // Filtra arquivos e pastas
   const filteredFiles = files.filter(f => {
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesFolder = f.folderId === currentFolderId
     
     // Filter by type if not 'all'
     let matchesType = true
@@ -171,7 +172,7 @@ export default function DocumentManager({
       else if (filterType === 'doc') matchesType = mime.includes('document') || mime.includes('word') || mime.includes('text')
     }
     
-    return matchesSearch && matchesType
+    return matchesSearch && matchesFolder && matchesType
   })
 
   const currentFolders = (folders || []).filter(f => f.parentId === currentFolderId)
@@ -374,19 +375,22 @@ export default function DocumentManager({
       </div>
       {/* Breadcrumbs */}
       <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm overflow-x-auto whitespace-nowrap">
-        {breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs.map((crumb, index, arr) => (
-          <div key={crumb.id || 'root'} className="flex items-center">
-            <button
-              className={`hover:underline ${index === arr.length - 1 ? 'font-bold text-foreground' : 'text-muted-foreground hover:text-primary'}`}
-              onClick={() => navigateToFolder(crumb.id || undefined)}
-              disabled={index === arr.length - 1}
-              title={index === arr.length - 1 ? 'Localização atual' : `Navegar para ${crumb.name}`}
-            >
-              {crumb.name}
-            </button>
-            {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
-          </div>
-        )) : (
+        {breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs.map((crumb, index, arr) => {
+          const isCurrentLocation = index === arr.length - 1
+          return (
+            <div key={crumb.id || 'root'} className="flex items-center">
+              <button
+                className={isCurrentLocation ? 'font-bold text-foreground' : 'hover:underline text-muted-foreground hover:text-primary'}
+                onClick={() => navigateToFolder(crumb.id || undefined)}
+                disabled={isCurrentLocation}
+                title={isCurrentLocation ? 'Localização atual' : `Navegar para ${crumb.name}`}
+              >
+                {crumb.name}
+              </button>
+              {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
+            </div>
+          )
+        }) : (
           <span className="text-muted-foreground text-xs">Carregando caminho...</span>
         )}
       </div>
