@@ -134,10 +134,16 @@ export async function saveTemplate(
  * @returns True if deleted successfully
  */
 export async function deleteTemplate(role: string | null): Promise<boolean> {
-  const { error } = await supabase
-    .from('dashboard_templates')
-    .delete()
-    .eq('role', role);
+  let query = supabase.from('dashboard_templates').delete();
+  
+  // Handle null role differently since .eq() doesn't work with null
+  if (role === null) {
+    query = query.is('role', null);
+  } else {
+    query = query.eq('role', role);
+  }
+  
+  const { error } = await query;
 
   if (error) {
     console.error('Error deleting dashboard template:', error);

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getTemplateForRole, saveTemplate, getAllTemplates } from '@/services/dashboardTemplateService';
+import { getTemplateForRole, saveTemplate, getAllTemplates, deleteTemplate } from '@/services/dashboardTemplateService';
 import { supabase } from '@/lib/supabaseClient';
 
 // Mock Supabase client
@@ -209,6 +209,54 @@ describe('dashboardTemplateService', () => {
       expect(result).toHaveLength(2);
       expect(result[0].role).toBeNull();
       expect(result[1].role).toBe('admin');
+    });
+  });
+
+  describe('deleteTemplate', () => {
+    it('should delete a role-specific template', async () => {
+      const mockFrom = vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            error: null
+          })
+        })
+      });
+
+      (supabase.from as any) = mockFrom;
+
+      const result = await deleteTemplate('admin');
+
+      expect(result).toBe(true);
+    });
+
+    it('should delete global template (null role) using is() method', async () => {
+      const mockFrom = vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          is: vi.fn().mockResolvedValue({
+            error: null
+          })
+        })
+      });
+
+      (supabase.from as any) = mockFrom;
+
+      const result = await deleteTemplate(null);
+
+      expect(result).toBe(true);
+    });
+
+    it('should throw error when delete fails', async () => {
+      const mockFrom = vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            error: { message: 'Permission denied' }
+          })
+        })
+      });
+
+      (supabase.from as any) = mockFrom;
+
+      await expect(deleteTemplate('admin')).rejects.toThrow('Failed to delete dashboard template');
     });
   });
 });
