@@ -21,10 +21,32 @@ CREATE POLICY "Anyone can read dashboard templates"
   FOR SELECT
   USING (true);
 
--- Policy: Only admins can insert/update templates
-CREATE POLICY "Only admins can manage dashboard templates"
+-- Policy: Only admins can insert/update/delete templates
+CREATE POLICY "Only admins can insert dashboard templates"
   ON dashboard_templates
-  FOR ALL
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Only admins can update dashboard templates"
+  ON dashboard_templates
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Only admins can delete dashboard templates"
+  ON dashboard_templates
+  FOR DELETE
   USING (
     EXISTS (
       SELECT 1 FROM profiles

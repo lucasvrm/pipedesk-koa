@@ -103,8 +103,7 @@ export async function saveTemplate(
     .upsert(
       {
         role,
-        config,
-        updated_at: new Date().toISOString()
+        config
       },
       {
         onConflict: 'role'
@@ -131,10 +130,10 @@ export async function saveTemplate(
  * Delete a dashboard template
  * Only admins should be able to call this (enforced by RLS policies)
  * 
- * @param role - User role to delete template for
+ * @param role - User role to delete template for (or null for global template)
  * @returns True if deleted successfully
  */
-export async function deleteTemplate(role: string): Promise<boolean> {
+export async function deleteTemplate(role: string | null): Promise<boolean> {
   const { error } = await supabase
     .from('dashboard_templates')
     .delete()

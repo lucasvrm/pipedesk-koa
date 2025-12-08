@@ -46,25 +46,18 @@ describe('dashboardTemplateService', () => {
         mainWidgets: ['global3']
       };
 
-      let callCount = 0;
       const mockFrom = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({
-              data: null,
+              data: null,  // Role-specific template not found
               error: null
             })
           }),
           is: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockImplementation(() => {
-              callCount++;
-              if (callCount === 1) {
-                return Promise.resolve({
-                  data: { config: mockGlobalConfig },
-                  error: null
-                });
-              }
-              return Promise.resolve({ data: null, error: null });
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { config: mockGlobalConfig },  // Global template found
+              error: null
             })
           })
         })
