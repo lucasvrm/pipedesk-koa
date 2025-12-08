@@ -5,14 +5,14 @@ import type { DriveItem } from '@/lib/driveClient';
  * Unified Drive Service for PipeDesk
  * 
  * This service provides a unified interface to integrate the frontend with
- * Drive backend endpoints (FastAPI/pd-google) for entities: lead, deal, and company.
+ * Drive backend endpoints (FastAPI/pd-google) for entities: lead, deal, company, and contact.
  */
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type EntityType = 'lead' | 'deal' | 'company';
+export type EntityType = 'lead' | 'deal' | 'company' | 'contact';
 
 export interface GetDriveItemsOptions {
   page?: number;
