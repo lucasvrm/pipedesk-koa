@@ -413,6 +413,123 @@ export async function restoreRemoteEntry(
 }
 
 /**
+ * Busca documentos com filtros de texto e data.
+ * GET /api/drive/search
+ */
+export interface SearchOptions {
+  q?: string
+  created_from?: string
+  created_to?: string
+  include_deleted?: boolean
+  page?: number
+  limit?: number
+}
+
+export async function searchRemoteDocuments(
+  entityType: DriveEntityType,
+  entityId: string,
+  actorId: string,
+  actorRole: DriveRole,
+  options: SearchOptions = {}
+): Promise<RemoteDriveSnapshot> {
+  if (!REMOTE_ENABLED) {
+    throw new Error(
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas searchRemoteDocuments foi chamado.'
+    )
+  }
+
+  const params = new URLSearchParams()
+  params.append('entity_type', entityType)
+  params.append('entity_id', entityId)
+
+  if (options.q) {
+    params.append('q', options.q)
+  }
+  if (options.created_from) {
+    params.append('created_from', options.created_from)
+  }
+  if (options.created_to) {
+    params.append('created_to', options.created_to)
+  }
+  if (options.include_deleted) {
+    params.append('include_deleted', 'true')
+  }
+  if (options.page) {
+    params.append('page', options.page.toString())
+  }
+  if (options.limit) {
+    params.append('limit', options.limit.toString())
+  }
+
+  const path = `/api/drive/search?${params.toString()}`
+
+  const res = await fetchFromDriveApi(
+    path,
+    {
+      method: 'GET',
+    },
+    actorId,
+    actorRole
+  )
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(
+      `[pdGoogleDriveApi] Erro ao buscar documentos remotos (${res.status}): ${text}`
+    )
+  }
+
+  const data: { files: RemoteFileItem[]; permission?: string; breadcrumbs?: { id: string | null; name: string }[] } = await res.json()
+
+  const rootFolderId = `remote:${entityType}:${entityId}`
+  const folders: DriveFolder[] = []
+  const files: DriveFile[] = []
+
+  for (const item of data.files || []) {
+    const mime = item.mimeType || ''
+    const isFolder = mime === 'application/vnd.google-apps.folder'
+
+    if (isFolder) {
+      const folder: DriveFolder = {
+        id: item.id,
+        name: item.name,
+        parentId: undefined,
+        entityId,
+        entityType,
+        type: 'custom',
+        deleted: item.deleted || false,
+      }
+      folders.push(folder)
+    } else {
+      const file: DriveFile = {
+        id: item.id,
+        name: item.name,
+        size: Number(item.size ?? 0),
+        type: mime || 'application/octet-stream',
+        url: item.webViewLink || '#',
+        folderId: undefined,
+        uploadedBy: 'remote',
+        uploadedAt: item.createdTime || new Date().toISOString(),
+        entityId,
+        entityType,
+        role: actorRole,
+        rootFolderId,
+        deleted: item.deleted || false,
+      }
+      files.push(file)
+    }
+  }
+
+  return {
+    rootFolderId,
+    folders,
+    files,
+    permission: normalizePermission(data.permission),
+    breadcrumbs: data.breadcrumbs || [],
+  }
+}
+
+/**
  * Solicita sincronização do nome da pasta remota com o nome da entidade no banco.
  * Fire-and-forget: não trava a UI em caso de erro.
  * POST /api/drive/sync-name

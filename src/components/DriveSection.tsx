@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDriveDocuments } from '@/hooks/useDriveDocuments'
 import {
   Folder as FolderIcon,
@@ -25,7 +25,9 @@ import {
   CloudArrowUp,
   Info,
   PencilSimple,
-  LockSimple
+  LockSimple,
+  Calendar as CalendarIcon,
+  X as XIcon
 } from '@phosphor-icons/react'
 import {
   DropdownMenu,
@@ -67,6 +69,11 @@ import { formatBytes, formatDate } from '@/lib/helpers'
 import { logActivity } from '@/services/activityService'
 import { DriveRole, DriveFile } from '@/services/googleDriveService'
 import { useAuth } from '@/contexts/AuthContext'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 export interface DriveSectionProps {
   /** Type of entity: lead, deal, or company */
@@ -133,7 +140,16 @@ export default function DriveSection({
     error,
     currentFolderId,
     navigateToFolder,
-    reload
+    reload,
+    search,
+    setSearchQuery: setHookSearchQuery,
+    setSearchDateFrom,
+    setSearchDateTo,
+    clearSearch,
+    isSearching,
+    searchQuery: hookSearchQuery,
+    searchDateFrom,
+    searchDateTo
   } = useDriveDocuments({
     entityId,
     entityType: entityType as 'lead' | 'deal' | 'company',
@@ -142,7 +158,8 @@ export default function DriveSection({
     entityName,
   })
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState<Date | undefined>()
+  const [dateTo, setDateTo] = useState<Date | undefined>()
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   
@@ -159,6 +176,52 @@ export default function DriveSection({
   const [previewFile, setPreviewFile] = useState<DriveFile | null>(null)
   const [detailsFile, setDetailsFile] = useState<DriveFile | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'file' | 'folder', name: string } | null>(null)
+
+  // Debounced search effect - directly update hook state with debounce
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHookSearchQuery(debouncedSearchQuery)
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timer)
+  }, [debouncedSearchQuery, setHookSearchQuery])
+
+  // Trigger search when search parameters change
+  useEffect(() => {
+    const hasSearchCriteria = hookSearchQuery || dateFrom || dateTo
+    if (!hasSearchCriteria || !search) {
+      return
+    }
+
+    // Update date filters in hook
+    if (dateFrom) {
+      setSearchDateFrom(format(dateFrom, 'yyyy-MM-dd'))
+    } else {
+      setSearchDateFrom('')
+    }
+    
+    if (dateTo) {
+      setSearchDateTo(format(dateTo, 'yyyy-MM-dd'))
+    } else {
+      setSearchDateTo('')
+    }
+
+    // Trigger search only if we have at least one filter
+    search().catch((err) => {
+      console.error('[DriveSection] Search error:', err)
+    })
+  }, [hookSearchQuery, dateFrom, dateTo, search, setSearchDateFrom, setSearchDateTo])
+
+  const handleClearFilters = useCallback(() => {
+    setDebouncedSearchQuery('')
+    setDateFrom(undefined)
+    setDateTo(undefined)
+    if (clearSearch) {
+      clearSearch()
+    }
+  }, [clearSearch])
 
   // Log when component mounts and structure is initialized
   useEffect(() => {
@@ -213,7 +276,7 @@ export default function DriveSection({
 
   // Filter files
   const filteredFiles = files.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = f.name.toLowerCase().includes(hookSearchQuery.toLowerCase())
     
     // Filter by type if not 'all'
     let matchesType = true
@@ -230,7 +293,7 @@ export default function DriveSection({
 
   // Folders are also filtered by search
   const filteredFolders = folders.filter(f =>
-    f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    f.name.toLowerCase().includes(hookSearchQuery.toLowerCase())
   )
 
   const getFileIcon = (mimeType: string) => {
@@ -351,10 +414,73 @@ export default function DriveSection({
               <Input
                 placeholder="Buscar documentos..."
                 className="pl-8 h-9"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                value={debouncedSearchQuery}
+                onChange={e => setDebouncedSearchQuery(e.target.value)}
               />
             </div>
+            
+            {/* Date From Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-9 justify-start text-left font-normal',
+                    !dateFrom && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, 'dd/MM/yyyy', { locale: ptBR }) : 'Data inicial'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={setDateFrom}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Date To Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-9 justify-start text-left font-normal',
+                    !dateTo && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, 'dd/MM/yyyy', { locale: ptBR }) : 'Data final'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Clear Filters Button */}
+            {(debouncedSearchQuery || dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-9"
+              >
+                <XIcon className="mr-2 h-4 w-4" />
+                Limpar filtros
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -462,7 +588,7 @@ export default function DriveSection({
 
       {/* Content Area */}
       <ScrollArea className="flex-1 p-4">
-        {loading ? (
+        {(loading || isSearching) ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
@@ -563,8 +689,8 @@ export default function DriveSection({
                 {filteredFiles.length === 0 && filteredFolders.length === 0 && (
                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                       <CloudArrowUp size={48} className="text-muted-foreground/50 mb-4" />
-                      <p>{searchQuery ? 'Nenhum resultado encontrado' : 'Pasta vazia'}</p>
-                      {!readOnly && !searchQuery && (
+                      <p>{hookSearchQuery ? 'Nenhum resultado encontrado' : 'Pasta vazia'}</p>
+                      {!readOnly && !hookSearchQuery && (
                         <Button variant="outline" className="mt-4" onClick={() => fileInputRef.current?.click()}>
                           <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
                         </Button>
@@ -672,12 +798,12 @@ export default function DriveSection({
                       <CloudArrowUp size={48} className="text-muted-foreground/50" />
                     </div>
                     <div className="text-center">
-                      <p className="font-medium text-foreground">{searchQuery ? 'Nenhum arquivo encontrado.' : 'Esta pasta está vazia.'}</p>
+                      <p className="font-medium text-foreground">{hookSearchQuery ? 'Nenhum arquivo encontrado.' : 'Esta pasta está vazia.'}</p>
                       <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
-                        {searchQuery ? 'Tente buscar com outros termos.' : readOnly ? 'Não há arquivos nesta pasta.' : 'Arraste arquivos aqui ou use o botão de upload para começar.'}
+                        {hookSearchQuery ? 'Tente buscar com outros termos.' : readOnly ? 'Não há arquivos nesta pasta.' : 'Arraste arquivos aqui ou use o botão de upload para começar.'}
                       </p>
                     </div>
-                    {!searchQuery && !readOnly && (
+                    {!hookSearchQuery && !readOnly && (
                       <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                         <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
                       </Button>
