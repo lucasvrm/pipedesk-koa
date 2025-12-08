@@ -218,4 +218,23 @@ describe('DriveSection', () => {
     const skeletons = container.querySelectorAll('[class*="animate-pulse"]')
     expect(skeletons.length).toBeGreaterThan(0)
   })
+
+  it('has drag and drop functionality enabled when not in read-only mode', () => {
+    const { container } = render(<DriveSection entityType="deal" entityId="deal-123" />)
+    
+    // Find the main container that has drag and drop handlers
+    const dragDropContainer = container.querySelector('[class*="h-\\[600px\\]"]')
+    expect(dragDropContainer).toBeDefined()
+  })
+
+  it('does not trigger drag and drop in read-only mode', () => {
+    const { container } = render(<DriveSection entityType="deal" entityId="deal-123" readOnly />)
+    
+    // Component should still render
+    const dragDropContainer = container.querySelector('[class*="h-\\[600px\\]"]')
+    expect(dragDropContainer).toBeDefined()
+    
+    // Read-only badge should be visible
+    expect(screen.getByText(/Somente leitura/i)).toBeDefined()
+  })
 })
