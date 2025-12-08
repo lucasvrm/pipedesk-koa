@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import DriveSection from '@/components/DriveSection'
+import DriveSection, { DriveSectionProps } from '@/components/DriveSection'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDriveDocuments } from '@/hooks/useDriveDocuments'
 
@@ -37,8 +37,8 @@ describe('DriveSection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useAuth as any).mockReturnValue({ profile: mockProfile })
-    ;(useDriveDocuments as any).mockReturnValue(mockDriveDocuments)
+    vi.mocked(useAuth).mockReturnValue({ profile: mockProfile } as any)
+    vi.mocked(useDriveDocuments).mockReturnValue(mockDriveDocuments as any)
   })
 
   it('renders without crashing for deal entity', () => {
@@ -57,10 +57,10 @@ describe('DriveSection', () => {
   })
 
   it('shows loading state when loading', () => {
-    ;(useDriveDocuments as any).mockReturnValue({
+    vi.mocked(useDriveDocuments).mockReturnValue({
       ...mockDriveDocuments,
       loading: true
-    })
+    } as any)
 
     const { container } = render(<DriveSection entityType="deal" entityId="deal-123" />)
     // Should show skeleton loaders - check for the skeleton class
@@ -69,11 +69,11 @@ describe('DriveSection', () => {
   })
 
   it('shows error state when error occurs', () => {
-    ;(useDriveDocuments as any).mockReturnValue({
+    vi.mocked(useDriveDocuments).mockReturnValue({
       ...mockDriveDocuments,
       loading: false,
       error: new Error('Failed to load documents')
-    })
+    } as any)
 
     render(<DriveSection entityType="deal" entityId="deal-123" />)
     expect(screen.getByText(/Erro ao carregar documentos/i)).toBeDefined()
@@ -113,10 +113,10 @@ describe('DriveSection', () => {
       }
     ]
 
-    ;(useDriveDocuments as any).mockReturnValue({
+    vi.mocked(useDriveDocuments).mockReturnValue({
       ...mockDriveDocuments,
       files: mockFiles
-    })
+    } as any)
 
     render(<DriveSection entityType="deal" entityId="deal-123" />)
     expect(screen.getByText('test.pdf')).toBeDefined()
@@ -133,10 +133,10 @@ describe('DriveSection', () => {
       }
     ]
 
-    ;(useDriveDocuments as any).mockReturnValue({
+    vi.mocked(useDriveDocuments).mockReturnValue({
       ...mockDriveDocuments,
       folders: mockFolders
-    })
+    } as any)
 
     render(<DriveSection entityType="deal" entityId="deal-123" />)
     expect(screen.getByText('Documents')).toBeDefined()
@@ -161,7 +161,8 @@ describe('DriveSection', () => {
   })
 
   it('accepts all valid entity types', () => {
-    const entityTypes: Array<'lead' | 'deal' | 'company'> = ['lead', 'deal', 'company']
+    // Import the type to maintain consistency with component definition
+    const entityTypes: Array<DriveSectionProps['entityType']> = ['lead', 'deal', 'company']
     
     entityTypes.forEach(entityType => {
       const { unmount } = render(

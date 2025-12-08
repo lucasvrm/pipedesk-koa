@@ -119,6 +119,7 @@ export default function DriveSection({
   const actorRole: DriveRole = (currentUser?.role as DriveRole) || 'client'
 
   // Hook that handles all drive operations and automatically initializes structure
+  // Note: entityType is compatible with DriveEntityType which includes lead, deal, company
   const {
     files,
     folders,
@@ -135,7 +136,7 @@ export default function DriveSection({
     reload
   } = useDriveDocuments({
     entityId,
-    entityType: entityType as any,
+    entityType: entityType as 'lead' | 'deal' | 'company',
     actorId: currentUser?.id || 'anonymous',
     actorRole,
     entityName,
@@ -464,7 +465,7 @@ export default function DriveSection({
         {loading ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-               {[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
             </div>
           </div>
         ) : error ? (
