@@ -13,7 +13,8 @@ import {
   ArrowCounterClockwise
 } from '@phosphor-icons/react'
 import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
-import { WIDGET_REGISTRY, DEFAULT_DASHBOARD_CONFIG } from '@/features/dashboard/registry'
+import { WIDGET_REGISTRY } from '@/features/dashboard/registry'
+import { DEFAULT_DASHBOARD_CONFIG } from '@/constants/dashboardDefaults'
 import { DashboardToolbar } from '@/features/dashboard/components/DashboardToolbar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
