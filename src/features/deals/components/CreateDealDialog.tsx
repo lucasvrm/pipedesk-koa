@@ -32,6 +32,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createDeal } from "@/services/dealService";
 import { useStages } from "@/services/pipelineService";
+import { usePlayers } from "@/services/playerService";
 import { toast } from "sonner";
 import PlayerSelect from "@/components/PlayerSelect";
 import { useNavigate } from "react-router-dom";
@@ -73,6 +74,7 @@ export function CreateDealDialog({
   const { user } = useAuth();
   
   const { data: stages = [], isLoading: isLoadingStages } = useStages();
+  const { data: players = [], isLoading: isLoadingPlayers } = usePlayers();
 
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -183,9 +185,15 @@ export function CreateDealDialog({
                     </div>
                     <FormControl>
                       <PlayerSelect 
+                        players={players}
+                        selectedPlayerId={field.value}
+                        onSelect={(player) => field.onChange(player.id)}
+                        onDeselect={() => field.onChange("")}
+                        disabled={isLoadingPlayers}
+                        onCheckNew={handleCreateNewPlayer}
+                        // Manter value e onChange para compatibilidade se o PlayerSelect ainda os aceitar (mas o código que li não usa)
                         value={field.value || ""} 
                         onChange={field.onChange}
-                        onCheckNew={handleCreateNewPlayer}
                       />
                     </FormControl>
                     <p className="text-[11px] text-muted-foreground mt-1.5">
