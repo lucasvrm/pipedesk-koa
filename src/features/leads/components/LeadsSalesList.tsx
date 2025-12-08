@@ -103,7 +103,7 @@ export function LeadsSalesList({
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="w-[25%]">Empresa / Contexto</TableHead>
+            <TableHead className="w-[25%]">Empresa</TableHead>
             <TableHead className="w-[15%]">Tags</TableHead>
             <TableHead className="w-[20%]">Contato Principal</TableHead>
             <TableHead className="w-[25%]">Status & Pipeline</TableHead>

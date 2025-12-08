@@ -363,6 +363,15 @@ export default function LeadsListPage() {
             <Target />
           </Button>
           <Button
+            variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('sales')}
+            title="Visualização Sales"
+          >
+            <Target />
+          </Button>
+          <Button
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
             className="h-8 w-8"
