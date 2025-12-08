@@ -56,7 +56,6 @@ import { LEAD_ORIGIN_LABELS, LEAD_STATUS_LABELS, LeadStatus, OPERATION_LABELS, O
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
-import DocumentManager from '@/components/DocumentManager'
 import DriveSection from '@/components/DriveSection'
 import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { PageContainer } from '@/components/PageContainer'
