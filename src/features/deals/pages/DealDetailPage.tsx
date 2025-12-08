@@ -505,9 +505,9 @@ export default function DealDetailPage() {
             </TabsContent>
 
             <TabsContent value="documents">
-              <DocumentManager 
-                entityId={deal.id} 
-                entityType="deal" 
+              <DocumentManager
+                entityId={deal.id}
+                entityType="deal"
                 currentUser={currentUser}
                 entityName={deal.clientName}
               />
