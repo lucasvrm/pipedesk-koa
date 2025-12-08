@@ -123,7 +123,7 @@ export async function getRemoteEntityDocuments(
     )
   }
 
-  let path = `/drive/${entityType}/${entityId}`
+  let path = `/api/drive/${entityType}/${entityId}`
   if (folderId) {
     path += `?folder_id=${folderId}`
   }
@@ -216,7 +216,7 @@ export async function createRemoteFolder(
   }
 
   const res = await fetchFromDriveApi(
-    `/drive/${entityType}/${entityId}/folder`,
+    `/api/drive/${entityType}/${entityId}/folder`,
     {
       method: 'POST',
       headers: {
@@ -262,7 +262,7 @@ export async function uploadRemoteFiles(
     }
 
     const res = await fetchFromDriveApi(
-      `/drive/${entityType}/${entityId}/upload`,
+      `/api/drive/${entityType}/${entityId}/upload`,
       {
         method: 'POST',
         body: formData,
@@ -299,7 +299,7 @@ export async function renameRemoteEntry(
   }
 
   const res = await fetchFromDriveApi(
-    `/drive/${entityType}/${entityId}/files/${fileId}/rename`,
+    `/api/drive/${entityType}/${entityId}/files/${fileId}/rename`,
     {
       method: 'PUT',
       headers: {
@@ -339,7 +339,7 @@ export async function deleteRemoteEntry(
   }
 
   const endpointType = type === 'folder' ? 'folders' : 'files'
-  const path = `/drive/${entityType}/${entityId}/${endpointType}/${targetId}`
+  const path = `/api/drive/${entityType}/${entityId}/${endpointType}/${targetId}`
 
   const res = await fetchFromDriveApi(
     path,
