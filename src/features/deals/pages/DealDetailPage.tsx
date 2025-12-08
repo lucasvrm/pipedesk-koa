@@ -56,7 +56,7 @@ import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { DroppedPlayersList } from '../components/DroppedPlayersList'
 import CreatePlayerDialog from '../components/CreatePlayerDialog'
 import { EditDealDialog } from '../components/EditDealDialog'
-import DocumentManager from '@/components/DocumentManager'
+import DriveSection from '@/components/DriveSection'
 import DocumentGenerator from '@/components/DocumentGenerator'
 import AINextSteps from '@/components/AINextSteps'
 import CustomFieldsRenderer from '@/components/CustomFieldsRenderer'
@@ -505,12 +505,7 @@ export default function DealDetailPage() {
             </TabsContent>
 
             <TabsContent value="documents">
-              <DocumentManager
-                entityId={deal.id}
-                entityType="deal"
-                currentUser={currentUser}
-                entityName={deal.clientName}
-              />
+              <DriveSection entityType="deal" entityId={deal.id} entityName={deal.clientName} />
             </TabsContent>
 
             <TabsContent value="timeline" className="space-y-4">

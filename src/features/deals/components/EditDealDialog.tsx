@@ -5,6 +5,7 @@ import * as z from 'zod'
 import { useUpdateDeal } from '@/services/dealService'
 import { useUsers } from '@/services/userService'
 import { useCompanies } from '@/services/companyService'
+import { syncName } from '@/services/driveService'
 import { MasterDeal, OPERATION_LABELS, DealStatus } from '@/lib/types'
 import { getInitials } from '@/lib/helpers'
 
@@ -178,6 +179,15 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
       // Assumindo por enquanto que apenas campos básicos são atualizados via updateDeal.
 
       toast.success('Negócio atualizado com sucesso!')
+      
+      // Sync name with Drive folder (silent error handling)
+      try {
+        await syncName('deal', deal.id)
+      } catch (error) {
+        console.warn('[EditDealDialog] Failed to sync name with Drive:', error)
+        // Don't show error toast - this is a non-critical background operation
+      }
+      
       onOpenChange(false)
     } catch (error) {
       toast.error('Erro ao atualizar negócio')
