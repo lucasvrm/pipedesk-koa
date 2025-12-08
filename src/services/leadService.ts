@@ -30,6 +30,7 @@ export interface LeadFilters {
   origin?: string[];
   responsibleId?: string;
   search?: string;
+  tags?: string[];
 }
 
 export interface QualifyLeadInput {
@@ -110,6 +111,24 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
     .is('deleted_at', null);
 
   if (filters) {
+    // Handle tag filtering first (if provided)
+    if (filters.tags && filters.tags.length > 0) {
+      const { data: matchingIds, error: matchError } = await supabase
+        .from('entity_tags')
+        .select('entity_id')
+        .eq('entity_type', 'lead')
+        .in('tag_id', filters.tags);
+
+      if (matchError) throw matchError;
+
+      const ids = matchingIds?.map((r: any) => r.entity_id) || [];
+      if (ids.length > 0) {
+        query = query.in('id', ids);
+      } else {
+        return []; // No leads match the tag filter
+      }
+    }
+
     if (filters.status && filters.status.length > 0) {
       query = query.in('status', filters.status);
     }

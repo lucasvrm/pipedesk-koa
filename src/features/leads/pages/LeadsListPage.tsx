@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
 import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, Lead, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS, LeadStatus } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -29,6 +29,9 @@ import { LeadsSalesList } from '../components/LeadsSalesList'
 import { Progress } from '@/components/ui/progress'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useTags } from '@/services/tagService'
+import { useSettings } from '@/services/systemSettingsService'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -55,21 +58,30 @@ export default function LeadsListPage() {
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
+  const [tagFilter, setTagFilter] = useState<string[]>(() => savedPreferences?.tagFilter || [])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
+  const { data: tags = [] } = useTags('lead')
+  const { data: settings } = useSettings()
+
   const filters: LeadFilters = {
     search: search || undefined,
     status: statusFilter !== 'all' ? [statusFilter] : undefined,
-    origin: originFilter !== 'all' ? [originFilter] : undefined
+    origin: originFilter !== 'all' ? [originFilter] : undefined,
+    tags: tagFilter.length > 0 ? tagFilter : undefined
   }
 
   const { data: leads, isLoading } = useLeads(filters)
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
+
+  // Feature Flag Logic
+  const tagsConfig = settings?.find(s => s.key === 'tags_config')?.value;
+  const tagsEnabled = tagsConfig?.global && tagsConfig?.modules?.leads !== false;
 
   // Adapter for quick actions type compatibility
   const updateLeadAdapter = {
@@ -91,11 +103,11 @@ export default function LeadsListPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, statusFilter, originFilter])
+  }, [search, statusFilter, originFilter, tagFilter])
 
   useEffect(() => {
     setSelectedIds([])
-  }, [viewMode, search, statusFilter, originFilter, currentPage])
+  }, [viewMode, search, statusFilter, originFilter, tagFilter, currentPage])
 
   useEffect(() => {
     const payload = {
@@ -103,10 +115,11 @@ export default function LeadsListPage() {
       search,
       statusFilter,
       originFilter,
+      tagFilter,
       itemsPerPage
     }
     localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
-  }, [itemsPerPage, originFilter, search, statusFilter, viewMode])
+  }, [itemsPerPage, originFilter, search, statusFilter, tagFilter, viewMode])
 
   const totalLeads = leads?.length ?? 0
   const totalPages = Math.max(1, Math.ceil(totalLeads / itemsPerPage))
@@ -190,6 +203,7 @@ export default function LeadsListPage() {
     setSearch('')
     setStatusFilter('all')
     setOriginFilter('all')
+    setTagFilter([])
   }
 
   const getPrimaryContact = (lead: Lead) => {
@@ -233,7 +247,7 @@ export default function LeadsListPage() {
     </RequirePermission>
   )
 
-  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search
+  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search || tagFilter.length > 0
 
   const metrics = (
     <div className="grid gap-4 md:grid-cols-3 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -313,6 +327,46 @@ export default function LeadsListPage() {
               ))}
             </SelectContent>
           </Select>
+
+          {tagsEnabled && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
+                  <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="start">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
+                  <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
+                    {tags.map(tag => (
+                      <Badge
+                        key={tag.id}
+                        variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
+                        className="cursor-pointer hover:opacity-80"
+                        onClick={() => {
+                          const newTags = tagFilter.includes(tag.id)
+                            ? tagFilter.filter(t => t !== tag.id)
+                            : [...tagFilter, tag.id];
+                          setTagFilter(newTags);
+                          setCurrentPage(1);
+                        }}
+                        style={tagFilter.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
+                      >
+                        {tag.name}
+                      </Badge>
+                    ))}
+                    {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
+                  </div>
+                  {tagFilter.length > 0 && (
+                    <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => setTagFilter([])}>
+                      Limpar Tags
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
 
           {hasFilters && (
             <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
