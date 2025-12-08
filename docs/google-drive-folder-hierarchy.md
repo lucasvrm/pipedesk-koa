@@ -1,8 +1,8 @@
-# Google Drive Folder Hierarchy System
+# Google Drive Folder Hierarchy System - KOA Real Estate Structure
 
 ## Overview
 
-This document describes the Google Drive folder hierarchy and creation system implemented for PipeDesk. The system automatically creates standardized folder structures for leads, companies, deals, and contacts using configurable templates stored in the database.
+This document describes the Google Drive folder hierarchy and creation system implemented for PipeDesk KOA. The system automatically creates standardized folder structures for companies, leads, and deals using configurable templates stored in the database. The structure follows Brazilian real estate investment fund (FII) best practices.
 
 ## Database Schema
 
@@ -23,10 +23,10 @@ CREATE TABLE google_drive_folders (
 ```
 
 **Supported Entity Types:**
-- `deal` - Deal/opportunity folders
+- `company` - Company/client folders (top-level organization)
+- `lead` - Lead folders (potential deals)
+- `deal` - Deal/opportunity folders (active deals)
 - `track` - Track folders
-- `lead` - Lead folders  
-- `company` - Company folders
 - `contact` - Contact folders
 
 #### `structure_templates`
@@ -105,110 +105,189 @@ CREATE TABLE document_type_configs (
 
 ## Default Folder Templates
 
-### Leads
+### Companies (Top-Level Organization)
 
-**Path Pattern:** `{{root}}/010_Leads/{{lead_number}}_{{lead_name}}`
-
-**Folder Structure:**
-```
-000_Lead Root/
-├── 001_Documents/          # Lead documents and attachments
-├── 002_Communications/     # Email threads and communication history
-└── 003_Notes/             # Meeting notes and internal documentation
-```
-
-### Companies
-
-**Path Pattern:** `{{root}}/001_Companies/{{company_type}}/{{company_number}}_{{company_name}}`
+**Path Pattern:** `Companies/{{company_name}}`
 
 **Folder Structure:**
 ```
-000_Company Root/
-├── 001_Contracts/         # Legal contracts and agreements
-├── 002_Documents/         # Company registration and legal documents
-├── 003_Financial/         # Financial statements and reports
-└── 004_Compliance/        # Regulatory and compliance documents (on-demand)
+[Nome da Empresa]/
+├── 01. Leads/                              # Leads da empresa
+├── 02. Deals/                              # Deals da empresa
+├── 03. Documentos Gerais/                  # Documentos gerais da empresa
+│   ├── 03.01 Dossiê Sócios PF/            # Documentos de sócios pessoa física
+│   ├── 03.02 Dossiê PJs/                  # Documentos de pessoas jurídicas
+│   └── 03.03 Modelos / Planilhas KOA/     # Modelos e planilhas padrão KOA
+├── 90. Compartilhamento Externo/           # Arquivos compartilhados externamente
+└── 99. Arquivo / Encerrados/              # Documentos arquivados e processos encerrados
 ```
 
-### Deals
+### Leads (Potential Deals)
 
-**Path Pattern:** `{{root}}/020_Deals/{{deal_number}}_{{deal_name}}`
+**Path Pattern:** `Companies/{{company_name}}/01. Leads/Lead - {{lead_name}}`
 
 **Folder Structure:**
 ```
-000_Deal Root/
-├── 001_Proposals/         # Deal proposals and presentations
-├── 002_Documents/         # Deal-related documents
-├── 003_Analysis/          # Deal analysis and due diligence
-├── 004_Negotiations/      # Negotiation documents (on-demand)
-└── 005_Closing/           # Deal closing documents (on-demand)
+Lead - [Nome do Lead]/
+├── 00. Administração do Lead/                      # Documentos administrativos do lead
+├── 01. Originação & Materiais/                     # Materiais de originação e prospecção
+├── 02. Ativo / Terreno (Básico)/                   # Informações básicas do ativo/terreno
+├── 03. Empreendimento & Viabilidade (Preliminar)/  # Análise preliminar de viabilidade
+├── 04. Partes & KYC (Básico)/                      # KYC básico das partes envolvidas
+└── 05. Decisão Interna/                            # Documentos de decisão interna
 ```
 
-### Contacts
+### Deals (Active Investments)
 
-**Path Pattern:** `{{root}}/030_Contacts/{{contact_number}}_{{contact_name}}`
+**Path Pattern:** `Companies/{{company_name}}/02. Deals/Deal - {{deal_name}}`
 
 **Folder Structure:**
 ```
-000_Contact Root/
-├── 001_Personal Documents/ # Contact personal documents and ID
-├── 002_Communications/     # Communication history with contact
-└── 003_Agreements/         # NDAs and other agreements
+Deal - [Nome do Deal]/
+├── 00. Administração do Deal/                      # Documentos administrativos do deal
+├── 01. Originação & Mandato/                       # Documentos de originação e mandato
+├── 02. Ativo / Terreno & Garantias/                # Documentos do ativo, terreno e garantias
+│   ├── 02.01 Matrículas & RI/                     # Matrículas e registro de imóveis
+│   ├── 02.02 Escrituras / C&V Terreno/            # Escrituras e contratos de compra e venda
+│   ├── 02.03 Alvarás & Licenças/                  # Alvarás e licenças necessárias
+│   ├── 02.04 Colateral Adicional/                 # Garantias e colaterais adicionais
+│   └── 02.05 Seguros & Apólices/                  # Apólices de seguro
+├── 03. Empreendimento & Projeto/                   # Documentos do empreendimento e projeto
+│   ├── 03.01 Plantas & Projetos/                  # Plantas arquitetônicas e projetos
+│   ├── 03.02 Memoriais & Quadros de Áreas/        # Memoriais descritivos e quadros de áreas
+│   ├── 03.03 Pesquisas de Mercado/                # Pesquisas e análises de mercado
+│   └── 03.04 Books & Teasers/                     # Materiais de apresentação
+├── 04. Comercial/                                  # Documentos comerciais
+│   ├── 04.01 Tabelas de Vendas/                   # Tabelas e condições de venda
+│   ├── 04.02 Contratos C&V Clientes/              # Contratos com clientes
+│   └── 04.03 Recebíveis & Borderôs/               # Recebíveis e borderôs de vendas
+├── 05. Financeiro & Modelagem/                     # Documentos financeiros e modelagem
+│   ├── 05.01 Viabilidades/                        # Estudos de viabilidade financeira
+│   ├── 05.02 Fluxos de Caixa/                     # Projeções de fluxo de caixa
+│   ├── 05.03 Cronogramas Físico-Financeiros/      # Cronogramas da obra
+│   └── 05.04 Planilhas KOA & Modelos/             # Planilhas padrão KOA
+├── 06. Partes & KYC/                               # KYC das partes envolvidas
+│   ├── 06.01 Sócios PF/                           # Documentos de sócios pessoa física
+│   └── 06.02 PJs/                                 # Documentos de pessoas jurídicas
+├── 07. Jurídico & Estruturação/                    # Documentos jurídicos e estruturação
+│   ├── 07.01 DD Jurídica/                         # Due diligence jurídica
+│   └── 07.02 Contratos Estruturais/               # Contratos estruturais do negócio
+└── 08. Operação & Monitoring/                      # Monitoramento e operação
+    ├── 08.01 Relatórios Operacionais/             # Relatórios de acompanhamento
+    ├── 08.02 Recebíveis / Cash Flow Realizado/    # Fluxo de caixa realizado
+    └── 08.03 Comunicação Recorrente/              # Comunicações e atualizações
 ```
 
 ## Document Type Configurations
 
+### Leads
+
+Document types organized by folder within the lead structure:
+
+| Document Type | Folder Location | File Pattern | Required Fields |
+|--------------|----------------|--------------|-----------------|
+| Materiais de Originação | 01. Originação & Materiais | `Originacao_{{lead_name}}_{{date}}` | lead_name, date |
+| Informações do Ativo | 02. Ativo / Terreno (Básico) | `Ativo_{{lead_name}}_{{date}}` | lead_name, date |
+| Estudo de Viabilidade Preliminar | 03. Empreendimento & Viabilidade (Preliminar) | `Viabilidade_{{lead_name}}_{{date}}` | lead_name, date |
+| Documentos KYC Básico | 04. Partes & KYC (Básico) | `KYC_{{lead_name}}` | lead_name |
+| Parecer Decisão Interna | 05. Decisão Interna | `Decisao_{{lead_name}}_{{date}}` | lead_name, date |
+
 ### Deals
-- **Proposal Document** - Located in `001_Proposals/`, pattern: `Proposal_{{deal_name}}_{{date}}`
-- **Deal Analysis** - Located in `003_Analysis/`, pattern: `Analysis_{{deal_name}}_{{date}}`
-- **Contract** - Located in `005_Closing/`, pattern: `Contract_{{deal_name}}_{{date}}`, min_stage: 3
+
+Comprehensive document types covering the complete deal lifecycle:
+
+| Document Type | Folder Location | File Pattern | Min Stage | Required Fields |
+|--------------|----------------|--------------|-----------|-----------------|
+| Mandato | 01. Originação & Mandato | `Mandato_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Matrícula do Imóvel | 02.01 Matrículas & RI | `Matricula_{{deal_name}}` | 0 | deal_name |
+| Escritura | 02.02 Escrituras / C&V Terreno | `Escritura_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Alvará de Construção | 02.03 Alvarás & Licenças | `Alvara_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Apólice de Seguro | 02.05 Seguros & Apólices | `Apolice_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Projeto Arquitetônico | 03.01 Plantas & Projetos | `Projeto_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Memorial Descritivo | 03.02 Memoriais & Quadros de Áreas | `Memorial_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Pesquisa de Mercado | 03.03 Pesquisas de Mercado | `Pesquisa_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Tabela de Vendas | 04.01 Tabelas de Vendas | `Tabela_Vendas_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Contrato C&V Cliente | 04.02 Contratos C&V Clientes | `CV_Cliente_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Estudo de Viabilidade | 05.01 Viabilidades | `Viabilidade_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Fluxo de Caixa | 05.02 Fluxos de Caixa | `FluxoCaixa_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Cronograma Físico-Financeiro | 05.03 Cronogramas Físico-Financeiros | `Cronograma_{{deal_name}}_{{date}}` | 0 | deal_name, date |
+| Documentos Sócio PF | 06.01 Sócios PF | `Socio_PF_{{deal_name}}_{{socio_name}}` | 0 | deal_name, socio_name |
+| Documentos PJ | 06.02 PJs | `PJ_{{deal_name}}_{{pj_name}}` | 0 | deal_name, pj_name |
+| Due Diligence Jurídica | 07.01 DD Jurídica | `DD_Juridica_{{deal_name}}_{{date}}` | 1 | deal_name, date |
+| Contrato Estrutural | 07.02 Contratos Estruturais | `Contrato_{{deal_name}}_{{date}}` | 2 | deal_name, date |
+| Relatório Operacional | 08.01 Relatórios Operacionais | `Relatorio_{{deal_name}}_{{date}}` | 3 | deal_name, date |
+| Fluxo de Caixa Realizado | 08.02 Recebíveis / Cash Flow Realizado | `CashFlow_Real_{{deal_name}}_{{date}}` | 3 | deal_name, date |
 
 ### Companies
-- **Company Registration** - Located in `002_Documents/`, pattern: `Registration_{{company_name}}`
-- **Company Contract** - Located in `001_Contracts/`, pattern: `Contract_{{company_name}}_{{date}}`
-- **Financial Statement** - Located in `003_Financial/`, pattern: `FinStatement_{{company_name}}_{{period}}`
 
-### Leads
-- **Lead Qualification Doc** - Located in `001_Documents/`, pattern: `Qualification_{{lead_name}}_{{date}}`
-- **Meeting Notes** - Located in `003_Notes/`, pattern: `Notes_{{lead_name}}_{{date}}`
+Company-level document types:
 
-### Contacts
-- **Contact ID Document** - Located in `001_Personal Documents/`, pattern: `ID_{{contact_name}}`
-- **NDA Agreement** - Located in `003_Agreements/`, pattern: `NDA_{{contact_name}}_{{date}}`
+| Document Type | Folder Location | File Pattern | Required Fields |
+|--------------|----------------|--------------|-----------------|
+| Dossiê Sócio PF | 03.01 Dossiê Sócios PF | `Dossie_PF_{{company_name}}_{{socio_name}}` | company_name, socio_name |
+| Dossiê PJ | 03.02 Dossiê PJs | `Dossie_PJ_{{company_name}}_{{pj_name}}` | company_name, pj_name |
+| Modelo/Planilha KOA | 03.03 Modelos / Planilhas KOA | `Modelo_KOA_{{company_name}}_{{template_type}}` | company_name, template_type |
 
 ## Naming Conventions
 
 ### Folder Prefixes
-- All folders use numeric prefixes (000, 001, 002, etc.) for consistent ordering
-- Root folders always use prefix `000`
-- Subfolder prefixes indicate their relative order within parent folder
+
+The KOA structure uses a two-digit numeric prefix system for clear organization and ordering:
+
+- **00-09**: Administrative and core documents
+- **01-09**: Main operational folders (Leads, Deals, Documents)
+- **90-99**: Special purposes (External Sharing, Archive)
+
+**Sub-folder numbering** follows the pattern `XX.YY` where:
+- `XX` is the parent folder number
+- `YY` is the sequential subfolder number
+
+**Examples:**
+- `02. Ativo / Terreno & Garantias` (main folder)
+  - `02.01 Matrículas & RI` (subfolder 1)
+  - `02.02 Escrituras / C&V Terreno` (subfolder 2)
+  - `02.03 Alvarás & Licenças` (subfolder 3)
 
 ### Placeholder Variables
+
 Common placeholders used in path patterns and file names:
 
-- `{{root}}` - Root Google Drive folder
-- `{{entity_type}}` - Type of entity (lead, deal, company, contact)
-- `{{entity_name}}` - Name of the entity
-- `{{entity_number}}` - Sequential number/ID of entity
-- `{{lead_number}}`, `{{lead_name}}` - Lead-specific placeholders
-- `{{deal_number}}`, `{{deal_name}}` - Deal-specific placeholders
-- `{{company_number}}`, `{{company_name}}`, `{{company_type}}` - Company-specific placeholders
-- `{{contact_number}}`, `{{contact_name}}` - Contact-specific placeholders
-- `{{date}}` - Current date (ISO format)
-- `{{period}}` - Time period (for financial statements)
-- `{{stage}}` - Deal stage
+**Company Level:**
+- `{{company_name}}` - Name of the company/client
+- `{{company_type}}` - Type classification (optional)
+
+**Lead Level:**
+- `{{lead_name}}` - Name of the lead
+- `{{lead_number}}` - Sequential identifier (optional)
+
+**Deal Level:**
+- `{{deal_name}}` - Name of the deal
+- `{{deal_number}}` - Sequential identifier (optional)
+- `{{stage}}` - Current deal stage
+
+**Person/Entity:**
+- `{{socio_name}}` - Name of partner (sócio pessoa física)
+- `{{pj_name}}` - Name of legal entity (pessoa jurídica)
+- `{{contact_name}}` - Name of contact
+
+**Temporal:**
+- `{{date}}` - Current date (ISO format YYYY-MM-DD)
+- `{{period}}` - Time period (e.g., 2024-Q1, Jan-2024)
+
+**Other:**
+- `{{template_type}}` - Type of template or model
 
 ## On-Demand Folders
 
-Some folders are marked as "on-demand" (`is_on_demand = true`), meaning they are only created when:
+The current KOA structure creates all folders upfront for consistency and ease of use. However, the system supports marking folders as "on-demand" (`is_on_demand = true`) for future expansion, meaning they would only be created when:
 - Explicitly requested by a user
 - Triggered by a specific lifecycle event
 - Required by business logic (e.g., when a deal reaches a certain stage)
 
-**Examples:**
-- `Compliance` folder for companies (created when compliance docs are needed)
-- `Negotiations` folder for deals (created when deal enters negotiation stage)
-- `Closing` folder for deals (created when deal is ready to close)
+**Potential Future On-Demand Folders:**
+- Additional sub-folders within deal stages
+- Client-specific customizations
+- Archive folders for completed phases
 
 ## Frontend Integration
 
@@ -244,6 +323,8 @@ await uploadFile('company', 'company-789', file, {
 export type EntityType = 'lead' | 'deal' | 'company' | 'contact';
 ```
 
+**Note:** While `contact` is supported in the type definition for potential future use, the current KOA structure focuses on `company`, `lead`, and `deal` entities.
+
 ## Backend API Requirements
 
 The backend Drive API (FastAPI/pd-google) should implement these endpoints:
@@ -265,15 +346,20 @@ The backend Drive API (FastAPI/pd-google) should implement these endpoints:
 
 The folder hierarchy system is deployed via SQL migration:
 ```
-supabase/migrations/20251208_google_drive_folder_hierarchy.sql
+supabase/migrations/20251218_google_drive_folder_hierarchy.sql
 ```
 
 **This migration:**
 1. Extends `google_drive_folders` to support lead, company, and contact entity types
 2. Creates `drive_folder_nodes` table for hierarchical structure
-3. Inserts template data for all entity types
-4. Adds document type configurations
+3. Inserts comprehensive KOA folder templates:
+   - **Companies**: 5 main folders with 3 subfolders in Documentos Gerais
+   - **Leads**: 6 folders covering the complete lead qualification process
+   - **Deals**: 9 main folders with 21 subfolders covering full deal lifecycle
+4. Adds 27 document type configurations for Brazilian real estate documents
 5. Sets up RLS policies for security
+
+**Important:** This migration must run AFTER `20251217_document_automation.sql` which creates the required `structure_templates` and `document_type_configs` tables.
 
 **To apply the migration:**
 ```bash
