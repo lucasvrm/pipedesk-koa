@@ -1,20 +1,32 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Target, ChartLine, Funnel, Users } from '@phosphor-icons/react'
-import { useAnalytics } from '@/services/analyticsService'
+import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics'
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DateFilterType } from '@/types/metadata'
 
 interface KPIOverviewWidgetProps {
-  dateFilter?: 'all' | '30d' | '90d' | '1y';
+  dateFilter?: DateFilterType;
   teamFilter?: string;
   typeFilter?: string;
 }
 
 export function KPIOverviewWidget({
-  dateFilter = 'all',
-  teamFilter = 'all',
-  typeFilter = 'all'
+  dateFilter,
+  teamFilter,
+  typeFilter
 }: KPIOverviewWidgetProps) {
-  const { data: metrics, isLoading } = useAnalytics(dateFilter, teamFilter, typeFilter)
+  // Use context filters by default, but allow prop override for backward compatibility
+  const { filters } = useDashboardFilters()
+  const effectiveDateFilter = dateFilter || filters.dateRangePreset
+  const effectiveTeamFilter = teamFilter || filters.selectedTeamMemberId
+  const effectiveTypeFilter = typeFilter || filters.selectedOperationTypeId
+  
+  const { data: metrics, isLoading } = useEnhancedAnalytics(
+    effectiveDateFilter,
+    effectiveTeamFilter,
+    effectiveTypeFilter
+  )
 
   if (isLoading) {
     return <KPISkeleton />

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Target } from '@phosphor-icons/react'
-import { useAnalytics } from '@/services/analyticsService'
+import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics'
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext'
 import { PlayerStage } from '@/lib/types'
 
 // Helper para labels de estágio (deveria ser compartilhado, mas duplicando para simplificar refatoração por enquanto)
@@ -13,8 +14,12 @@ const getStageLabel = (stage: string) => {
 }
 
 export function SLAOverviewWidget() {
-    // Usamos filtros padrão pois SLA deve refletir o estado atual
-    const { data: metrics, isLoading } = useAnalytics('all', 'all', 'all')
+    const { filters } = useDashboardFilters()
+    const { data: metrics, isLoading } = useEnhancedAnalytics(
+      filters.dateRangePreset,
+      filters.selectedTeamMemberId,
+      filters.selectedOperationTypeId
+    )
 
     if (isLoading) return <Card className="h-full"><CardContent className="p-6">Carregando SLA...</CardContent></Card>
     if (!metrics) return null;

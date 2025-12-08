@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext'
 import { PageContainer } from '@/components/PageContainer'
 import { Button } from '@/components/ui/button'
 import { 
@@ -13,6 +14,7 @@ import {
 } from '@phosphor-icons/react'
 import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
 import { WIDGET_REGISTRY, DEFAULT_DASHBOARD_CONFIG } from '@/features/dashboard/registry'
+import { DashboardToolbar } from '@/features/dashboard/components/DashboardToolbar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -67,34 +69,38 @@ export default function DashboardPage() {
   }
 
   return (
-    <PageContainer>
-      
-      {/* --- HEADER --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <HandWaving className="text-yellow-500 animate-pulse" weight="fill" />
-            Olá, {profile?.name?.split(' ')[0]}
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+    <DashboardFiltersProvider>
+      <PageContainer>
+        
+        {/* --- HEADER --- */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <HandWaving className="text-yellow-500 animate-pulse" weight="fill" />
+              Olá, {profile?.name?.split(' ')[0]}
+            </h2>
+            <p className="text-muted-foreground mt-1">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={handleOpenCustomize} title="Personalizar Dashboard">
+               <Gear className="mr-2 h-4 w-4" /> Personalizar
+            </Button>
+            <Button onClick={() => navigate('/deals')} variant="outline" className="hidden md:flex">
+              <Briefcase className="mr-2 h-4 w-4" />
+              Ver Deals
+            </Button>
+            <Button onClick={() => navigate('/tasks')} className="shadow-sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Tarefa
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={handleOpenCustomize} title="Personalizar Dashboard">
-             <Gear className="mr-2 h-4 w-4" /> Personalizar
-          </Button>
-          <Button onClick={() => navigate('/deals')} variant="outline" className="hidden md:flex">
-            <Briefcase className="mr-2 h-4 w-4" />
-            Ver Deals
-          </Button>
-          <Button onClick={() => navigate('/tasks')} className="shadow-sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Tarefa
-          </Button>
-        </div>
-      </div>
+        {/* --- TOOLBAR (FILTERS) --- */}
+        <DashboardToolbar />
 
       {/* --- TOP ZONE (CARDS) --- */}
       {layout.topWidgets.length > 0 && (
@@ -205,5 +211,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
     </PageContainer>
+    </DashboardFiltersProvider>
   )
 }
