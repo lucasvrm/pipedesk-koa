@@ -47,6 +47,7 @@ interface RemoteFileItem {
   size?: number | string
   webViewLink?: string
   createdTime?: string
+  deleted?: boolean
   [key: string]: unknown
 }
 
@@ -115,7 +116,8 @@ export async function getRemoteEntityDocuments(
   entityId: string,
   actorId: string,
   actorRole: DriveRole,
-  folderId?: string
+  folderId?: string,
+  includeDeleted: boolean = false
 ): Promise<RemoteDriveSnapshot> {
   if (!REMOTE_ENABLED) {
     throw new Error(
@@ -124,8 +126,19 @@ export async function getRemoteEntityDocuments(
   }
 
   let path = `/api/drive/${entityType}/${entityId}`
+  const params = new URLSearchParams()
+
   if (folderId) {
-    path += `?folder_id=${folderId}`
+    params.append('folder_id', folderId)
+  }
+
+  if (includeDeleted) {
+    params.append('include_deleted', 'true')
+  }
+
+  const queryString = params.toString()
+  if (queryString) {
+    path += `?${queryString}`
   }
 
   const res = await fetchFromDriveApi(
@@ -162,6 +175,7 @@ export async function getRemoteEntityDocuments(
         entityId,
         entityType,
         type: 'custom',
+        deleted: item.deleted || false,
       }
       folders.push(folder)
     } else {
@@ -178,6 +192,7 @@ export async function getRemoteEntityDocuments(
         entityType,
         role: actorRole,
         rootFolderId,
+        deleted: item.deleted || false,
       }
       files.push(file)
     }
@@ -320,7 +335,7 @@ export async function renameRemoteEntry(
 }
 
 /**
- * Deleta um arquivo ou pasta.
+ * Deleta um arquivo ou pasta (soft delete).
  * DELETE /drive/{entity_type}/{entity_id}/files/{file_id}
  * DELETE /drive/{entity_type}/{entity_id}/folders/{folder_id}
  */
@@ -354,6 +369,45 @@ export async function deleteRemoteEntry(
     const text = await res.text().catch(() => '')
     throw new Error(
       `[pdGoogleDriveApi] Erro ao deletar ${type} remoto (${res.status}): ${text}`
+    )
+  }
+}
+
+/**
+ * Restaura um arquivo ou pasta deletada.
+ * POST /drive/{entity_type}/{entity_id}/files/{file_id}/restore
+ * POST /drive/{entity_type}/{entity_id}/folders/{folder_id}/restore
+ */
+export async function restoreRemoteEntry(
+  entityType: DriveEntityType,
+  entityId: string,
+  targetId: string,
+  type: 'file' | 'folder',
+  actorId: string,
+  actorRole: DriveRole
+): Promise<void> {
+  if (!REMOTE_ENABLED) {
+    throw new Error(
+      '[pdGoogleDriveApi] VITE_DRIVE_API_URL não configurada, mas restoreRemoteEntry foi chamado.'
+    )
+  }
+
+  const endpointType = type === 'folder' ? 'folders' : 'files'
+  const path = `/api/drive/${entityType}/${entityId}/${endpointType}/${targetId}/restore`
+
+  const res = await fetchFromDriveApi(
+    path,
+    {
+      method: 'POST',
+    },
+    actorId,
+    actorRole
+  )
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(
+      `[pdGoogleDriveApi] Erro ao restaurar ${type} remoto (${res.status}): ${text}`
     )
   }
 }
