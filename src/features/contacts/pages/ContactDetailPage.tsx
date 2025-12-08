@@ -14,22 +14,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { ArrowLeft, Buildings, User, Envelope, Phone, LinkedinLogo, FileText } from '@phosphor-icons/react'
+import { ArrowLeft, Buildings, User, Envelope, Phone, LinkedinLogo } from '@phosphor-icons/react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { ContactUpdate } from '@/services/contactService'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageContainer } from '@/components/PageContainer'
-import { useAuth } from '@/contexts/AuthContext'
-import DocumentManager from '@/components/DocumentManager'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: contact, isLoading, error } = useContact(id)
-  const { profile } = useAuth()
   const updateContact = useUpdateContact()
 
   const [isEditing, setIsEditing] = useState(false)
@@ -132,7 +129,6 @@ export default function ContactDetailPage() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
           <TabsTrigger value="overview" className="py-2 px-4"><User className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
-          <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Documentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -215,17 +211,6 @@ export default function ContactDetailPage() {
                 </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          {profile && id && (
-            <DocumentManager
-              entityId={id}
-              entityType="contact"
-              currentUser={profile}
-              entityName={contact.name}
-            />
-          )}
         </TabsContent>
       </Tabs>
     </PageContainer>
