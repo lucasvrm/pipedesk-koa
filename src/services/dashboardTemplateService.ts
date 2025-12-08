@@ -77,7 +77,7 @@ export async function getAllTemplates(): Promise<DashboardTemplate[]> {
     return [];
   }
 
-  return (data || []).map((item: any) => ({
+  return (data || []).map((item) => ({
     id: item.id,
     role: item.role,
     config: item.config,
