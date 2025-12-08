@@ -75,7 +75,7 @@ export interface DeleteResponse {
 }
 
 // Helper function to get the Drive API base URL
-const getDriveApiUrl = (): string => {
+export const getDriveApiUrl = (): string => {
   const url = import.meta.env.VITE_DRIVE_API_URL;
   if (!url) {
     throw new Error('Drive API URL not configured. Please set VITE_DRIVE_API_URL environment variable.');
@@ -87,7 +87,7 @@ const getDriveApiUrl = (): string => {
 const DEFAULT_USER_ROLE = 'client';
 
 // Helper function to get authentication and user info from Supabase
-const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole: string }> => {
+export const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole: string }> => {
   const {
     data: { session },
     error,
@@ -125,7 +125,7 @@ const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole:
 };
 
 // Helper function to make authenticated requests to Drive API
-const driveApiFetch = async (
+export const driveApiFetch = async (
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> => {
