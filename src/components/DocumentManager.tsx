@@ -19,7 +19,6 @@ import {
   MagnifyingGlass,
   UploadSimple,
   CaretRight,
-  CaretDown,
   SquaresFour,
   ListDashes,
   Eye,
@@ -64,7 +63,6 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { formatBytes, formatDate } from '@/lib/helpers'
-// MUDANÇA AQUI: Importação corrigida para o novo serviço
 import { logActivity } from '@/services/activityService'
 import { DriveRole, DriveFile } from '@/services/googleDriveService'
 
@@ -82,20 +80,21 @@ export default function DocumentManager({
   entityName
 }: DocumentManagerProps) {
   const actorRole: DriveRole = (currentUser?.role as DriveRole) || 'client'
+
   const {
     files,
     folders,
     rootFolderId,
     breadcrumbs,
-    currentFolderId,
-    navigateToFolder,
     createFolder,
     uploadFiles,
     deleteItem,
     renameItem,
     activities,
     loading,
-    error
+    error,
+    currentFolderId,
+    navigateToFolder
   } = useDriveDocuments({
     entityId,
     entityType: entityType as any,
@@ -103,6 +102,7 @@ export default function DocumentManager({
     actorRole,
     entityName,
   })
+
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
@@ -144,23 +144,20 @@ export default function DocumentManager({
     if (droppedFiles && droppedFiles.length > 0) {
       const filesArray = Array.from(droppedFiles)
       await uploadFiles(filesArray, currentFolderId)
-
       logActivity(
         entityId,
         entityType,
         'upload de arquivo (drag-and-drop)',
         currentUser.id,
-        { count: filesArray.length, names: filesArray.map(f => f.name).join(', ') }
+        { count: filesArray.length }
       )
-
       toast.success(`${filesArray.length} arquivo(s) enviado(s)`)
     }
   }
 
-  // Filtra arquivos e pastas
+  // Filter files
   const filteredFiles = files.filter(f => {
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFolder = f.folderId === currentFolderId
     
     // Filter by type if not 'all'
     let matchesType = true
@@ -172,12 +169,14 @@ export default function DocumentManager({
       else if (filterType === 'doc') matchesType = mime.includes('document') || mime.includes('word') || mime.includes('text')
     }
     
-    return matchesSearch && matchesFolder && matchesType
+    return matchesSearch && matchesType
   })
 
-  const currentFolders = (folders || []).filter(f => f.parentId === currentFolderId)
+  // Folders are also filtered by search
+  const filteredFolders = folders.filter(f =>
+    f.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
-  // Helper para ícones de arquivo
   const getFileIcon = (mimeType: string) => {
     const mime = mimeType.toLowerCase()
     if (mime.includes('pdf')) return <FilePdf size={24} className="text-red-500" />
@@ -192,9 +191,7 @@ export default function DocumentManager({
     return <FileText size={24} className="text-gray-400" />
   }
 
-  // Handlers
   const handleFileClick = (file: DriveFile) => {
-    // Se for imagem ou PDF, abre preview. Senão, tenta abrir nova aba
     const mime = file.type.toLowerCase()
     if (mime.includes('image') || mime.includes('pdf')) {
       setPreviewFile(file)
@@ -203,23 +200,19 @@ export default function DocumentManager({
     }
   }
 
-  // Ações
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files
     if (!uploadedFiles) return
 
     await uploadFiles(Array.from(uploadedFiles), currentFolderId)
-
-    // Log de atividade usando o novo serviço
     logActivity(
       entityId,
       entityType,
       'upload de arquivo', 
       currentUser.id, 
-      { count: uploadedFiles.length, names: Array.from(uploadedFiles).map(f => f.name).join(', ') }
+      { count: uploadedFiles.length }
     )
-
-    toast.success(`${uploadedFiles.length} arquivo(s) enviado(s)`)
+    toast.success('Upload concluído')
     setIsUploadOpen(false)
   }
 
@@ -275,7 +268,7 @@ export default function DocumentManager({
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg pointer-events-none">
           <div className="flex flex-col items-center gap-4 animate-bounce">
             <UploadSimple size={48} className="text-primary" />
-            <p className="text-lg font-semibold text-primary">Solte os arquivos aqui para fazer upload</p>
+            <p className="text-lg font-semibold text-primary">Solte os arquivos aqui</p>
           </div>
         </div>
       )}
@@ -297,13 +290,11 @@ export default function DocumentManager({
 
           <div className="flex items-center gap-2">
             <div className="flex bg-muted rounded-md p-0.5 mr-2">
-              {/* Botões Grid/List omitidos aqui no patch pois já existem, mantendo contexto */}
               <Button
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                 size="icon"
                 className="h-7 w-7 rounded-sm"
                 onClick={() => setViewMode('grid')}
-                title="Visualização em Grade"
               >
                 <SquaresFour className="h-4 w-4" />
               </Button>
@@ -312,7 +303,6 @@ export default function DocumentManager({
                 size="icon"
                 className="h-7 w-7 rounded-sm"
                 onClick={() => setViewMode('list')}
-                title="Visualização em Lista"
               >
                 <ListDashes className="h-4 w-4" />
               </Button>
@@ -373,36 +363,23 @@ export default function DocumentManager({
           </Badge>
         </div>
       </div>
+
       {/* Breadcrumbs */}
       <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-1 text-sm overflow-x-auto whitespace-nowrap">
-        {breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs.map((crumb, index, arr) => {
-          const isCurrentLocation = index === arr.length - 1
-          return (
-            <div key={crumb.id || 'root'} className="flex items-center">
-              <button
-                className={isCurrentLocation ? 'font-bold text-foreground' : 'hover:underline text-muted-foreground hover:text-primary'}
-                onClick={() => navigateToFolder(crumb.id || undefined)}
-                disabled={isCurrentLocation}
-                title={isCurrentLocation ? 'Localização atual' : `Navegar para ${crumb.name}`}
-              >
-                {crumb.name}
-              </button>
-              {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
-            </div>
-          )
-        }) : (
+        {breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs.map((crumb, index, arr) => (
+          <div key={crumb.id || 'root'} className="flex items-center">
+            <button
+              className={`hover:underline ${index === arr.length - 1 ? 'font-bold text-foreground' : 'text-muted-foreground hover:text-primary'}`}
+              onClick={() => navigateToFolder(crumb.id || undefined)}
+              disabled={index === arr.length - 1}
+            >
+              {crumb.name}
+            </button>
+            {index < arr.length - 1 && <CaretRight className="mx-1 h-3 w-3 text-muted-foreground" />}
+          </div>
+        )) : (
           <span className="text-muted-foreground text-xs">Carregando caminho...</span>
         )}
-      </div>
-
-      <div className="px-4 py-2 text-xs text-muted-foreground border-b flex items-center justify-between">
-        <span>
-          Pasta raiz: <span className="font-mono text-primary">{rootFolderId || 'provisionando...'}</span>
-        </span>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">Papel: {actorRole}</Badge>
-          <Badge variant="secondary">Auditoria: {activities?.length || 0} eventos</Badge>
-        </div>
       </div>
 
       {/* Content Area */}
@@ -410,258 +387,209 @@ export default function DocumentManager({
         {loading ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-               {[1,2,3,4].map(i => (
-                 <Skeleton key={i} className="h-32 w-full rounded-lg" />
-               ))}
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-               {[1,2,3,4,5,6,7,8].map(i => (
-                 <Skeleton key={i} className="h-24 w-full rounded-lg" />
-               ))}
+               {[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
             </div>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div className="rounded-full bg-destructive/10 p-3 mb-4">
-              <Info className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Erro ao carregar documentos</h3>
-            <p className="text-sm text-muted-foreground mb-1 max-w-md">
-              {error.message}
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Verifique se a API do Drive está configurada corretamente e se há conexão com o servidor.
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.reload()}
-            >
-              Tentar Novamente
-            </Button>
+          <div className="text-center py-12">
+            <p className="text-destructive mb-2">Erro ao carregar documentos</p>
+            <Button variant="outline" onClick={() => navigateToFolder(currentFolderId)}>Tentar Novamente</Button>
           </div>
         ) : (
           <>
-            {/* VIEW MODE: GRID */}
+            {/* GRID VIEW */}
             {viewMode === 'grid' && (
               <>
-                 {/* Folders Grid */}
-                {currentFolders && currentFolders.length > 0 && (
+                {/* Folders */}
+                {filteredFolders.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pastas</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {currentFolders.map(folder => (
-                    <div
-                      key={folder.id}
-                      className="group flex flex-col items-center p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors relative"
-                      onClick={() => navigateToFolder(folder.id)}
-                    >
-                      <FolderIcon size={48} weight="fill" className="text-yellow-400 mb-2 drop-shadow-sm" />
-                      <span className="text-sm font-medium text-center truncate w-full">{folder.name}</span>
-
-                      {/* Context Menu */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
-                              <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                            </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
-                          className="text-destructive"
+                      {filteredFolders.map(folder => (
+                        <div
+                          key={folder.id}
+                          className="group flex flex-col items-center p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors relative"
+                          onClick={() => navigateToFolder(folder.id)}
                         >
-                              <Trash className="mr-2 h-4 w-4" /> Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                          <FolderIcon size={48} weight="fill" className="text-yellow-400 mb-2" />
+                          <span className="text-sm font-medium text-center truncate w-full">{folder.name}</span>
 
-            {/* Files Grid */}
-            <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Arquivos</h4>
-              {filteredFiles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground border-2 border-dashed rounded-lg bg-muted/5 gap-4">
-                   <div className="bg-muted p-4 rounded-full">
-                      <CloudArrowUp size={48} className="text-muted-foreground/50" />
-                   </div>
-                   <div className="text-center">
-                      <p className="font-medium text-foreground">{searchQuery ? 'Nenhum arquivo encontrado.' : 'Esta pasta está vazia.'}</p>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
-                        {searchQuery ? 'Tente buscar com outros termos.' : 'Arraste arquivos aqui ou use o botão de upload para começar.'}
-                      </p>
-                   </div>
-                   {!searchQuery && (
-                     <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                       <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
-                     </Button>
-                   )}
-                </div>
-              ) : (
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
+                                  <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
+                                  className="text-destructive"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Files */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {filteredFiles.map(file => (
-                    <div
-                      key={file.id}
-                      className="group flex flex-col p-3 border rounded-lg hover:bg-muted/40 transition-colors relative"
-                    >
-                      <div className="flex justify-center mb-3 text-muted-foreground/80">{getFileIcon(file.type)}</div>
-
+                    <div key={file.id} className="group flex flex-col p-3 border rounded-lg hover:bg-muted/40 relative">
+                      <div className="flex justify-center mb-3 cursor-pointer" onClick={() => handleFileClick(file)}>
+                        {getFileIcon(file.type)}
+                      </div>
                       <div className="min-w-0 text-center">
                         <p className="font-medium text-sm truncate w-full" title={file.name}>{file.name}</p>
                         <p className="text-xs text-muted-foreground mt-1">{formatBytes(file.size)}</p>
                       </div>
 
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-background/80 rounded-sm">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 bg-background/80 rounded-sm">
                          <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => handleFileClick(file)} className="cursor-pointer">
-                                <Eye className="mr-2 h-4 w-4" /> Visualizar
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => setDetailsFile(file)} className="cursor-pointer">
-                                <Info className="mr-2 h-4 w-4" /> Detalhes
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
-                                <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
+                             <DropdownMenuItem onClick={() => handleFileClick(file)}><Eye className="mr-2 h-4 w-4" /> Visualizar</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => setDetailsFile(file)}><Info className="mr-2 h-4 w-4" /> Detalhes</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => window.open(file.url, '_blank')}><DownloadSimple className="mr-2 h-4 w-4" /> Baixar</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)}>
                                 <PencilSimple className="mr-2 h-4 w-4" /> Renomear
                              </DropdownMenuItem>
-                            <DropdownMenuItem
+                             <DropdownMenuItem
                               onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
-                              className="text-destructive cursor-pointer"
+                              className="text-destructive"
                             >
                               <Trash className="mr-2 h-4 w-4" /> Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-
-                      {/* Click overlay for preview */}
-                      <div
-                        className="absolute inset-0 z-0"
-                        onClick={() => handleFileClick(file)}
-                      />
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          </>
-        )}
 
-        {/* VIEW MODE: LIST */}
-        {viewMode === 'list' && (
-          <div className="min-w-full">
-            <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground border-b mb-2">
-              <div className="col-span-6">Nome</div>
-              <div className="col-span-2">Tamanho</div>
-              <div className="col-span-3">Data</div>
-              <div className="col-span-1"></div>
-            </div>
-
-            {currentFolders.map(folder => (
-               <div
-                  key={folder.id}
-                  className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 cursor-pointer border-b last:border-0 transition-colors group"
-                  onClick={() => navigateToFolder(folder.id)}
-                >
-                  <div className="col-span-6 flex items-center gap-3">
-                     <FolderIcon size={20} weight="fill" className="text-yellow-400" />
-                     <span className="text-sm font-medium truncate">{folder.name}</span>
-                  </div>
-                  <div className="col-span-2 text-xs text-muted-foreground">-</div>
-                  <div className="col-span-3 text-xs text-muted-foreground">-</div>
-                  <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100">
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}><DotsThreeVertical /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
-                          <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
-                          className="text-destructive"
-                        >
-                          <Trash className="mr-2 h-4 w-4" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-               </div>
-            ))}
-
-            {filteredFiles.map(file => (
-               <div
-                  key={file.id}
-                  className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 border-b last:border-0 transition-colors group"
-                >
-                  <div className="col-span-6 flex items-center gap-3 cursor-pointer" onClick={() => handleFileClick(file)}>
-                     <div className="shrink-0">{getFileIcon(file.type)}</div>
-                     <span className="text-sm font-medium truncate hover:text-primary hover:underline">{file.name}</span>
-                  </div>
-                  <div className="col-span-2 text-xs text-muted-foreground">{formatBytes(file.size)}</div>
-                  <div className="col-span-3 text-xs text-muted-foreground">{formatDate(file.uploadedAt)}</div>
-                  <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100">
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleFileClick(file)} className="cursor-pointer">
-                           <Eye className="mr-2 h-4 w-4" /> Visualizar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDetailsFile(file)} className="cursor-pointer">
-                           <Info className="mr-2 h-4 w-4" /> Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
-                           <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
-                           <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
-                          className="text-destructive cursor-pointer"
-                        >
-                          <Trash className="mr-2 h-4 w-4" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-               </div>
-            ))}
-
-             {filteredFiles.length === 0 && currentFolders.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground border-2 border-dashed rounded-lg mt-4 bg-muted/5 gap-4">
-                   <div className="bg-muted p-4 rounded-full">
-                      <CloudArrowUp size={48} className="text-muted-foreground/50" />
+                {filteredFiles.length === 0 && filteredFolders.length === 0 && (
+                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                      <CloudArrowUp size={48} className="text-muted-foreground/50 mb-4" />
+                      <p>Pasta vazia</p>
                    </div>
-                   <div className="text-center">
+                )}
+              </>
+            )}
+
+            {/* LIST VIEW */}
+            {viewMode === 'list' && (
+              <div className="min-w-full">
+                <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground border-b mb-2">
+                  <div className="col-span-6">Nome</div>
+                  <div className="col-span-2">Tamanho</div>
+                  <div className="col-span-3">Data</div>
+                  <div className="col-span-1"></div>
+                </div>
+
+                {/* Folders List */}
+                {filteredFolders.map(folder => (
+                  <div
+                    key={folder.id}
+                    className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 cursor-pointer border-b last:border-0 transition-colors group"
+                    onClick={() => navigateToFolder(folder.id)}
+                  >
+                    <div className="col-span-6 flex items-center gap-3">
+                      <FolderIcon size={20} weight="fill" className="text-yellow-400" />
+                      <span className="text-sm font-medium truncate">{folder.name}</span>
+                    </div>
+                    <div className="col-span-2 text-xs text-muted-foreground">-</div>
+                    <div className="col-span-3 text-xs text-muted-foreground">-</div>
+                    <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}><DotsThreeVertical /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
+                            <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
+                            className="text-destructive"
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Files List */}
+                {filteredFiles.map(file => (
+                  <div
+                    key={file.id}
+                    className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 border-b last:border-0 transition-colors group"
+                  >
+                    <div className="col-span-6 flex items-center gap-3 cursor-pointer" onClick={() => handleFileClick(file)}>
+                      <div className="shrink-0">{getFileIcon(file.type)}</div>
+                      <span className="text-sm font-medium truncate hover:text-primary hover:underline">{file.name}</span>
+                    </div>
+                    <div className="col-span-2 text-xs text-muted-foreground">{formatBytes(file.size)}</div>
+                    <div className="col-span-3 text-xs text-muted-foreground">{formatDate(file.uploadedAt)}</div>
+                    <div className="col-span-1 flex justify-end opacity-0 group-hover:opacity-100">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleFileClick(file)} className="cursor-pointer">
+                            <Eye className="mr-2 h-4 w-4" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDetailsFile(file)} className="cursor-pointer">
+                            <Info className="mr-2 h-4 w-4" /> Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
+                            <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
+                            <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
+                            className="text-destructive cursor-pointer"
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredFiles.length === 0 && filteredFolders.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground border-2 border-dashed rounded-lg mt-4 bg-muted/5 gap-4">
+                    <div className="bg-muted p-4 rounded-full">
+                      <CloudArrowUp size={48} className="text-muted-foreground/50" />
+                    </div>
+                    <div className="text-center">
                       <p className="font-medium text-foreground">{searchQuery ? 'Nenhum arquivo encontrado.' : 'Esta pasta está vazia.'}</p>
                       <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
                         {searchQuery ? 'Tente buscar com outros termos.' : 'Arraste arquivos aqui ou use o botão de upload para começar.'}
                       </p>
-                   </div>
-                   {!searchQuery && (
-                     <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                       <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
-                     </Button>
-                   )}
-                </div>
-             )}
-          </div>
-        )}
+                    </div>
+                    {!searchQuery && (
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                        <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </ScrollArea>
@@ -674,9 +602,9 @@ export default function DocumentManager({
             <DialogDescription>Crie uma nova pasta para organizar documentos.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Input 
-              placeholder="Nome da pasta" 
-              value={newFolderName} 
+            <Input
+              placeholder="Nome da pasta"
+              value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreateFolder()}
             />
@@ -696,8 +624,8 @@ export default function DocumentManager({
             <DialogDescription>Digite o novo nome para o item.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Input 
-              value={newName} 
+            <Input
+              value={newName}
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleRename()}
             />
@@ -736,42 +664,37 @@ export default function DocumentManager({
           </SheetHeader>
           {detailsFile && (
             <div className="py-6 space-y-6">
-               <div className="flex flex-col items-center justify-center p-6 bg-muted/20 rounded-lg border border-dashed">
-                  {getFileIcon(detailsFile.type)}
-                  <p className="mt-2 font-medium text-center break-all">{detailsFile.name}</p>
-               </div>
+              <div className="flex flex-col items-center justify-center p-6 bg-muted/20 rounded-lg border border-dashed">
+                {getFileIcon(detailsFile.type)}
+                <p className="mt-2 font-medium text-center break-all">{detailsFile.name}</p>
+              </div>
 
-               <div className="space-y-4">
-                 <div className="space-y-1">
-                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Tipo</span>
-                   <p className="text-sm font-mono truncate bg-muted p-1 rounded px-2">{detailsFile.type}</p>
-                 </div>
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Tipo</span>
+                  <p className="text-sm font-mono truncate bg-muted p-1 rounded px-2">{detailsFile.type}</p>
+                </div>
 
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Tamanho</span>
-                      <p className="text-sm">{formatBytes(detailsFile.size)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Data</span>
-                      <p className="text-sm">{formatDate(detailsFile.uploadedAt)}</p>
-                    </div>
-                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Tamanho</span>
+                    <p className="text-sm">{formatBytes(detailsFile.size)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Data</span>
+                    <p className="text-sm">{formatDate(detailsFile.uploadedAt)}</p>
+                  </div>
+                </div>
 
-                 <div className="space-y-1">
-                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Enviado por</span>
-                   <p className="text-sm">{detailsFile.uploadedBy}</p>
-                 </div>
-
-                 <div className="pt-4 border-t flex flex-col gap-2">
-                    <Button className="w-full" onClick={() => window.open(detailsFile.url, '_blank')}>
-                      <DownloadSimple className="mr-2 h-4 w-4" /> Baixar Arquivo
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={() => { setDetailsFile(null); setPreviewFile(detailsFile); }}>
-                      <Eye className="mr-2 h-4 w-4" /> Visualizar
-                    </Button>
-                 </div>
-               </div>
+                <div className="pt-4 border-t flex flex-col gap-2">
+                  <Button className="w-full" onClick={() => window.open(detailsFile.url, '_blank')}>
+                    <DownloadSimple className="mr-2 h-4 w-4" /> Baixar Arquivo
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => { setDetailsFile(null); setPreviewFile(detailsFile); }}>
+                    <Eye className="mr-2 h-4 w-4" /> Visualizar
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </SheetContent>
@@ -782,27 +705,27 @@ export default function DocumentManager({
         <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2 overflow-hidden">
-               {previewFile && getFileIcon(previewFile.type)}
-               <h3 className="font-semibold truncate">{previewFile?.name}</h3>
+              {previewFile && getFileIcon(previewFile.type)}
+              <h3 className="font-semibold truncate">{previewFile?.name}</h3>
             </div>
             <div className="flex items-center gap-2">
-               <Button variant="ghost" size="sm" onClick={() => window.open(previewFile?.url, '_blank')}>
-                 <DownloadSimple className="mr-2 h-4 w-4" /> Baixar / Abrir Original
-               </Button>
+              <Button variant="ghost" size="sm" onClick={() => window.open(previewFile?.url, '_blank')}>
+                <DownloadSimple className="mr-2 h-4 w-4" /> Baixar / Abrir Original
+              </Button>
             </div>
           </div>
           <div className="flex-1 bg-muted/20 flex items-center justify-center overflow-hidden relative">
             {previewFile && (
-               previewFile.type.includes('image') ? (
-                 <img src={previewFile.url} alt={previewFile.name} className="max-w-full max-h-full object-contain" />
-               ) : previewFile.type.includes('pdf') ? (
-                 <iframe src={previewFile.url} className="w-full h-full border-0" title="PDF Preview" />
-               ) : (
-                 <div className="text-center">
-                   <FileText size={64} className="mx-auto text-muted-foreground mb-4 opacity-20" />
-                   <p className="text-muted-foreground">Pré-visualização não disponível para este formato.</p>
-                 </div>
-               )
+              previewFile.type.includes('image') ? (
+                <img src={previewFile.url} alt={previewFile.name} className="max-w-full max-h-full object-contain" />
+              ) : previewFile.type.includes('pdf') ? (
+                <iframe src={previewFile.url} className="w-full h-full border-0" title="PDF Preview" />
+              ) : (
+                <div className="text-center">
+                  <FileText size={64} className="mx-auto text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-muted-foreground">Pré-visualização não disponível para este formato.</p>
+                </div>
+              )
             )}
           </div>
         </DialogContent>
