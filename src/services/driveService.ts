@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabaseClient';
-import { safeFetch } from '@/lib/safeFetch';
+import { driveApiFetch } from '@/lib/driveClient';
+import type { DriveItem } from '@/lib/driveClient';
 
 /**
  * Unified Drive Service for PipeDesk
@@ -13,20 +13,6 @@ import { safeFetch } from '@/lib/safeFetch';
 // ============================================================================
 
 export type EntityType = 'lead' | 'deal' | 'company';
-
-export interface DriveItem {
-  id: string;
-  name: string;
-  type: 'file' | 'folder';
-  size?: number;
-  mimeType?: string;
-  url?: string;
-  webViewLink?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  parentId?: string;
-  permission?: string;
-}
 
 export interface GetDriveItemsOptions {
   page?: number;
@@ -48,81 +34,8 @@ export interface UploadFileOptions {
   parentId?: string;
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Get the Drive API base URL from environment
- */
-const getDriveApiUrl = (): string => {
-  const url = import.meta.env.VITE_DRIVE_API_URL;
-  if (!url) {
-    throw new Error('Drive API URL not configured. Please set VITE_DRIVE_API_URL environment variable.');
-  }
-  return url.endsWith('/') ? url.slice(0, -1) : url;
-};
-
-/**
- * Get authentication information from Supabase session
- */
-const getAuthInfo = async (): Promise<{ token: string; userId: string; userRole: string }> => {
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error) {
-    console.error('[DriveService] Error getting session:', error);
-    throw new Error(`Authentication error: ${error.message}`);
-  }
-
-  if (!session?.access_token || !session?.user) {
-    throw new Error('No authentication token available. Please sign in.');
-  }
-
-  const userId = session.user.id;
-  const token = session.access_token;
-
-  // Fetch user profile to get the role
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userId)
-    .single<{ role: string }>();
-
-  if (profileError || !profile) {
-    console.error('[DriveService] Error fetching user profile:', profileError);
-    // Default to 'client' if profile not found
-    return { token, userId, userRole: 'client' };
-  }
-
-  return { token, userId, userRole: profile.role || 'client' };
-};
-
-/**
- * Make authenticated request to Drive API
- */
-const driveApiFetch = async (
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<Response> => {
-  const baseUrl = getDriveApiUrl();
-  const { token, userId, userRole } = await getAuthInfo();
-
-  const url = `${baseUrl}${endpoint}`;
-  const headers = {
-    'Authorization': `Bearer ${token}`,
-    'x-user-id': userId,
-    'x-user-role': userRole,
-    ...options.headers,
-  };
-
-  return safeFetch(url, {
-    ...options,
-    headers,
-  });
-};
+// Re-export DriveItem for convenience
+export type { DriveItem };
 
 // ============================================================================
 // Service Functions
