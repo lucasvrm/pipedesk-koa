@@ -204,6 +204,7 @@ export default function LeadsListPage() {
     setStatusFilter('all')
     setOriginFilter('all')
     setTagFilter([])
+    setCurrentPage(1)
   }
 
   const getPrimaryContact = (lead: Lead) => {
@@ -359,7 +360,7 @@ export default function LeadsListPage() {
                     {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
                   </div>
                   {tagFilter.length > 0 && (
-                    <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => setTagFilter([])}>
+                    <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setCurrentPage(1); }}>
                       Limpar Tags
                     </Button>
                   )}
