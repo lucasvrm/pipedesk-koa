@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDriveDocuments } from '@/hooks/useDriveDocuments'
 import {
   Folder as FolderIcon,
@@ -25,7 +25,9 @@ import {
   CloudArrowUp,
   Info,
   PencilSimple,
-  LockSimple
+  LockSimple,
+  Calendar as CalendarIcon,
+  X as XIcon
 } from '@phosphor-icons/react'
 import {
   DropdownMenu,
@@ -67,6 +69,11 @@ import { formatBytes, formatDate } from '@/lib/helpers'
 import { logActivity } from '@/services/activityService'
 import { DriveRole, DriveFile } from '@/services/googleDriveService'
 import { useAuth } from '@/contexts/AuthContext'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 export interface DriveSectionProps {
   /** Type of entity: lead, deal, or company */
@@ -133,7 +140,16 @@ export default function DriveSection({
     error,
     currentFolderId,
     navigateToFolder,
-    reload
+    reload,
+    search,
+    setSearchQuery: setHookSearchQuery,
+    setSearchDateFrom,
+    setSearchDateTo,
+    clearSearch,
+    isSearching,
+    searchQuery: hookSearchQuery,
+    searchDateFrom,
+    searchDateTo
   } = useDriveDocuments({
     entityId,
     entityType: entityType as 'lead' | 'deal' | 'company',
@@ -143,6 +159,8 @@ export default function DriveSection({
   })
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState<Date | undefined>()
+  const [dateTo, setDateTo] = useState<Date | undefined>()
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   
@@ -159,6 +177,50 @@ export default function DriveSection({
   const [previewFile, setPreviewFile] = useState<DriveFile | null>(null)
   const [detailsFile, setDetailsFile] = useState<DriveFile | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'file' | 'folder', name: string } | null>(null)
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== hookSearchQuery) {
+        setHookSearchQuery(searchQuery)
+      }
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, hookSearchQuery, setHookSearchQuery])
+
+  // Trigger search when search parameters change
+  useEffect(() => {
+    const hasSearchCriteria = hookSearchQuery || dateFrom || dateTo
+    if (hasSearchCriteria && search) {
+      // Update date filters in hook
+      if (dateFrom) {
+        setSearchDateFrom(format(dateFrom, 'yyyy-MM-dd'))
+      } else {
+        setSearchDateFrom('')
+      }
+      
+      if (dateTo) {
+        setSearchDateTo(format(dateTo, 'yyyy-MM-dd'))
+      } else {
+        setSearchDateTo('')
+      }
+
+      // Trigger search
+      search().catch((err) => {
+        console.error('Search error:', err)
+      })
+    }
+  }, [hookSearchQuery, dateFrom, dateTo, search, setSearchDateFrom, setSearchDateTo])
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('')
+    setDateFrom(undefined)
+    setDateTo(undefined)
+    if (clearSearch) {
+      clearSearch()
+    }
+  }, [clearSearch])
 
   // Log when component mounts and structure is initialized
   useEffect(() => {
@@ -355,6 +417,69 @@ export default function DriveSection({
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
+            
+            {/* Date From Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-9 justify-start text-left font-normal',
+                    !dateFrom && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, 'dd/MM/yyyy', { locale: ptBR }) : 'Data inicial'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={setDateFrom}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Date To Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-9 justify-start text-left font-normal',
+                    !dateTo && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, 'dd/MM/yyyy', { locale: ptBR }) : 'Data final'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Clear Filters Button */}
+            {(searchQuery || dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-9"
+              >
+                <XIcon className="mr-2 h-4 w-4" />
+                Limpar filtros
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -462,7 +587,7 @@ export default function DriveSection({
 
       {/* Content Area */}
       <ScrollArea className="flex-1 p-4">
-        {loading ? (
+        {(loading || isSearching) ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}

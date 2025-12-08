@@ -23,7 +23,9 @@ import {
   deleteRemoteEntry,
   renameRemoteEntry,
   restoreRemoteEntry,
+  searchRemoteDocuments,
   Breadcrumb,
+  SearchOptions,
 } from '@/services/pdGoogleDriveApi'
 
 interface UseDriveDocumentsParams {
@@ -55,6 +57,10 @@ export function useDriveDocuments({
   const [error, setError] = useState<Error | null>(null)
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(initialFolderId)
   const [includeDeleted, setIncludeDeleted] = useState(false)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [searchDateFrom, setSearchDateFrom] = useState<string>('')
+  const [searchDateTo, setSearchDateTo] = useState<string>('')
+  const [isSearching, setIsSearching] = useState(false)
 
   const load = useCallback(async (folderId: string | undefined = currentFolderId, showDeleted: boolean = includeDeleted) => {
     setLoading(true)
@@ -234,6 +240,52 @@ export function useDriveDocuments({
     setActivities(activity)
   }, [entityId, entityType])
 
+  const search = useCallback(async (options: SearchOptions = {}) => {
+    if (!USE_REMOTE_DRIVE) {
+      console.warn('[useDriveDocuments] Search is only supported in Remote Drive mode')
+      return
+    }
+
+    setIsSearching(true)
+    setError(null)
+
+    try {
+      const snapshot = await searchRemoteDocuments(
+        entityType,
+        entityId,
+        actorId,
+        actorRole,
+        {
+          q: searchQuery || undefined,
+          created_from: searchDateFrom || undefined,
+          created_to: searchDateTo || undefined,
+          include_deleted: includeDeleted,
+          ...options,
+        }
+      )
+      setFolders(snapshot.folders)
+      setFiles(snapshot.files)
+      setRootFolderId(snapshot.rootFolderId)
+      setBreadcrumbs(snapshot.breadcrumbs)
+      setActivities([])
+      setIsSearching(false)
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
+      console.error('[useDriveDocuments] Error searching documents:', error)
+      setError(error)
+      setIsSearching(false)
+      throw error
+    }
+  }, [actorId, actorRole, entityId, entityType, searchQuery, searchDateFrom, searchDateTo, includeDeleted])
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('')
+    setSearchDateFrom('')
+    setSearchDateTo('')
+    setCurrentFolderId(undefined)
+    load(undefined).catch(() => {})
+  }, [load])
+
   return {
     folders,
     files,
@@ -244,6 +296,10 @@ export function useDriveDocuments({
     error,
     currentFolderId,
     includeDeleted,
+    searchQuery,
+    searchDateFrom,
+    searchDateTo,
+    isSearching,
     toggleIncludeDeleted,
     navigateToFolder,
     createFolder,
@@ -254,6 +310,11 @@ export function useDriveDocuments({
     generateLink,
     applyPermissions,
     refreshActivity,
+    search,
+    setSearchQuery,
+    setSearchDateFrom,
+    setSearchDateTo,
+    clearSearch,
     reload: () => load(currentFolderId),
   }
 }
