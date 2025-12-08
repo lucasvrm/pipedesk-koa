@@ -59,11 +59,13 @@ export function useEnhancedAnalytics(
   const teamMemberIds = teamMembers?.map(member => member.id)
   
   // Map dateFilter to old analytics format for backward compatibility
+  // Note: Some DateFilterType values ('today', '7d', 'ytd') are mapped to 'all'
+  // because the legacy analytics service only supports '30d', '90d', '1y', and 'all'
   const legacyDateFilter: 'all' | '30d' | '90d' | '1y' = 
     dateFilter === '30d' ? '30d' :
     dateFilter === '90d' ? '90d' :
     dateFilter === '1y' ? '1y' :
-    'all'
+    'all'  // Fallback for 'today', '7d', 'ytd', and 'all'
   
   // Call analytics with metadata integration
   const analytics = useAnalyticsWithMetadata(

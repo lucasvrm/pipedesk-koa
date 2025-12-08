@@ -191,12 +191,17 @@ export async function getAnalyticsSummary(
         // Tendência de Conversão (Dinâmica baseada no range)
         const conversionTrend: { period: string; concluded: number; cancelled: number; conversionRate: number }[] = [];
         
+        // Constants for conversion trend grouping thresholds
+        const WEEKLY_THRESHOLD_DAYS = 30;  // Show weeks for ranges <= 30 days
+        const MONTHLY_SHORT_THRESHOLD_DAYS = 90;  // Show 3 months for ranges <= 90 days
+        const DEFAULT_RANGE_DAYS = 365 * 10;  // Default to 10 years for 'all' filter
+        
         // Calculate the range duration in days
         const rangeDays = startDate 
             ? Math.floor((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000))
-            : 365 * 10; // Default to 10 years if no start date
+            : DEFAULT_RANGE_DAYS;
         
-        if (rangeDays <= 30) {
+        if (rangeDays <= WEEKLY_THRESHOLD_DAYS) {
             // Short range: group by week
             const weeks = Math.ceil(rangeDays / 7);
             for (let i = weeks - 1; i >= 0; i--) {
@@ -223,7 +228,7 @@ export async function getAnalyticsSummary(
                     conversionRate: rate,
                 });
             }
-        } else if (rangeDays <= 90) {
+        } else if (rangeDays <= MONTHLY_SHORT_THRESHOLD_DAYS) {
             // Medium range: group by month, show last 3 months
             for (let i = 2; i >= 0; i--) {
                 const date = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
