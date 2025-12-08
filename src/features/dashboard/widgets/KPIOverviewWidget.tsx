@@ -3,9 +3,10 @@ import { Target, ChartLine, Funnel, Users } from '@phosphor-icons/react'
 import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics'
 import { useDashboardFilters } from '@/contexts/DashboardFiltersContext'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DateFilterType } from '@/types/metadata'
 
 interface KPIOverviewWidgetProps {
-  dateFilter?: 'all' | '30d' | '90d' | '1y';
+  dateFilter?: DateFilterType;
   teamFilter?: string;
   typeFilter?: string;
 }
