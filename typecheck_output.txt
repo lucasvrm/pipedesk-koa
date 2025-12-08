@@ -1,0 +1,508 @@
+
+> pipedesk@0.0.0 typecheck
+> tsc --noEmit
+
+src/components/AINextSteps.tsx(96,30): error TS18048: 'window.spark' is possibly 'undefined'.
+src/components/AINextSteps.tsx(96,43): error TS2339: Property 'llm' does not exist on type '{ kv: { get: <T>(key: string) => Promise<T | null>; set: <T>(key: string, value: T) => Promise<void>; }; }'.
+src/components/CommentsPanel.tsx(185,55): error TS2339: Property 'avatar_url' does not exist on type '{ name: string; avatar?: string | undefined; }'.
+src/components/DocumentManager.tsx(155,9): error TS2345: Argument of type '"deal" | "track" | "lead" | "company" | "task" | "contact"' is not assignable to parameter of type 'ActivityEntityType'.
+  Type '"contact"' is not assignable to type 'ActivityEntityType'.
+src/components/DocumentManager.tsx(218,7): error TS2345: Argument of type '"deal" | "track" | "lead" | "company" | "task" | "contact"' is not assignable to parameter of type 'ActivityEntityType'.
+  Type '"contact"' is not assignable to type 'ActivityEntityType'.
+src/components/OnboardingTour.tsx(116,21): error TS2345: Argument of type '{ has_completed_onboarding: boolean; }' is not assignable to parameter of type 'never'.
+src/components/PhaseRuleEditor.tsx(116,9): error TS2322: Type '{ id: string; operator: ValidationOperator; fieldName: string; fieldType: FieldType; value?: any; label?: string | undefined; }[]' is not assignable to type 'FieldCondition[]'.
+  Type '{ id: string; operator: ValidationOperator; fieldName: string; fieldType: FieldType; value?: any; label?: string | undefined; }' is not assignable to type 'FieldCondition'.
+    Types of property 'label' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/components/PhaseRuleEditor.tsx(118,40): error TS2304: Cannot find name 'PlayerStage'.
+src/components/PhaseRuleEditor.tsx(119,36): error TS2304: Cannot find name 'PlayerStage'.
+src/components/PhaseValidationDialog.tsx(83,18): error TS2304: Cannot find name 'Warning'.
+src/components/PhaseValidationDialog.tsx(103,14): error TS2304: Cannot find name 'Check'.
+src/components/PhaseValidationManager.tsx(34,3): error TS2305: Module '"@/lib/phaseValidation"' has no exported member 'getStageLabel'.
+src/components/PhaseValidationManager.tsx(37,8): error TS2613: Module '"/app/src/components/PhaseRuleEditor"' has no default export. Did you mean to use 'import { PhaseRuleEditor } from "/app/src/components/PhaseRuleEditor"' instead?
+src/components/PipelineSettingsDialog.tsx(195,37): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/components/SharedListFiltersBar.tsx(1,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/search'. '/app/node_modules/lucide-react/dist/esm/icons/search.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/search';`
+src/components/SharedListFiltersBar.tsx(2,28): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/layout-list'. '/app/node_modules/lucide-react/dist/esm/icons/layout-list.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/layout-list';`
+src/components/SharedListFiltersBar.tsx(3,28): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/layout-grid'. '/app/node_modules/lucide-react/dist/esm/icons/layout-grid.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/layout-grid';`
+src/components/ui/accordion.tsx(3,29): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-down'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-down.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-down';`
+src/components/ui/breadcrumb.tsx(3,26): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-right'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-right';`
+src/components/ui/breadcrumb.tsx(4,28): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/more-horizontal'. '/app/node_modules/lucide-react/dist/esm/icons/more-horizontal.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/more-horizontal';`
+src/components/ui/calendar.tsx(2,25): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-left'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-left.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-left';`
+src/components/ui/calendar.tsx(3,26): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-right'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-right';`
+src/components/ui/carousel.tsx(7,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/arrow-left'. '/app/node_modules/lucide-react/dist/esm/icons/arrow-left.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/arrow-left';`
+src/components/ui/carousel.tsx(8,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/arrow-right'. '/app/node_modules/lucide-react/dist/esm/icons/arrow-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/arrow-right';`
+src/components/ui/checkbox.tsx(5,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/check'. '/app/node_modules/lucide-react/dist/esm/icons/check.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/check';`
+src/components/ui/command.tsx(5,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/search'. '/app/node_modules/lucide-react/dist/esm/icons/search.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/search';`
+src/components/ui/context-menu.tsx(5,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/check'. '/app/node_modules/lucide-react/dist/esm/icons/check.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/check';`
+src/components/ui/context-menu.tsx(6,30): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-right'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-right';`
+src/components/ui/context-menu.tsx(7,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/circle'. '/app/node_modules/lucide-react/dist/esm/icons/circle.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/circle';`
+src/components/ui/dialog.tsx(3,19): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/x'. '/app/node_modules/lucide-react/dist/esm/icons/x.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/x';`
+src/components/ui/dropdown-menu.tsx(5,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/check'. '/app/node_modules/lucide-react/dist/esm/icons/check.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/check';`
+src/components/ui/dropdown-menu.tsx(6,30): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-right'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-right';`
+src/components/ui/dropdown-menu.tsx(7,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/circle'. '/app/node_modules/lucide-react/dist/esm/icons/circle.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/circle';`
+src/components/ui/input-otp.tsx(5,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/minus'. '/app/node_modules/lucide-react/dist/esm/icons/minus.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/minus';`
+src/components/ui/menubar.tsx(3,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/check'. '/app/node_modules/lucide-react/dist/esm/icons/check.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/check';`
+src/components/ui/menubar.tsx(4,30): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-right'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-right';`
+src/components/ui/menubar.tsx(5,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/circle'. '/app/node_modules/lucide-react/dist/esm/icons/circle.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/circle';`
+src/components/ui/navigation-menu.tsx(4,29): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-down'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-down.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-down';`
+src/components/ui/pagination.tsx(2,29): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-left'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-left.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-left';`
+src/components/ui/pagination.tsx(3,30): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-right'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-right.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-right';`
+src/components/ui/pagination.tsx(4,32): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/more-horizontal'. '/app/node_modules/lucide-react/dist/esm/icons/more-horizontal.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/more-horizontal';`
+src/components/ui/radio-group.tsx(5,24): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/circle'. '/app/node_modules/lucide-react/dist/esm/icons/circle.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/circle';`
+src/components/ui/resizable.tsx(2,30): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/grip-vertical'. '/app/node_modules/lucide-react/dist/esm/icons/grip-vertical.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/grip-vertical';`
+src/components/ui/select.tsx(3,23): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/check'. '/app/node_modules/lucide-react/dist/esm/icons/check.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/check';`
+src/components/ui/select.tsx(4,29): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-down'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-down.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-down';`
+src/components/ui/select.tsx(5,27): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/chevron-up'. '/app/node_modules/lucide-react/dist/esm/icons/chevron-up.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/chevron-up';`
+src/components/ui/sheet.tsx(3,19): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/x'. '/app/node_modules/lucide-react/dist/esm/icons/x.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/x';`
+src/components/ui/sidebar.tsx(6,27): error TS7016: Could not find a declaration file for module 'lucide-react/dist/esm/icons/panel-left'. '/app/node_modules/lucide-react/dist/esm/icons/panel-left.js' implicitly has an 'any' type.
+  If the 'lucide-react' package actually exposes this module, try adding a new declaration (.d.ts) file containing `declare module 'lucide-react/dist/esm/icons/panel-left';`
+src/contexts/AuthContext.tsx(89,26): error TS2698: Spread types may only be created from object types.
+src/contexts/AuthContext.tsx(89,60): error TS2339: Property 'avatar_url' does not exist on type 'never'.
+src/contexts/AuthContext.tsx(96,22): error TS2698: Spread types may only be created from object types.
+src/contexts/AuthContext.tsx(96,44): error TS2339: Property 'avatar_url' does not exist on type 'never'.
+src/features/analytics/components/Overview.tsx(190,66): error TS2322: Type '{ deals: Deal[]; compact: true; }' is not assignable to type 'IntrinsicAttributes & DealsListProps'.
+  Property 'compact' does not exist on type 'IntrinsicAttributes & DealsListProps'.
+src/features/analytics/components/PlayerIntelligenceDashboard.tsx(196,39): error TS18046: 'products' is of type 'unknown'.
+src/features/companies/pages/CompanyDetailPage.tsx(362,107): error TS2322: Type '{ weight: "fill"; className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & IconProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & IconProps'.
+src/features/contacts/pages/ContactDetailPage.tsx(101,47): error TS2339: Property 'updatedAt' does not exist on type 'Contact'.
+src/features/deals/components/BulkOperations.tsx(25,10): error TS2614: Module '"@/components/ActivityHistory"' has no exported member 'logActivity'. Did you mean to use 'import logActivity from "@/components/ActivityHistory"' instead?
+src/features/deals/components/CreateDealDialog.tsx(152,7): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/deals/components/CreateDealDialog.tsx(225,5): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/deals/components/CreateDealDialog.tsx(523,32): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/deals/components/DealComparisonMatrix.tsx(96,34): error TS2322: Type 'Dispatch<SetStateAction<"volume" | "probability" | "expectedValue" | "score">>' is not assignable to type '(value: string) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'string' is not assignable to type 'SetStateAction<"volume" | "probability" | "expectedValue" | "score">'.
+src/features/deals/components/DealsList.tsx(1,83): error TS2305: Module '"@/lib/types"' has no exported member 'SlaPolicy'.
+src/features/deals/components/DealsView.tsx(327,53): error TS2322: Type '"xs"' is not assignable to type '"icon" | "default" | "sm" | "lg" | null | undefined'.
+src/features/deals/components/EditDealDialog.tsx(419,56): error TS18048: 'field.value' is possibly 'undefined'.
+src/features/deals/components/EditDealDialog.tsx(441,26): error TS18048: 'field.value' is possibly 'undefined'.
+src/features/deals/components/EditDealDialog.tsx(444,27): error TS18048: 'field.value' is possibly 'undefined'.
+src/features/deals/components/PlayerTrackDetailDialog.tsx(153,20): error TS2322: Type '"active" | "cancelled" | "on_hold"' is not assignable to type '"active" | "cancelled" | "concluded" | undefined'.
+  Type '"on_hold"' is not assignable to type '"active" | "cancelled" | "concluded" | undefined'.
+src/features/deals/components/PlayerTrackDetailDialog.tsx(281,39): error TS2339: Property 'active' does not exist on type 'PipelineStage'.
+src/features/deals/pages/DealComparison.tsx(10,24): error TS2339: Property 'loading' does not exist on type 'UseQueryResult<Deal[], Error>'.
+src/features/deals/pages/DealDetailPage.tsx(335,15): error TS2322: Type 'Element' is not assignable to type 'string'.
+src/features/leads/components/LeadEditSheet.tsx(129,114): error TS2345: Argument of type 'string' is not assignable to parameter of type 'LeadStatus | undefined'.
+src/features/leads/components/QualifyLeadDialog.tsx(74,18): error TS2339: Property 'master_deal_id' does not exist on type 'never'.
+src/features/leads/components/QualifyLeadDialog.tsx(75,36): error TS2339: Property 'master_deal_id' does not exist on type 'never'.
+src/features/leads/components/QualifyLeadDialog.tsx(77,40): error TS2339: Property 'company_id' does not exist on type 'never'.
+src/features/leads/pages/LeadDetailPage.tsx(443,15): error TS2322: Type 'Element' is not assignable to type 'string'.
+src/features/leads/pages/LeadDetailPage.tsx(461,21): error TS2322: Type 'UseMutationResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>' is not assignable to type 'UseMutationResult<any, Error, { leadId: string; updates: any; }, unknown>'.
+  Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'UseMutationResult<any, Error, { leadId: string; updates: any; }, unknown>'.
+    Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'Override<MutationObserverIdleResult<any, Error, { leadId: string; updates: any; }, unknown>, { mutate: UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>; }> & { ...; }'.
+      Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'Override<MutationObserverIdleResult<any, Error, { leadId: string; updates: any; }, unknown>, { mutate: UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>; }>'.
+        Types of property 'mutate' are incompatible.
+          Type 'UseMutateFunction<Lead, Error, { id: string; data: LeadUpdate; }, unknown>' is not assignable to type 'UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>'.
+            Types of parameters 'variables' and 'variables' are incompatible.
+              Type '{ leadId: string; updates: any; }' is missing the following properties from type '{ id: string; data: LeadUpdate; }': id, data
+src/features/leads/pages/LeadsListPage.tsx(235,47): error TS2304: Cannot find name 'LeadStatus'.
+src/features/leads/pages/LeadsListPage.tsx(531,31): error TS2322: Type 'UseMutationResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>' is not assignable to type 'UseMutationResult<any, Error, { leadId: string; updates: any; }, unknown>'.
+  Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'UseMutationResult<any, Error, { leadId: string; updates: any; }, unknown>'.
+    Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'Override<MutationObserverIdleResult<any, Error, { leadId: string; updates: any; }, unknown>, { mutate: UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>; }> & { ...; }'.
+      Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'Override<MutationObserverIdleResult<any, Error, { leadId: string; updates: any; }, unknown>, { mutate: UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>; }>'.
+        Types of property 'mutate' are incompatible.
+          Type 'UseMutateFunction<Lead, Error, { id: string; data: LeadUpdate; }, unknown>' is not assignable to type 'UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>'.
+            Types of parameters 'variables' and 'variables' are incompatible.
+              Type '{ leadId: string; updates: any; }' is missing the following properties from type '{ id: string; data: LeadUpdate; }': id, data
+src/features/leads/pages/LeadsListPage.tsx(563,29): error TS2322: Type 'UseMutationResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>' is not assignable to type 'UseMutationResult<any, Error, { leadId: string; updates: any; }, unknown>'.
+  Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'UseMutationResult<any, Error, { leadId: string; updates: any; }, unknown>'.
+    Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'Override<MutationObserverIdleResult<any, Error, { leadId: string; updates: any; }, unknown>, { mutate: UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>; }> & { ...; }'.
+      Type 'Override<MutationObserverIdleResult<Lead, Error, { id: string; data: LeadUpdate; }, unknown>, { mutate: UseMutateFunction<Lead, Error, { ...; }, unknown>; }> & { ...; }' is not assignable to type 'Override<MutationObserverIdleResult<any, Error, { leadId: string; updates: any; }, unknown>, { mutate: UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>; }>'.
+        Types of property 'mutate' are incompatible.
+          Type 'UseMutateFunction<Lead, Error, { id: string; data: LeadUpdate; }, unknown>' is not assignable to type 'UseMutateFunction<any, Error, { leadId: string; updates: any; }, unknown>'.
+            Types of parameters 'variables' and 'variables' are incompatible.
+              Type '{ leadId: string; updates: any; }' is missing the following properties from type '{ id: string; data: LeadUpdate; }': id, data
+src/features/players/components/ContactsManager.tsx(8,3): error TS2322: Type '{ id: any; playerId: any; name: any; role: any; email: any; phone: any; isPrimary: any; createdAt: any; createdBy: any; }' is not assignable to type 'PlayerContact'.
+  Property 'companyId' is missing in type '{ id: any; playerId: any; name: any; role: any; email: any; phone: any; isPrimary: any; createdAt: any; createdBy: any; }' but required in type 'Contact'.
+src/features/players/components/ContactsManager.tsx(40,15): error TS2345: Argument of type '{ is_primary: boolean; }' is not assignable to parameter of type 'never'.
+src/features/players/components/ContactsManager.tsx(46,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "player_contacts", never, "POST">', gave the following error.
+    Argument of type '{ player_id: string | undefined; name: string | undefined; role: string | undefined; email: string | undefined; phone: string | undefined; is_primary: boolean; created_by: string; updated_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "player_contacts", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'player_id' does not exist in type 'never[]'.
+src/features/players/components/ContactsManager.tsx(67,15): error TS2345: Argument of type '{ is_primary: boolean; }' is not assignable to parameter of type 'never'.
+src/features/players/components/ContactsManager.tsx(73,13): error TS2345: Argument of type '{ name: string | undefined; role: string | undefined; email: string | undefined; phone: string | undefined; is_primary: boolean | undefined; updated_at: string; updated_by: string; }' is not assignable to parameter of type 'never'.
+src/features/players/pages/PlayerDetailPage.tsx(336,44): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/features/players/pages/PlayerDetailPage.tsx(402,9): error TS2353: Object literal may only specify known properties, and 'contact' does not exist in type '{ data: ContactInput; userId: string; }'.
+src/features/players/pages/PlayerDetailPage.tsx(646,42): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'PlayerProductCapabilities'.
+src/features/players/pages/PlayerDetailPage.tsx(944,111): error TS2322: Type '{ weight: "fill"; className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & IconProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & IconProps'.
+src/features/rbac/components/AuthSettingsPanel.tsx(43,42): error TS2554: Expected 1 arguments, but got 2.
+src/features/rbac/components/InviteUserDialog.tsx(21,10): error TS2305: Module '"@/services/magicLinkService"' has no exported member 'magicLinkService'.
+src/features/tracks/pages/TrackDetailPage.tsx(34,44): error TS2305: Module '"@/lib/types"' has no exported member 'PlayerTrackStatus'.
+src/hooks/useDashboardLayout.ts(99,21): error TS2345: Argument of type '{ preferences: { dashboard: DashboardConfig; }; }' is not assignable to parameter of type 'never'.
+src/hooks/useQuickActions.tsx(284,34): error TS2339: Property 'dealId' does not exist on type 'PlayerTrack'.
+src/hooks/useSupabase.ts(100,19): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, string, never, "POST">', gave the following error.
+    Argument of type 'Partial<T>' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, string, never, "POST">', gave the following error.
+    Argument of type 'Partial<T>' is not assignable to parameter of type 'never[]'.
+      Type 'Partial<T>' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/hooks/useSupabase.ts(120,19): error TS2345: Argument of type 'Partial<T>' is not assignable to parameter of type 'never'.
+src/lib/helpers.ts(157,7): error TS18048: 'window.spark' is possibly 'undefined'.
+src/pages/AidaPage.tsx(23,22): error TS2322: Type '{ children: Element; title: string; }' is not assignable to type 'IntrinsicAttributes & PageContainerProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & PageContainerProps'.
+src/pages/AidaPage.tsx(37,22): error TS2322: Type '{ children: Element; title: string; }' is not assignable to type 'IntrinsicAttributes & PageContainerProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & PageContainerProps'.
+src/pages/AidaPage.tsx(52,7): error TS2322: Type '{ children: Element; title: string; description: string; }' is not assignable to type 'IntrinsicAttributes & PageContainerProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & PageContainerProps'.
+src/pages/Profile.tsx(118,17): error TS2345: Argument of type '{ avatar_url: string; }' is not assignable to parameter of type 'never'.
+src/pages/Profile.tsx(139,17): error TS2345: Argument of type '{ avatar_url: null; }' is not assignable to parameter of type 'never'.
+src/pages/Profile.tsx(170,17): error TS2345: Argument of type '{ [x: string]: string; }' is not assignable to parameter of type 'never'.
+src/pages/Profile.tsx(196,17): error TS2345: Argument of type '{ name: string; secondary_email: string; cellphone: string; rg: string; cpf: string; address: string; pix_key_pf: string; pix_key_pj: string; }' is not assignable to parameter of type 'never'.
+src/pages/Profile.tsx(206,19): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type '{}'.
+  Type 'undefined' is not assignable to type '{}'.
+src/pages/admin/PipelineSettings.tsx(4,25): error TS2305: Module '"@/lib/types"' has no exported member 'SlaPolicy'.
+src/pages/admin/SyntheticDataAdminPage.tsx(149,46): error TS2339: Property 'id' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(164,80): error TS2345: Argument of type '{ payload: { companies_count: number; leads_count: number; deals_count: number; contacts_count: number; players_count: number; users_ids: string[]; }; }' is not assignable to parameter of type 'undefined'.
+src/pages/admin/SyntheticDataAdminPage.tsx(166,36): error TS2339: Property 'companies' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(172,37): error TS2339: Property 'companies' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(173,34): error TS2339: Property 'leads' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(174,34): error TS2339: Property 'deals' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(175,37): error TS2339: Property 'contacts' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(176,36): error TS2339: Property 'players' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(177,16): error TS2339: Property 'deals' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(205,42): error TS2339: Property 'companies' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(206,39): error TS2339: Property 'leads' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(207,39): error TS2339: Property 'deals' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(208,42): error TS2339: Property 'contacts' does not exist on type 'never'.
+src/pages/admin/SyntheticDataAdminPage.tsx(209,41): error TS2339: Property 'players' does not exist on type 'never'.
+src/pages/admin/TagSettings.tsx(137,16): error TS2345: Argument of type '"deal" | "track" | "global" | "lead" | "company"' is not assignable to parameter of type 'SetStateAction<"deal" | "track" | "global" | "lead">'.
+  Type '"company"' is not assignable to type 'SetStateAction<"deal" | "track" | "global" | "lead">'.
+src/pages/admin/components/DocumentAutomationSettings.tsx(332,40): error TS2551: Property 'replaceAll' does not exist on type 'TemplateEvent'. Did you mean 'replace'?
+  Property 'replaceAll' does not exist on type '"on_create"'.
+src/pages/admin/components/TagCard.tsx(20,48): error TS2353: Object literal may only specify known properties, and 'ringColor' does not exist in type 'Properties<string | number, string & {}>'.
+src/services/activityService.ts(36,41): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "activity_log", never, "POST">', gave the following error.
+    Argument of type '{ entity_id: string; entity_type: ActivityEntityType; action: string; user_id: string; changes: any; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "activity_log", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'entity_id' does not exist in type 'never[]'.
+src/services/analyticsService.ts(28,30): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/analyticsService.ts(28,38): error TS2339: Property 'probability' does not exist on type 'never'.
+src/services/analyticsService.ts(30,19): error TS2339: Property 'name' does not exist on type 'never'.
+src/services/analyticsService.ts(31,34): error TS2339: Property 'name' does not exist on type 'never'.
+src/services/analyticsService.ts(31,78): error TS2339: Property 'probability' does not exist on type 'never'.
+src/services/analyticsService.ts(52,42): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/analyticsService.ts(62,36): error TS2339: Property 'responsibles' does not exist on type 'never'.
+src/services/analyticsService.ts(62,54): error TS2339: Property 'responsibles' does not exist on type 'never'.
+src/services/analyticsService.ts(72,49): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(73,52): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(74,52): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(78,28): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(80,52): error TS2339: Property 'current_stage' does not exist on type 'never'.
+src/services/analyticsService.ts(81,32): error TS2339: Property 'probability' does not exist on type 'never'.
+src/services/analyticsService.ts(82,33): error TS2339: Property 'track_volume' does not exist on type 'never'.
+src/services/analyticsService.ts(96,19): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(97,36): error TS2339: Property 'current_stage' does not exist on type 'never'.
+src/services/analyticsService.ts(107,73): error TS2339: Property 'role' does not exist on type 'never'.
+src/services/analyticsService.ts(110,23): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(110,48): error TS2339: Property 'responsibles' does not exist on type 'never'.
+src/services/analyticsService.ts(110,66): error TS2339: Property 'responsibles' does not exist on type 'never'.
+src/services/analyticsService.ts(110,93): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/analyticsService.ts(114,23): error TS2339: Property 'assignees' does not exist on type 'never'.
+src/services/analyticsService.ts(114,38): error TS2339: Property 'assignees' does not exist on type 'never'.
+src/services/analyticsService.ts(114,62): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/analyticsService.ts(118,34): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/analyticsService.ts(119,36): error TS2339: Property 'name' does not exist on type 'never'.
+src/services/analyticsService.ts(134,52): error TS2339: Property 'created_at' does not exist on type 'never'.
+src/services/analyticsService.ts(134,68): error TS2339: Property 'created_at' does not exist on type 'never'.
+src/services/analyticsService.ts(135,61): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/analyticsService.ts(136,61): error TS2339: Property 'status' does not exist on type 'never'.
+src/services/commentService.ts(41,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "comments", never, "POST">', gave the following error.
+    Argument of type '{ entity_id: string; entity_type: string; content: string; author_id: string; mentions: string[]; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "comments", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'entity_id' does not exist in type 'never[]'.
+src/services/commentService.ts(55,32): error TS2339: Property 'author' does not exist on type 'never'.
+src/services/companyService.ts(26,3): error TS2322: Type '{ id: any; playerId: any; name: any; role: any; email: any; phone: any; isPrimary: any; createdAt: any; createdBy: any; }' is not assignable to type 'PlayerContact'.
+  Property 'companyId' is missing in type '{ id: any; playerId: any; name: any; role: any; email: any; phone: any; isPrimary: any; createdAt: any; createdBy: any; }' but required in type 'Contact'.
+src/services/companyService.ts(95,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "companies", never, "POST">', gave the following error.
+    Argument of type '{ name: string; cnpj: string | undefined; site: string | undefined; description: string | undefined; type: CompanyType; relationship_level: RelationshipLevel; created_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "companies", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'name' does not exist in type 'never[]'.
+src/services/companyService.ts(125,13): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/companyService.ts(145,13): error TS2345: Argument of type '{ deleted_at: string; }' is not assignable to parameter of type 'never'.
+src/services/companyService.ts(155,13): error TS2345: Argument of type '{ deleted_at: string; }' is not assignable to parameter of type 'never'.
+src/services/companyService.ts(173,15): error TS2345: Argument of type '{ is_primary: boolean; }' is not assignable to parameter of type 'never'.
+src/services/companyService.ts(179,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "contacts", never, "POST">', gave the following error.
+    Argument of type '{ company_id: string | undefined; name: string | undefined; role: string | undefined; email: string | undefined; phone: string | undefined; is_primary: boolean | undefined; created_by: string; updated_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "contacts", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'company_id' does not exist in type 'never[]'.
+src/services/companyService.ts(218,23): error TS2339: Property 'companies' does not exist on type 'never'.
+src/services/contactService.ts(77,44): error TS2345: Argument of type '{ is_primary: boolean; }' is not assignable to parameter of type 'never'.
+src/services/contactService.ts(80,59): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "contacts", never, "POST">', gave the following error.
+    Argument of type '{ company_id: string | null | undefined; name: string; email: string | undefined; phone: string | undefined; role: string | undefined; department: string | undefined; linkedin: string | undefined; notes: string | undefined; is_primary: boolean | undefined; created_by: string; updated_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "contacts", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'company_id' does not exist in type 'never[]'.
+src/services/contactService.ts(113,93): error TS2339: Property 'company_id' does not exist on type 'never'.
+src/services/contactService.ts(116,48): error TS2345: Argument of type '{ is_primary: boolean; }' is not assignable to parameter of type 'never'.
+src/services/contactService.ts(120,66): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/dealService.ts(1,10): error TS2305: Module '"@supabase/supabase-js"' has no exported member 'PostgrestFilterBuilder'.
+src/services/dealService.ts(137,5): error TS2322: Type '{ id: string; name: string; type: string | undefined; site: string | undefined; } | undefined' is not assignable to type 'Company | undefined'.
+  Type '{ id: string; name: string; type: string | undefined; site: string | undefined; }' is missing the following properties from type 'Company': relationshipLevel, createdAt, updatedAt, createdBy
+src/services/dealService.ts(251,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "master_deals", never, "POST">', gave the following error.
+    Argument of type '{ client_name: string; volume: number | undefined; operation_type: OperationType | undefined; deadline: string | undefined; observations: string | undefined; status: DealStatus; fee_percentage: number | undefined; created_by: string; company_id: string | undefined; deal_product: string | undefined; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "master_deals", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'client_name' does not exist in type 'never[]'.
+src/services/dealService.ts(275,10): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "deal_members", never, "POST">', gave the following error.
+    Argument of type '{ deal_id: any; user_id: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "deal_members", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'deal_id' does not exist in type 'never[]'.
+src/services/dealService.ts(276,35): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/dealService.ts(291,48): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "player_tracks", never, "POST">', gave the following error.
+    Argument of type '{ master_deal_id: any; player_id: string; player_name: any; track_volume: number | undefined; current_stage: string; status: string; probability: number; responsibles: string[]; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "player_tracks", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'master_deal_id' does not exist in type 'never[]'.
+src/services/dealService.ts(292,44): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/dealService.ts(294,33): error TS2339: Property 'name' does not exist on type 'never'.
+src/services/dealService.ts(330,15): error TS2345: Argument of type 'Partial<MasterDealDB> & { updated_at: string; }' is not assignable to parameter of type 'never'.
+src/services/dealService.ts(358,15): error TS2345: Argument of type '{ deleted_at: string; }' is not assignable to parameter of type 'never'.
+src/services/dealService.ts(372,15): error TS2345: Argument of type '{ deleted_at: string; }' is not assignable to parameter of type 'never'.
+src/services/documentAutomationService.ts(55,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ ...; }, ... 5 more ..., "POST">', gave the following error.
+    Argument of type 'StructureTemplate' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Argument of type 'StructureTemplate' is not assignable to parameter of type 'never[]'.
+      Type 'StructureTemplate' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/services/documentAutomationService.ts(71,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ ...; }, ... 5 more ..., "POST">', gave the following error.
+    Argument of type 'DocumentTypeConfig' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Argument of type 'DocumentTypeConfig' is not assignable to parameter of type 'never[]'.
+      Type 'DocumentTypeConfig' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/services/folderService.ts(93,10): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "folders", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; color: string | undefined; icon: string | undefined; parent_id: string | undefined; type: "project" | "team" | "sprint" | "category" | "custom"; position: number; created_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "folders", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'name' does not exist in type 'never[]'.
+src/services/folderService.ts(126,17): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/folderService.ts(176,10): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "entity_locations", never, "POST">', gave the following error.
+    Argument of type '{ entity_id: string; entity_type: "deal" | "track" | "task"; folder_id: string; is_primary: boolean; added_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "entity_locations", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'entity_id' does not exist in type 'never[]'.
+src/services/leadService.ts(3,49): error TS2305: Module '"@/lib/types"' has no exported member 'CompanyInput'.
+src/services/leadService.ts(153,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "leads", never, "POST">', gave the following error.
+    Argument of type '{ legal_name: string; trade_name: string | undefined; cnpj: string | undefined; website: string | undefined; segment: string | undefined; address_city: string | undefined; address_state: string | undefined; ... 4 more ...; created_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "leads", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'legal_name' does not exist in type 'never[]'.
+src/services/leadService.ts(174,18): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/leadService.ts(198,63): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/leadService.ts(211,57): error TS2345: Argument of type '{ deleted_at: string; }' is not assignable to parameter of type 'never'.
+src/services/leadService.ts(220,49): error TS2345: Argument of type '{ is_primary: boolean; }' is not assignable to parameter of type 'never'.
+src/services/leadService.ts(222,58): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "lead_contacts", never, "POST">', gave the following error.
+    Argument of type '{ lead_id: string; contact_id: string; is_primary: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "lead_contacts", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'lead_id' does not exist in type 'never[]'.
+src/services/leadService.ts(232,57): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "lead_members", never, "POST">', gave the following error.
+    Argument of type '{ lead_id: string; user_id: string; role: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "lead_members", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'lead_id' does not exist in type 'never[]'.
+src/services/leadService.ts(251,62): error TS2345: Argument of type '{ p_lead_id: string; p_company_id: string | undefined; p_new_company_data: any; p_user_id: string; }' is not assignable to parameter of type 'undefined'.
+src/services/magicLinkService.ts(57,10): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "magic_links", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; token: `${string}-${string}-${string}-${string}-${string}`; expires_at: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "magic_links", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/services/magicLinkService.ts(76,17): error TS2345: Argument of type '{ revoked_at: string; }' is not assignable to parameter of type 'never'.
+src/services/magicLinkService.ts(97,23): error TS2339: Property 'expires_at' does not exist on type 'never'.
+src/services/magicLinkService.ts(104,17): error TS2345: Argument of type '{ used_at: string; }' is not assignable to parameter of type 'never'.
+src/services/magicLinkService.ts(105,24): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/notificationService.ts(47,16): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/notificationService.ts(48,20): error TS2339: Property 'user_id' does not exist on type 'never'.
+src/services/notificationService.ts(49,18): error TS2339: Property 'type' does not exist on type 'never'.
+src/services/notificationService.ts(50,19): error TS2339: Property 'title' does not exist on type 'never'.
+src/services/notificationService.ts(51,21): error TS2339: Property 'message' does not exist on type 'never'.
+src/services/notificationService.ts(52,18): error TS2339: Property 'link' does not exist on type 'never'.
+src/services/notificationService.ts(53,18): error TS2339: Property 'read' does not exist on type 'never'.
+src/services/notificationService.ts(54,23): error TS2339: Property 'created_at' does not exist on type 'never'.
+src/services/notificationService.ts(69,15): error TS2345: Argument of type '{ read: boolean; }' is not assignable to parameter of type 'never'.
+src/services/notificationService.ts(86,15): error TS2345: Argument of type '{ read: boolean; }' is not assignable to parameter of type 'never'.
+src/services/notificationService.ts(123,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "notifications", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; type: "mention" | "assignment" | "status_change" | "sla_breach" | "deadline"; title: string; message: string; link: string; read: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "notifications", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/services/notificationService.ts(137,16): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/notificationService.ts(138,20): error TS2339: Property 'user_id' does not exist on type 'never'.
+src/services/notificationService.ts(139,18): error TS2339: Property 'type' does not exist on type 'never'.
+src/services/notificationService.ts(140,19): error TS2339: Property 'title' does not exist on type 'never'.
+src/services/notificationService.ts(141,21): error TS2339: Property 'message' does not exist on type 'never'.
+src/services/notificationService.ts(142,18): error TS2339: Property 'link' does not exist on type 'never'.
+src/services/notificationService.ts(143,18): error TS2339: Property 'read' does not exist on type 'never'.
+src/services/notificationService.ts(144,23): error TS2339: Property 'created_at' does not exist on type 'never'.
+src/services/operationTypeService.ts(44,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "operation_types", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "operation_types", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never[]'.
+      Type '{ name: string; description: string | undefined; is_active: boolean; }' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/services/operationTypeService.ts(55,15): error TS2345: Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/operationTypeService.ts(76,15): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/pipelineService.ts(49,5): error TS2353: Object literal may only specify known properties, and 'active' does not exist in type 'PipelineStage'.
+src/services/pipelineService.ts(97,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "pipeline_stages", never, "POST">', gave the following error.
+    Argument of type '{ pipeline_id: string | null; name: string; color: string; stage_order: number; probability: number; is_default: boolean; active: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "pipeline_stages", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'pipeline_id' does not exist in type 'never[]'.
+src/services/pipelineService.ts(131,13): error TS2345: Argument of type 'Partial<PipelineStageRow> & { updated_at: string; }' is not assignable to parameter of type 'never'.
+src/services/pipelineService.ts(178,15): error TS2345: Argument of type '{ stage_order: number; }' is not assignable to parameter of type 'never'.
+src/services/playerService.ts(10,3): error TS2322: Type '{ id: any; playerId: any; name: any; role: any; email: any; phone: any; isPrimary: any; createdAt: any; createdBy: any; }' is not assignable to type 'PlayerContact'.
+  Property 'companyId' is missing in type '{ id: any; playerId: any; name: any; role: any; email: any; phone: any; isPrimary: any; createdAt: any; createdBy: any; }' but required in type 'Contact'.
+src/services/playerService.ts(96,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "players", never, "POST">', gave the following error.
+    Argument of type '{ name: string | undefined; cnpj: string | undefined; site: string | undefined; description: string | undefined; type: PlayerType | undefined; gestora_types: AssetManagerType[] | undefined; relationship_level: RelationshipLevel | undefined; product_capabilities: PlayerProductCapabilities | undefined; created_by: str...' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "players", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'name' does not exist in type 'never[]'.
+src/services/playerService.ts(118,13): error TS2345: Argument of type '{ name: string | undefined; cnpj: string | undefined; site: string | undefined; description: string | undefined; type: PlayerType | undefined; gestora_types: AssetManagerType[] | undefined; relationship_level: RelationshipLevel | undefined; product_capabilities: PlayerProductCapabilities | undefined; updated_at: str...' is not assignable to parameter of type 'never'.
+src/services/playerService.ts(141,13): error TS2345: Argument of type '{ deleted_at: string; updated_by: string; }' is not assignable to parameter of type 'never'.
+src/services/playerService.ts(154,13): error TS2345: Argument of type '{ deleted_at: string; updated_by: string; }' is not assignable to parameter of type 'never'.
+src/services/roleService.ts(53,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "roles", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "roles", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'name' does not exist in type 'never[]'.
+src/services/roleService.ts(62,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/roleService.ts(65,81): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "role_permissions", never, "POST">', gave the following error.
+    Argument of type '{ role_id: any; permission_id: string; }[]' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "role_permissions", never, "POST">', gave the following error.
+    Argument of type '{ role_id: any; permission_id: string; }[]' is not assignable to parameter of type 'never[]'.
+      Type '{ role_id: any; permission_id: string; }' is not assignable to type 'never'.
+src/services/roleService.ts(76,13): error TS2345: Argument of type '{ name: string; description: string; }' is not assignable to parameter of type 'never'.
+src/services/roleService.ts(90,52): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "role_permissions", never, "POST">', gave the following error.
+    Argument of type '{ role_id: string; permission_id: string; }[]' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "role_permissions", never, "POST">', gave the following error.
+    Argument of type '{ role_id: string; permission_id: string; }[]' is not assignable to parameter of type 'never[]'.
+      Type '{ role_id: string; permission_id: string; }' is not assignable to type 'never'.
+src/services/settingsService.ts(72,15): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/settingsService.ts(100,15): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/settingsService.ts(122,17): error TS2339: Property 'value' does not exist on type 'never'.
+src/services/settingsService.ts(135,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ ...; }, ... 5 more ..., "POST">', gave the following error.
+    Argument of type '{ key: string; value: AuthSettings; description: string; updated_at: string; updated_by: string | undefined; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, but 'key' does not exist in type 'never[]'. Did you mean to write 'keys'?
+src/services/slaService.ts(41,15): error TS2345: Argument of type '{ max_hours: number; warning_threshold_hours: number; updated_at: string; }' is not assignable to parameter of type 'never'.
+src/services/slaService.ts(54,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "sla_policies", never, "POST">', gave the following error.
+    Argument of type '{ stage_id: string; max_hours: number; warning_threshold_hours: number; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "sla_policies", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'stage_id' does not exist in type 'never[]'.
+src/services/systemSettingsService.ts(47,20): error TS2339: Property 'value' does not exist on type 'never'.
+src/services/systemSettingsService.ts(59,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ ...; }, ... 5 more ..., "POST">', gave the following error.
+    Argument of type '{ key: string; value: any; description: string | undefined; updated_by: string | undefined; updated_at: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, but 'key' does not exist in type 'never[]'. Did you mean to write 'keys'?
+src/services/tagService.ts(98,13): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/tagService.ts(134,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "entity_tags", never, "POST">', gave the following error.
+    Argument of type '{ tag_id: string; entity_id: string; entity_type: TagEntityType; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "entity_tags", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'tag_id' does not exist in type 'never[]'.
+src/services/tagService.ts(225,40): error TS2345: Argument of type '"deal" | "track" | "global" | "lead" | "company" | undefined' is not assignable to parameter of type '"global" | TagEntityType | undefined'.
+  Type '"company"' is not assignable to type '"global" | TagEntityType | undefined'.
+src/services/taskPriorityService.ts(43,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "task_priorities", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "task_priorities", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never[]'.
+      Type '{ name: string; description: string | undefined; is_active: boolean; }' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/services/taskPriorityService.ts(54,15): error TS2345: Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/taskPriorityService.ts(75,15): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/taskService.ts(112,10): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "tasks", never, "POST">', gave the following error.
+    Argument of type '{ player_track_id: string; title: string; description: string | undefined; assignees: string[]; due_date: string | undefined; is_milestone: boolean; priority: "low" | "medium" | "high" | "urgent"; status: "todo" | ... 2 more ... | "completed"; completed: boolean; position: number; dependencies: string[]; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "tasks", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'player_track_id' does not exist in type 'never[]'.
+src/services/taskService.ts(154,17): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/taskStatusService.ts(43,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "task_statuses", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "task_statuses", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never[]'.
+      Type '{ name: string; description: string | undefined; is_active: boolean; }' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/services/taskStatusService.ts(54,15): error TS2345: Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/taskStatusService.ts(75,15): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/trackService.ts(115,10): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "player_tracks", never, "POST">', gave the following error.
+    Argument of type '{ master_deal_id: string; player_name: string; player_id: string; track_volume: number | undefined; current_stage: string; probability: number; responsibles: string[]; status: "active" | "cancelled" | "concluded"; notes: string | undefined; stage_entered_at: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "player_tracks", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'master_deal_id' does not exist in type 'never[]'.
+src/services/trackService.ts(151,43): error TS2339: Property 'enabled' does not exist on type 'never'.
+src/services/trackService.ts(192,17): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+src/services/trackStatusService.ts(43,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "track_statuses", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "track_statuses", never, "POST">', gave the following error.
+    Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never[]'.
+      Type '{ name: string; description: string | undefined; is_active: boolean; }' is missing the following properties from type 'never[]': length, pop, push, concat, and 28 more.
+src/services/trackStatusService.ts(54,15): error TS2345: Argument of type '{ name: string; description: string | undefined; is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/trackStatusService.ts(75,15): error TS2345: Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+src/services/transitionService.ts(37,15): error TS2345: Argument of type '{ enabled: boolean; }' is not assignable to parameter of type 'never'.
+src/services/transitionService.ts(38,26): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/transitionService.ts(48,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "phase_transition_rules", never, "POST">', gave the following error.
+    Argument of type '{ from_stage: string; to_stage: string; enabled: boolean; created_by: string | undefined; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "phase_transition_rules", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'from_stage' does not exist in type 'never[]'.
+src/utils/security.ts(271,59): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "activity_log", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; entity_id: string | undefined; entity_type: string | undefined; action: string; changes: { status: "success" | "warning" | "failure"; details: Record<string, any> | undefined; ipAddress: string | undefined; userAgent: string | undefined; timestamp: string; }; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "activity_log", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+tests/unit/features/analytics/calculations.test.ts(26,5): error TS2322: Type '"acquisition"' is not assignable to type 'OperationType'.
+tests/unit/services/dealService.test.ts(15,48): error TS2503: Cannot find namespace 'vi'.
+tests/unit/services/dealService.test.ts(85,40): error TS2345: Argument of type '{ id: string; clientName: string; volume: number; status: "active"; createdBy: string; companyId: string; }' is not assignable to parameter of type 'Deal'.
+  Type '{ id: string; clientName: string; volume: number; status: "active"; createdBy: string; companyId: string; }' is missing the following properties from type 'Deal': operationType, deadline, observations, createdAt, updatedAt
+tests/unit/services/dealService.test.ts(175,40): error TS2345: Argument of type '{ id: string; clientName: string; status: "concluded"; operationType: "receivables_advance"; }' is not assignable to parameter of type 'Deal'.
+  Type '{ id: string; clientName: string; status: "concluded"; operationType: "receivables_advance"; }' is missing the following properties from type 'Deal': volume, deadline, observations, createdAt, and 2 more.
+tests/unit/services/driveService.test.ts(52,11): error TS2739: Type '{ id: string; }' is missing the following properties from type 'User': app_metadata, user_metadata, aud, created_at
+tests/unit/services/driveService.test.ts(481,9): error TS2739: Type '{ message: string; name: string; }' is missing the following properties from type 'AuthError': code, status, __isAuthError

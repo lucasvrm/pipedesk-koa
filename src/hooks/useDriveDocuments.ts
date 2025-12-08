@@ -22,6 +22,7 @@ import {
   uploadRemoteFiles,
   deleteRemoteEntry,
   renameRemoteEntry,
+  restoreRemoteEntry,
   Breadcrumb,
 } from '@/services/pdGoogleDriveApi'
 
@@ -53,8 +54,9 @@ export function useDriveDocuments({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(initialFolderId)
+  const [includeDeleted, setIncludeDeleted] = useState(false)
 
-  const load = useCallback(async (folderId: string | undefined = currentFolderId) => {
+  const load = useCallback(async (folderId: string | undefined = currentFolderId, showDeleted: boolean = includeDeleted) => {
     setLoading(true)
     setError(null)
 
@@ -64,12 +66,13 @@ export function useDriveDocuments({
       baseUrl: import.meta.env.VITE_DRIVE_API_URL,
       entityType,
       folderId,
+      showDeleted
     })
 
     if (USE_REMOTE_DRIVE) {
       // 🔗 Usa backend pd-google
       try {
-        const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole, folderId)
+        const snapshot = await getRemoteEntityDocuments(entityType, entityId, actorId, actorRole, folderId, showDeleted)
         setFolders(snapshot.folders)
         setFiles(snapshot.files)
         setRootFolderId(snapshot.rootFolderId)
@@ -106,17 +109,21 @@ export function useDriveDocuments({
       setLoading(false)
       throw error
     }
-  }, [actorId, actorRole, entityId, entityType, entityName, currentFolderId])
+  }, [actorId, actorRole, entityId, entityType, entityName, currentFolderId, includeDeleted])
 
   useEffect(() => {
     // Silently catch errors that are already logged and handled in load()
     load(currentFolderId).catch(() => {
       // Error is already logged in load() and set in error state
     })
-  }, [load, currentFolderId])
+  }, [load, currentFolderId, includeDeleted])
 
   const navigateToFolder = (folderId: string | undefined) => {
     setCurrentFolderId(folderId)
+  }
+
+  const toggleIncludeDeleted = () => {
+    setIncludeDeleted(prev => !prev)
   }
 
   const createFolder = useCallback(
@@ -177,6 +184,18 @@ export function useDriveDocuments({
     [actorId, actorRole, entityId, entityType, load, currentFolderId]
   )
 
+  const restoreItem = useCallback(
+    async (targetId: string, type: 'file' | 'folder') => {
+      if (USE_REMOTE_DRIVE) {
+        await restoreRemoteEntry(entityType, entityId, targetId, type, actorId, actorRole)
+        await load(currentFolderId)
+        return
+      }
+      console.warn('Restoring is only supported in Remote Drive mode')
+    },
+    [actorId, actorRole, entityId, entityType, load, currentFolderId]
+  )
+
   const generateLink = useCallback(
     async (fileId: string, visibility: DriveLink['visibility'] = 'organization') => {
       if (USE_REMOTE_DRIVE) {
@@ -224,11 +243,14 @@ export function useDriveDocuments({
     loading,
     error,
     currentFolderId,
+    includeDeleted,
+    toggleIncludeDeleted,
     navigateToFolder,
     createFolder,
     uploadFiles,
     renameItem,
     deleteItem,
+    restoreItem,
     generateLink,
     applyPermissions,
     refreshActivity,
