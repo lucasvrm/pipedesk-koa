@@ -57,6 +57,7 @@ import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
+import DriveSection from '@/components/DriveSection'
 import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { PageContainer } from '@/components/PageContainer'
 import { LeadEditSheet } from '../components/LeadEditSheet'
@@ -701,7 +702,7 @@ export default function LeadDetailPage() {
             </TabsContent>
 
             <TabsContent value="documents">
-              {profile && <DocumentManager entityId={lead.id} entityType="lead" currentUser={profile} entityName={lead.legalName} />}
+              <DriveSection entityType="lead" entityId={lead.id} entityName={lead.legalName} />
             </TabsContent>
 
             <TabsContent value="timeline" className="space-y-4">

@@ -12,6 +12,7 @@ import { Lead, LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Operati
 import { useForm } from 'react-hook-form'
 import { useEffect, useMemo } from 'react'
 import { useUpdateLead, LeadUpdate } from '@/services/leadService'
+import { syncName } from '@/services/driveService'
 import { toast } from 'sonner'
 
 interface LeadEditSheetProps {
@@ -57,6 +58,15 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
     try {
       await updateLead.mutateAsync({ id: lead.id, data })
       toast.success('Lead atualizado com sucesso!')
+      
+      // Sync name with Drive folder (silent error handling)
+      try {
+        await syncName('lead', lead.id)
+      } catch (error) {
+        console.warn('[LeadEditSheet] Failed to sync name with Drive:', error)
+        // Don't show error toast - this is a non-critical background operation
+      }
+      
       onOpenChange(false)
     } catch (error) {
       toast.error('Erro ao atualizar lead')
