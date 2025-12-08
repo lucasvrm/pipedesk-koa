@@ -40,7 +40,7 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
   
   // Hooks de dados
   const { data: users } = useUsers()
-  const { data: existingPlayers } = usePlayers()
+  const { data: existingPlayers = [] } = usePlayers() // Padrão array vazio
   const { data: existingTracks } = useTracks(masterDeal.id)
   const { data: stages = [], isLoading: isLoadingStages } = useStages() // NOVO: Estágios dinâmicos
   
@@ -241,9 +241,14 @@ export default function CreatePlayerDialog({ masterDeal, open, onOpenChange }: C
               />
             ) : (
               <PlayerSelect 
-                value={selectedPlayerId}
-                onChange={setSelectedPlayerId}
+                players={existingPlayers}
+                selectedPlayerId={selectedPlayerId}
+                onSelect={(player) => setSelectedPlayerId(player.id)}
+                onDeselect={() => setSelectedPlayerId('')}
+                disabled={false}
                 onCheckNew={() => setIsCreatingNew(true)}
+                value={selectedPlayerId} // Compatibilidade
+                onChange={setSelectedPlayerId} // Compatibilidade
               />
             )}
             {isCreatingNew && (
