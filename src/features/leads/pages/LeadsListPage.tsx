@@ -336,7 +336,7 @@ export default function LeadsListPage() {
                   <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 p-3" align="start">
+              <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
                   <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
