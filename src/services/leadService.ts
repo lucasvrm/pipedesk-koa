@@ -7,6 +7,10 @@ import { syncRemoteEntityName } from './pdGoogleDriveApi'
 // Types
 // ============================================================================
 
+interface EntityTagRow {
+  entity_id: string;
+}
+
 export interface LeadInput {
   legalName: string;
   tradeName?: string;
@@ -121,7 +125,7 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
 
       if (matchError) throw matchError;
 
-      const ids = matchingIds?.map((r: any) => r.entity_id) || [];
+      const ids = (matchingIds as EntityTagRow[])?.map((r) => r.entity_id) || [];
       if (ids.length > 0) {
         query = query.in('id', ids);
       } else {
