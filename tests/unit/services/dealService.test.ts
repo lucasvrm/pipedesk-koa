@@ -139,7 +139,7 @@ describe('Deal Service - critical flows', () => {
         client_name: 'Updated Client',
         volume: 200000,
         status: 'concluded',
-        operation_type: 'fidc',
+        operation_type: 'receivables_advance',
         created_by: 'user-3',
       },
       error: null,
@@ -157,7 +157,7 @@ describe('Deal Service - critical flows', () => {
       clientName: 'Updated Client',
       volume: 200000,
       status: 'concluded',
-      operationType: 'fidc',
+      operationType: 'receivables_advance',
     })
 
     expect(update).toHaveBeenCalledTimes(1)
@@ -166,17 +166,17 @@ describe('Deal Service - critical flows', () => {
       client_name: 'Updated Client',
       volume: 200000,
       status: 'concluded',
-      operation_type: 'fidc',
+      operation_type: 'receivables_advance',
     })
     expect(payload.updated_at).toBeDefined()
 
-    expect(eq).toHaveBeenCalledWith('deal-789')
+    expect(eq).toHaveBeenCalledWith('id', 'deal-789')
     expect(select).toHaveBeenCalled()
     expect(result).toMatchObject<Deal>({
       id: 'deal-789',
       clientName: 'Updated Client',
       status: 'concluded',
-      operationType: 'fidc',
+      operationType: 'receivables_advance',
     })
   })
 })
