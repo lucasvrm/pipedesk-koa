@@ -240,9 +240,14 @@ export function useDriveDocuments({
     setActivities(activity)
   }, [entityId, entityType])
 
-  const search = useCallback(async (options: SearchOptions = {}) => {
+  const search = useCallback(async () => {
     if (!USE_REMOTE_DRIVE) {
       console.warn('[useDriveDocuments] Search is only supported in Remote Drive mode')
+      return
+    }
+
+    // Don't search if there are no criteria
+    if (!searchQuery && !searchDateFrom && !searchDateTo) {
       return
     }
 
@@ -260,7 +265,6 @@ export function useDriveDocuments({
           created_from: searchDateFrom || undefined,
           created_to: searchDateTo || undefined,
           include_deleted: includeDeleted,
-          ...options,
         }
       )
       setFolders(snapshot.folders)
@@ -283,7 +287,9 @@ export function useDriveDocuments({
     setSearchDateFrom('')
     setSearchDateTo('')
     setCurrentFolderId(undefined)
-    load(undefined).catch(() => {})
+    load(undefined).catch((err) => {
+      console.error('[useDriveDocuments] Error reloading after clearing search:', err)
+    })
   }, [load])
 
   return {

@@ -158,7 +158,6 @@ export default function DriveSection({
     entityName,
   })
 
-  const [searchQuery, setSearchQuery] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | undefined>()
   const [dateTo, setDateTo] = useState<Date | undefined>()
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
@@ -178,43 +177,45 @@ export default function DriveSection({
   const [detailsFile, setDetailsFile] = useState<DriveFile | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'file' | 'folder', name: string } | null>(null)
 
-  // Debounced search effect
+  // Debounced search effect - directly update hook state with debounce
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchQuery !== hookSearchQuery) {
-        setHookSearchQuery(searchQuery)
-      }
+      setHookSearchQuery(debouncedSearchQuery)
     }, 500) // 500ms debounce
 
     return () => clearTimeout(timer)
-  }, [searchQuery, hookSearchQuery, setHookSearchQuery])
+  }, [debouncedSearchQuery, setHookSearchQuery])
 
   // Trigger search when search parameters change
   useEffect(() => {
     const hasSearchCriteria = hookSearchQuery || dateFrom || dateTo
-    if (hasSearchCriteria && search) {
-      // Update date filters in hook
-      if (dateFrom) {
-        setSearchDateFrom(format(dateFrom, 'yyyy-MM-dd'))
-      } else {
-        setSearchDateFrom('')
-      }
-      
-      if (dateTo) {
-        setSearchDateTo(format(dateTo, 'yyyy-MM-dd'))
-      } else {
-        setSearchDateTo('')
-      }
-
-      // Trigger search
-      search().catch((err) => {
-        console.error('Search error:', err)
-      })
+    if (!hasSearchCriteria || !search) {
+      return
     }
+
+    // Update date filters in hook
+    if (dateFrom) {
+      setSearchDateFrom(format(dateFrom, 'yyyy-MM-dd'))
+    } else {
+      setSearchDateFrom('')
+    }
+    
+    if (dateTo) {
+      setSearchDateTo(format(dateTo, 'yyyy-MM-dd'))
+    } else {
+      setSearchDateTo('')
+    }
+
+    // Trigger search only if we have at least one filter
+    search().catch((err) => {
+      console.error('[DriveSection] Search error:', err)
+    })
   }, [hookSearchQuery, dateFrom, dateTo, search, setSearchDateFrom, setSearchDateTo])
 
   const handleClearFilters = useCallback(() => {
-    setSearchQuery('')
+    setDebouncedSearchQuery('')
     setDateFrom(undefined)
     setDateTo(undefined)
     if (clearSearch) {
@@ -275,7 +276,7 @@ export default function DriveSection({
 
   // Filter files
   const filteredFiles = files.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = f.name.toLowerCase().includes(hookSearchQuery.toLowerCase())
     
     // Filter by type if not 'all'
     let matchesType = true
@@ -292,7 +293,7 @@ export default function DriveSection({
 
   // Folders are also filtered by search
   const filteredFolders = folders.filter(f =>
-    f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    f.name.toLowerCase().includes(hookSearchQuery.toLowerCase())
   )
 
   const getFileIcon = (mimeType: string) => {
@@ -413,8 +414,8 @@ export default function DriveSection({
               <Input
                 placeholder="Buscar documentos..."
                 className="pl-8 h-9"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                value={debouncedSearchQuery}
+                onChange={e => setDebouncedSearchQuery(e.target.value)}
               />
             </div>
             
@@ -469,7 +470,7 @@ export default function DriveSection({
             </Popover>
 
             {/* Clear Filters Button */}
-            {(searchQuery || dateFrom || dateTo) && (
+            {(debouncedSearchQuery || dateFrom || dateTo) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -688,8 +689,8 @@ export default function DriveSection({
                 {filteredFiles.length === 0 && filteredFolders.length === 0 && (
                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                       <CloudArrowUp size={48} className="text-muted-foreground/50 mb-4" />
-                      <p>{searchQuery ? 'Nenhum resultado encontrado' : 'Pasta vazia'}</p>
-                      {!readOnly && !searchQuery && (
+                      <p>{hookSearchQuery ? 'Nenhum resultado encontrado' : 'Pasta vazia'}</p>
+                      {!readOnly && !hookSearchQuery && (
                         <Button variant="outline" className="mt-4" onClick={() => fileInputRef.current?.click()}>
                           <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
                         </Button>
@@ -797,12 +798,12 @@ export default function DriveSection({
                       <CloudArrowUp size={48} className="text-muted-foreground/50" />
                     </div>
                     <div className="text-center">
-                      <p className="font-medium text-foreground">{searchQuery ? 'Nenhum arquivo encontrado.' : 'Esta pasta está vazia.'}</p>
+                      <p className="font-medium text-foreground">{hookSearchQuery ? 'Nenhum arquivo encontrado.' : 'Esta pasta está vazia.'}</p>
                       <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
-                        {searchQuery ? 'Tente buscar com outros termos.' : readOnly ? 'Não há arquivos nesta pasta.' : 'Arraste arquivos aqui ou use o botão de upload para começar.'}
+                        {hookSearchQuery ? 'Tente buscar com outros termos.' : readOnly ? 'Não há arquivos nesta pasta.' : 'Arraste arquivos aqui ou use o botão de upload para começar.'}
                       </p>
                     </div>
-                    {!searchQuery && !readOnly && (
+                    {!hookSearchQuery && !readOnly && (
                       <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                         <UploadSimple className="mr-2 h-4 w-4" /> Fazer Upload
                       </Button>
