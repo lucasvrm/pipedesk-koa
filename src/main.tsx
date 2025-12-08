@@ -7,6 +7,7 @@ import App from './App.tsx'
 import { GlobalErrorBoundary } from './components/GlobalErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ImpersonationProvider } from './contexts/ImpersonationContext.tsx'
+import { SystemMetadataProvider } from './contexts/SystemMetadataContext.tsx'
 
 import "./main.css"
 import "./styles/theme.css"
@@ -50,8 +51,10 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <ImpersonationProvider>
-            <App />
-            <ReactQueryDevtools initialIsOpen={false} />
+            <SystemMetadataProvider>
+              <App />
+              <ReactQueryDevtools initialIsOpen={false} />
+            </SystemMetadataProvider>
           </ImpersonationProvider>
         </AuthProvider>
       </BrowserRouter>
