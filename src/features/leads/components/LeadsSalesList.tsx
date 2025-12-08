@@ -103,10 +103,10 @@ export function LeadsSalesList({
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="w-[25%]">Empresa</TableHead>
-            <TableHead className="w-[15%]">Tags</TableHead>
+            <TableHead className="w-[25%]">Empresa / Contexto</TableHead>
             <TableHead className="w-[20%]">Contato Principal</TableHead>
             <TableHead className="w-[25%]">Status & Pipeline</TableHead>
+            <TableHead className="w-[15%]">Tags</TableHead>
             <TableHead className="w-[10%]">Responsável</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
@@ -138,11 +138,6 @@ export function LeadsSalesList({
                       </div>
                     </div>
                   </div>
-                </TableCell>
-
-                {/* TAGS */}
-                <TableCell>
-                  <LeadTagsList leadId={lead.id} />
                 </TableCell>
 
                 {/* PRIMARY CONTACT */}
@@ -236,6 +231,11 @@ export function LeadsSalesList({
                       </div>
                     </div>
                   </div>
+                </TableCell>
+
+                {/* TAGS */}
+                <TableCell>
+                  <LeadTagsList leadId={lead.id} />
                 </TableCell>
 
                 {/* RESPONSIBLE */}
