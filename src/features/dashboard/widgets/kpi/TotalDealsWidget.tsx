@@ -1,10 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users } from '@phosphor-icons/react'
-import { useAnalytics } from '@/services/analyticsService'
+import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics'
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function TotalDealsWidget() {
-  const { data: metrics, isLoading } = useAnalytics('all', 'all', 'all')
+  const { filters } = useDashboardFilters()
+  const { data: metrics, isLoading } = useEnhancedAnalytics(
+    filters.dateRangePreset,
+    filters.selectedTeamMemberId,
+    filters.selectedOperationTypeId
+  )
 
   if (isLoading) return <Skeleton className="h-[120px] w-full" />
   if (!metrics) return null;
