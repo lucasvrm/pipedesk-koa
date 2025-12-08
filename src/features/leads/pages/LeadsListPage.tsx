@@ -4,8 +4,8 @@ import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } fr
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash, Kanban } from '@phosphor-icons/react'
-import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
+import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash, Kanban, Target } from '@phosphor-icons/react'
+import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS, LeadStatus } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
+import { LeadsSalesList } from '../components/LeadsSalesList'
 import { Progress } from '@/components/ui/progress'
 import { useEntityTags } from '@/services/tagService'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
@@ -78,8 +79,8 @@ export default function LeadsListPage() {
     }
   }, [])
 
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban'>(() => {
-    return (savedPreferences?.viewMode as 'list' | 'grid' | 'kanban') || 'list'
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'sales'>(() => {
+    return (savedPreferences?.viewMode as 'list' | 'grid' | 'kanban' | 'sales') || 'list'
   })
 
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
@@ -100,6 +101,14 @@ export default function LeadsListPage() {
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
+
+  // Adapter for quick actions type compatibility
+  const updateLeadAdapter = {
+    ...updateLead,
+    mutate: (vars: { leadId: string; updates: any }, options?: any) => {
+      updateLead.mutate({ id: vars.leadId, data: vars.updates }, options)
+    }
+  } as any
 
   const leadMetrics = useMemo(() => {
     const openLeads = leads?.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
@@ -348,14 +357,25 @@ export default function LeadsListPage() {
             size="icon"
             className="h-8 w-8"
             onClick={() => setViewMode('list')}
+            title="Lista Padrão"
           >
             <ListDashes />
+          </Button>
+          <Button
+            variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('sales')}
+            title="Visualização Sales"
+          >
+            <Target />
           </Button>
           <Button
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
             className="h-8 w-8"
             onClick={() => setViewMode('grid')}
+            title="Grade"
           >
             <SquaresFour />
           </Button>
@@ -364,6 +384,7 @@ export default function LeadsListPage() {
             size="icon"
             className="h-8 w-8"
             onClick={() => setViewMode('kanban')}
+            title="Kanban"
           >
             <Kanban />
           </Button>
@@ -442,6 +463,16 @@ export default function LeadsListPage() {
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado com os filtros atuais.
           </div>
+        ) : viewMode === 'sales' ? (
+          <LeadsSalesList
+            leads={paginatedLeads}
+            isLoading={isLoading}
+            selectedIds={selectedIds}
+            onSelectAll={toggleSelectAll}
+            onSelectOne={toggleSelectOne}
+            onEdit={openEdit}
+            onDelete={openDelete}
+          />
         ) : viewMode === 'list' ? (
           <div className="rounded-lg border bg-card">
             <Table>
@@ -528,7 +559,7 @@ export default function LeadsListPage() {
                             actions={getLeadQuickActions({
                               lead,
                               navigate,
-                              updateLead,
+                              updateLead: updateLeadAdapter,
                               deleteLead,
                               profileId: profile?.id,
                               onEdit: () => openEdit(lead),
@@ -560,7 +591,7 @@ export default function LeadsListPage() {
                           actions={getLeadQuickActions({
                             lead,
                             navigate,
-                            updateLead,
+                            updateLead: updateLeadAdapter,
                             deleteLead,
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
