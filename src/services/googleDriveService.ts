@@ -11,6 +11,7 @@ export interface DriveFolder {
   entityId: string
   entityType: DriveEntityType
   type: 'root' | 'uploads' | 'custom'
+  deleted?: boolean
 }
 
 export interface DriveFile {
@@ -26,6 +27,7 @@ export interface DriveFile {
   entityType: DriveEntityType
   role: DriveRole
   rootFolderId: string
+  deleted?: boolean
 }
 
 export interface DriveLink {
@@ -37,7 +39,7 @@ export interface DriveActivityEntry {
   id: string
   entityId: string
   entityType: DriveEntityType
-  action: 'create' | 'upload' | 'delete' | 'share'
+  action: 'create' | 'upload' | 'delete' | 'share' | 'restore'
   actor: string
   targetId: string
   targetName: string

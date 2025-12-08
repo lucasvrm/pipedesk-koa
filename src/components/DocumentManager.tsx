@@ -24,7 +24,8 @@ import {
   Eye,
   CloudArrowUp,
   Info,
-  PencilSimple
+  PencilSimple,
+  ArrowCounterClockwise
 } from '@phosphor-icons/react'
 import {
   DropdownMenu,
@@ -65,6 +66,7 @@ import { toast } from 'sonner'
 import { formatBytes, formatDate } from '@/lib/helpers'
 import { logActivity } from '@/services/activityService'
 import { DriveRole, DriveFile } from '@/services/googleDriveService'
+import { Loader2 } from 'lucide-react'
 
 interface DocumentManagerProps {
   entityId: string
@@ -90,11 +92,14 @@ export default function DocumentManager({
     uploadFiles,
     deleteItem,
     renameItem,
+    restoreItem,
     activities,
     loading,
     error,
     currentFolderId,
-    navigateToFolder
+    navigateToFolder,
+    includeDeleted,
+    toggleIncludeDeleted
   } = useDriveDocuments({
     entityId,
     entityType: entityType as any,
@@ -121,6 +126,7 @@ export default function DocumentManager({
   const [previewFile, setPreviewFile] = useState<DriveFile | null>(null)
   const [detailsFile, setDetailsFile] = useState<DriveFile | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'file' | 'folder', name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Drag and Drop handlers
   const handleDragOver = (e: React.DragEvent) => {
@@ -192,6 +198,8 @@ export default function DocumentManager({
   }
 
   const handleFileClick = (file: DriveFile) => {
+    if (file.deleted) return
+
     const mime = file.type.toLowerCase()
     if (mime.includes('image') || mime.includes('pdf')) {
       setPreviewFile(file)
@@ -250,10 +258,25 @@ export default function DocumentManager({
 
   const confirmDelete = async () => {
     if (!itemToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteItem(itemToDelete.id, itemToDelete.type)
+      toast.success(`${itemToDelete.type === 'folder' ? 'Pasta excluída' : 'Arquivo excluído'}`)
+      setItemToDelete(null)
+    } catch (err) {
+      toast.error(`Erro ao excluir ${itemToDelete.type === 'folder' ? 'pasta' : 'arquivo'}`)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
-    await deleteItem(itemToDelete.id, itemToDelete.type)
-    toast.success(`${itemToDelete.type === 'folder' ? 'Pasta excluída' : 'Arquivo excluído'}`)
-    setItemToDelete(null)
+  const handleRestore = async (id: string, type: 'file' | 'folder') => {
+    try {
+      await restoreItem(id, type)
+      toast.success(`${type === 'folder' ? 'Pasta restaurada' : 'Arquivo restaurado'}`)
+    } catch (err) {
+      toast.error(`Erro ao restaurar ${type === 'folder' ? 'pasta' : 'arquivo'}`)
+    }
   }
 
   return (
@@ -289,6 +312,17 @@ export default function DocumentManager({
           </div>
 
           <div className="flex items-center gap-2">
+             <Button
+                variant={includeDeleted ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleIncludeDeleted}
+                className={includeDeleted ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "text-muted-foreground"}
+                title={includeDeleted ? "Ocultar Lixeira" : "Ver Lixeira"}
+              >
+                <Trash className="mr-2 h-4 w-4" weight={includeDeleted ? "fill" : "regular"} />
+                {includeDeleted ? "Lixeira" : "Lixeira"}
+            </Button>
+
             <div className="flex bg-muted rounded-md p-0.5 mr-2">
               <Button
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
@@ -408,11 +442,12 @@ export default function DocumentManager({
                       {filteredFolders.map(folder => (
                         <div
                           key={folder.id}
-                          className="group flex flex-col items-center p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors relative"
-                          onClick={() => navigateToFolder(folder.id)}
+                          className={`group flex flex-col items-center p-4 border rounded-lg cursor-pointer transition-colors relative ${folder.deleted ? 'opacity-60 bg-red-50 dark:bg-red-950/10 border-red-200' : 'hover:bg-muted/50'}`}
+                          onClick={() => !folder.deleted && navigateToFolder(folder.id)}
                         >
-                          <FolderIcon size={48} weight="fill" className="text-yellow-400 mb-2" />
-                          <span className="text-sm font-medium text-center truncate w-full">{folder.name}</span>
+                          <FolderIcon size={48} weight="fill" className={`mb-2 ${folder.deleted ? 'text-gray-400' : 'text-yellow-400'}`} />
+                          <span className={`text-sm font-medium text-center truncate w-full ${folder.deleted ? 'line-through text-muted-foreground' : ''}`}>{folder.name}</span>
+                          {folder.deleted && <Badge variant="destructive" className="mt-2 text-[10px] h-4 px-1">Excluído</Badge>}
 
                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
                             <DropdownMenu>
@@ -420,15 +455,23 @@ export default function DocumentManager({
                                 <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
-                                  <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
-                                  className="text-destructive"
-                                >
-                                  <Trash className="mr-2 h-4 w-4" /> Excluir
-                                </DropdownMenuItem>
+                                {!folder.deleted ? (
+                                  <>
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
+                                      <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
+                                      className="text-destructive"
+                                    >
+                                      <Trash className="mr-2 h-4 w-4" /> Excluir
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRestore(folder.id, 'folder') }}>
+                                    <ArrowCounterClockwise className="mr-2 h-4 w-4" /> Restaurar
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -441,13 +484,14 @@ export default function DocumentManager({
                 {/* Files */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {filteredFiles.map(file => (
-                    <div key={file.id} className="group flex flex-col p-3 border rounded-lg hover:bg-muted/40 relative">
-                      <div className="flex justify-center mb-3 cursor-pointer" onClick={() => handleFileClick(file)}>
+                    <div key={file.id} className={`group flex flex-col p-3 border rounded-lg relative ${file.deleted ? 'opacity-60 bg-red-50 dark:bg-red-950/10 border-red-200' : 'hover:bg-muted/40'}`}>
+                      <div className={`flex justify-center mb-3 ${file.deleted ? 'cursor-not-allowed grayscale' : 'cursor-pointer'}`} onClick={() => handleFileClick(file)}>
                         {getFileIcon(file.type)}
                       </div>
                       <div className="min-w-0 text-center">
-                        <p className="font-medium text-sm truncate w-full" title={file.name}>{file.name}</p>
+                        <p className={`font-medium text-sm truncate w-full ${file.deleted ? 'line-through text-muted-foreground' : ''}`} title={file.name}>{file.name}</p>
                         <p className="text-xs text-muted-foreground mt-1">{formatBytes(file.size)}</p>
+                        {file.deleted && <Badge variant="destructive" className="mt-1 text-[10px] h-4 px-1">Excluído</Badge>}
                       </div>
 
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 bg-background/80 rounded-sm">
@@ -456,18 +500,26 @@ export default function DocumentManager({
                             <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => handleFileClick(file)}><Eye className="mr-2 h-4 w-4" /> Visualizar</DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => setDetailsFile(file)}><Info className="mr-2 h-4 w-4" /> Detalhes</DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => window.open(file.url, '_blank')}><DownloadSimple className="mr-2 h-4 w-4" /> Baixar</DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)}>
-                                <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                             </DropdownMenuItem>
-                             <DropdownMenuItem
-                              onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
-                              className="text-destructive"
-                            >
-                              <Trash className="mr-2 h-4 w-4" /> Excluir
-                            </DropdownMenuItem>
+                            {!file.deleted ? (
+                              <>
+                                <DropdownMenuItem onClick={() => handleFileClick(file)}><Eye className="mr-2 h-4 w-4" /> Visualizar</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setDetailsFile(file)}><Info className="mr-2 h-4 w-4" /> Detalhes</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.open(file.url, '_blank')}><DownloadSimple className="mr-2 h-4 w-4" /> Baixar</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)}>
+                                    <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
+                                  className="text-destructive"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" /> Excluir
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem onClick={() => handleRestore(file.id, 'file')}>
+                                <ArrowCounterClockwise className="mr-2 h-4 w-4" /> Restaurar
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -498,12 +550,13 @@ export default function DocumentManager({
                 {filteredFolders.map(folder => (
                   <div
                     key={folder.id}
-                    className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 cursor-pointer border-b last:border-0 transition-colors group"
-                    onClick={() => navigateToFolder(folder.id)}
+                    className={`grid grid-cols-12 gap-4 px-4 py-3 items-center border-b last:border-0 transition-colors group ${folder.deleted ? 'opacity-60 bg-red-50 dark:bg-red-950/10' : 'hover:bg-muted/50 cursor-pointer'}`}
+                    onClick={() => !folder.deleted && navigateToFolder(folder.id)}
                   >
                     <div className="col-span-6 flex items-center gap-3">
-                      <FolderIcon size={20} weight="fill" className="text-yellow-400" />
-                      <span className="text-sm font-medium truncate">{folder.name}</span>
+                      <FolderIcon size={20} weight="fill" className={folder.deleted ? 'text-gray-400' : 'text-yellow-400'} />
+                      <span className={`text-sm font-medium truncate ${folder.deleted ? 'line-through text-muted-foreground' : ''}`}>{folder.name}</span>
+                      {folder.deleted && <Badge variant="destructive" className="ml-2 text-[10px] h-4 px-1">Excluído</Badge>}
                     </div>
                     <div className="col-span-2 text-xs text-muted-foreground">-</div>
                     <div className="col-span-3 text-xs text-muted-foreground">-</div>
@@ -513,15 +566,23 @@ export default function DocumentManager({
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}><DotsThreeVertical /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
-                            <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
-                            className="text-destructive"
-                          >
-                            <Trash className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
+                           {!folder.deleted ? (
+                             <>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(folder.id, folder.name) }}>
+                                <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: folder.id, type: 'folder', name: folder.name }) }}
+                                className="text-destructive"
+                              >
+                                <Trash className="mr-2 h-4 w-4" /> Excluir
+                              </DropdownMenuItem>
+                             </>
+                           ) : (
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRestore(folder.id, 'folder') }}>
+                                <ArrowCounterClockwise className="mr-2 h-4 w-4" /> Restaurar
+                            </DropdownMenuItem>
+                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -532,11 +593,12 @@ export default function DocumentManager({
                 {filteredFiles.map(file => (
                   <div
                     key={file.id}
-                    className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted/50 border-b last:border-0 transition-colors group"
+                    className={`grid grid-cols-12 gap-4 px-4 py-3 items-center border-b last:border-0 transition-colors group ${file.deleted ? 'opacity-60 bg-red-50 dark:bg-red-950/10' : 'hover:bg-muted/50'}`}
                   >
-                    <div className="col-span-6 flex items-center gap-3 cursor-pointer" onClick={() => handleFileClick(file)}>
-                      <div className="shrink-0">{getFileIcon(file.type)}</div>
-                      <span className="text-sm font-medium truncate hover:text-primary hover:underline">{file.name}</span>
+                    <div className={`col-span-6 flex items-center gap-3 ${file.deleted ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => handleFileClick(file)}>
+                      <div className={`shrink-0 ${file.deleted ? 'grayscale' : ''}`}>{getFileIcon(file.type)}</div>
+                      <span className={`text-sm font-medium truncate ${file.deleted ? 'line-through text-muted-foreground' : 'hover:text-primary hover:underline'}`}>{file.name}</span>
+                      {file.deleted && <Badge variant="destructive" className="ml-2 text-[10px] h-4 px-1">Excluído</Badge>}
                     </div>
                     <div className="col-span-2 text-xs text-muted-foreground">{formatBytes(file.size)}</div>
                     <div className="col-span-3 text-xs text-muted-foreground">{formatDate(file.uploadedAt)}</div>
@@ -546,24 +608,32 @@ export default function DocumentManager({
                           <Button variant="ghost" size="icon" className="h-6 w-6"><DotsThreeVertical /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleFileClick(file)} className="cursor-pointer">
-                            <Eye className="mr-2 h-4 w-4" /> Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDetailsFile(file)} className="cursor-pointer">
-                            <Info className="mr-2 h-4 w-4" /> Detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
-                            <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
-                            <PencilSimple className="mr-2 h-4 w-4" /> Renomear
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
-                            className="text-destructive cursor-pointer"
-                          >
-                            <Trash className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
+                          {!file.deleted ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleFileClick(file)} className="cursor-pointer">
+                                <Eye className="mr-2 h-4 w-4" /> Visualizar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDetailsFile(file)} className="cursor-pointer">
+                                <Info className="mr-2 h-4 w-4" /> Detalhes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(file.url, '_blank')} className="cursor-pointer">
+                                <DownloadSimple className="mr-2 h-4 w-4" /> Baixar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openRenameDialog(file.id, file.name)} className="cursor-pointer">
+                                <PencilSimple className="mr-2 h-4 w-4" /> Renomear
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => setItemToDelete({ id: file.id, type: 'file', name: file.name })}
+                                className="text-destructive cursor-pointer"
+                              >
+                                <Trash className="mr-2 h-4 w-4" /> Excluir
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleRestore(file.id, 'file')} className="cursor-pointer">
+                                <ArrowCounterClockwise className="mr-2 h-4 w-4" /> Restaurar
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -638,19 +708,20 @@ export default function DocumentManager({
       </Dialog>
 
       {/* Delete Alert Dialog */}
-      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && !isDeleting && setItemToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente o item
-              <span className="font-semibold text-foreground"> "{itemToDelete?.name}"</span>.
+              Esta ação enviará o item <span className="font-semibold text-foreground">"{itemToDelete?.name}"</span> para a lixeira.
+              Ele poderá ser restaurado posteriormente se necessário.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDelete(); }} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
