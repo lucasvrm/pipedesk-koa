@@ -80,7 +80,8 @@ export default function LeadsListPage() {
   }, [])
 
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'sales'>(() => {
-    return (savedPreferences?.viewMode as 'list' | 'grid' | 'kanban' | 'sales') || 'list'
+    // Default to 'sales' if no preference saved
+    return (savedPreferences?.viewMode as 'list' | 'grid' | 'kanban' | 'sales') || 'sales'
   })
 
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
@@ -353,13 +354,13 @@ export default function LeadsListPage() {
       viewToggle={
         <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
           <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
             size="icon"
             className="h-8 w-8"
-            onClick={() => setViewMode('list')}
-            title="Lista Padrão"
+            onClick={() => setViewMode('sales')}
+            title="Visualização Sales"
           >
-            <ListDashes />
+            <Target />
           </Button>
           <Button
             variant={viewMode === 'sales' ? 'secondary' : 'ghost'}

@@ -31,10 +31,10 @@ interface LeadsSalesListProps {
 function LeadTagsList({ leadId }: { leadId: string }) {
   const { data: tags } = useEntityTags(leadId, 'lead')
 
-  if (!tags || tags.length === 0) return null
+  if (!tags || tags.length === 0) return <span className="text-xs text-muted-foreground">-</span>
 
   return (
-    <div className="flex flex-wrap gap-1 mt-1">
+    <div className="flex flex-wrap gap-1">
       {tags.slice(0, 3).map(tag => (
         <Badge
           key={tag.id}
@@ -103,10 +103,11 @@ export function LeadsSalesList({
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="w-[30%]">Empresa / Contexto</TableHead>
-            <TableHead className="w-[25%]">Contato Principal</TableHead>
+            <TableHead className="w-[25%]">Empresa</TableHead>
+            <TableHead className="w-[15%]">Tags</TableHead>
+            <TableHead className="w-[20%]">Contato Principal</TableHead>
             <TableHead className="w-[25%]">Status & Pipeline</TableHead>
-            <TableHead className="w-[15%]">Responsável</TableHead>
+            <TableHead className="w-[10%]">Responsável</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -136,8 +137,12 @@ export function LeadsSalesList({
                         {lead.tradeName && <span className="text-xs text-muted-foreground block">{lead.tradeName}</span>}
                       </div>
                     </div>
-                    <LeadTagsList leadId={lead.id} />
                   </div>
+                </TableCell>
+
+                {/* TAGS */}
+                <TableCell>
+                  <LeadTagsList leadId={lead.id} />
                 </TableCell>
 
                 {/* PRIMARY CONTACT */}
