@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, MagnifyingGlass, ListDashes, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, PencilSimple, Trash, Kanban } from '@phosphor-icons/react'
-import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, Lead, OperationType, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
+import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target } from '@phosphor-icons/react'
+import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, Lead, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS, LeadStatus } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -23,45 +22,13 @@ import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
-import { Checkbox } from '@/components/ui/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
+import { LeadsSalesList } from '../components/LeadsSalesList'
 import { Progress } from '@/components/ui/progress'
-import { useEntityTags } from '@/services/tagService'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
-
-function LeadTagsCell({ leadId }: { leadId: string }) {
-  const { data: tags, isLoading } = useEntityTags(leadId, 'lead')
-
-  if (isLoading) {
-    return <span className="text-xs text-muted-foreground">Carregando...</span>
-  }
-
-  if (!tags || tags.length === 0) {
-    return <span className="text-xs text-muted-foreground">Sem tags</span>
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1 max-w-[200px]">
-      {tags.map(tag => (
-        <Badge
-          key={tag.id}
-          variant="outline"
-          className="text-xs"
-          style={{
-            borderColor: tag.color,
-            color: tag.color,
-            backgroundColor: `${tag.color}15`
-          }}
-        >
-          {tag.name}
-        </Badge>
-      ))}
-    </div>
-  )
-}
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -78,8 +45,11 @@ export default function LeadsListPage() {
     }
   }, [])
 
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban'>(() => {
-    return (savedPreferences?.viewMode as 'list' | 'grid' | 'kanban') || 'list'
+  const [viewMode, setViewMode] = useState<'grid' | 'kanban' | 'sales'>(() => {
+    const saved = savedPreferences?.viewMode
+    // Force 'sales' if 'list' was saved previously
+    if (saved === 'list') return 'sales'
+    return (saved as 'grid' | 'kanban' | 'sales') || 'sales'
   })
 
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
@@ -100,6 +70,14 @@ export default function LeadsListPage() {
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
+
+  // Adapter for quick actions type compatibility
+  const updateLeadAdapter = {
+    ...updateLead,
+    mutate: (vars: { leadId: string; updates: any }, options?: any) => {
+      updateLead.mutate({ id: vars.leadId, data: vars.updates }, options)
+    }
+  } as any
 
   const leadMetrics = useMemo(() => {
     const openLeads = leads?.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
@@ -344,18 +322,20 @@ export default function LeadsListPage() {
       viewToggle={
         <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
           <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
             size="icon"
             className="h-8 w-8"
-            onClick={() => setViewMode('list')}
+            onClick={() => setViewMode('sales')}
+            title="Visualização Sales"
           >
-            <ListDashes />
+            <Target />
           </Button>
           <Button
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
             className="h-8 w-8"
             onClick={() => setViewMode('grid')}
+            title="Grade"
           >
             <SquaresFour />
           </Button>
@@ -364,6 +344,7 @@ export default function LeadsListPage() {
             size="icon"
             className="h-8 w-8"
             onClick={() => setViewMode('kanban')}
+            title="Kanban"
           >
             <Kanban />
           </Button>
@@ -442,106 +423,16 @@ export default function LeadsListPage() {
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado com os filtros atuais.
           </div>
-        ) : viewMode === 'list' ? (
-          <div className="rounded-lg border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={currentLeads.length > 0 && selectedIds.length === currentLeads.length}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Operação</TableHead>
-                  <TableHead>Progresso</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead className="w-[140px] text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedLeads.map((lead) => {
-                  const contact = getPrimaryContact(lead)
-                  const owner = (lead as any).owner
-                  const isSelected = selectedIds.includes(lead.id)
-                  return (
-                    <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/leads/${lead.id}`)}>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Checkbox checked={isSelected} onCheckedChange={() => toggleSelectOne(lead.id)} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{lead.legalName}</div>
-                        {lead.tradeName && <div className="text-xs text-muted-foreground mt-1">{lead.tradeName}</div>}
-                      </TableCell>
-                      <TableCell>
-                        {contact ? (
-                          <div
-                            className="text-sm hover:underline text-primary"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              navigate(`/contacts/${contact.id}`)
-                            }}
-                          >
-                            {contact.name}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">--</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {lead.operationType ? (
-                          <span className="text-xs font-medium px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">
-                            {OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType}
-                          </span>
-                        ) : <span className="text-muted-foreground">-</span>}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 min-w-[140px]">
-                          <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
-                          <div className="flex items-center justify-end text-[11px] text-muted-foreground">
-                            <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <LeadTagsCell leadId={lead.id} />
-                      </TableCell>
-                      <TableCell>{renderOriginBadge(lead.origin)}</TableCell>
-                      <TableCell>
-                        {owner ? (
-                          <div className="flex items-center gap-2" title={owner.name}>
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={owner.avatar || ''} />
-                              <AvatarFallback className="text-[10px]">{getInitials(owner.name)}</AvatarFallback>
-                            </Avatar>
-                          </div>
-                        ) : <span className="text-muted-foreground text-xs">-</span>}
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()} className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <TagSelector entityId={lead.id} entityType="lead" variant="icon" />
-                          <QuickActionsMenu
-                            actions={getLeadQuickActions({
-                              lead,
-                              navigate,
-                              updateLead,
-                              deleteLead,
-                              profileId: profile?.id,
-                              onEdit: () => openEdit(lead),
-                            })}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+        ) : viewMode === 'sales' ? (
+          <LeadsSalesList
+            leads={paginatedLeads}
+            isLoading={isLoading}
+            selectedIds={selectedIds}
+            onSelectAll={toggleSelectAll}
+            onSelectOne={toggleSelectOne}
+            onEdit={openEdit}
+            onDelete={openDelete}
+          />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedLeads.map(lead => {
@@ -560,7 +451,7 @@ export default function LeadsListPage() {
                           actions={getLeadQuickActions({
                             lead,
                             navigate,
-                            updateLead,
+                            updateLead: updateLeadAdapter,
                             deleteLead,
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
