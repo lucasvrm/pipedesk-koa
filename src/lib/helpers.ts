@@ -23,22 +23,30 @@ export function parseCurrency(value: string): number {
   return parseFloat(cleaned) || 0
 }
 
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return '-'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '-'
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
-export function formatDateTime(date: string | Date): string {
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return '-'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '-'
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 // ADICIONADO: Função para formatar tamanho de arquivos
@@ -81,12 +89,20 @@ export function getInitials(name: string): string {
     .slice(0, 2)
 }
 
-export function isOverdue(deadline: string): boolean {
-  return new Date(deadline) < new Date()
+export function isOverdue(deadline: string | null | undefined): boolean {
+  if (!deadline) return false
+  const d = new Date(deadline)
+  if (isNaN(d.getTime())) return false
+
+  return d < new Date()
 }
 
-export function getDaysUntil(date: string): number {
-  const diff = new Date(date).getTime() - new Date().getTime()
+export function getDaysUntil(date: string | null | undefined): number {
+  if (!date) return 0
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return 0
+
+  const diff = d.getTime() - new Date().getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
