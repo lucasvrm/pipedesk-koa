@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'analyst' | 'client' | 'newbusiness'
+export type UserRole = 'admin' | 'manager' | 'analyst' | 'client' | 'newbusiness'
 
 export type DealStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
 

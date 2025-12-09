@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,13 @@ import { Gear, ShieldCheck, ShieldStar } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { RoleMetadataManager } from './RoleMetadataManager';
 import RolesManager from '@/features/rbac/components/RolesManager';
+
+type SystemSettingsTab = 'defaults' | 'roles' | 'permissions';
+
+interface SystemSettingsSectionProps {
+  activeTab?: SystemSettingsTab;
+  onTabChange?: (tab: SystemSettingsTab) => void;
+}
 
 interface SystemSettingsFormData {
   // Business Defaults
@@ -44,7 +51,7 @@ interface SystemSettingValue {
 
 type FormDataKey = keyof SystemSettingsFormData;
 
-export function SystemSettingsSection() {
+export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettingsSectionProps) {
   const { 
     dealStatuses, 
     stages, 
@@ -213,8 +220,32 @@ export function SystemSettingsSection() {
     );
   }
 
+  const [internalTab, setInternalTab] = useState<SystemSettingsTab>('defaults');
+
+  const currentTab = useMemo<SystemSettingsTab>(
+    () => activeTab ?? internalTab,
+    [activeTab, internalTab]
+  );
+
+  useEffect(() => {
+    if (activeTab) {
+      setInternalTab(activeTab);
+    }
+  }, [activeTab]);
+
+  const handleTabChange = (value: SystemSettingsTab) => {
+    if (!activeTab) {
+      setInternalTab(value);
+    }
+    onTabChange?.(value);
+  };
+
   return (
-    <Tabs defaultValue="defaults" className="w-full space-y-6">
+    <Tabs
+      value={currentTab}
+      onValueChange={(value) => handleTabChange(value as SystemSettingsTab)}
+      className="w-full space-y-6"
+    >
       <TabsList className="mb-4">
         <TabsTrigger value="defaults">
           <Gear className="mr-2 h-4 w-4" /> Defaults do Sistema

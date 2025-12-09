@@ -1,10 +1,11 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { hasPermission } from '@/lib/permissions';
 import { getInitials } from '@/lib/helpers';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ChartBar,
   Kanban,
@@ -22,23 +23,48 @@ import {
   FlowArrow,
   Funnel,
   AddressBook,
-  Database,
   Briefcase,
   Buildings,
-  ListChecks
+  ListChecks,
+  Package,
+  TagSimple,
+  FileText,
+  CalendarBlank,
+  ChartLine,
+  Robot,
+  ShieldCheck,
+  ShieldStar
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
+  DropdownMenuGroup,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
 import { SLAConfigManager } from '@/components/SLAConfigManager';
@@ -64,6 +90,8 @@ export function Layout({ children }: LayoutProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [slaConfigOpen, setSlaConfigOpen] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const currentUser = profile;
   const unreadCount = 0;
@@ -91,9 +119,237 @@ export function Layout({ children }: LayoutProps) {
     'MANAGE_SETTINGS'
   );
 
+  const settingsDefaultSections = useMemo(
+    () => ({
+      crm: 'leads',
+      products: 'products',
+      system: 'defaults',
+      productivity: 'tasks',
+      integrations: 'dashboards'
+    }),
+    []
+  );
+
+  const settingsShortcuts = useMemo(
+    () =>
+      [
+        {
+          category: 'system',
+          label: 'Configurações do Sistema',
+          icon: ShieldCheck,
+          restricted: true,
+          visible: canManageSettings,
+          items: [
+            {
+              label: 'Defaults do Sistema',
+              section: 'defaults',
+              icon: Gear,
+              description: 'Valores padrão para deals e leads'
+            },
+            {
+              label: 'Papéis & Permissões',
+              section: 'roles',
+              icon: ShieldStar,
+              description: 'Gestão de perfis e papéis'
+            },
+            {
+              label: 'Permissões Avançadas',
+              section: 'permissions',
+              icon: ShieldCheck,
+              description: 'Controle granular de acesso'
+            }
+          ]
+        },
+        {
+          category: 'crm',
+          label: 'CRM & Vendas',
+          icon: Users,
+          restricted: true,
+          visible: canManageSettings,
+          items: [
+            { label: 'Leads', section: 'leads', icon: Users },
+            { label: 'Deals & Pipeline', section: 'deals', icon: FlowArrow },
+            { label: 'Empresas & Contatos', section: 'companies', icon: Briefcase }
+          ]
+        },
+        {
+          category: 'products',
+          label: 'Produtos & Operações',
+          icon: Package,
+          restricted: true,
+          visible: canManageSettings,
+          items: [
+            { label: 'Produtos', section: 'products', icon: Package },
+            { label: 'Tipos de Operação', section: 'operation_types', icon: FlowArrow },
+            { label: 'Origens de Deal', section: 'deal_sources', icon: Funnel },
+            { label: 'Motivos de Perda', section: 'loss_reasons', icon: ListChecks }
+          ]
+        },
+        {
+          category: 'productivity',
+          label: 'Produtividade',
+          icon: ListChecks,
+          restricted: true,
+          visible: canManageSettings,
+          items: [
+            { label: 'Tarefas', section: 'tasks', icon: ListChecks },
+            { label: 'Tags', section: 'tags', icon: TagSimple },
+            { label: 'Templates', section: 'templates', icon: FileText },
+            { label: 'Feriados', section: 'holidays', icon: CalendarBlank }
+          ]
+        },
+        {
+          category: 'integrations',
+          label: 'Integrações & Automação',
+          icon: Robot,
+          restricted: true,
+          visible: canManageSettings,
+          items: [
+            { label: 'Dashboards', section: 'dashboards', icon: ChartLine },
+            { label: 'Automação de Documentos', section: 'automation', icon: Robot }
+          ]
+        }
+      ].filter((group) => group.visible),
+    [canManageSettings]
+  );
+
+  type MenuItem = {
+    label: string;
+    icon: typeof Gear;
+    path: string;
+    restricted?: boolean;
+  };
+
+  const managementItems = useMemo<MenuItem[]>(
+    () =>
+      [
+        canViewAnalytics && {
+          label: 'Analytics',
+          icon: ChartBar,
+          path: '/analytics'
+        },
+        canManageIntegrations && {
+          label: 'Google Workspace',
+          icon: GoogleLogo,
+          path: '/admin/integrations/google',
+          restricted: true
+        },
+        {
+          label: 'Pastas',
+          icon: FolderOpen,
+          path: '/folders/manage'
+        },
+        canManageUsers && {
+          label: 'Usuários',
+          icon: Users,
+          path: '/admin/users',
+          restricted: true
+        }
+      ].filter(Boolean) as MenuItem[],
+    [canManageIntegrations, canManageUsers, canViewAnalytics]
+  );
+
+  const personalItems = useMemo(
+    () => [
+      { label: 'Perfil', icon: UserIcon, path: '/profile' },
+      { label: 'Central de Ajuda', icon: Question, path: '/help' }
+    ],
+    []
+  );
+
   const isActive = (path: string) =>
     location.pathname === path ||
     location.pathname.startsWith(path + '/');
+
+  const isSettingsActive = (category: string, section?: string) => {
+    if (location.pathname !== '/admin/settings') return false;
+
+    const params = new URLSearchParams(location.search);
+    const currentCategory = params.get('category') || 'crm';
+    const currentSection = params.get('section') || settingsDefaultSections[currentCategory];
+
+    const matchesCategory = currentCategory === category;
+    const matchesSection = section ? currentSection === section : true;
+
+    return matchesCategory && matchesSection;
+  };
+
+  const navigateToSettings = (category: string, section?: string) => {
+    const params = new URLSearchParams({
+      category,
+      section: section || settingsDefaultSections[category]
+    });
+    navigate(`/admin/settings?${params.toString()}`);
+    setMenuOpen(false);
+  };
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setMenuOpen(false);
+  };
+
+  const renderSettingsDropdown = () => (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
+        Configurações
+      </DropdownMenuLabel>
+      {settingsShortcuts.map((group) => {
+        const GroupIcon = group.icon;
+        return (
+          <DropdownMenuSub key={group.category}>
+            <DropdownMenuSubTrigger
+              className={`flex items-center gap-2 ${
+                isSettingsActive(group.category) ? 'bg-muted text-primary' : ''
+              }`}
+            >
+              <GroupIcon className="mr-2" />
+              {group.label}
+              {group.restricted && (
+                <Badge variant="outline" className="ml-auto text-[10px] uppercase">
+                  Admin/Manager
+                </Badge>
+              )}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-72">
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs text-muted-foreground uppercase">
+                <GroupIcon className="h-4 w-4" />
+                {group.label}
+              </DropdownMenuLabel>
+              {group.items.map((item) => {
+                const ItemIcon = item.icon;
+                return (
+                  <DropdownMenuItem
+                    key={`${group.category}-${item.section}`}
+                    className={
+                      isSettingsActive(group.category, item.section)
+                        ? 'bg-muted text-primary'
+                        : ''
+                    }
+                    onClick={() => navigateToSettings(group.category, item.section)}
+                  >
+                    <ItemIcon className="mr-2" />
+                    <div className="flex flex-col">
+                      <span>{item.label}</span>
+                      {item.description && (
+                        <span className="text-[11px] text-muted-foreground">
+                          {item.description}
+                        </span>
+                      )}
+                    </div>
+                    {group.restricted && (
+                      <Badge variant="outline" className="ml-auto text-[10px] uppercase">
+                        Restrito
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        );
+      })}
+    </DropdownMenuGroup>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -228,15 +484,27 @@ export function Layout({ children }: LayoutProps) {
               )}
             </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" title="Menu">
-                  <List weight="bold" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel>
-                  <div className="flex items-center gap-3 py-1">
+            {isMobile ? (
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Menu, gestão e configurações"
+                    aria-label="Menu, gestão e configurações"
+                  >
+                    <List weight="bold" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[90%] sm:max-w-sm overflow-y-auto">
+                  <SheetHeader className="text-left">
+                    <SheetTitle>Menu principal</SheetTitle>
+                    <SheetDescription>
+                      Atalhos pessoais, de gestão e das seções de Configurações.
+                    </SheetDescription>
+                  </SheetHeader>
+
+                  <div className="flex items-center gap-3 py-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                         {getInitials(currentUser.name || 'U')}
@@ -246,111 +514,236 @@ export function Layout({ children }: LayoutProps) {
                       <p className="text-sm font-medium">
                         {currentUser.name || 'Usuário'}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">
                         {currentUser.email || ''}
                       </p>
                     </div>
                   </div>
-                </DropdownMenuLabel>
 
-                <DropdownMenuSeparator />
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">
+                        Pessoal
+                      </p>
+                      {personalItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Button
+                            key={item.path}
+                            variant={isActive(item.path) ? 'secondary' : 'ghost'}
+                            className="w-full justify-start"
+                            onClick={() => handleNavigate(item.path)}
+                            aria-label={`Ir para ${item.label}`}
+                          >
+                            <Icon className="mr-2" />
+                            {item.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
 
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <UserIcon className="mr-2" />
-                  Perfil
-                </DropdownMenuItem>
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">
+                        Gestão
+                      </p>
+                      {managementItems.map((item) => {
+                        const Icon = item.icon as typeof Gear;
+                        return (
+                          <Button
+                            key={item.path}
+                            variant={isActive(item.path) ? 'secondary' : 'ghost'}
+                            className="w-full justify-start"
+                            onClick={() => handleNavigate(item.path)}
+                            aria-label={`Ir para ${item.label}`}
+                          >
+                            <Icon className="mr-2" />
+                            <span className="flex-1 text-left">{item.label}</span>
+                            {item.restricted && (
+                              <Badge variant="outline" className="text-[10px] uppercase">
+                                Restrito
+                              </Badge>
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
 
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
-                  Gestão
-                </DropdownMenuLabel>
+                    {settingsShortcuts.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase">
+                          Configurações
+                        </p>
+                        {settingsShortcuts.map((group) => {
+                          const GroupIcon = group.icon;
+                          return (
+                            <div key={group.category} className="rounded-lg border p-3">
+                              <div className="flex items-center gap-2">
+                                <GroupIcon className="h-4 w-4" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{group.label}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Acesso direto às seções do Settings
+                                  </p>
+                                </div>
+                                {group.restricted && (
+                                  <Badge variant="outline" className="text-[10px] uppercase">
+                                    Admin/Manager
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="mt-2 grid grid-cols-1 gap-1">
+                                {group.items.map((item) => {
+                                  const ItemIcon = item.icon;
+                                  const active = isSettingsActive(group.category, item.section);
+                                  return (
+                                    <Button
+                                      key={`${group.category}-${item.section}`}
+                                      variant={active ? 'secondary' : 'ghost'}
+                                      className="w-full justify-start"
+                                      onClick={() => navigateToSettings(group.category, item.section)}
+                                      aria-label={`Ir para ${item.label}`}
+                                    >
+                                      <ItemIcon className="mr-2 h-4 w-4" />
+                                      <div className="flex flex-col items-start">
+                                        <span>{item.label}</span>
+                                        {item.description && (
+                                          <span className="text-[11px] text-muted-foreground">
+                                            {item.description}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {group.restricted && (
+                                        <Badge variant="outline" className="ml-auto text-[10px] uppercase">
+                                          Restrito
+                                        </Badge>
+                                      )}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
-                {canViewAnalytics && (
-                  <DropdownMenuItem onClick={() => navigate('/analytics')}>
-                    <ChartBar className="mr-2" />
-                    Analytics
-                  </DropdownMenuItem>
-                )}
+                    <div className="pt-2 border-t border-border">
+                      <Button
+                        variant="destructive"
+                        className="w-full justify-start"
+                        onClick={handleSignOut}
+                        aria-label="Sair da conta"
+                      >
+                        <SignOut className="mr-2" />
+                        Sair
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Menu de navegação"
+                        aria-label="Menu de navegação"
+                      >
+                        <List weight="bold" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Menu, atalhos e configurações
+                    </TooltipContent>
+                  </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72">
+                  <DropdownMenuLabel>
+                    <div className="flex items-center gap-3 py-1">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {getInitials(currentUser.name || 'U')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium">
+                          {currentUser.name || 'Usuário'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {currentUser.email || ''}
+                        </p>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
 
-                {canManageIntegrations && (
+                  <DropdownMenuSeparator />
+
+                  {personalItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={item.path}
+                        className={isActive(item.path) ? 'bg-muted text-primary' : ''}
+                        onClick={() => handleNavigate(item.path)}
+                      >
+                        <Icon className="mr-2" />
+                        {item.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
+                    Gestão
+                  </DropdownMenuLabel>
+
+                  {managementItems.map((item) => {
+                    const Icon = item.icon as typeof Gear;
+                    return (
+                      <Tooltip key={item.path}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem
+                            className={isActive(item.path) ? 'bg-muted text-primary' : ''}
+                            onClick={() => handleNavigate(item.path)}
+                          >
+                            <Icon className="mr-2" />
+                            <span className="flex-1">{item.label}</span>
+                            {item.restricted && (
+                              <Badge variant="outline" className="text-[10px] uppercase">
+                                Restrito
+                              </Badge>
+                            )}
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          Abrir {item.label}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+
+                  {settingsShortcuts.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {renderSettingsDropdown()}
+                    </>
+                  )}
+
+                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem
-                    onClick={() => navigate('/admin/integrations/google')}
+                    className="text-destructive focus:text-destructive"
+                    onClick={handleSignOut}
                   >
-                    <GoogleLogo className="mr-2" />
-                    Google Workspace
+                    <SignOut className="mr-2" />
+                    Sair
                   </DropdownMenuItem>
-                )}
-
-                <DropdownMenuItem onClick={() => navigate('/folders/manage')}>
-                  <FolderOpen className="mr-2" />
-                  Pastas
-                </DropdownMenuItem>
-
-                {canManageUsers && (
-                  <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                    <Users className="mr-2" />
-                    Usuários
-                  </DropdownMenuItem>
-                )}
-
-                {canManageSettings && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
-                      Configurações
-                    </DropdownMenuLabel>
-
-                    <DropdownMenuItem
-                      onClick={() => navigate('/custom-fields')}
-                    >
-                      <Gear className="mr-2" />
-                      Campos Customizados
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => navigate('/admin/gerador-dados')}
-                    >
-                      <Database className="mr-2" />
-                      Dados Sintéticos
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => navigate('/admin/pipeline')}
-                    >
-                      <FlowArrow className="mr-2" />
-                      Pipeline & Fases
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => navigate('/admin/settings')}
-                    >
-                      <List className="mr-2" />
-                      Variáveis Globais
-                    </DropdownMenuItem>
-
-                    {/* O link direto para Tags foi removido; agora, tags são gerenciadas
-                        na aba Tags em Variáveis Globais. */}
-                  </>
-                )}
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => navigate('/help')}>
-                  <Question className="mr-2" />
-                  Central de Ajuda
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={handleSignOut}
-                >
-                  <SignOut className="mr-2" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
