@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Target } from '@phosphor-icons/react'
-import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics'
+import { useAnalytics } from '@/services/analyticsService'
 import { useDashboardFilters } from '@/contexts/DashboardFiltersContext'
-import { PlayerStage } from '@/lib/types'
+import { Skeleton } from '@/components/ui/skeleton'
 
-// Helper para labels de estágio (deveria ser compartilhado, mas duplicando para simplificar refatoração por enquanto)
+// Helper para labels de estágio
 const getStageLabel = (stage: string) => {
     const labels: Record<string, string> = {
       nda: 'NDA', analysis: 'Análise', proposal: 'Proposta', negotiation: 'Negociação', closing: 'Fechamento',
@@ -15,14 +15,45 @@ const getStageLabel = (stage: string) => {
 
 export function SLAOverviewWidget() {
     const { filters } = useDashboardFilters()
-    const { data: metrics, isLoading } = useEnhancedAnalytics(
+    const { data: metrics, isLoading } = useAnalytics(
       filters.dateRangePreset,
       filters.selectedTeamMemberId,
       filters.selectedOperationTypeId
     )
 
-    if (isLoading) return <Card className="h-full"><CardContent className="p-6">Carregando SLA...</CardContent></Card>
-    if (!metrics) return null;
+    if (isLoading) {
+      return (
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Target className="h-4 w-4" /> Violações de SLA
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Skeleton className="h-8 w-full mb-4" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-full mb-2" />
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (!metrics) {
+      return (
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Target className="h-4 w-4" /> Violações de SLA
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Sem dados disponíveis
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
 
     return (
         <Card className="h-full">
@@ -32,7 +63,7 @@ export function SLAOverviewWidget() {
             </CardTitle>
         </CardHeader>
         <CardContent>
-            {metrics.slaBreach.total > 0 ? (
+            {metrics.slaBreach && metrics.slaBreach.total > 0 ? (
             <div className="space-y-4">
                 <div className="text-3xl font-bold text-destructive">{metrics.slaBreach.total} <span className="text-sm font-normal text-muted-foreground">violações</span></div>
                 <div className="space-y-2 max-h-[250px] overflow-y-auto">

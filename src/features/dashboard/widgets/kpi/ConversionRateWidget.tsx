@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Funnel } from '@phosphor-icons/react'
-import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics'
+import { useAnalytics } from '@/services/analyticsService'
 import { useDashboardFilters } from '@/contexts/DashboardFiltersContext'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function ConversionRateWidget() {
   const { filters } = useDashboardFilters()
-  const { data: metrics, isLoading, error } = useEnhancedAnalytics(
+  const { data: metrics, isLoading, error } = useAnalytics(
     filters.dateRangePreset,
     filters.selectedTeamMemberId,
     filters.selectedOperationTypeId
