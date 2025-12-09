@@ -40,8 +40,14 @@ export default function DashboardPage() {
   }
 
   const handleSaveCustomize = async () => {
-    await saveUserLayout.mutateAsync(tempLayout)
-    setIsCustomizing(false)
+    try {
+      await saveUserLayout.mutateAsync(tempLayout)
+      setIsCustomizing(false)
+      toast.success('Dashboard personalizado com sucesso!')
+    } catch (error) {
+      console.error('Error saving dashboard layout:', error)
+      toast.error('Erro ao salvar personalização. Tente novamente.')
+    }
   }
 
   const handleResetDefaults = () => {
@@ -60,17 +66,18 @@ export default function DashboardPage() {
 
   const toggleWidget = (widgetId: string) => {
     setTempLayout(prev => {
-      const exists = prev.widgets.some(w => w.id === widgetId);
+      const widgets = prev?.widgets || [];
+      const exists = widgets.some(w => w.id === widgetId);
       if (exists) {
         // Remove widget
         return {
-          widgets: prev.widgets.filter(w => w.id !== widgetId)
+          widgets: widgets.filter(w => w.id !== widgetId)
         };
       } else {
         // Add widget with default size
         const widgetDef = WIDGET_REGISTRY[widgetId];
         return {
-          widgets: [...prev.widgets, { id: widgetId, size: widgetDef?.defaultSize || 'medium' }]
+          widgets: [...widgets, { id: widgetId, size: widgetDef?.defaultSize || 'medium' }]
         };
       }
     });
@@ -78,13 +85,13 @@ export default function DashboardPage() {
 
   const updateWidgetSize = (widgetId: string, size: 'small' | 'medium' | 'large' | 'full') => {
     setTempLayout(prev => ({
-      widgets: prev.widgets.map(w => w.id === widgetId ? { ...w, size } : w)
+      widgets: (prev?.widgets || []).map(w => w.id === widgetId ? { ...w, size } : w)
     }));
   }
 
   const moveWidget = (index: number, direction: 'up' | 'down') => {
     setTempLayout(prev => {
-      const newWidgets = [...prev.widgets];
+      const newWidgets = [...(prev?.widgets || [])];
       const targetIndex = direction === 'up' ? index - 1 : index + 1;
       
       if (targetIndex < 0 || targetIndex >= newWidgets.length) return prev;
@@ -189,11 +196,11 @@ export default function DashboardPage() {
             <ScrollArea className="flex-1 pr-4">
               <div className="space-y-6 py-4">
                 {/* Current Widgets Section */}
-                {tempLayout.widgets.length > 0 && (
+                {(tempLayout?.widgets || []).length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Widgets Ativos ({tempLayout.widgets.length})</h3>
+                    <h3 className="text-sm font-semibold mb-3">Widgets Ativos ({(tempLayout?.widgets || []).length})</h3>
                     <div className="space-y-2">
-                      {tempLayout.widgets.map((widget, index) => {
+                      {(tempLayout?.widgets || []).map((widget, index) => {
                         const widgetDef = WIDGET_REGISTRY[widget.id];
                         if (!widgetDef) return null;
                         
@@ -214,7 +221,7 @@ export default function DashboardPage() {
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={() => moveWidget(index, 'down')}
-                                disabled={index === tempLayout.widgets.length - 1}
+                                disabled={index === (tempLayout?.widgets || []).length - 1}
                               >
                                 <ArrowDown className="h-3 w-3" />
                               </Button>
@@ -271,8 +278,8 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-semibold mb-3">Widgets Disponíveis</h3>
                   <div className="space-y-2">
                     {allWidgets
-                      .filter(w => availableWidgets.includes(w.id))
-                      .filter(w => !tempLayout.widgets.some(tw => tw.id === w.id))
+                      .filter(w => (availableWidgets || []).includes(w.id))
+                      .filter(w => !(tempLayout?.widgets || []).some(tw => tw.id === w.id))
                       .map(widget => (
                         <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                           <div className="flex-1">
