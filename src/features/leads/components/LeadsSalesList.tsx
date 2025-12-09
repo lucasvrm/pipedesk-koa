@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Lead, LeadStatus, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
+import { Lead, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,7 @@ import { getLeadQuickActions } from '@/hooks/useQuickActions'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUpdateLead, useDeleteLead } from '@/services/leadService'
 import { useEntityTags } from '@/services/tagService'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface LeadsSalesListProps {
   leads: Lead[]
@@ -68,6 +69,7 @@ export function LeadsSalesList({
   const { profile } = useAuth()
   const updateLead = useUpdateLead()
   const deleteLead = useDeleteLead()
+  const { getLeadStatusByCode } = useSystemMetadata()
 
   // Adapter for quick actions type compatibility
   const updateLeadAdapter = {
@@ -215,7 +217,7 @@ export function LeadsSalesList({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Badge variant="secondary" className={`${LEAD_STATUS_COLORS[lead.status]} text-white border-0`}>
-                        {LEAD_STATUS_LABELS[lead.status]}
+                        {getLeadStatusByCode(lead.status)?.label || lead.status}
                       </Badge>
                       <span className="text-[10px] font-medium text-muted-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
                     </div>
