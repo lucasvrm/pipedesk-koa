@@ -12,7 +12,6 @@ import { Badge, BadgeVariant } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -35,13 +34,12 @@ import {
   Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, 
   MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown,
   User as UserIcon, IdentificationCard, Wallet, FileText, Lightning,
-  CaretLeft, CaretRight, UserList, ShieldCheck
+  CaretLeft, CaretRight, Info
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
-import RolesManager from '@/features/rbac/components/RolesManager'
 import { PageContainer } from '@/components/PageContainer'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
@@ -320,13 +318,21 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="users" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="users" className="text-base px-4 py-2"><UserList className="mr-2 h-4 w-4"/> Usuários</TabsTrigger>
-          <TabsTrigger value="roles" className="text-base px-4 py-2"><ShieldCheck className="mr-2 h-4 w-4"/> Funções e Permissões</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="users" className="space-y-6">
+      <div className="space-y-6">
+          
+          {/* Informational Card about Role Management */}
+          <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+            <CardContent className="flex items-start gap-3 pt-4">
+              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-blue-900 dark:text-blue-100">
+                  <strong>Gerenciamento de Funções:</strong> Para editar as definições das funções (labels, descrições, badges e permissões), 
+                  acesse <strong>Admin → Configurações → Sistema → Metadados de Roles</strong>. 
+                  Aqui você pode apenas atribuir funções aos usuários.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
           
           {/* Header da Aba Usuários */}
           <div className="flex justify-end">
@@ -668,12 +674,7 @@ export default function UserManagementPage() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
-
-        <TabsContent value="roles">
-          <RolesManager />
-        </TabsContent>
-      </Tabs>
+        </div>
 
       {/* Modais */}
       <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} currentUser={currentUser} />
