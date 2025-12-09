@@ -52,7 +52,7 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Tag as TagType } from '@/lib/types'
-import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { LeadStatus, OPERATION_LABELS, OperationType, LEAD_STATUS_COLORS } from '@/lib/types'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import CommentsPanel from '@/components/CommentsPanel'
@@ -406,29 +406,22 @@ export default function LeadDetailPage() {
     return leadStatuses
       .filter(ls => ls.isActive)
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(status => {
-        // Map status codes to colors (will be moved to metadata schema in future PR)
-        const colorMap: Record<string, string> = {
-          'new': 'bg-slate-500',
-          'contacted': 'bg-blue-500',
-          'qualified': 'bg-green-500',
-          'disqualified': 'bg-red-500'
-        }
-        return {
-          id: status.code,
-          label: status.label,
-          color: colorMap[status.code] || 'bg-gray-500'
-        }
-      })
+      .map(status => ({
+        id: status.code,
+        label: status.label,
+        color: LEAD_STATUS_COLORS[status.code as LeadStatus] || 'bg-gray-500'
+      }))
   }, [leadStatuses])
 
-  const originMeta = getLeadOriginByCode(lead.origin)
-  const SIDEBAR_METRICS = [
-    { label: 'Origem', value: originMeta?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
-  ]
+  const SIDEBAR_METRICS = useMemo(() => {
+    const originMeta = getLeadOriginByCode(lead.origin)
+    return [
+      { label: 'Origem', value: originMeta?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+      { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
+      { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
+      { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
+    ]
+  }, [lead.origin, getLeadOriginByCode, createdAt, cityState, operationTypeName])
 
   return (
     <PageContainer>
