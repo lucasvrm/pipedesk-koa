@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 interface SystemSettingsFormData {
   // Business Defaults
   default_deal_status_code: string;
-  default_track_stage_code: string;
+  default_track_stage_code: string; // stores stage.id
   default_track_probability: number;
   default_lead_origin_code: string;
   default_lead_member_role_code: string;
@@ -31,6 +31,14 @@ interface SystemSettingsFormData {
   synthetic_email_domain: string;
   synthetic_name_prefix: string;
 }
+
+interface SystemSettingValue {
+  code?: string;
+  value?: string | number;
+  id?: string;
+}
+
+type FormDataKey = keyof SystemSettingsFormData;
 
 export function SystemSettingsSection() {
   const { 
@@ -89,16 +97,18 @@ export function SystemSettingsSection() {
       settingsKeys.forEach((key, index) => {
         const result = results[index];
         if (result.data !== null) {
-          const value = result.data;
+          const value = result.data as SystemSettingValue;
           // Handle different value structures
-          if (typeof value === 'object' && value !== null) {
-            if ('code' in value) {
-              newFormData[key as keyof SystemSettingsFormData] = value.code as any;
+          if (value && typeof value === 'object') {
+            if ('code' in value && value.code) {
+              (newFormData as any)[key] = value.code;
+            } else if ('id' in value && value.id) {
+              (newFormData as any)[key] = value.id;
             } else if ('value' in value) {
-              newFormData[key as keyof SystemSettingsFormData] = value.value as any;
+              (newFormData as any)[key] = value.value;
             }
           } else {
-            newFormData[key as keyof SystemSettingsFormData] = value as any;
+            (newFormData as any)[key] = value;
           }
         }
       });
@@ -115,73 +125,66 @@ export function SystemSettingsSection() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save Business Defaults
-      await updateSystemSetting(
-        'default_deal_status_code',
-        { code: formData.default_deal_status_code },
-        'Status padrão ao criar deal'
-      );
-
-      await updateSystemSetting(
-        'default_track_stage_code',
-        { code: formData.default_track_stage_code },
-        'Etapa padrão da pipeline'
-      );
-
-      await updateSystemSetting(
-        'default_track_probability',
-        { value: Number(formData.default_track_probability) },
-        'Probabilidade padrão (%)'
-      );
-
-      await updateSystemSetting(
-        'default_lead_origin_code',
-        { code: formData.default_lead_origin_code },
-        'Origem padrão de lead'
-      );
-
-      await updateSystemSetting(
-        'default_lead_member_role_code',
-        { code: formData.default_lead_member_role_code },
-        'Papel padrão de membro de lead'
-      );
-
-      // Save Synthetic Users Configuration
-      await updateSystemSetting(
-        'synthetic_default_password',
-        { value: formData.synthetic_default_password },
-        'Senha padrão para usuários sintéticos'
-      );
-
-      await updateSystemSetting(
-        'synthetic_default_role_code',
-        { code: formData.synthetic_default_role_code },
-        'Role padrão para usuários sintéticos'
-      );
-
-      await updateSystemSetting(
-        'synthetic_total_users',
-        { value: Number(formData.synthetic_total_users) },
-        'Quantidade alvo de usuários sintéticos'
-      );
-
-      await updateSystemSetting(
-        'synthetic_batch_size',
-        { value: Number(formData.synthetic_batch_size) },
-        'Tamanho do lote de criação de usuários sintéticos'
-      );
-
-      await updateSystemSetting(
-        'synthetic_email_domain',
-        { value: formData.synthetic_email_domain },
-        'Domínio de e-mail para usuários sintéticos'
-      );
-
-      await updateSystemSetting(
-        'synthetic_name_prefix',
-        { value: formData.synthetic_name_prefix },
-        'Prefixo de nome para usuários sintéticos'
-      );
+      // Save all settings in parallel for better performance
+      await Promise.all([
+        // Business Defaults
+        updateSystemSetting(
+          'default_deal_status_code',
+          { code: formData.default_deal_status_code },
+          'Status padrão ao criar deal'
+        ),
+        updateSystemSetting(
+          'default_track_stage_code',
+          { id: formData.default_track_stage_code }, // stages use id, not code
+          'Etapa padrão da pipeline'
+        ),
+        updateSystemSetting(
+          'default_track_probability',
+          { value: Number(formData.default_track_probability) },
+          'Probabilidade padrão (%)'
+        ),
+        updateSystemSetting(
+          'default_lead_origin_code',
+          { code: formData.default_lead_origin_code },
+          'Origem padrão de lead'
+        ),
+        updateSystemSetting(
+          'default_lead_member_role_code',
+          { code: formData.default_lead_member_role_code },
+          'Papel padrão de membro de lead'
+        ),
+        // Synthetic Users Configuration
+        updateSystemSetting(
+          'synthetic_default_password',
+          { value: formData.synthetic_default_password },
+          'Senha padrão para usuários sintéticos'
+        ),
+        updateSystemSetting(
+          'synthetic_default_role_code',
+          { code: formData.synthetic_default_role_code },
+          'Role padrão para usuários sintéticos'
+        ),
+        updateSystemSetting(
+          'synthetic_total_users',
+          { value: Number(formData.synthetic_total_users) },
+          'Quantidade alvo de usuários sintéticos'
+        ),
+        updateSystemSetting(
+          'synthetic_batch_size',
+          { value: Number(formData.synthetic_batch_size) },
+          'Tamanho do lote de criação de usuários sintéticos'
+        ),
+        updateSystemSetting(
+          'synthetic_email_domain',
+          { value: formData.synthetic_email_domain },
+          'Domínio de e-mail para usuários sintéticos'
+        ),
+        updateSystemSetting(
+          'synthetic_name_prefix',
+          { value: formData.synthetic_name_prefix },
+          'Prefixo de nome para usuários sintéticos'
+        )
+      ]);
 
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
