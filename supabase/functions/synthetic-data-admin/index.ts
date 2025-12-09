@@ -2,6 +2,7 @@
 // This unified function handles synthetic user creation, CRM data generation,
 // and cleanup of synthetic data. It exposes three operations:
 //  - POST with { action: 'create_users', count, prefix }: creates synthetic users via admin API
+//    (reads configuration from system_settings: password, role, email_domain, name_prefix)
 //  - POST with { action: 'generate_crm', companies_count, leads_count, deals_count, contacts_count, players_count, users_ids }: generates CRM entities by invoking the v2 RPC
 //  - DELETE: deletes all synthetic users via admin API and calls the v2 cleanup RPC
 
@@ -20,23 +21,57 @@ function getServiceClient() {
   })
 }
 
+// Helper to get a system setting value
+async function getSystemSetting(supabase: any, key: string, defaultValue: any = null) {
+  try {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', key)
+      .maybeSingle()
+    
+    if (error || !data) {
+      return defaultValue
+    }
+    
+    // Handle different value structures (could be plain value or nested object)
+    if (data.value && typeof data.value === 'object') {
+      if ('value' in data.value) return data.value.value
+      if ('code' in data.value) return data.value.code
+      if ('id' in data.value) return data.value.id
+    }
+    
+    return data.value ?? defaultValue
+  } catch (err) {
+    console.warn(`Failed to get setting ${key}:`, err)
+    return defaultValue
+  }
+}
+
 async function handleCreateUsers(supabase: any, payload: any) {
+  // Get configuration from system_settings with fallback defaults
+  const defaultPassword = await getSystemSetting(supabase, 'synthetic_default_password', 'Password123!')
+  const defaultRole = await getSystemSetting(supabase, 'synthetic_default_role_code', 'analyst')
+  const emailDomain = await getSystemSetting(supabase, 'synthetic_email_domain', '@example.com')
+  const namePrefix = await getSystemSetting(supabase, 'synthetic_name_prefix', 'Synthetic User ')
+  
   const { count = 1, prefix = 'synth' } = payload || {}
   const createdUsers: { id: string; email: string }[] = []
   const errors: { email: string; error: string }[] = []
+  
   for (let i = 0; i < count; i++) {
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(7)
-    const email = `${prefix}_${timestamp}_${randomStr}@example.com`
-    const password = 'Password123!'
+    const email = `${prefix}_${timestamp}_${randomStr}${emailDomain}`
+    const password = defaultPassword
     const { data: user, error } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: {
-        full_name: `Synthetic User ${randomStr}`,
+        full_name: `${namePrefix}${randomStr}`,
         is_synthetic: true,
-        role: 'analyst',
+        role: defaultRole,
       },
     })
     if (error) {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PageContainer } from '@/components/PageContainer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabaseClient'
+import { getSystemSetting } from '@/services/settingsService'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Info } from '@phosphor-icons/react'
 import {
   Database,
   Users,
@@ -19,13 +22,17 @@ import {
 } from '@phosphor-icons/react'
 
 // Página de administração para geração e limpeza de dados sintéticos.
-// Utiliza a edge function "synthetic-data-admin" para criar usuários e
-// gerar/limpar dados CRM, e as stored procedures v2 no banco.
+// 
+// CONFIGURAÇÃO: Todos os parâmetros de dados sintéticos (senha padrão, role, domínio de e-mail, etc.)
+// são configurados em /admin/settings → Sistema → "Configurações de Dados Sintéticos".
+// 
+// EXECUÇÃO: Esta página permite executar a geração e limpeza de dados sintéticos usando
+// a edge function "synthetic-data-admin" (para usuários) e as stored procedures v2 (para entidades CRM).
 export default function SyntheticDataAdminPage() {
   const [loading, setLoading] = useState(false)
   const [consoleLogs, setConsoleLogs] = useState<string[]>([])
 
-  // Parâmetros de entrada
+  // Parâmetros de entrada - valores padrão serão carregados de system_settings
   const [userCount, setUserCount] = useState(3)
   const [companyCount, setCompanyCount] = useState(10)
   const [leadCount, setLeadCount] = useState(10)
@@ -51,6 +58,29 @@ export default function SyntheticDataAdminPage() {
     setConsoleLogs(prev => [`[${ts}] ${msg}`, ...prev])
   }
 
+  // Load default values from system_settings on mount
+  useEffect(() => {
+    loadDefaultSettings()
+  }, [])
+
+  const loadDefaultSettings = async () => {
+    try {
+      // Load synthetic_total_users as default for userCount if configured
+      const totalUsers = await getSystemSetting('synthetic_total_users')
+      if (totalUsers.data !== null) {
+        const value = typeof totalUsers.data === 'object' && 'value' in totalUsers.data 
+          ? totalUsers.data.value 
+          : totalUsers.data
+        if (typeof value === 'number' && value > 0) {
+          setUserCount(value)
+        }
+      }
+      
+      log('✅ Configurações carregadas de system_settings')
+    } catch (err: any) {
+      log(`⚠️ Não foi possível carregar configurações: ${err.message}`)
+    }
+  }
 
   // Atualiza contagem de entidades sintéticas no banco
   const handleRefreshCounts = async () => {
@@ -254,6 +284,18 @@ export default function SyntheticDataAdminPage() {
             Geração server-side de dados de teste. Determinístico e seguro.
           </p>
         </div>
+
+        {/* Informational Alert about Settings Location */}
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Configuração:</strong> Parâmetros de dados sintéticos (senha padrão, role, domínio de e-mail, etc.) 
+            são configurados em <strong>/admin/settings → Sistema → Configurações de Dados Sintéticos</strong>.
+            <br />
+            <strong>Execução:</strong> Use esta página apenas para executar a geração e limpeza de dados.
+          </AlertDescription>
+        </Alert>
+
         {/* Row 1: Usuários, CRM, Contagem */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Usuários */}
