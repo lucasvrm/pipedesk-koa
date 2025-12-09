@@ -1,0 +1,246 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { settingsService, getSystemSetting, updateSystemSetting } from '@/services/settingsService'
+import { supabase } from '@/lib/supabaseClient'
+
+// Mock supabase client
+vi.mock('@/lib/supabaseClient', () => ({
+  supabase: {
+    from: vi.fn(),
+    auth: {
+      getUser: vi.fn()
+    }
+  }
+}))
+
+describe('settingsService', () => {
+  const createMockResponse = (data: any) => ({
+    data,
+    error: null,
+    count: null,
+    status: 200,
+    statusText: 'OK'
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('list', () => {
+    it('should list all items from deal_statuses table', async () => {
+      const mockData = [
+        {
+          id: 'status-1',
+          code: 'active',
+          label: 'Ativo',
+          description: 'Deal is active',
+          is_active: true,
+          sort_order: 1,
+          created_at: '2024-01-01T00:00:00Z'
+        }
+      ]
+
+      const mockSelect = vi.fn(() => ({
+        order: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as any)
+
+      const result = await settingsService.list('deal_statuses')
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveLength(1)
+      expect(result.data![0]).toHaveProperty('code', 'active')
+      expect(result.data![0]).toHaveProperty('label', 'Ativo')
+    })
+
+    it('should handle errors gracefully', async () => {
+      const mockError = new Error('Database error')
+      const mockSelect = vi.fn(() => ({
+        order: vi.fn(() => Promise.resolve({ data: null, error: mockError }))
+      }))
+
+      vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as any)
+
+      const result = await settingsService.list('lead_statuses')
+
+      expect(result.error).toBe(mockError)
+      expect(result.data).toBeNull()
+    })
+  })
+
+  describe('create', () => {
+    it('should create a new lead_status', async () => {
+      const payload = {
+        code: 'new',
+        label: 'Novo',
+        description: 'New lead',
+        isActive: true,
+        sortOrder: 1
+      }
+
+      const mockData = {
+        id: 'status-new',
+        code: 'new',
+        label: 'Novo',
+        description: 'New lead',
+        is_active: true,
+        sort_order: 1,
+        created_at: '2024-01-01T00:00:00Z'
+      }
+
+      const mockSelect = vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      const mockInsert = vi.fn(() => ({ select: mockSelect }))
+
+      vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any)
+
+      const result = await settingsService.create('lead_statuses', payload)
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveProperty('code', 'new')
+      expect(result.data).toHaveProperty('label', 'Novo')
+    })
+
+    it('should validate code is not empty', async () => {
+      const payload = {
+        code: '   ', // whitespace only
+        label: 'Test',
+        isActive: true,
+        sortOrder: 1
+      }
+
+      const result = await settingsService.create('lead_statuses', payload)
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toBe('Code cannot be empty')
+      expect(result.data).toBeNull()
+    })
+  })
+
+  describe('update', () => {
+    it('should update an existing item', async () => {
+      const payload = {
+        label: 'Updated Label',
+        description: 'Updated description'
+      }
+
+      const mockData = {
+        id: 'status-1',
+        code: 'active',
+        label: 'Updated Label',
+        description: 'Updated description',
+        is_active: true,
+        sort_order: 1,
+        created_at: '2024-01-01T00:00:00Z'
+      }
+
+      const mockSelect = vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      const mockEq = vi.fn(() => ({ select: mockSelect }))
+      const mockUpdate = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ update: mockUpdate } as any)
+
+      const result = await settingsService.update('deal_statuses', 'status-1', payload)
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveProperty('label', 'Updated Label')
+    })
+
+    it('should validate ID is not empty', async () => {
+      const result = await settingsService.update('deal_statuses', '', { label: 'Test' })
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toBe('ID cannot be empty')
+      expect(result.data).toBeNull()
+    })
+  })
+
+  describe('remove', () => {
+    it('should delete an item', async () => {
+      const mockEq = vi.fn(() => Promise.resolve({ error: null }))
+      const mockDelete = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as any)
+
+      const result = await settingsService.remove('lead_origins', 'origin-1')
+
+      expect(result.error).toBeNull()
+    })
+
+    it('should validate ID is not empty', async () => {
+      const result = await settingsService.remove('lead_origins', '')
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toBe('ID cannot be empty')
+    })
+  })
+
+  describe('getSystemSetting', () => {
+    it('should get a system setting by key', async () => {
+      const mockData = { value: { enabled: true } }
+
+      const mockMaybeSingle = vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }))
+      const mockSelect = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as any)
+
+      const result = await getSystemSetting('test_key')
+
+      expect(result.error).toBeNull()
+      expect(result.data).toEqual({ enabled: true })
+    })
+
+    it('should return null for non-existent key', async () => {
+      const mockMaybeSingle = vi.fn(() => Promise.resolve(createMockResponse(null)))
+      const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }))
+      const mockSelect = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as any)
+
+      const result = await getSystemSetting('non_existent')
+
+      expect(result.error).toBeNull()
+      expect(result.data).toBeNull()
+    })
+  })
+
+  describe('updateSystemSetting', () => {
+    it('should update a system setting', async () => {
+      const mockUser = { data: { user: { id: 'user-1' } }, error: null }
+      vi.mocked(supabase.auth.getUser).mockResolvedValue(mockUser as any)
+
+      const mockData = {
+        key: 'test_key',
+        value: { enabled: false },
+        description: 'Test setting',
+        updated_by: 'user-1',
+        updated_at: '2024-01-01T00:00:00Z'
+      }
+
+      const mockSingle = vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      const mockSelect = vi.fn(() => ({ single: mockSingle }))
+      const mockUpsert = vi.fn(() => ({ select: mockSelect }))
+
+      vi.mocked(supabase.from).mockReturnValue({ upsert: mockUpsert } as any)
+
+      const result = await updateSystemSetting('test_key', { enabled: false })
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveProperty('key', 'test_key')
+    })
+
+    it('should validate key is not empty', async () => {
+      const result = await updateSystemSetting('', { enabled: true })
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toBe('Key cannot be empty')
+      expect(result.data).toBeNull()
+    })
+  })
+})
