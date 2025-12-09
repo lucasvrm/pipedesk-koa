@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
-import { COMPANY_TYPE_LABELS, CompanyType } from '@/lib/types'
+import { CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
@@ -22,9 +22,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getContactQuickActions } from '@/hooks/useQuickActions'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
+  const { getCompanyTypeByCode } = useSystemMetadata()
 
   const [search, setSearch] = useState('')
   const [companyFilter, setCompanyFilter] = useState<string>('all')
@@ -333,7 +335,7 @@ export default function ContactsPage() {
                       </TableCell>
                       <TableCell>
                         {contact.companyType ? (
-                          <Badge variant="outline">{COMPANY_TYPE_LABELS[contact.companyType as CompanyType] || contact.companyType}</Badge>
+                          <Badge variant="outline">{getCompanyTypeByCode(contact.companyType as CompanyType)?.label || contact.companyType}</Badge>
                         ) : '-'}
                       </TableCell>
                       <TableCell>

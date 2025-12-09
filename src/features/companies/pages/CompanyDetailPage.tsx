@@ -30,12 +30,13 @@ import {
   Phone, Envelope, Star, PencilSimple, X, ChartBar, FileText
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { Company, COMPANY_TYPE_LABELS, CompanyType, STATUS_LABELS } from '@/lib/types'
+import { Company, CompanyType, STATUS_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/helpers'
 import { PageContainer } from '@/components/PageContainer'
 import DocumentManager from '@/components/DocumentManager'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -44,6 +45,7 @@ export default function CompanyDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const { companyTypes } = useSystemMetadata()
 
   const isNew = id === 'new'
   const [isEditing, setIsEditing] = useState(isNew)
@@ -261,8 +263,8 @@ export default function CompanyDetailPage() {
                     >
                       <SelectTrigger className={INPUT_STYLE_SECONDARY}><SelectValue/></SelectTrigger>
                       <SelectContent>
-                        {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        {companyTypes.filter(ct => ct.isActive).map((companyType) => (
+                          <SelectItem key={companyType.code} value={companyType.code}>{companyType.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

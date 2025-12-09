@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import PlayerSelect from "@/components/PlayerSelect";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { OPERATION_LABELS, COMPANY_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS } from "@/lib/types";
+import { OPERATION_LABELS } from "@/lib/types";
 import { Check, ChevronsUpDown, Plus, Building2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -55,6 +55,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSystemMetadata } from "@/hooks/useSystemMetadata";
 
 // Schema de validação
 const formSchema = z.object({
@@ -98,6 +99,7 @@ export function CreateDealDialog({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { companyTypes } = useSystemMetadata();
   
   const { data: stages = [], isLoading: isLoadingStages } = useStages();
   const { data: players = [], isLoading: isLoadingPlayers } = usePlayers();
@@ -358,9 +360,9 @@ export function CreateDealDialog({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
-                                                <SelectItem key={key} value={key}>
-                                                    {label}
+                                            {companyTypes.filter(ct => ct.isActive).map((companyType) => (
+                                                <SelectItem key={companyType.code} value={companyType.code}>
+                                                    {companyType.label}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
