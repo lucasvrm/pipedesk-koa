@@ -250,13 +250,13 @@ export default function DashboardPage() {
 
       {/* --- CUSTOMIZE SHEET --- */}
       <Sheet open={isCustomizing} onOpenChange={setIsCustomizing}>
-        <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 overflow-hidden">
-            <SheetHeader className="p-6 pb-4 border-b">
+        <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 overflow-hidden h-full">
+            <SheetHeader className="p-6 pb-4 border-b shrink-0">
                 <SheetTitle>Personalizar Dashboard</SheetTitle>
                 <SheetDescription>Organize os widgets da sua área de trabalho.</SheetDescription>
             </SheetHeader>
 
-            <ScrollArea className="flex-1 w-full">
+            <ScrollArea className="flex-1 w-full min-h-0">
               <div className="p-6 space-y-8">
 
                 {/* Current Widgets Section */}
@@ -393,7 +393,7 @@ export default function DashboardPage() {
               </div>
             </ScrollArea>
 
-            <SheetFooter className="p-6 border-t bg-background mt-auto flex-col sm:flex-col gap-3">
+            <SheetFooter className="p-6 border-t bg-background mt-auto flex-col sm:flex-col gap-3 shrink-0">
                <Button onClick={handleSaveCustomize} className="w-full">
                   <Checks className="mr-2" /> Salvar Alterações
                </Button>
