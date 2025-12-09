@@ -33,8 +33,12 @@ type SystemSettingValue =
 /**
  * Extract the actual value from a system setting's value field
  * System settings can have different structures: { value: X }, { code: Y }, { id: Z }, or plain value
+ * 
+ * Note: This function is also implemented in src/services/settingsService.ts as extractSystemSettingValue()
+ * for use in the UI. Edge functions run in Deno and cannot import from src/, so we maintain both.
+ * Keep both implementations in sync.
  */
-function extractSettingValue<T>(settingValue: any, defaultValue: T): T {
+function extractSettingValue<T>(settingValue: SystemSettingValue | null | undefined, defaultValue: T): T {
   if (settingValue === null || settingValue === undefined) {
     return defaultValue
   }
@@ -49,8 +53,8 @@ function extractSettingValue<T>(settingValue: any, defaultValue: T): T {
   if ('code' in settingValue) return (settingValue.code ?? defaultValue) as T
   if ('id' in settingValue) return (settingValue.id ?? defaultValue) as T
   
-  // If none of the expected properties exist, return the object itself or default
-  return (settingValue ?? defaultValue) as T
+  // If none of the expected properties exist, return default
+  return defaultValue
 }
 
 // Helper to get a system setting value
