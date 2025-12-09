@@ -45,7 +45,7 @@ export async function getAnalyticsSummary(
                 .select('id, name, probability, pipeline_id, color, stage_order, is_default, active, created_at, updated_at');
             
             // Safe fallback for stages data
-            const safeStagesData = stagesData || [];
+            const safeStagesData = stagesData ?? [];
             stages = safeStagesData.map(s => ({
                 id: s.id,
                 pipelineId: s.pipeline_id,
@@ -62,7 +62,7 @@ export async function getAnalyticsSummary(
         
         // Build probability map from stages
         const probabilityMap: Record<string, number> = {};
-        (stages || []).forEach(s => {
+        (stages ?? []).forEach(s => {
             probabilityMap[s.id] = s.probability || 0;
         });
 
@@ -89,7 +89,7 @@ export async function getAnalyticsSummary(
         if (dealsError) throw dealsError;
 
         // Safe fallback for deals
-        const safeDeals = deals || [];
+        const safeDeals = deals ?? [];
         const dealIds = safeDeals.map(d => d.id);
         let tracksQuery = supabase.from('player_tracks').select('*');
         if (dealIds.length > 0) tracksQuery = tracksQuery.in('master_deal_id', dealIds);
@@ -98,7 +98,7 @@ export async function getAnalyticsSummary(
         if (tracksError) throw tracksError;
 
         // Safe fallback for tracks
-        const safeTracks = tracks || [];
+        const safeTracks = tracks ?? [];
 
         // Filtro de Time (Client-side para arrays)
         const filteredTracks = teamFilter === 'all'
@@ -113,8 +113,8 @@ export async function getAnalyticsSummary(
         if (tasksError) throw tasksError;
 
         // Safe fallbacks for history and tasks
-        const safeHistory = history || [];
-        const safeTasks = tasks || [];
+        const safeHistory = history ?? [];
+        const safeTasks = tasks ?? [];
 
         // 3. Calcular Métricas
         const activeDeals = safeDeals.filter(d => d.status === 'active').length;
@@ -159,7 +159,7 @@ export async function getAnalyticsSummary(
                 .in('id', options.teamMembers);
 
             // Safe fallback for users
-            const safeUsers = users || [];
+            const safeUsers = users ?? [];
             teamWorkload = safeUsers.map(user => {
                 const userTracks = filteredTracks.filter(t =>
                     t.status === 'active' && Array.isArray(t.responsibles) && t.responsibles.includes(user.id)
@@ -184,7 +184,7 @@ export async function getAnalyticsSummary(
                 .in('role', ['analyst', 'admin', 'newbusiness']);
 
             // Safe fallback for users
-            const safeUsers = users || [];
+            const safeUsers = users ?? [];
             teamWorkload = safeUsers.map(user => {
                 const userTracks = filteredTracks.filter(t =>
                     t.status === 'active' && Array.isArray(t.responsibles) && t.responsibles.includes(user.id)
@@ -319,7 +319,7 @@ export async function getAnalyticsSummary(
             .select('id, origin, qualified_master_deal_id');
 
         // Safe fallback for leads
-        const safeLeadsData = leadsData || [];
+        const safeLeadsData = leadsData ?? [];
         const leadOriginMap: Record<string, { total: number; converted: number; volumes: number[] }> = {};
         
         safeLeadsData.forEach(lead => {
