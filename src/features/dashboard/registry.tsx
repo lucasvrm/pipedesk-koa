@@ -38,6 +38,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'KPI: Pipeline Ponderado',
     component: WeightedPipelineWidget,
     defaultSize: 'small',
+    availableSizes: ['small', 'medium'],
     category: 'kpi',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -46,6 +47,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'KPI: Deals Ativos',
     component: ActiveDealsWidget,
     defaultSize: 'small',
+    availableSizes: ['small', 'medium'],
     category: 'kpi',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -54,6 +56,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'KPI: Taxa de Conversão',
     component: ConversionRateWidget,
     defaultSize: 'small',
+    availableSizes: ['small', 'medium'],
     category: 'kpi',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -62,6 +65,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'KPI: Total Negócios',
     component: TotalDealsWidget,
     defaultSize: 'small',
+    availableSizes: ['small', 'medium'],
     category: 'kpi',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -71,6 +75,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Resumo de Notificações',
     component: NotificationsWidget,
     defaultSize: 'small',
+    availableSizes: ['small', 'medium'],
     category: 'operational'
   },
   'quick-tasks': {
@@ -78,6 +83,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Minhas Tarefas (Resumo)',
     component: QuickTasksWidget,
     defaultSize: 'small',
+    availableSizes: ['small', 'medium', 'large'],
     category: 'operational'
   },
   // === Charts & Lists ===
@@ -86,6 +92,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Matriz de Portfólio',
     component: PortfolioMatrixWidget,
     defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
     category: 'chart',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -94,6 +101,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Previsão Ponderada',
     component: WeightedForecastWidget,
     defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
     category: 'chart',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -102,6 +110,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Funil de Conversão',
     component: ConversionFunnelWidget,
     defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
     category: 'chart',
     requiredPermissions: ['VIEW_ANALYTICS']
   },
@@ -110,6 +119,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Carga da Equipe',
     component: TeamWorkloadWidget,
     defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
     category: 'chart',
     requiredRoles: ['admin', 'newbusiness']
   },
@@ -118,6 +128,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Violações de SLA',
     component: SLAOverviewWidget,
     defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
     category: 'operational'
   },
   'my-deals': {
@@ -125,6 +136,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Meus Negócios',
     component: MyDealsWidget,
     defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
     category: 'list'
   },
   // === Relational BI Widgets ===

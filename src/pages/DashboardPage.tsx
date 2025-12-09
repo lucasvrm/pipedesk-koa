@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { WidgetErrorBoundary } from '@/components/WidgetErrorBoundary'
 import { toast } from 'sonner'
 
 export default function DashboardPage() {
@@ -173,7 +174,9 @@ export default function DashboardPage() {
                 const Component = widgetDef.component;
                 return (
                     <div key={id} className={getGridClass(size)}>
-                        <Component />
+                        <WidgetErrorBoundary widgetId={id} widgetTitle={widgetDef.title}>
+                            <Component />
+                        </WidgetErrorBoundary>
                     </div>
                 )
             })}
