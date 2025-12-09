@@ -399,6 +399,10 @@ function mapFromDb(item: any, type: SettingType): any {
         createdBy: item.created_by
       }
     case 'deal_statuses':
+      return {
+        ...metadataBase,
+        color: item.color,
+      }
     case 'relationship_levels':
     case 'company_types':
     case 'lead_statuses':
@@ -462,6 +466,10 @@ function mapToDb(item: any, type: SettingType): any {
         is_active: item.isActive,
       }
     case 'deal_statuses':
+      return {
+        ...metadataBase,
+        color: item.color,
+      }
     case 'relationship_levels':
     case 'company_types':
     case 'lead_statuses':
