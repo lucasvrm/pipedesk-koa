@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { getSystemSetting, updateSystemSetting } from '@/services/settingsService';
+import { usePermissions } from '@/services/roleService';
 import { Gear, ShieldCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { RoleMetadataManager } from './RoleMetadataManager';
@@ -50,6 +51,9 @@ export function SystemSettingsSection() {
     userRoleMetadata,
     isLoading: metadataLoading 
   } = useSystemMetadata();
+
+  // Fetch all permissions from the permissions table
+  const { data: allPermissions, isLoading: permissionsLoading } = usePermissions();
 
   const [formData, setFormData] = useState<SystemSettingsFormData>({
     default_deal_status_code: '',
@@ -196,7 +200,7 @@ export function SystemSettingsSection() {
     }
   };
 
-  if (isLoading || metadataLoading) {
+  if (isLoading || metadataLoading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -489,8 +493,8 @@ export function SystemSettingsSection() {
         </CardContent>
       </Card>
 
-      {/* Role Metadata Manager */}
-      <RoleMetadataManager />
+      {/* Role Metadata Manager with Permissions */}
+      <RoleMetadataManager allPermissions={allPermissions ?? []} />
 
       {/* Save Button */}
       <div className="flex justify-end">

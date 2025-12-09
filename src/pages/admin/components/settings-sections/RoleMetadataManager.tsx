@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -41,6 +43,7 @@ import { Badge, BadgeVariant } from '@/components/ui/badge';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { settingsService } from '@/services/settingsService';
 import { UserRoleMetadata } from '@/types/metadata';
+import { Permission } from '@/lib/types';
 import { Plus, PencilSimple, Trash, ShieldStar } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
@@ -50,7 +53,11 @@ interface RoleFormData {
   description: string;
   badgeVariant: BadgeVariant;
   sortOrder: number;
-  permissions: string;
+  permissions: string[];
+}
+
+interface RoleMetadataManagerProps {
+  allPermissions: Permission[];
 }
 
 const BADGE_VARIANTS: Array<{ value: BadgeVariant; label: string }> = [
@@ -60,7 +67,7 @@ const BADGE_VARIANTS: Array<{ value: BadgeVariant; label: string }> = [
   { value: 'destructive', label: 'Destructive' }
 ];
 
-export function RoleMetadataManager() {
+export function RoleMetadataManager({ allPermissions }: RoleMetadataManagerProps) {
   const { userRoleMetadata, refreshMetadata } = useSystemMetadata();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -72,7 +79,7 @@ export function RoleMetadataManager() {
     description: '',
     badgeVariant: 'default',
     sortOrder: 0,
-    permissions: ''
+    permissions: []
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -85,7 +92,7 @@ export function RoleMetadataManager() {
       description: role.description || '',
       badgeVariant: role.badgeVariant || 'default',
       sortOrder: role.sortOrder,
-      permissions: (role.permissions || []).join(', ')
+      permissions: role.permissions || []
     });
     setIsDialogOpen(true);
   };
@@ -98,7 +105,7 @@ export function RoleMetadataManager() {
       description: '',
       badgeVariant: 'default',
       sortOrder: userRoleMetadata.length + 1,
-      permissions: ''
+      permissions: []
     });
     setIsDialogOpen(true);
   };
@@ -122,19 +129,13 @@ export function RoleMetadataManager() {
 
     setIsSaving(true);
     try {
-      // Convert permissions string to array
-      const permissionsArray = formData.permissions
-        .split(',')
-        .map(p => p.trim())
-        .filter(p => p.length > 0);
-
       const payload = {
         code: formData.code,
         label: formData.label,
         description: formData.description,
         badgeVariant: formData.badgeVariant,
         sortOrder: formData.sortOrder,
-        permissions: permissionsArray,
+        permissions: formData.permissions,
         isActive: true
       };
 
@@ -217,7 +218,7 @@ export function RoleMetadataManager() {
                 <ShieldStar className="h-5 w-5 text-purple-500" />
               </div>
               <div>
-                <CardTitle>Metadados de Roles</CardTitle>
+                <CardTitle>Papéis de Usuários</CardTitle>
                 <CardDescription>
                   Configure labels, badges e permissões para cada role de usuário
                 </CardDescription>
@@ -409,17 +410,46 @@ export function RoleMetadataManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="permissions">Permissões</Label>
-              <Textarea
-                id="permissions"
-                value={formData.permissions}
-                onChange={(e) => setFormData({ ...formData, permissions: e.target.value })}
-                placeholder="manage_users, manage_settings, view_reports"
-                rows={3}
-                className="font-mono text-sm"
-              />
+              <Label>Permissões</Label>
+              <div className="border rounded-md p-4">
+                <ScrollArea className="h-[300px] pr-4">
+                  {allPermissions.length === 0 ? (
+                    <div className="text-center text-sm text-muted-foreground py-8">
+                      Nenhuma permissão disponível
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {allPermissions.map((perm) => (
+                        <div key={perm.id} className="flex items-start space-x-2 border p-2 rounded hover:bg-accent/50">
+                          <Checkbox
+                            id={`perm-${perm.id}`}
+                            checked={formData.permissions.includes(perm.code)}
+                            onCheckedChange={(checked) => {
+                              const newPermissions = checked
+                                ? [...formData.permissions, perm.code]
+                                : formData.permissions.filter(p => p !== perm.code);
+                              setFormData({ ...formData, permissions: newPermissions });
+                            }}
+                          />
+                          <div className="grid gap-1.5 leading-none flex-1">
+                            <label
+                              htmlFor={`perm-${perm.id}`}
+                              className="text-sm font-medium leading-none cursor-pointer"
+                            >
+                              {perm.code}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              {perm.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Liste as permissões separadas por vírgula. Exemplo: manage_users, manage_settings
+                Selecione as permissões que esta role deve ter. Selecionadas: {formData.permissions.length}
               </p>
             </div>
           </div>
