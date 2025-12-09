@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query'
 import { Lead, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
 import { updateLead } from '@/services/leadService'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -106,7 +107,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
                     )}
                   </div>
                   <Badge variant="secondary" className="text-[10px] h-5 px-2">
-                    {statusMeta?.label || lead.status}
+                    {getLeadStatusByCode(lead.status)?.label || lead.status}
                   </Badge>
                 </div>
 
@@ -120,7 +121,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span className="font-medium">Origem</span>
-                  <span className="capitalize">{originMeta?.label || lead.origin}</span>
+                  <span className="capitalize">{getLeadOriginByCode(lead.origin)?.label || lead.origin}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">

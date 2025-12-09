@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STAGE_PROBABILITIES } from '@/lib/types';
+import { STAGE_PROBABILITIES, getLeadStatusProgress, getLeadStatusColor, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types';
 
 describe('Types - STAGE_PROBABILITIES', () => {
   it('should define correct probability for nda stage', () => {
@@ -50,5 +50,41 @@ describe('Types - STAGE_PROBABILITIES', () => {
       expect(STAGE_PROBABILITIES[stage]).toBeDefined()
       expect(typeof STAGE_PROBABILITIES[stage]).toBe('number')
     })
+  })
+})
+
+describe('Types - Lead Status Helper Functions', () => {
+  it('getLeadStatusProgress should return correct progress for each status', () => {
+    expect(getLeadStatusProgress('new')).toBe(15)
+    expect(getLeadStatusProgress('contacted')).toBe(45)
+    expect(getLeadStatusProgress('qualified')).toBe(100)
+    expect(getLeadStatusProgress('disqualified')).toBe(0)
+  })
+
+  it('getLeadStatusProgress should match LEAD_STATUS_PROGRESS constant', () => {
+    Object.keys(LEAD_STATUS_PROGRESS).forEach(status => {
+      expect(getLeadStatusProgress(status as any)).toBe(LEAD_STATUS_PROGRESS[status as any])
+    })
+  })
+
+  it('getLeadStatusColor should return correct color for each status', () => {
+    expect(getLeadStatusColor('new')).toBe('bg-blue-500')
+    expect(getLeadStatusColor('contacted')).toBe('bg-amber-500')
+    expect(getLeadStatusColor('qualified')).toBe('bg-emerald-500')
+    expect(getLeadStatusColor('disqualified')).toBe('bg-rose-500')
+  })
+
+  it('getLeadStatusColor should match LEAD_STATUS_COLORS constant', () => {
+    Object.keys(LEAD_STATUS_COLORS).forEach(status => {
+      expect(getLeadStatusColor(status as any)).toBe(LEAD_STATUS_COLORS[status as any])
+    })
+  })
+
+  it('getLeadStatusProgress should return 0 for invalid status', () => {
+    expect(getLeadStatusProgress('invalid' as any)).toBe(0)
+  })
+
+  it('getLeadStatusColor should return default color for invalid status', () => {
+    expect(getLeadStatusColor('invalid' as any)).toBe('bg-gray-500')
   })
 })

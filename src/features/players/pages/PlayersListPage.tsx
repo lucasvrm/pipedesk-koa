@@ -378,16 +378,16 @@ export default function PlayersListPage() {
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {relationshipLevels.filter(rl => rl.isActive).map((relLevel) => (
+              {relationshipLevels.filter(rl => rl.isActive).map(level => (
                 <DropdownMenuCheckboxItem
-                  key={relLevel.code}
-                  checked={relFilters.includes(relLevel.code as RelationshipLevel)}
+                  key={level.code}
+                  checked={relFilters.includes(level.code as RelationshipLevel)}
                   onCheckedChange={(checked) => {
-                    setRelFilters(prev => checked ? [...prev, relLevel.code as RelationshipLevel] : prev.filter(k => k !== relLevel.code))
+                    setRelFilters(prev => checked ? [...prev, level.code as RelationshipLevel] : prev.filter(k => k !== level.code))
                     setCurrentPage(1)
                   }}
                 >
-                  {relLevel.label}
+                  {level.label}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>

@@ -263,8 +263,8 @@ export default function CompanyDetailPage() {
                     >
                       <SelectTrigger className={INPUT_STYLE_SECONDARY}><SelectValue/></SelectTrigger>
                       <SelectContent>
-                        {companyTypes.filter(ct => ct.isActive).map((companyType) => (
-                          <SelectItem key={companyType.code} value={companyType.code}>{companyType.label}</SelectItem>
+                        {companyTypes.filter(t => t.isActive).map(type => (
+                          <SelectItem key={type.code} value={type.code}>{type.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

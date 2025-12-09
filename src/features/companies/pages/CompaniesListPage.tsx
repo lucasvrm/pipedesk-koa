@@ -56,6 +56,7 @@ import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { getCompanyQuickActions } from '@/hooks/useQuickActions'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
@@ -70,6 +71,7 @@ interface SortConfig {
 
 export default function CompaniesListPage() {
   const navigate = useNavigate()
+  const { companyTypes, relationshipLevels, getCompanyTypeByCode, getRelationshipLevelByCode } = useSystemMetadata()
   
   // Hooks de Dados e Mutação
   const { data: companies, isLoading } = useCompanies()
@@ -144,10 +146,8 @@ export default function CompaniesListPage() {
           bValue = (b.primaryContactName || '').toLowerCase();
           break;
         case 'type':
-          const aType = getCompanyTypeByCode(a.type);
-          const bType = getCompanyTypeByCode(b.type);
-          aValue = aType?.label || '';
-          bValue = bType?.label || '';
+          aValue = getCompanyTypeByCode(a.type)?.label || a.type;
+          bValue = getCompanyTypeByCode(b.type)?.label || b.type;
           break;
         case 'dealsCount':
           aValue = a.dealsCount || 0;
@@ -325,18 +325,18 @@ export default function CompaniesListPage() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {companyTypes.filter(ct => ct.isActive).map((companyType) => (
+                    {companyTypes.filter(t => t.isActive).map(type => (
                       <DropdownMenuCheckboxItem
-                        key={companyType.code}
-                        checked={typeFilter.includes(companyType.code as CompanyType)}
+                        key={type.code}
+                        checked={typeFilter.includes(type.code as CompanyType)}
                         onCheckedChange={(checked) => {
                           setTypeFilter(prev =>
-                            checked ? [...prev, companyType.code as CompanyType] : prev.filter(t => t !== companyType.code)
+                            checked ? [...prev, type.code as CompanyType] : prev.filter(t => t !== type.code)
                           )
                           setCurrentPage(1)
                         }}
                       >
-                        {companyType.label}
+                        {type.label}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
@@ -352,18 +352,18 @@ export default function CompaniesListPage() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Filtrar por Nível</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {relationshipLevels.filter(rl => rl.isActive).map((relLevel) => (
+                    {relationshipLevels.filter(rl => rl.isActive).map(level => (
                       <DropdownMenuCheckboxItem
-                        key={relLevel.code}
-                        checked={relationshipFilter.includes(relLevel.code as RelationshipLevel)}
+                        key={level.code}
+                        checked={relationshipFilter.includes(level.code as RelationshipLevel)}
                         onCheckedChange={(checked) => {
                           setRelationshipFilter(prev =>
-                            checked ? [...prev, relLevel.code as RelationshipLevel] : prev.filter(t => t !== relLevel.code)
+                            checked ? [...prev, level.code as RelationshipLevel] : prev.filter(t => t !== level.code)
                           )
                           setCurrentPage(1)
                         }}
                       >
-                        {relLevel.label}
+                        {level.label}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>

@@ -39,6 +39,7 @@ import PlayerSelect from "@/components/PlayerSelect";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { OPERATION_LABELS } from "@/lib/types";
+import { useSystemMetadata } from "@/hooks/useSystemMetadata";
 import { Check, ChevronsUpDown, Plus, Building2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -99,7 +100,7 @@ export function CreateDealDialog({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { companyTypes } = useSystemMetadata();
+  const { companyTypes, relationshipLevels } = useSystemMetadata();
   
   const { data: stages = [], isLoading: isLoadingStages } = useStages();
   const { data: players = [], isLoading: isLoadingPlayers } = usePlayers();
@@ -360,9 +361,9 @@ export function CreateDealDialog({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {companyTypes.filter(ct => ct.isActive).map((companyType) => (
-                                                <SelectItem key={companyType.code} value={companyType.code}>
-                                                    {companyType.label}
+                                            {companyTypes.filter(t => t.isActive).map(type => (
+                                                <SelectItem key={type.code} value={type.code}>
+                                                    {type.label}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

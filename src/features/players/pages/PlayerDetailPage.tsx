@@ -575,8 +575,8 @@ export default function PlayerDetailPage() {
                     >
                       <SelectTrigger className={INPUT_STYLE_SECONDARY}><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {relationshipLevels.filter(rl => rl.isActive).map((relLevel) => (
-                          <SelectItem key={relLevel.code} value={relLevel.code}>{relLevel.label}</SelectItem>
+                        {relationshipLevels.filter(rl => rl.isActive).map(level => (
+                          <SelectItem key={level.code} value={level.code}>{level.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

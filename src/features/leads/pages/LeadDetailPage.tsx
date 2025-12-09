@@ -52,7 +52,8 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Tag as TagType } from '@/lib/types'
-import { LeadStatus, OPERATION_LABELS, OperationType, LEAD_STATUS_COLORS } from '@/lib/types'
+import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import CommentsPanel from '@/components/CommentsPanel'
@@ -92,6 +93,7 @@ export default function LeadDetailPage() {
   const { data: users } = useUsers()
   const { data: operationTypes } = useOperationTypes()
   const { data: leadTags } = useEntityTags(id || '', 'lead')
+  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
   
   // Fetch related data for RelationshipMap
   const { data: company } = useCompany(lead?.qualifiedCompanyId)
@@ -267,6 +269,7 @@ export default function LeadDetailPage() {
     try {
       await updateLead.mutateAsync({ id: lead.id, data: { status: value } })
       if (profile) {
+        const statusMeta = getLeadStatusByCode(value)
         logActivity(lead.id, 'lead', `Status alterado para ${statusMeta?.label || value}`, profile.id)
       }
       toast.success('Status atualizado')
@@ -402,26 +405,19 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
 
-  const PIPELINE_STAGES = useMemo(() => {
-    return leadStatuses
-      .filter(ls => ls.isActive)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(status => ({
-        id: status.code,
-        label: status.label,
-        color: LEAD_STATUS_COLORS[status.code as LeadStatus] || 'bg-gray-500'
-      }))
-  }, [leadStatuses])
+  const PIPELINE_STAGES = [
+    { id: 'new', label: 'Novo', color: 'bg-slate-500' },
+    { id: 'contacted', label: 'Contatado', color: 'bg-blue-500' },
+    { id: 'qualified', label: 'Qualificado', color: 'bg-green-500' },
+    { id: 'disqualified', label: 'Desqualificado', color: 'bg-red-500' }
+  ]
 
-  const SIDEBAR_METRICS = useMemo(() => {
-    const originMeta = getLeadOriginByCode(lead.origin)
-    return [
-      { label: 'Origem', value: originMeta?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
-      { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
-      { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
-      { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
-    ]
-  }, [lead.origin, getLeadOriginByCode, createdAt, cityState, operationTypeName])
+  const SIDEBAR_METRICS = [
+    { label: 'Origem', value: getLeadOriginByCode(lead.origin)?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
+  ]
 
   return (
     <PageContainer>
