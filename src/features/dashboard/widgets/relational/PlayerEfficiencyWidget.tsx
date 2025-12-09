@@ -1,25 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target } from '@phosphor-icons/react';
-import { useAnalyticsWithMetadata } from '@/services/analyticsService';
-import { useSystemMetadata } from '@/hooks/useSystemMetadata';
-import { useOperationalTeam } from '@/contexts/OperationalTeamContext';
-import { useDateRangeContext } from '@/contexts/DateRangeContext';
+import { useAnalytics } from '@/services/analyticsService';
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis } from 'recharts';
 
 export function PlayerEfficiencyWidget() {
-  const { stages } = useSystemMetadata();
-  const { teamMembers } = useOperationalTeam();
-  const { dateRange } = useDateRangeContext();
+  const { filters } = useDashboardFilters();
 
-  const { data: analytics, isLoading } = useAnalyticsWithMetadata(
-    'all',
-    'all',
-    'all',
-    {
-      stages,
-      teamMembers: teamMembers.map(m => m.id),
-      dateRange
-    }
+  const { data: analytics, isLoading } = useAnalytics(
+    filters.dateRangePreset,
+    filters.selectedTeamMemberId,
+    filters.selectedOperationTypeId
   );
 
   if (isLoading) {

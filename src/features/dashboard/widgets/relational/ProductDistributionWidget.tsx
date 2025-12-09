@@ -1,9 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartPieSlice } from '@phosphor-icons/react';
-import { useAnalyticsWithMetadata } from '@/services/analyticsService';
-import { useSystemMetadata } from '@/hooks/useSystemMetadata';
-import { useOperationalTeam } from '@/contexts/OperationalTeamContext';
-import { useDateRangeContext } from '@/contexts/DateRangeContext';
+import { useAnalytics } from '@/services/analyticsService';
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { OPERATION_LABELS } from '@/lib/types';
 
@@ -20,19 +18,12 @@ const COLORS = [
 ];
 
 export function ProductDistributionWidget() {
-  const { stages } = useSystemMetadata();
-  const { teamMembers } = useOperationalTeam();
-  const { dateRange } = useDateRangeContext();
+  const { filters } = useDashboardFilters();
 
-  const { data: analytics, isLoading } = useAnalyticsWithMetadata(
-    'all',
-    'all',
-    'all',
-    {
-      stages,
-      teamMembers: teamMembers.map(m => m.id),
-      dateRange
-    }
+  const { data: analytics, isLoading } = useAnalytics(
+    filters.dateRangePreset,
+    filters.selectedTeamMemberId,
+    filters.selectedOperationTypeId
   );
 
   if (isLoading) {
