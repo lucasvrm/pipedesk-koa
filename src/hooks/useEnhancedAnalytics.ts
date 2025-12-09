@@ -82,21 +82,26 @@ export function useEnhancedAnalytics(
   
   // Add timeout to prevent infinite loading state
   const [hasTimedOut, setHasTimedOut] = useState(false)
+  const [wasLoading, setWasLoading] = useState(false)
   
   useEffect(() => {
-    // Reset timeout when loading starts
-    setHasTimedOut(false)
+    const isCurrentlyLoading = analytics.isLoading || metadataLoading || teamLoading
     
-    // Set a timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      if (analytics.isLoading || metadataLoading || teamLoading) {
+    // Reset timeout when loading state changes from false to true
+    if (isCurrentlyLoading && !wasLoading) {
+      setHasTimedOut(false)
+      
+      // Set a timeout to prevent infinite loading
+      const timeout = setTimeout(() => {
         console.warn('Analytics loading timed out after 10 seconds')
         setHasTimedOut(true)
-      }
-    }, 10000) // 10 second timeout
+      }, 10000) // 10 second timeout
+      
+      return () => clearTimeout(timeout)
+    }
     
-    return () => clearTimeout(timeout)
-  }, [analytics.isLoading, metadataLoading, teamLoading])
+    setWasLoading(isCurrentlyLoading)
+  }, [analytics.isLoading, metadataLoading, teamLoading, wasLoading])
   
   // If timed out, force loading to false and show data if available
   const effectiveLoading = hasTimedOut ? false : (analytics.isLoading || metadataLoading || teamLoading)
