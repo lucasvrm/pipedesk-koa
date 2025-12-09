@@ -75,7 +75,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     title: 'Resumo de Notificações',
     component: NotificationsWidget,
     defaultSize: 'small',
-    availableSizes: ['small', 'medium'],
+    availableSizes: ['small', 'medium', 'large'],
     category: 'operational'
   },
   'quick-tasks': {

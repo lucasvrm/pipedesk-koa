@@ -29,7 +29,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-[120px] border-2 border-destructive/50 rounded-lg p-4 flex flex-col items-center justify-center bg-destructive/5">
+        <div className="min-h-32 border-2 border-destructive/50 rounded-lg p-4 flex flex-col items-center justify-center bg-destructive/5">
           <AlertCircle className="h-8 w-8 text-destructive mb-2" />
           <p className="text-sm font-medium text-destructive">Erro ao carregar widget</p>
           <p className="text-xs text-muted-foreground mt-1">

@@ -162,7 +162,7 @@ export default function DashboardPage() {
                 // Handle "Widget not found" gracefully
                 if (!widgetDef) {
                   return (
-                    <div key={id} className={`${getGridClass(size)} min-h-[120px] border-2 border-dashed rounded-lg p-4 flex items-center justify-center`}>
+                    <div key={id} className={`${getGridClass(size)} min-h-32 border-2 border-dashed rounded-lg p-4 flex items-center justify-center`}>
                       <div className="text-center text-muted-foreground">
                         <p className="text-sm font-medium">Widget não encontrado</p>
                         <p className="text-xs mt-1">ID: {id}</p>
