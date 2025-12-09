@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Lead, LeadStatus, LeadMember, Contact, CompanyInput } from '@/lib/types'
 import { syncRemoteEntityName } from './pdGoogleDriveApi'
+import { getSetting } from './systemSettingsService'
 
 // ============================================================================
 // Types
@@ -171,6 +172,13 @@ export async function getLead(id: string): Promise<Lead> {
 }
 
 export async function createLead(lead: LeadInput, userId: string): Promise<Lead> {
+  // Get default origin from system settings if not provided
+  let leadOrigin = lead.origin;
+  if (!leadOrigin) {
+    const defaultOriginSetting = await getSetting('default_lead_origin_code');
+    leadOrigin = defaultOriginSetting?.value || 'outbound'; // Fallback to 'outbound' if no setting
+  }
+
   const { data, error } = await supabase
     .from('leads')
     .insert({
@@ -182,7 +190,7 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
       address_city: lead.addressCity,
       address_state: lead.addressState,
       description: lead.description,
-      origin: lead.origin || 'outbound',
+      origin: leadOrigin,
       operation_type: lead.operationType,
       owner_user_id: lead.ownerUserId || userId, // Default owner is creator
       created_by: userId
@@ -192,11 +200,15 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
 
   if (error) throw error;
 
+  // Get default lead member role from system settings
+  const defaultRoleSetting = await getSetting('default_lead_member_role_code');
+  const defaultRole = defaultRoleSetting?.value || 'owner'; // Fallback to 'owner' if no setting
+
   // Also add creator as owner member
   await addLeadMember({
     leadId: data.id,
     userId: lead.ownerUserId || userId,
-    role: 'owner'
+    role: defaultRole
   });
 
   return mapLeadFromDB(data);
@@ -252,10 +264,17 @@ export async function removeLeadContact(leadId: string, contactId: string) {
 }
 
 export async function addLeadMember(member: { leadId: string, userId: string, role?: string }) {
+  // Get default role from system settings if not provided
+  let memberRole = member.role;
+  if (!memberRole) {
+    const defaultRoleSetting = await getSetting('default_lead_member_role_code');
+    memberRole = defaultRoleSetting?.value || 'collaborator'; // Fallback to 'collaborator' if no setting
+  }
+
   const { error } = await supabase.from('lead_members').insert({
     lead_id: member.leadId,
     user_id: member.userId,
-    role: member.role || 'collaborator'
+    role: memberRole
   });
   if (error) {
     // Ignore duplicate key error?

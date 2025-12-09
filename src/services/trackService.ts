@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlayerTrack, PlayerStage } from '@/lib/types';
 import { toast } from 'sonner';
+import { getSetting } from './systemSettingsService';
 
 // ============================================================================
 // Types
@@ -110,6 +111,13 @@ export async function getTrack(trackId: string): Promise<PlayerTrack> {
 }
 
 export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
+    // Get default probability from system settings if not provided
+    let trackProbability = track.probability;
+    if (trackProbability === undefined || trackProbability === null) {
+        const defaultProbabilitySetting = await getSetting('default_track_probability');
+        trackProbability = defaultProbabilitySetting?.value ?? 0; // Fallback to 0 if no setting
+    }
+
     const { data, error } = await supabase
         .from('player_tracks')
         .insert({
@@ -118,7 +126,7 @@ export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
             player_id: track.playerId, 
             track_volume: track.trackVolume,
             current_stage: track.currentStage,
-            probability: track.probability || 0,
+            probability: trackProbability,
             responsibles: track.responsibles || [],
             status: track.status || 'active',
             notes: track.notes,

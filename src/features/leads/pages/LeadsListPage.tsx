@@ -4,7 +4,7 @@ import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } fr
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
-import { LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, Lead, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS, LeadStatus } from '@/lib/types'
+import { Lead, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -32,10 +32,12 @@ import { getLeadQuickActions } from '@/hooks/useQuickActions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTags } from '@/services/tagService'
 import { useSettings } from '@/services/systemSettingsService'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const { leadStatuses, leadOrigins, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
@@ -223,19 +225,25 @@ export default function LeadsListPage() {
     setIsDeleteOpen(true)
   }
 
-  const renderStatusBadge = (status: string) => (
-    <StatusBadge
-      semanticStatus={leadStatusMap(status as LeadStatus)}
-      label={LEAD_STATUS_LABELS[status as keyof typeof LEAD_STATUS_LABELS] || status}
-    />
-  )
+  const renderStatusBadge = (status: string) => {
+    const statusMeta = getLeadStatusByCode(status);
+    return (
+      <StatusBadge
+        semanticStatus={leadStatusMap(status as LeadStatus)}
+        label={statusMeta?.label || status}
+      />
+    );
+  }
 
-  const renderOriginBadge = (origin: string) => (
-    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
-      <Globe className="w-3 h-3" />
-      {LEAD_ORIGIN_LABELS[origin as keyof typeof LEAD_ORIGIN_LABELS] || origin}
-    </div>
-  )
+  const renderOriginBadge = (origin: string) => {
+    const originMeta = getLeadOriginByCode(origin);
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
+        <Globe className="w-3 h-3" />
+        {originMeta?.label || origin}
+      </div>
+    );
+  }
 
   // --- Layout Sections ---
 
@@ -311,8 +319,8 @@ export default function LeadsListPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Status</SelectItem>
-              {Object.entries(LEAD_STATUS_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
+              {leadStatuses.filter(s => s.isActive).map((status) => (
+                <SelectItem key={status.code} value={status.code}>{status.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -323,8 +331,8 @@ export default function LeadsListPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas Origens</SelectItem>
-              {Object.entries(LEAD_ORIGIN_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
+              {leadOrigins.filter(o => o.isActive).map((origin) => (
+                <SelectItem key={origin.code} value={origin.code}>{origin.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -510,6 +518,7 @@ export default function LeadsListPage() {
                             deleteLead,
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
+                            getLeadStatusLabel: (code) => getLeadStatusByCode(code)?.label || code,
                           })}
                         />
                       </div>
@@ -526,7 +535,7 @@ export default function LeadsListPage() {
 
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{LEAD_STATUS_LABELS[lead.status]}</span>
+                        <span>{getLeadStatusByCode(lead.status)?.label || lead.status}</span>
                         <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
                       </div>
                       <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />

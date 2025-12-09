@@ -34,7 +34,6 @@ import {
   Contact,
   Lead,
   LeadStatus,
-  LEAD_STATUS_LABELS,
 } from '@/lib/types'
 import { toast } from 'sonner'
 
@@ -765,6 +764,7 @@ interface GetLeadQuickActionsProps {
   onAssignOwner?: () => void
   onAddMember?: () => void
   onManageTags?: () => void
+  getLeadStatusLabel?: (code: string) => string
 }
 
 /**
@@ -782,6 +782,7 @@ export function getLeadQuickActions({
   onAssignOwner,
   onAddMember,
   onManageTags,
+  getLeadStatusLabel = (code) => code, // Fallback to code if not provided
 }: GetLeadQuickActionsProps): QuickAction[] {
   const handleStatusChange = (newStatus: LeadStatus) => {
     updateLead.mutate(
@@ -791,9 +792,10 @@ export function getLeadQuickActions({
       },
       {
         onSuccess: () => {
-          toast.success(`Status alterado para ${LEAD_STATUS_LABELS[newStatus]}`)
+          const statusLabel = getLeadStatusLabel(newStatus);
+          toast.success(`Status alterado para ${statusLabel}`)
           if (profileId) {
-            logActivity(lead.id, 'lead', `Status alterado para ${LEAD_STATUS_LABELS[newStatus]}`, profileId)
+            logActivity(lead.id, 'lead', `Status alterado para ${statusLabel}`, profileId)
           }
         },
         onError: () => toast.error('Erro ao atualizar status'),

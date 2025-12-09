@@ -411,20 +411,6 @@ export const OPERATION_LABELS: Record<OperationType, string> = {
   hybrid_swap: 'Permuta Híbrida'
 }
 
-export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: 'Administrador',
-  analyst: 'Analista',
-  client: 'Cliente',
-  newbusiness: 'Novos Negócios',
-}
-
-export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  admin: 'Acesso total ao sistema. Pode gerenciar usuários, configurações, integrações e exportar dados. Tem permissão para criar, editar e excluir negócios.',
-  analyst: 'Pode criar e editar negócios, visualizar analytics, atribuir tarefas e ver nomes reais de players. Não pode gerenciar usuários ou configurações do sistema.',
-  client: 'Acesso restrito para clientes externos. Visualiza nomes de players de forma anonimizada (Player A, Player B, etc.) e tem acesso limitado aos dados.',
-  newbusiness: 'Equipe de novos negócios com acesso a todos os dados e nomes reais de players. Pode visualizar analytics mas não pode criar ou editar negócios.',
-}
-
 export interface MagicLink {
   id: string
   userId: string

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MasterDealDB, CompanyDB, ProfileDB } from '@/lib/databaseTypes';
 import { MasterDeal, OperationType, DealStatus, Company, User, Tag, UserRole } from '@/lib/types';
 import { syncRemoteEntityName } from './pdGoogleDriveApi';
+import { getSetting } from './systemSettingsService';
 
 // ============================================================================
 // Query Helpers
@@ -246,6 +247,13 @@ export async function getDeal(dealId: string): Promise<Deal> {
 
 export async function createDeal(deal: DealInput): Promise<Deal> {
   try {
+    // Get default status from system settings if not provided
+    let dealStatus = deal.status;
+    if (!dealStatus) {
+      const defaultStatusSetting = await getSetting('default_deal_status_code');
+      dealStatus = defaultStatusSetting?.value || 'active'; // Fallback to 'active' if no setting
+    }
+
     const { data: masterDealData, error: dealError } = await supabase
       .from('master_deals')
       .insert({
@@ -254,7 +262,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
         operation_type: deal.operationType,
         deadline: deal.deadline,
         observations: deal.observations,
-        status: deal.status || 'active',
+        status: dealStatus,
         fee_percentage: deal.feePercentage,
         created_by: deal.createdBy,
         company_id: deal.companyId,
@@ -288,6 +296,10 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
           .single();
 
         if (player) {
+          // Get default track probability from system settings
+          const defaultProbabilitySetting = await getSetting('default_track_probability');
+          const defaultProbability = defaultProbabilitySetting?.value ?? 10; // Fallback to 10 if no setting
+
           await supabase.from("player_tracks").insert({
             master_deal_id: masterDealData.id,
             player_id: deal.playerId,
@@ -295,7 +307,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
             track_volume: deal.volume,
             current_stage: deal.initialStage || 'nda',
             status: 'active',
-            probability: 10,
+            probability: defaultProbability,
             responsibles: [deal.createdBy]
           });
         }
