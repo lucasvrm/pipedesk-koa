@@ -311,6 +311,29 @@ export interface AnalyticsMetrics {
     cancelled: number
     conversionRate: number
   }[]
+  // New relational metrics for BI
+  playerEfficiency: {
+    name: string
+    volume: number
+    conversionRate: number
+    totalDeals: number
+  }[]
+  leadOriginPerformance: {
+    origin: string
+    total: number
+    converted: number
+    conversionRate: number
+    avgTicket: number
+  }[]
+  productDistribution: {
+    type: string
+    volume: number
+    count: number
+  }[]
+  dealVelocity: {
+    stageName: string
+    avgDays: number
+  }[]
 }
 
 export interface GoogleIntegration {

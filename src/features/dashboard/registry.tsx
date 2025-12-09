@@ -14,11 +14,18 @@ import { QuickTasksWidget } from './widgets/QuickTasksWidget';
 import { MyDealsWidget } from './widgets/MyDealsWidget';
 import { UserRole } from '@/lib/types';
 
+// Import new relational widgets
+import { PlayerEfficiencyWidget } from './widgets/relational/PlayerEfficiencyWidget';
+import { LeadOriginWidget } from './widgets/relational/LeadOriginWidget';
+import { DealVelocityWidget } from './widgets/relational/DealVelocityWidget';
+import { ProductDistributionWidget } from './widgets/relational/ProductDistributionWidget';
+
 export interface WidgetDefinition {
   id: string;
   title: string;
   component: React.ComponentType<any>;
   defaultSize: 'small' | 'medium' | 'large' | 'full'; // Just a hint for grid layout
+  availableSizes?: ('small' | 'medium' | 'large' | 'full')[]; // Optional: sizes allowed for this widget
   category: 'kpi' | 'chart' | 'list' | 'operational';
   requiredPermissions?: string[]; // RBAC permission codes
   requiredRoles?: UserRole[]; // Fallback role check
@@ -119,5 +126,42 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     component: MyDealsWidget,
     defaultSize: 'medium',
     category: 'list'
+  },
+  // === Relational BI Widgets ===
+  'player-efficiency': {
+    id: 'player-efficiency',
+    title: 'Eficiência por Player',
+    component: PlayerEfficiencyWidget,
+    defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
+    category: 'chart',
+    requiredPermissions: ['VIEW_ANALYTICS']
+  },
+  'lead-origin': {
+    id: 'lead-origin',
+    title: 'Performance por Origem',
+    component: LeadOriginWidget,
+    defaultSize: 'medium',
+    availableSizes: ['small', 'medium', 'large'],
+    category: 'chart',
+    requiredPermissions: ['VIEW_ANALYTICS']
+  },
+  'deal-velocity': {
+    id: 'deal-velocity',
+    title: 'Velocidade por Fase',
+    component: DealVelocityWidget,
+    defaultSize: 'medium',
+    availableSizes: ['medium', 'large', 'full'],
+    category: 'chart',
+    requiredPermissions: ['VIEW_ANALYTICS']
+  },
+  'product-distribution': {
+    id: 'product-distribution',
+    title: 'Distribuição por Produto',
+    component: ProductDistributionWidget,
+    defaultSize: 'medium',
+    availableSizes: ['small', 'medium', 'large'],
+    category: 'chart',
+    requiredPermissions: ['VIEW_ANALYTICS']
   }
 };
