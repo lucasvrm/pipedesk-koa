@@ -31,7 +31,7 @@ import { UserRole } from '@/lib/types'
 export default function DashboardPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const { layout, availableWidgets, allWidgets, saveUserLayout } = useDashboardLayout()
+  const { layout, allWidgets, saveUserLayout } = useDashboardLayout()
 
   const [isCustomizing, setIsCustomizing] = useState(false)
   const [tempLayout, setTempLayout] = useState<DashboardConfig>(layout)
@@ -39,9 +39,14 @@ export default function DashboardPage() {
   // Filter widgets that user has permission to use based on their role
   const userAccessibleWidgets = useMemo(() => {
     return allWidgets.filter(widget => {
+      // If user is admin, they should see everything
+      if (profile?.role === 'admin') {
+        return true;
+      }
+
       // Check role-based access
       if (widget.requiredRoles) {
-        // Ensure profile.role is defined and valid before checking
+        // If profile is not loaded yet, hide restricted widgets safely
         if (!profile?.role) {
           return false;
         }
@@ -49,6 +54,7 @@ export default function DashboardPage() {
           return false;
         }
       }
+
       // If no role restriction, widget is accessible to all users
       return true;
     });
@@ -74,9 +80,7 @@ export default function DashboardPage() {
     if (window.confirm('Deseja restaurar as configurações padrão? Suas personalizações serão perdidas.')) {
         // Reset local state to default
         setTempLayout(DEFAULT_DASHBOARD_CONFIG);
-        // Persist reset immediately or let user click save?
-        // Better let user click save to confirm, but visually update state now.
-        // Or cleaner: just call save with default.
+        // Persist reset immediately
         saveUserLayout.mutateAsync(DEFAULT_DASHBOARD_CONFIG).then(() => {
             setIsCustomizing(false);
             toast.success('Padrões restaurados.');
