@@ -17,8 +17,11 @@ describe('dashboardTemplateService', () => {
   describe('getTemplateForRole', () => {
     it('should return role-specific template when it exists', async () => {
       const mockConfig = {
-        topWidgets: ['widget1', 'widget2'],
-        mainWidgets: ['widget3']
+        widgets: [
+          { id: 'widget1', size: 'small' as const },
+          { id: 'widget2', size: 'small' as const },
+          { id: 'widget3', size: 'medium' as const }
+        ]
       };
 
       const mockFrom = vi.fn().mockReturnValue({
@@ -42,8 +45,11 @@ describe('dashboardTemplateService', () => {
 
     it('should return global template when role-specific does not exist', async () => {
       const mockGlobalConfig = {
-        topWidgets: ['global1', 'global2'],
-        mainWidgets: ['global3']
+        widgets: [
+          { id: 'global1', size: 'small' as const },
+          { id: 'global2', size: 'small' as const },
+          { id: 'global3', size: 'medium' as const }
+        ]
       };
 
       const mockFrom = vi.fn().mockReturnValue({
@@ -115,8 +121,10 @@ describe('dashboardTemplateService', () => {
   describe('saveTemplate', () => {
     it('should save a template successfully', async () => {
       const mockConfig = {
-        topWidgets: ['widget1'],
-        mainWidgets: ['widget2']
+        widgets: [
+          { id: 'widget1', size: 'small' as const },
+          { id: 'widget2', size: 'medium' as const }
+        ]
       };
 
       const mockSavedData = {
@@ -153,8 +161,10 @@ describe('dashboardTemplateService', () => {
 
     it('should throw error when save fails', async () => {
       const mockConfig = {
-        topWidgets: ['widget1'],
-        mainWidgets: ['widget2']
+        widgets: [
+          { id: 'widget1', size: 'small' as const },
+          { id: 'widget2', size: 'medium' as const }
+        ]
       };
 
       const mockFrom = vi.fn().mockReturnValue({
@@ -180,14 +190,14 @@ describe('dashboardTemplateService', () => {
         {
           id: '1',
           role: null,
-          config: { topWidgets: ['w1'], mainWidgets: ['w2'] },
+          config: { widgets: [{ id: 'w1', size: 'small' as const }, { id: 'w2', size: 'medium' as const }] },
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z'
         },
         {
           id: '2',
           role: 'admin',
-          config: { topWidgets: ['w3'], mainWidgets: ['w4'] },
+          config: { widgets: [{ id: 'w3', size: 'small' as const }, { id: 'w4', size: 'medium' as const }] },
           created_at: '2024-01-02T00:00:00Z',
           updated_at: '2024-01-02T00:00:00Z'
         }

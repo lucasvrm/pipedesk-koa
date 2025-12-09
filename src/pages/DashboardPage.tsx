@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { WidgetErrorBoundary } from '@/components/WidgetErrorBoundary'
 import { toast } from 'sonner'
 
 export default function DashboardPage() {
@@ -161,7 +162,7 @@ export default function DashboardPage() {
                 // Handle "Widget not found" gracefully
                 if (!widgetDef) {
                   return (
-                    <div key={id} className={`${getGridClass(size)} min-h-[120px] border-2 border-dashed rounded-lg p-4 flex items-center justify-center`}>
+                    <div key={id} className={`${getGridClass(size)} min-h-32 border-2 border-dashed rounded-lg p-4 flex items-center justify-center`}>
                       <div className="text-center text-muted-foreground">
                         <p className="text-sm font-medium">Widget não encontrado</p>
                         <p className="text-xs mt-1">ID: {id}</p>
@@ -173,7 +174,9 @@ export default function DashboardPage() {
                 const Component = widgetDef.component;
                 return (
                     <div key={id} className={getGridClass(size)}>
-                        <Component />
+                        <WidgetErrorBoundary widgetId={id} widgetTitle={widgetDef.title}>
+                            <Component />
+                        </WidgetErrorBoundary>
                     </div>
                 )
             })}
