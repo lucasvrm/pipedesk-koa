@@ -63,6 +63,13 @@ import RolesManager from '@/features/rbac/components/RolesManager';
 import TagSettings from '@/pages/admin/TagSettings';
 import DocumentAutomationSettings from '@/pages/admin/components/DocumentAutomationSettings';
 import DashboardSettingsPage from '@/pages/admin/DashboardSettings';
+import { useSystemMetadata } from '@/hooks/useSystemMetadata';
+import {
+  LeadSettingsSection,
+  DealPipelineSettingsSection,
+  CompanyRelationshipSettingsSection,
+  SystemMetadataSettingsSection
+} from '@/pages/admin/components/settings-sections';
 
 export type SettingType =
   | 'products'
@@ -962,6 +969,8 @@ function EntitiesSettingsTab() {
 }
 
 export default function SettingsPage() {
+  const { isLoading, error } = useSystemMetadata();
+
   return (
     <PageContainer>
       <div className="flex items-center gap-4 mb-8">
@@ -970,126 +979,175 @@ export default function SettingsPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Configurações Globais
+            Configurações do Sistema
           </h1>
           <p className="text-muted-foreground">
-            Gerencie parâmetros do sistema, listas, templates e permissões.
+            Gerencie metadados dinâmicos, parâmetros do sistema e permissões.
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="system" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto py-1">
-          <TabsTrigger value="system" className="py-2">
-            <CalendarIcon className="mr-2 h-4 w-4" /> Sistema
-          </TabsTrigger>
-          <TabsTrigger value="entities" className="py-2">
-            <Briefcase className="mr-2 h-4 w-4" /> Entidades
-          </TabsTrigger>
-          <TabsTrigger value="automation" className="py-2">
-            <Gear className="mr-2 h-4 w-4" /> Documentos
-          </TabsTrigger>
-          <TabsTrigger value="tasks" className="py-2">
-            <ListChecks className="mr-2 h-4 w-4" /> Tarefas
-          </TabsTrigger>
-          <TabsTrigger value="tags" className="py-2">
-            <TagIcon className="mr-2 h-4 w-4" /> Tags
-          </TabsTrigger>
-          <TabsTrigger value="dashboard">
-            <Layout className="mr-2 h-4 w-4" /> Dashboard
-          </TabsTrigger>
-        </TabsList>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12 rounded-lg border border-dashed">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Carregando metadados do sistema...</p>
+          </div>
+        </div>
+      )}
 
-        <TabsContent value="system" className="space-y-6 mt-4">
-            <SystemSettingsTab />
-        </TabsContent>
+      {/* Error State */}
+      {error && (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
+          <p className="text-sm font-medium text-destructive">
+            Erro ao carregar metadados do sistema
+          </p>
+          <p className="text-xs text-destructive/80 mt-1">
+            {error.message}
+          </p>
+        </div>
+      )}
 
-        <TabsContent value="entities" className="space-y-6 mt-4">
-            <EntitiesSettingsTab />
-        </TabsContent>
+      {/* Main Content */}
+      {!isLoading && !error && (
+        <Tabs defaultValue="leads" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-9 h-auto py-1">
+            <TabsTrigger value="leads" className="py-2">
+              <Users className="mr-2 h-4 w-4" /> Leads
+            </TabsTrigger>
+            <TabsTrigger value="deals" className="py-2">
+              <FlowArrow className="mr-2 h-4 w-4" /> Deals & Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="companies" className="py-2">
+              <Briefcase className="mr-2 h-4 w-4" /> Empresas
+            </TabsTrigger>
+            <TabsTrigger value="system-meta" className="py-2">
+              <ShieldCheck className="mr-2 h-4 w-4" /> Sistema
+            </TabsTrigger>
+            <TabsTrigger value="legacy-system" className="py-2">
+              <CalendarIcon className="mr-2 h-4 w-4" /> Geral
+            </TabsTrigger>
+            <TabsTrigger value="entities" className="py-2">
+              <Megaphone className="mr-2 h-4 w-4" /> Entidades
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="py-2">
+              <Gear className="mr-2 h-4 w-4" /> Documentos
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="py-2">
+              <ListChecks className="mr-2 h-4 w-4" /> Tarefas
+            </TabsTrigger>
+            <TabsTrigger value="tags" className="py-2">
+              <TagIcon className="mr-2 h-4 w-4" /> Tags
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="automation" className="space-y-6 mt-4">
-          <DocumentAutomationSettings />
-        </TabsContent>
+          {/* New Metadata Tabs */}
+          <TabsContent value="leads" className="space-y-6 mt-4">
+            <LeadSettingsSection />
+          </TabsContent>
 
-        <TabsContent value="tasks" className="space-y-6 mt-4">
-          <SettingsTable
-            type="task_statuses"
-            title="Status de Tarefas"
-            description="Padronize os status das tarefas e acompanhe a ativação de cada um."
-            columns={[
-              {
-                key: 'name',
-                label: 'Status',
-                width: '220px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              {
-                key: 'color',
-                label: 'Cor',
-                width: '120px',
-                render: (i) => {
-                  const color = i.color || '#475569';
-                  return (
-                    <Badge
-                      style={{
-                        backgroundColor: color,
-                        color: '#fff'
-                      }}
-                    >
-                      {i.color || 'Sem cor'}
-                    </Badge>
-                  );
-                }
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
-          <SettingsTable
-            type="task_priorities"
-            title="Prioridades de Tarefas"
-            description="Defina níveis de prioridade para organizar o fluxo de trabalho."
-            columns={[
-              {
-                key: 'name',
-                label: 'Prioridade',
-                width: '220px',
-                render: (i) => (
-                  <span className="font-medium">{i.name}</span>
-                )
-              },
-              {
-                key: 'color',
-                label: 'Cor',
-                width: '120px',
-                render: (i) => {
-                  const color = i.color || '#475569';
-                  return (
-                    <Badge
-                      style={{
-                        backgroundColor: color,
-                        color: '#fff'
-                      }}
-                    >
-                      {i.color || 'Sem cor'}
-                    </Badge>
-                  );
-                }
-              },
-              { key: 'description', label: 'Descrição' }
-            ]}
-          />
-        </TabsContent>
+          <TabsContent value="deals" className="space-y-6 mt-4">
+            <DealPipelineSettingsSection />
+          </TabsContent>
 
-        <TabsContent value="tags" className="space-y-6 mt-4">
-          <TagSettings />
-        </TabsContent>
-        <TabsContent value="dashboard" className="space-y-6">
-          <DashboardSettingsPage />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="companies" className="space-y-6 mt-4">
+            <CompanyRelationshipSettingsSection />
+          </TabsContent>
+
+          <TabsContent value="system-meta" className="space-y-6 mt-4">
+            <SystemMetadataSettingsSection />
+          </TabsContent>
+
+          {/* Existing Tabs */}
+          <TabsContent value="legacy-system" className="space-y-6 mt-4">
+              <SystemSettingsTab />
+          </TabsContent>
+
+          <TabsContent value="entities" className="space-y-6 mt-4">
+              <EntitiesSettingsTab />
+          </TabsContent>
+
+          <TabsContent value="automation" className="space-y-6 mt-4">
+            <DocumentAutomationSettings />
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-6 mt-4">
+            <SettingsTable
+              type="task_statuses"
+              title="Status de Tarefas"
+              description="Padronize os status das tarefas e acompanhe a ativação de cada um."
+              columns={[
+                {
+                  key: 'name',
+                  label: 'Status',
+                  width: '220px',
+                  render: (i) => (
+                    <span className="font-medium">{i.name}</span>
+                  )
+                },
+                {
+                  key: 'color',
+                  label: 'Cor',
+                  width: '120px',
+                  render: (i) => {
+                    const color = i.color || '#475569';
+                    return (
+                      <Badge
+                        style={{
+                          backgroundColor: color,
+                          color: '#fff'
+                        }}
+                      >
+                        {i.color || 'Sem cor'}
+                      </Badge>
+                    );
+                  }
+                },
+                { key: 'description', label: 'Descrição' }
+              ]}
+            />
+            <SettingsTable
+              type="task_priorities"
+              title="Prioridades de Tarefas"
+              description="Defina níveis de prioridade para organizar o fluxo de trabalho."
+              columns={[
+                {
+                  key: 'name',
+                  label: 'Prioridade',
+                  width: '220px',
+                  render: (i) => (
+                    <span className="font-medium">{i.name}</span>
+                  )
+                },
+                {
+                  key: 'color',
+                  label: 'Cor',
+                  width: '120px',
+                  render: (i) => {
+                    const color = i.color || '#475569';
+                    return (
+                      <Badge
+                        style={{
+                          backgroundColor: color,
+                          color: '#fff'
+                        }}
+                      >
+                        {i.color || 'Sem cor'}
+                      </Badge>
+                    );
+                  }
+                },
+                { key: 'description', label: 'Descrição' }
+              ]}
+            />
+          </TabsContent>
+
+          <TabsContent value="tags" className="space-y-6 mt-4">
+            <TagSettings />
+          </TabsContent>
+        </Tabs>
+      )}
     </PageContainer>
   );
 }
