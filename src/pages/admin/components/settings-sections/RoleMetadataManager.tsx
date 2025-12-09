@@ -422,7 +422,7 @@ export function RoleMetadataManager({ allPermissions }: RoleMetadataManagerProps
                       {allPermissions.map((perm) => (
                         <div key={perm.id} className="flex items-start space-x-2 border p-2 rounded hover:bg-accent/50">
                           <Checkbox
-                            id={`perm-${perm.id}`}
+                            id={`perm-${perm.code}`}
                             checked={formData.permissions.includes(perm.code)}
                             onCheckedChange={(checked) => {
                               const newPermissions = checked
@@ -433,7 +433,7 @@ export function RoleMetadataManager({ allPermissions }: RoleMetadataManagerProps
                           />
                           <div className="grid gap-1.5 leading-none flex-1">
                             <label
-                              htmlFor={`perm-${perm.id}`}
+                              htmlFor={`perm-${perm.code}`}
                               className="text-sm font-medium leading-none cursor-pointer"
                             >
                               {perm.code}
