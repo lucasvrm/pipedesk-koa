@@ -27,13 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { Badge, BadgeVariant } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from './InviteUserDialog'
 import MagicLinksDialog from './MagicLinksDialog'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface UserManagementDialogProps {
   open: boolean
@@ -47,6 +48,7 @@ export default function UserManagementDialog({
   currentUser,
 }: UserManagementDialogProps) {
   const { data: users, isLoading } = useUsers()
+  const { userRoleMetadata, getUserRoleByCode } = useSystemMetadata()
   
   // Mutações Reais
   const createUserMutation = useCreateUser()
@@ -148,24 +150,13 @@ export default function UserManagementDialog({
     }
   }
 
-  const getRoleBadgeVariant = (role: UserRole) => {
-    switch (role) {
-      case 'admin': return 'default'
-      case 'analyst': return 'secondary'
-      case 'client': return 'outline'
-      case 'newbusiness': return 'outline'
-      default: return 'outline'
-    }
+  const getRoleLabel = (role: UserRole) => {
+    return getUserRoleByCode(role)?.label || role
   }
 
-  const getRoleLabel = (role: UserRole) => {
-    switch (role) {
-      case 'admin': return 'Admin'
-      case 'analyst': return 'Analista'
-      case 'client': return 'Cliente'
-      case 'newbusiness': return 'New Business'
-      default: return role
-    }
+  const getRoleBadgeVariant = (role: UserRole): BadgeVariant => {
+    const roleMeta = getUserRoleByCode(role)
+    return (roleMeta?.badgeVariant as BadgeVariant) || 'outline'
   }
 
   return (
@@ -218,10 +209,11 @@ export default function UserManagementDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="analyst">Analista</SelectItem>
-                  <SelectItem value="newbusiness">New Business</SelectItem>
-                  <SelectItem value="client">Cliente</SelectItem>
+                  {userRoleMetadata.filter(r => r.isActive).map((roleMeta) => (
+                    <SelectItem key={roleMeta.code} value={roleMeta.code}>
+                      {roleMeta.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
