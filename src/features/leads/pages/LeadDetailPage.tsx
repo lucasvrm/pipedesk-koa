@@ -52,8 +52,9 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Tag as TagType } from '@/lib/types'
-import { LEAD_ORIGIN_LABELS, LEAD_STATUS_LABELS, LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { LeadStatus, OPERATION_LABELS, OperationType, LEAD_STATUS_COLORS } from '@/lib/types'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DriveSection from '@/components/DriveSection'
@@ -80,6 +81,7 @@ export default function LeadDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile, user } = useAuth()
+  const { leadStatuses, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const updateLead = useUpdateLead()
@@ -146,14 +148,15 @@ export default function LeadDetailPage() {
 
   const statusBadge = useMemo(() => {
     if (!lead) return null
+    const statusMeta = getLeadStatusByCode(lead.status)
     return (
       <StatusBadge
         semanticStatus={leadStatusMap(lead.status)}
-        label={LEAD_STATUS_LABELS[lead.status]}
+        label={statusMeta?.label || lead.status}
         className="text-sm"
       />
     )
-  }, [lead])
+  }, [lead, getLeadStatusByCode])
 
   const operationTypeName = useMemo(() => {
     if (!lead?.operationType) return ''
@@ -260,10 +263,11 @@ export default function LeadDetailPage() {
 
   const handleStatusChange = async (value: LeadStatus) => {
     if (!lead) return
+    const statusMeta = getLeadStatusByCode(value)
     try {
       await updateLead.mutateAsync({ id: lead.id, data: { status: value } })
       if (profile) {
-        logActivity(lead.id, 'lead', `Status alterado para ${LEAD_STATUS_LABELS[value]}`, profile.id)
+        logActivity(lead.id, 'lead', `Status alterado para ${statusMeta?.label || value}`, profile.id)
       }
       toast.success('Status atualizado')
     } catch (error) {
@@ -398,19 +402,26 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
 
-  const PIPELINE_STAGES = [
-    { id: 'new', label: 'Novo', color: 'bg-slate-500' },
-    { id: 'contacted', label: 'Contatado', color: 'bg-blue-500' },
-    { id: 'qualified', label: 'Qualificado', color: 'bg-green-500' },
-    { id: 'disqualified', label: 'Desqualificado', color: 'bg-red-500' }
-  ]
+  const PIPELINE_STAGES = useMemo(() => {
+    return leadStatuses
+      .filter(ls => ls.isActive)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(status => ({
+        id: status.code,
+        label: status.label,
+        color: LEAD_STATUS_COLORS[status.code as LeadStatus] || 'bg-gray-500'
+      }))
+  }, [leadStatuses])
 
-  const SIDEBAR_METRICS = [
-    { label: 'Origem', value: LEAD_ORIGIN_LABELS[lead.origin], icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
-  ]
+  const SIDEBAR_METRICS = useMemo(() => {
+    const originMeta = getLeadOriginByCode(lead.origin)
+    return [
+      { label: 'Origem', value: originMeta?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+      { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
+      { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
+      { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
+    ]
+  }, [lead.origin, getLeadOriginByCode, createdAt, cityState, operationTypeName])
 
   return (
     <PageContainer>
