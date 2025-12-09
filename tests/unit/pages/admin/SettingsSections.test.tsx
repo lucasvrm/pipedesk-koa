@@ -36,7 +36,7 @@ vi.mock('@/hooks/useSystemMetadata', () => ({
       { id: '1', code: 'owner', label: 'Proprietário', description: 'Dono do lead', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
     ],
     dealStatuses: [
-      { id: '1', code: 'open', label: 'Aberto', description: 'Deal aberto', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+      { id: '1', code: 'open', label: 'Aberto', color: '#3b82f6', description: 'Deal aberto', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
     ],
     stages: [
       { id: '1', pipelineId: 'p1', name: 'Prospecção', color: '#3b82f6', stageOrder: 1, probability: 10, isDefault: false, active: true, createdAt: '2024-01-01', updatedAt: '2024-01-01' }
@@ -110,14 +110,28 @@ describe('Settings Sections', () => {
       expect(screen.getByText('Status de Deals')).toBeTruthy();
     });
 
-    it('displays deal statuses', () => {
+    it('displays deal statuses in table', () => {
       render(<DealPipelineSettingsSection />);
       expect(screen.getByText('Aberto')).toBeTruthy();
+      expect(screen.getByText('open')).toBeTruthy();
     });
 
     it('displays pipeline stages', () => {
       render(<DealPipelineSettingsSection />);
       expect(screen.getByText('Prospecção')).toBeTruthy();
+    });
+
+    it('has "Novo" button for deal statuses', () => {
+      render(<DealPipelineSettingsSection />);
+      const novoButtons = screen.getAllByText('Novo');
+      expect(novoButtons.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('has edit and delete buttons for deal statuses', () => {
+      render(<DealPipelineSettingsSection />);
+      const allButtons = screen.getAllByRole('button');
+      // Should have at least: 1 "Novo" button + edit/delete buttons for each status
+      expect(allButtons.length).toBeGreaterThan(2);
     });
   });
 
@@ -127,14 +141,30 @@ describe('Settings Sections', () => {
       expect(screen.getByText('Tipos de Empresa')).toBeTruthy();
     });
 
-    it('displays company types', () => {
+    it('displays company types in table', () => {
       render(<CompanyRelationshipSettingsSection />);
       expect(screen.getByText('Investidor')).toBeTruthy();
+      expect(screen.getByText('investor')).toBeTruthy();
     });
 
-    it('displays relationship levels', () => {
+    it('displays relationship levels in table', () => {
       render(<CompanyRelationshipSettingsSection />);
       expect(screen.getByText('Parceiro')).toBeTruthy();
+      expect(screen.getByText('partner')).toBeTruthy();
+    });
+
+    it('has "Novo" buttons for both sections', () => {
+      render(<CompanyRelationshipSettingsSection />);
+      const novoButtons = screen.getAllByText('Novo');
+      // Should have 2 "Novo" buttons (one for each section)
+      expect(novoButtons.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('has edit and delete buttons for each row', () => {
+      render(<CompanyRelationshipSettingsSection />);
+      const allButtons = screen.getAllByRole('button');
+      // Should have: 2 "Novo" buttons + edit/delete for each type and level
+      expect(allButtons.length).toBeGreaterThan(4);
     });
   });
 
