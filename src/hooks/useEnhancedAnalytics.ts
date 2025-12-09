@@ -3,6 +3,7 @@ import { useOperationalTeam } from './useOperationalTeam'
 import { getDateRange } from '@/utils/dateRangeUtils'
 import { DateFilterType } from '@/types/metadata'
 import { useAnalyticsWithMetadata } from '@/services/analyticsService'
+import { useEffect, useState } from 'react'
 
 /**
  * Enhanced analytics hook that integrates system metadata and operational team data
@@ -79,8 +80,42 @@ export function useEnhancedAnalytics(
     }
   )
   
+  // Add timeout to prevent infinite loading state
+  const [hasTimedOut, setHasTimedOut] = useState(false)
+  const [wasLoading, setWasLoading] = useState(false)
+  
+  useEffect(() => {
+    const isCurrentlyLoading = analytics.isLoading || metadataLoading || teamLoading
+    
+    // Clear any existing timeout first
+    let timeout: NodeJS.Timeout | undefined
+    
+    // Reset timeout when loading state changes from false to true
+    if (isCurrentlyLoading && !wasLoading) {
+      setHasTimedOut(false)
+      
+      // Set a timeout to prevent infinite loading
+      timeout = setTimeout(() => {
+        console.warn('Analytics loading timed out after 10 seconds')
+        setHasTimedOut(true)
+      }, 10000) // 10 second timeout
+    }
+    
+    setWasLoading(isCurrentlyLoading)
+    
+    // Always cleanup timeout on unmount or when effect re-runs
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout)
+      }
+    }
+  }, [analytics.isLoading, metadataLoading, teamLoading, wasLoading])
+  
+  // If timed out, force loading to false and show data if available
+  const effectiveLoading = hasTimedOut ? false : (analytics.isLoading || metadataLoading || teamLoading)
+  
   return {
     ...analytics,
-    isLoading: analytics.isLoading || metadataLoading || teamLoading
+    isLoading: effectiveLoading
   }
 }
