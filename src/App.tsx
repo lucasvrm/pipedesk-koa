@@ -108,14 +108,14 @@ function App() {
 
             {/* Admin & Settings Routes */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
-            <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin']}><GoogleIntegrationPage /></ProtectedRoute>} />
-            <Route path="/admin/settings/dashboard" element={<ProtectedRoute requiredRole={['admin']}><DashboardSettingsPage /></ProtectedRoute>} /> {/* Nova rota */}
-            <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin']}><SettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/integrations/google" element={<ProtectedRoute requiredRole={['admin', 'manager']}><GoogleIntegrationPage /></ProtectedRoute>} />
+            <Route path="/admin/settings/dashboard" element={<ProtectedRoute requiredRole={['admin', 'manager']}><DashboardSettingsPage /></ProtectedRoute>} /> {/* Nova rota */}
+            <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['admin', 'manager']}><SettingsPage /></ProtectedRoute>} />
             {/* Altera a rota antiga /admin/synthetic-data para a nova slug /admin/gerador-dados */}
             <Route path="/admin/gerador-dados" element={<ProtectedRoute requiredRole={['admin']}><SyntheticDataAdminPage /></ProtectedRoute>} />
             <Route path="/custom-fields" element={<CustomFieldsPage />} />
-            <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin']}><PipelineSettingsPage /></ProtectedRoute>} />
-            <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin']}><TagSettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/pipeline" element={<ProtectedRoute requiredRole={['admin', 'manager']}><PipelineSettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/tags" element={<ProtectedRoute requiredRole={['admin', 'manager']}><TagSettingsPage /></ProtectedRoute>} />
 
             {/* --- Rota AIDA --- */}
             {/* Permite visualizar a análise consolidada passando o ID do projeto */}
