@@ -695,6 +695,13 @@ export interface Role {
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'disqualified';
 export type LeadOrigin = 'inbound' | 'outbound' | 'referral' | 'event' | 'other';
+export type LeadPriorityBucket = 'hot' | 'warm' | 'cold';
+
+export interface LeadNextAction {
+  label?: string;
+  reason?: string;
+  dueAt?: string;
+}
 
 export interface Lead {
   id: string;
@@ -720,6 +727,13 @@ export interface Lead {
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+
+  priorityBucket?: LeadPriorityBucket;
+  priorityScore?: number;
+  priorityDescription?: string;
+  lastInteractionAt?: string;
+  daysWithoutInteraction?: number;
+  nextAction?: LeadNextAction;
 
   contacts?: Contact[];
   members?: LeadMember[];
