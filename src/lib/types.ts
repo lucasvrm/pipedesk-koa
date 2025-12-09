@@ -601,12 +601,9 @@ export const ASSET_MANAGER_TYPE_LABELS: Record<AssetManagerType, string> = {
   fip: 'FIP'
 };
 
-export const RELATIONSHIP_LEVEL_LABELS: Record<RelationshipLevel, string> = {
-  none: 'Nenhum',
-  basic: 'Básico',
-  intermediate: 'Intermediário',
-  close: 'Próximo'
-};
+// Note: RELATIONSHIP_LEVEL_LABELS has been migrated to metadata system.
+// Use useSystemMetadata() hook to get relationship levels dynamically from the database.
+// See src/contexts/SystemMetadataContext.tsx and src/hooks/useSystemMetadata.ts
 
 export const PRODUCT_LABELS: Record<ProductType, string> = {
   credit: 'Crédito',
@@ -675,19 +672,9 @@ export interface Company {
   isSynthetic?: boolean;
 }
 
-export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
-  incorporadora: 'Incorporadora',
-  construtora: 'Construtora',
-  assessor_juridico: 'Assessor Jurídico',
-  agente_fiduciario: 'Agente Fiduciário',
-  servicer: 'Servicer',
-  outros: 'Outros',
-  corporation: 'Corporação',
-  fund: 'Fundo',
-  startup: 'Startup',
-  advisor: 'Advisor',
-  other: 'Outro'
-};
+// Note: COMPANY_TYPE_LABELS has been migrated to metadata system.
+// Use useSystemMetadata() hook to get company types dynamically from the database.
+// See src/contexts/SystemMetadataContext.tsx and src/hooks/useSystemMetadata.ts
 
 // -- Permissões e Roles (RBAC Dinâmico) --
 export interface Permission {
@@ -747,13 +734,17 @@ export interface LeadMember {
   user?: User; // Joined
 }
 
-export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
-  new: 'Novo',
-  contacted: 'Contatado',
-  qualified: 'Qualificado',
-  disqualified: 'Desqualificado'
-};
+// Note: LEAD_STATUS_LABELS and LEAD_ORIGIN_LABELS have been migrated to metadata system.
+// Use useSystemMetadata() hook to get lead statuses and origins dynamically from the database.
+// See src/contexts/SystemMetadataContext.tsx and src/hooks/useSystemMetadata.ts
 
+/**
+ * LEAD_STATUS_PROGRESS: Progress percentage for each lead status.
+ * This is a UI-only constant used for visual representation (progress bars, etc.).
+ * 
+ * TODO: This constant is a temporary bridge until the metadata schema supports 'progress' field.
+ * Once the lead_statuses table has a 'progress' column, this should be migrated to metadata.
+ */
 export const LEAD_STATUS_PROGRESS: Record<LeadStatus, number> = {
   new: 15,
   contacted: 45,
@@ -761,6 +752,17 @@ export const LEAD_STATUS_PROGRESS: Record<LeadStatus, number> = {
   disqualified: 0,
 };
 
+/**
+ * LEAD_STATUS_COLORS: Tailwind CSS color classes for each lead status.
+ * This is a UI-only constant used for visual representation (badges, progress bars, etc.).
+ * 
+ * TODO: This constant is a temporary bridge until the metadata schema supports 'color' field.
+ * Once the lead_statuses table has a 'color' column, this should be migrated to metadata.
+ * 
+ * Helper functions can be created to encapsulate these values:
+ * - getLeadStatusProgress(code: LeadStatus): number
+ * - getLeadStatusColor(code: LeadStatus): string
+ */
 export const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
   new: 'bg-blue-500',
   contacted: 'bg-amber-500',
@@ -768,10 +770,20 @@ export const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
   disqualified: 'bg-rose-500',
 };
 
-export const LEAD_ORIGIN_LABELS: Record<LeadOrigin, string> = {
-  inbound: 'Inbound',
-  outbound: 'Outbound',
-  referral: 'Indicação',
-  event: 'Evento',
-  other: 'Outro'
-};
+/**
+ * Helper function to get progress percentage for a lead status.
+ * @param code - The lead status code
+ * @returns Progress percentage (0-100)
+ */
+export function getLeadStatusProgress(code: LeadStatus): number {
+  return LEAD_STATUS_PROGRESS[code] ?? 0;
+}
+
+/**
+ * Helper function to get Tailwind CSS color class for a lead status.
+ * @param code - The lead status code
+ * @returns Tailwind CSS color class (e.g., 'bg-blue-500')
+ */
+export function getLeadStatusColor(code: LeadStatus): string {
+  return LEAD_STATUS_COLORS[code] ?? 'bg-gray-500';
+}
