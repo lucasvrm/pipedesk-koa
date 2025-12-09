@@ -94,12 +94,6 @@ export default function NewSettingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('crm');
 
-  // Filter categories based on search
-  const filteredCategories = Object.values(CATEGORIES).filter(cat =>
-    cat.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cat.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <PageContainer>
       {/* Header */}
