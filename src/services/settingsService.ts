@@ -240,6 +240,32 @@ export const settingsService = {
 // --- SPECIFIC HELPERS FOR SYSTEM_SETTINGS ---
 
 /**
+ * Extract the actual value from a system setting's value field
+ * System settings can have different structures: { value: X }, { code: Y }, { id: Z }, or plain value
+ * 
+ * Note: This utility is duplicated in the edge function (supabase/functions/synthetic-data-admin/index.ts)
+ * because edge functions run in Deno runtime and cannot import from src/. Keep both implementations in sync.
+ */
+export function extractSystemSettingValue(settingValue: any, defaultValue: any = null): any {
+  if (settingValue === null || settingValue === undefined) {
+    return defaultValue
+  }
+  
+  // If it's a plain value (string, number, boolean), return it
+  if (typeof settingValue !== 'object') {
+    return settingValue
+  }
+  
+  // Handle object structures
+  if ('value' in settingValue) return settingValue.value ?? defaultValue
+  if ('code' in settingValue) return settingValue.code ?? defaultValue
+  if ('id' in settingValue) return settingValue.id ?? defaultValue
+  
+  // If none of the expected properties exist, return the object itself or default
+  return settingValue ?? defaultValue
+}
+
+/**
  * Get a system setting by key
  */
 export async function getSystemSetting(key: string): Promise<{ data: any | null; error: Error | null }> {

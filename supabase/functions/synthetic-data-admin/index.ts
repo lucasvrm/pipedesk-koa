@@ -2,14 +2,15 @@
 // This unified function handles synthetic user creation, CRM data generation,
 // and cleanup of synthetic data. It exposes three operations:
 //  - POST with { action: 'create_users', count, prefix }: creates synthetic users via admin API
+//    (reads configuration from system_settings: password, role, email_domain, name_prefix)
 //  - POST with { action: 'generate_crm', companies_count, leads_count, deals_count, contacts_count, players_count, users_ids }: generates CRM entities by invoking the v2 RPC
 //  - DELETE: deletes all synthetic users via admin API and calls the v2 cleanup RPC
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
 // Helper to build a Supabase client with service role to call admin endpoints
-function getServiceClient() {
+function getServiceClient(): SupabaseClient {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   return createClient(supabaseUrl, serviceKey, {
@@ -20,23 +21,90 @@ function getServiceClient() {
   })
 }
 
-async function handleCreateUsers(supabase: any, payload: any) {
+// Type for system setting value structures
+type SystemSettingValue = 
+  | string 
+  | number 
+  | boolean 
+  | { value: string | number | boolean }
+  | { code: string }
+  | { id: string }
+
+/**
+ * Extract the actual value from a system setting's value field
+ * System settings can have different structures: { value: X }, { code: Y }, { id: Z }, or plain value
+ * 
+ * Note: This function is also implemented in src/services/settingsService.ts as extractSystemSettingValue()
+ * for use in the UI. Edge functions run in Deno and cannot import from src/, so we maintain both.
+ * Keep both implementations in sync.
+ */
+function extractSettingValue<T>(settingValue: SystemSettingValue | null | undefined, defaultValue: T): T {
+  if (settingValue === null || settingValue === undefined) {
+    return defaultValue
+  }
+  
+  // If it's a plain value (string, number, boolean), return it
+  if (typeof settingValue !== 'object') {
+    return settingValue as T
+  }
+  
+  // Handle object structures
+  if ('value' in settingValue) return (settingValue.value ?? defaultValue) as T
+  if ('code' in settingValue) return (settingValue.code ?? defaultValue) as T
+  if ('id' in settingValue) return (settingValue.id ?? defaultValue) as T
+  
+  // If none of the expected properties exist, return default
+  return defaultValue
+}
+
+// Helper to get a system setting value
+async function getSystemSetting<T>(
+  supabase: SupabaseClient, 
+  key: string, 
+  defaultValue: T
+): Promise<T> {
+  try {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', key)
+      .maybeSingle()
+    
+    if (error || !data) {
+      return defaultValue
+    }
+    
+    return extractSettingValue(data.value, defaultValue)
+  } catch (err) {
+    console.warn(`Failed to get setting ${key}:`, err)
+    return defaultValue
+  }
+}
+
+async function handleCreateUsers(supabase: SupabaseClient, payload: any) {
+  // Get configuration from system_settings with fallback defaults
+  const defaultPassword = await getSystemSetting(supabase, 'synthetic_default_password', 'Password123!')
+  const defaultRole = await getSystemSetting(supabase, 'synthetic_default_role_code', 'analyst')
+  const emailDomain = await getSystemSetting(supabase, 'synthetic_email_domain', '@example.com')
+  const namePrefix = await getSystemSetting(supabase, 'synthetic_name_prefix', 'Synthetic User ')
+  
   const { count = 1, prefix = 'synth' } = payload || {}
   const createdUsers: { id: string; email: string }[] = []
   const errors: { email: string; error: string }[] = []
+  
   for (let i = 0; i < count; i++) {
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(7)
-    const email = `${prefix}_${timestamp}_${randomStr}@example.com`
-    const password = 'Password123!'
+    const email = `${prefix}_${timestamp}_${randomStr}${emailDomain}`
+    const password = defaultPassword
     const { data: user, error } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: {
-        full_name: `Synthetic User ${randomStr}`,
+        full_name: `${namePrefix}${randomStr}`,
         is_synthetic: true,
-        role: 'analyst',
+        role: defaultRole,
       },
     })
     if (error) {
@@ -53,7 +121,7 @@ async function handleCreateUsers(supabase: any, payload: any) {
   }
 }
 
-async function handleGenerateCRM(supabase: any, payload: any) {
+async function handleGenerateCRM(supabase: SupabaseClient, payload: any) {
   // Extract counts and optional users_ids from payload
   const companies_count = Number(payload?.companies_count) || 0
   const leads_count = Number(payload?.leads_count) || 0
@@ -77,7 +145,7 @@ async function handleGenerateCRM(supabase: any, payload: any) {
   return data
 }
 
-async function handleDelete(supabase: any) {
+async function handleDelete(supabase: SupabaseClient) {
   // Delete synthetic auth users first
   const { data: { users }, error: listError } = await supabase.auth.admin.listUsers()
   if (listError) throw new Error(listError.message)
