@@ -55,6 +55,16 @@ interface SettingsTableProps {
   onRefresh: () => void;
 }
 
+// Helper function to get proper singular titles for dialog
+function getDialogTitle(type: SettingType): string {
+  const titles: Record<SettingType, string> = {
+    lead_statuses: 'Status de Lead',
+    lead_origins: 'Origem de Lead',
+    lead_member_roles: 'Papel de Membro do Lead'
+  };
+  return titles[type];
+}
+
 function SettingsTable({ type, title, description, icon, iconBgColor, data, onRefresh }: SettingsTableProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MetadataItem | null>(null);
@@ -242,7 +252,7 @@ function SettingsTable({ type, title, description, icon, iconBgColor, data, onRe
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Editar' : 'Novo'} {title.replace(/s$/, '')}
+              {editingItem ? 'Editar' : 'Criar'} {getDialogTitle(type)}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -255,7 +265,7 @@ function SettingsTable({ type, title, description, icon, iconBgColor, data, onRe
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 placeholder="Ex: novo, em_andamento"
-                disabled={!!editingItem}
+                disabled={editingItem !== null}
               />
               <p className="text-xs text-muted-foreground">
                 Código único, sem espaços. Não pode ser alterado após criação.
@@ -288,7 +298,13 @@ function SettingsTable({ type, title, description, icon, iconBgColor, data, onRe
                 id="sortOrder"
                 type="number"
                 value={formData.sortOrder}
-                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    sortOrder: value === '' ? 0 : parseInt(value, 10) || 0 
+                  });
+                }}
                 placeholder="0"
               />
               <p className="text-xs text-muted-foreground">
