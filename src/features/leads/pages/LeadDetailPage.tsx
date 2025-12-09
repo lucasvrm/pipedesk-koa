@@ -81,7 +81,7 @@ export default function LeadDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile, user } = useAuth()
-  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const { leadStatuses, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const updateLead = useUpdateLead()
@@ -402,12 +402,25 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
 
-  const PIPELINE_STAGES = [
-    { id: 'new', label: getLeadStatusByCode('new')?.label || 'Novo', color: 'bg-slate-500' },
-    { id: 'contacted', label: getLeadStatusByCode('contacted')?.label || 'Contatado', color: 'bg-blue-500' },
-    { id: 'qualified', label: getLeadStatusByCode('qualified')?.label || 'Qualificado', color: 'bg-green-500' },
-    { id: 'disqualified', label: getLeadStatusByCode('disqualified')?.label || 'Desqualificado', color: 'bg-red-500' }
-  ]
+  const PIPELINE_STAGES = useMemo(() => {
+    return leadStatuses
+      .filter(ls => ls.isActive)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(status => {
+        // Map status codes to colors (will be moved to metadata schema in future PR)
+        const colorMap: Record<string, string> = {
+          'new': 'bg-slate-500',
+          'contacted': 'bg-blue-500',
+          'qualified': 'bg-green-500',
+          'disqualified': 'bg-red-500'
+        }
+        return {
+          id: status.code,
+          label: status.label,
+          color: colorMap[status.code] || 'bg-gray-500'
+        }
+      })
+  }, [leadStatuses])
 
   const originMeta = getLeadOriginByCode(lead.origin)
   const SIDEBAR_METRICS = [

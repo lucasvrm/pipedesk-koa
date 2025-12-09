@@ -27,6 +27,16 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
   const { register, handleSubmit, reset, setValue, watch } = useForm<LeadUpdate>()
   const { leadStatuses, leadOrigins, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
+  const activeLeadStatuses = useMemo(() =>
+    leadStatuses.filter(ls => ls.isActive).sort((a, b) => a.sortOrder - b.sortOrder),
+    [leadStatuses]
+  )
+
+  const activeLeadOrigins = useMemo(() =>
+    leadOrigins.filter(lo => lo.isActive).sort((a, b) => a.sortOrder - b.sortOrder),
+    [leadOrigins]
+  )
+
   const leadInitials = useMemo(() => {
     if (!lead?.legalName) return '--'
     return lead.legalName
@@ -133,14 +143,11 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {leadStatuses
-                      .filter(ls => ls.isActive)
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map(status => (
-                        <SelectItem key={status.code} value={status.code}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
+                    {activeLeadStatuses.map(status => (
+                      <SelectItem key={status.code} value={status.code}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -151,14 +158,11 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {leadOrigins
-                      .filter(lo => lo.isActive)
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map(origin => (
-                        <SelectItem key={origin.code} value={origin.code}>
-                          {origin.label}
-                        </SelectItem>
-                      ))}
+                    {activeLeadOrigins.map(origin => (
+                      <SelectItem key={origin.code} value={origin.code}>
+                        {origin.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
