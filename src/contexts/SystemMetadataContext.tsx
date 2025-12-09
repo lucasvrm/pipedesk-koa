@@ -286,8 +286,8 @@ export function SystemMetadataProvider({ children }: SystemMetadataProviderProps
         userRoleMetadata: metadata.userRoleMetadata,
         isLoading,
         error,
-        reload: loadMetadata,
-        refreshMetadata: loadMetadata
+        reload: loadMetadata, // Kept for backward compatibility
+        refreshMetadata: loadMetadata // New alias for clarity
       }}
     >
       {children}
