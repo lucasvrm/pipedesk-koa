@@ -1,10 +1,321 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
-import { Users, TrendUp, UserCircle } from '@phosphor-icons/react';
+import { settingsService } from '@/services/settingsService';
+import { Users, TrendUp, UserCircle, Plus, PencilSimple, Trash } from '@phosphor-icons/react';
+import { toast } from 'sonner';
+import type { LeadStatusMeta, LeadOriginMeta, LeadMemberRoleMeta } from '@/types/metadata';
+
+type SettingType = 'lead_statuses' | 'lead_origins' | 'lead_member_roles';
+
+interface MetadataItem {
+  id: string;
+  code: string;
+  label: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+interface SettingFormData {
+  code: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+}
+
+interface SettingsTableProps {
+  type: SettingType;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  iconBgColor: string;
+  data: MetadataItem[];
+  onRefresh: () => void;
+}
+
+function SettingsTable({ type, title, description, icon, iconBgColor, data, onRefresh }: SettingsTableProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MetadataItem | null>(null);
+  const [formData, setFormData] = useState<SettingFormData>({
+    code: '',
+    label: '',
+    description: '',
+    sortOrder: 0
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setFormData({
+      code: '',
+      label: '',
+      description: '',
+      sortOrder: 0
+    });
+    setEditingItem(null);
+  };
+
+  const openDialog = (item?: MetadataItem) => {
+    if (item) {
+      setEditingItem(item);
+      setFormData({
+        code: item.code,
+        label: item.label,
+        description: item.description || '',
+        sortOrder: item.sortOrder
+      });
+    } else {
+      resetForm();
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    // Validations
+    if (!formData.code.trim()) {
+      toast.error('Código é obrigatório');
+      return;
+    }
+
+    if (formData.code.includes(' ')) {
+      toast.error('Código não pode conter espaços');
+      return;
+    }
+
+    if (!formData.label.trim()) {
+      toast.error('Label é obrigatório');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        code: formData.code.trim(),
+        label: formData.label.trim(),
+        description: formData.description.trim() || undefined,
+        isActive: true,
+        sortOrder: formData.sortOrder || 0
+      };
+
+      if (editingItem) {
+        const { error } = await settingsService.update(type, editingItem.id, payload);
+        if (error) throw error;
+        toast.success('Atualizado com sucesso!');
+      } else {
+        const { error } = await settingsService.create(type, payload);
+        if (error) throw error;
+        toast.success('Criado com sucesso!');
+      }
+
+      setIsDialogOpen(false);
+      resetForm();
+      onRefresh();
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao salvar');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${label}"?`)) return;
+
+    try {
+      const { error } = await settingsService.remove(type, id);
+      if (error) throw error;
+      toast.success('Excluído com sucesso!');
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir');
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`p-2 rounded-lg ${iconBgColor}`}>
+              {icon}
+            </div>
+            <div>
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>{description}</CardDescription>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => openDialog()}>
+            <Plus className="mr-2 h-4 w-4" /> Novo
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[150px]">Código</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead className="w-[100px]">Ordem</TableHead>
+                <TableHead className="w-[100px]">Status</TableHead>
+                <TableHead className="w-[120px] text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Nenhum registro encontrado.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono">
+                        {item.code}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{item.label}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.description || '-'}
+                    </TableCell>
+                    <TableCell>{item.sortOrder}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.isActive ? 'default' : 'secondary'}>
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openDialog(item)}
+                        >
+                          <PencilSimple className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(item.id, item.label)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? 'Editar' : 'Novo'} {title.replace(/s$/, '')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">
+                Código <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                placeholder="Ex: novo, em_andamento"
+                disabled={!!editingItem}
+              />
+              <p className="text-xs text-muted-foreground">
+                Código único, sem espaços. Não pode ser alterado após criação.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="label">
+                Label <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="label"
+                value={formData.label}
+                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                placeholder="Ex: Novo, Em Andamento"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Descrição opcional"
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sortOrder">Ordem de Exibição</Label>
+              <Input
+                id="sortOrder"
+                type="number"
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">
+                Números menores aparecem primeiro na listagem.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
 
 export function LeadSettingsSection() {
-  const { leadStatuses, leadOrigins, leadMemberRoles, isLoading } = useSystemMetadata();
+  const { leadStatuses, leadOrigins, leadMemberRoles, isLoading, refreshMetadata } = useSystemMetadata();
 
   if (isLoading) {
     return (
@@ -20,145 +331,37 @@ export function LeadSettingsSection() {
   return (
     <div className="space-y-6">
       {/* Lead Statuses */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <TrendUp className="h-5 w-5 text-blue-500" />
-            </div>
-            <div>
-              <CardTitle>Status de Leads</CardTitle>
-              <CardDescription>
-                Status disponíveis para acompanhamento do ciclo de vida dos leads
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {leadStatuses.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum status configurado
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {leadStatuses.map((status) => (
-                  <div
-                    key={status.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{status.label}</p>
-                      {status.description && (
-                        <p className="text-xs text-muted-foreground">{status.description}</p>
-                      )}
-                    </div>
-                    <Badge variant={status.isActive ? 'default' : 'secondary'}>
-                      {status.isActive ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <SettingsTable
+        type="lead_statuses"
+        title="Status de Leads"
+        description="Status disponíveis para acompanhamento do ciclo de vida dos leads"
+        icon={<TrendUp className="h-5 w-5 text-blue-500" />}
+        iconBgColor="bg-blue-500/10"
+        data={leadStatuses as MetadataItem[]}
+        onRefresh={refreshMetadata}
+      />
 
       {/* Lead Origins */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <Users className="h-5 w-5 text-green-500" />
-            </div>
-            <div>
-              <CardTitle>Origens de Leads</CardTitle>
-              <CardDescription>
-                Canais e fontes de captação de novos leads
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {leadOrigins.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma origem configurada
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {leadOrigins.map((origin) => (
-                  <div
-                    key={origin.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{origin.label}</p>
-                      {origin.description && (
-                        <p className="text-xs text-muted-foreground">{origin.description}</p>
-                      )}
-                    </div>
-                    <Badge variant={origin.isActive ? 'default' : 'secondary'}>
-                      {origin.isActive ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <SettingsTable
+        type="lead_origins"
+        title="Origens de Leads"
+        description="Canais e fontes de captação de novos leads"
+        icon={<Users className="h-5 w-5 text-green-500" />}
+        iconBgColor="bg-green-500/10"
+        data={leadOrigins as MetadataItem[]}
+        onRefresh={refreshMetadata}
+      />
 
       {/* Lead Member Roles */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <UserCircle className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <CardTitle>Papéis de Membros do Lead</CardTitle>
-              <CardDescription>
-                Funções e responsabilidades dos membros associados aos leads
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {leadMemberRoles.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum papel configurado
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {leadMemberRoles.map((role) => (
-                  <div
-                    key={role.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{role.label}</p>
-                      {role.description && (
-                        <p className="text-xs text-muted-foreground">{role.description}</p>
-                      )}
-                    </div>
-                    <Badge variant={role.isActive ? 'default' : 'secondary'}>
-                      {role.isActive ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="rounded-lg border border-dashed border-muted-foreground/25 p-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          💡 <strong>Próximos passos:</strong> Funcionalidade de CRUD (criar, editar, excluir) será implementada em uma próxima etapa.
-        </p>
-      </div>
+      <SettingsTable
+        type="lead_member_roles"
+        title="Papéis de Membros do Lead"
+        description="Funções e responsabilidades dos membros associados aos leads"
+        icon={<UserCircle className="h-5 w-5 text-purple-500" />}
+        iconBgColor="bg-purple-500/10"
+        data={leadMemberRoles as MetadataItem[]}
+        onRefresh={refreshMetadata}
+      />
     </div>
   );
 }
