@@ -39,6 +39,7 @@ const TrackDetailPage = lazy(() => import('@/features/tracks/pages/TrackDetailPa
 const CompaniesListPage = lazy(() => import('@/features/companies/pages/CompaniesListPage'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage'))
 const ContactDetailPage = lazy(() => import('@/features/contacts/pages/ContactDetailPage'))
+const LeadSalesViewPage = lazy(() => import('@/features/leads/pages/LeadSalesViewPage'))
 
 // Leads & Contacts
 const LeadsListPage = lazy(() => import('@/features/leads/pages/LeadsListPage'))
@@ -93,6 +94,7 @@ function App() {
 
             <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/contacts/:id" element={<ContactDetailPage />} />
+            <Route path="/admin/leads/sales-view" element={<LeadSalesViewPage />} />
 
             {/* Tools */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
