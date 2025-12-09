@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead, useSalesViewLeads } from '@/services/leadService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
-import { Lead, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
+import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -33,11 +33,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useTags } from '@/services/tagService'
 import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
+import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
+import { useUsers } from '@/services/userService'
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { profile } = useAuth()
   const { leadStatuses, leadOrigins, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const { data: users = [] } = useUsers()
 
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
@@ -61,6 +65,25 @@ export default function LeadsListPage() {
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
   const [tagFilter, setTagFilter] = useState<string[]>(() => savedPreferences?.tagFilter || [])
+  const [salesOwnerMode, setSalesOwnerMode] = useState<'me' | 'all' | 'custom'>(() => {
+    const ownerParam = searchParams.get('owner')
+    if (ownerParam === 'me') return 'me'
+    if (searchParams.get('owners')) return 'custom'
+    return 'all'
+  })
+  const [salesOwnerIds, setSalesOwnerIds] = useState<string[]>(() => searchParams.get('owners')?.split(',').filter(Boolean) || [])
+  const [salesPriority, setSalesPriority] = useState<LeadPriorityBucket[]>(() =>
+    (searchParams.get('priority')?.split(',').filter(Boolean) as LeadPriorityBucket[]) || []
+  )
+  const [salesStatusFilter, setSalesStatusFilter] = useState<string[]>(() => searchParams.get('status')?.split(',').filter(Boolean) || [])
+  const [salesOriginFilter, setSalesOriginFilter] = useState<string[]>(() => searchParams.get('origin')?.split(',').filter(Boolean) || [])
+  const [salesDaysWithoutInteraction, setSalesDaysWithoutInteraction] = useState<number | null>(() => {
+    const value = searchParams.get('days_without_interaction')
+    return value ? Number(value) : null
+  })
+  const [salesOrderBy, setSalesOrderBy] = useState<'priority' | 'last_interaction' | 'created_at'>(() =>
+    (searchParams.get('order_by') as 'priority' | 'last_interaction' | 'created_at') || 'priority'
+  )
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -77,6 +100,16 @@ export default function LeadsListPage() {
   }
 
   const { data: leads, isLoading } = useLeads(filters)
+  const salesFilters = useMemo(() => ({
+    owner: salesOwnerMode === 'me' ? 'me' : undefined,
+    ownerIds: salesOwnerMode === 'custom' ? salesOwnerIds : undefined,
+    priority: salesPriority.length > 0 ? salesPriority : undefined,
+    status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
+    origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
+    daysWithoutInteraction: salesDaysWithoutInteraction ?? undefined,
+    orderBy: salesOrderBy
+  }), [salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
+  const { data: salesLeads, isLoading: isSalesLoading } = useSalesViewLeads(salesFilters, { enabled: viewMode === 'sales' })
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
@@ -93,23 +126,31 @@ export default function LeadsListPage() {
     }
   } as any
 
+  const activeLeads = (viewMode === 'sales' ? salesLeads : leads) || []
+  const isActiveLoading = viewMode === 'sales' ? isSalesLoading : isLoading
+
   const leadMetrics = useMemo(() => {
-    const openLeads = leads?.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
-    const createdThisMonth = leads?.filter(l => new Date(l.createdAt) >= monthStart).length || 0
-    const qualifiedThisMonth = leads?.filter(
+    const openLeads = activeLeads.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
+    const createdThisMonth = activeLeads.filter(l => new Date(l.createdAt) >= monthStart).length || 0
+    const qualifiedThisMonth = activeLeads.filter(
       l => l.status === 'qualified' && l.qualifiedAt && new Date(l.qualifiedAt) >= monthStart
     ).length || 0
 
     return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [leads, monthStart])
+  }, [activeLeads, monthStart])
 
   useEffect(() => {
     setCurrentPage(1)
   }, [search, statusFilter, originFilter, tagFilter])
 
   useEffect(() => {
+    if (viewMode !== 'sales') return
+    setCurrentPage(1)
+  }, [salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, viewMode])
+
+  useEffect(() => {
     setSelectedIds([])
-  }, [viewMode, search, statusFilter, originFilter, tagFilter, currentPage])
+  }, [viewMode, search, statusFilter, originFilter, tagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction])
 
   useEffect(() => {
     const payload = {
@@ -123,14 +164,34 @@ export default function LeadsListPage() {
     localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
   }, [itemsPerPage, originFilter, search, statusFilter, tagFilter, viewMode])
 
-  const totalLeads = leads?.length ?? 0
+  useEffect(() => {
+    if (viewMode !== 'sales') return
+
+    const params = new URLSearchParams()
+
+    if (salesOwnerMode === 'me') {
+      params.set('owner', 'me')
+    } else if (salesOwnerMode === 'custom' && salesOwnerIds.length > 0) {
+      params.set('owners', salesOwnerIds.join(','))
+    }
+
+    if (salesPriority.length > 0) params.set('priority', salesPriority.join(','))
+    if (salesStatusFilter.length > 0) params.set('status', salesStatusFilter.join(','))
+    if (salesOriginFilter.length > 0) params.set('origin', salesOriginFilter.join(','))
+    if (salesDaysWithoutInteraction) params.set('days_without_interaction', String(salesDaysWithoutInteraction))
+    if (salesOrderBy) params.set('order_by', salesOrderBy)
+
+    setSearchParams(params, { replace: true })
+  }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, setSearchParams, viewMode])
+
+  const totalLeads = activeLeads.length
   const totalPages = Math.max(1, Math.ceil(totalLeads / itemsPerPage))
 
   const paginatedLeads = useMemo(() => {
-    if (!leads) return []
+    if (!activeLeads) return []
     const start = (currentPage - 1) * itemsPerPage
-    return leads.slice(start, start + itemsPerPage)
-  }, [currentPage, itemsPerPage, leads])
+    return activeLeads.slice(start, start + itemsPerPage)
+  }, [activeLeads, currentPage, itemsPerPage])
   const currentLeads = paginatedLeads
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -298,6 +359,88 @@ export default function LeadsListPage() {
     </div>
   )
 
+  const viewToggleControl = (
+    <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
+      <Button
+        variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => setViewMode('sales')}
+        title="Visualização Sales"
+      >
+        <Target />
+      </Button>
+      <Button
+        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => setViewMode('grid')}
+        title="Grade"
+      >
+        <SquaresFour />
+      </Button>
+      <Button
+        variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => setViewMode('kanban')}
+        title="Kanban"
+      >
+        <Kanban />
+      </Button>
+    </div>
+  )
+
+  const bulkActions = selectedIds.length > 0 && (
+    <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
+      <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
+    </Button>
+  )
+
+  const resetSalesFilters = () => {
+    setSalesOwnerMode('me')
+    setSalesOwnerIds([])
+    setSalesPriority([])
+    setSalesStatusFilter([])
+    setSalesOriginFilter([])
+    setSalesDaysWithoutInteraction(null)
+    setSalesOrderBy('priority')
+  }
+
+  const salesFiltersBar = (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        {viewToggleControl}
+        {bulkActions}
+      </div>
+      <LeadsSalesFiltersBar
+        ownerMode={salesOwnerMode}
+        onOwnerModeChange={(mode) => {
+          setSalesOwnerMode(mode)
+          if (mode !== 'custom') {
+            setSalesOwnerIds([])
+          }
+        }}
+        selectedOwners={salesOwnerIds}
+        onSelectedOwnersChange={setSalesOwnerIds}
+        priority={salesPriority}
+        onPriorityChange={(values) => setSalesPriority(values)}
+        statuses={salesStatusFilter}
+        onStatusesChange={setSalesStatusFilter}
+        origins={salesOriginFilter}
+        onOriginsChange={setSalesOriginFilter}
+        daysWithoutInteraction={salesDaysWithoutInteraction}
+        onDaysWithoutInteractionChange={setSalesDaysWithoutInteraction}
+        orderBy={salesOrderBy}
+        onOrderByChange={setSalesOrderBy}
+        users={users}
+        leadStatuses={leadStatuses.filter(s => s.isActive)}
+        leadOrigins={leadOrigins.filter(o => o.isActive)}
+        onClear={resetSalesFilters}
+      />
+    </div>
+  )
+
   const filtersBar = (
     <SharedListToolbar
       searchField={
@@ -383,45 +526,15 @@ export default function LeadsListPage() {
         </div>
       }
       viewToggle={
-        <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
-          <Button
-            variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode('sales')}
-            title="Visualização Sales"
-          >
-            <Target />
-          </Button>
-          <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode('grid')}
-            title="Grade"
-          >
-            <SquaresFour />
-          </Button>
-          <Button
-            variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode('kanban')}
-            title="Kanban"
-          >
-            <Kanban />
-          </Button>
-        </div>
+        viewToggleControl
       }
       rightContent={
-        selectedIds.length > 0 && (
-          <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
-            <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
-          </Button>
-        )
+        bulkActions
       }
     />
   )
+
+  const activeFiltersBar = viewMode === 'sales' ? salesFiltersBar : filtersBar
 
   const pagination = totalLeads > 0 && (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
@@ -477,10 +590,10 @@ export default function LeadsListPage() {
         description="Gerencie seus prospects e oportunidades."
         primaryAction={actions}
         metrics={metrics}
-        filtersBar={filtersBar}
+        filtersBar={activeFiltersBar}
         footer={viewMode === 'kanban' ? null : pagination}
       >
-        {isLoading ? (
+        {isActiveLoading ? (
           <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
@@ -489,7 +602,7 @@ export default function LeadsListPage() {
         ) : viewMode === 'sales' ? (
           <LeadsSalesList
             leads={paginatedLeads}
-            isLoading={isLoading}
+            isLoading={isActiveLoading}
             selectedIds={selectedIds}
             onSelectAll={toggleSelectAll}
             onSelectOne={toggleSelectOne}
@@ -575,7 +688,7 @@ export default function LeadsListPage() {
             })}
           </div>
         ) : (
-          <LeadsKanban leads={leads || []} isLoading={isLoading} />
+          <LeadsKanban leads={activeLeads || []} isLoading={isLoading} />
         )}
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

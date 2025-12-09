@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Lead, LeadStatus, LeadMember, Contact, CompanyInput } from '@/lib/types'
+import { Lead, LeadStatus, LeadMember, Contact, CompanyInput, LeadPriorityBucket } from '@/lib/types'
 import { syncRemoteEntityName } from './pdGoogleDriveApi'
 import { getSetting } from './systemSettingsService'
 
@@ -36,6 +36,16 @@ export interface LeadFilters {
   responsibleId?: string;
   search?: string;
   tags?: string[];
+}
+
+export interface SalesViewFilters {
+  owner?: 'me' | 'all';
+  ownerIds?: string[];
+  priority?: LeadPriorityBucket[];
+  status?: string[];
+  origin?: string[];
+  daysWithoutInteraction?: number;
+  orderBy?: 'priority' | 'last_interaction' | 'created_at';
 }
 
 export interface QualifyLeadInput {
@@ -96,7 +106,72 @@ function mapLeadFromDB(item: any): Lead {
         email: lm.profiles.email,
         avatar: lm.profiles.avatar_url
       } : undefined
-    })) || []
+    })) || [],
+
+    priorityBucket: item.priority_bucket || item.priorityBucket,
+    priorityScore: item.priority_score || item.priorityScore,
+    priorityDescription: item.priority_description || item.priorityDescription,
+    lastInteractionAt: item.last_interaction_at || item.lastInteractionAt,
+    daysWithoutInteraction: item.days_without_interaction || item.daysWithoutInteraction,
+    nextAction: item.next_action || item.nextAction
+  };
+}
+
+function mapLeadFromSalesView(item: any): Lead {
+  const contacts = item.contacts || item.lead_contacts;
+
+  return {
+    id: item.id,
+    legalName: item.legal_name || item.legalName,
+    tradeName: item.trade_name || item.tradeName,
+    cnpj: item.cnpj,
+    website: item.website,
+    segment: item.segment,
+    addressCity: item.address_city || item.addressCity,
+    addressState: item.address_state || item.addressState,
+    description: item.description,
+    status: item.status,
+    origin: item.origin,
+    operationType: item.operation_type || item.operationType,
+    ownerUserId: item.owner_user_id || item.ownerUserId,
+
+    qualifiedAt: item.qualified_at || item.qualifiedAt,
+    qualifiedCompanyId: item.qualified_company_id || item.qualifiedCompanyId,
+    qualifiedMasterDealId: item.qualified_master_deal_id || item.qualifiedMasterDealId,
+
+    createdAt: item.created_at || item.createdAt,
+    updatedAt: item.updated_at || item.updatedAt,
+    createdBy: item.created_by || item.createdBy,
+
+    contacts: contacts?.map((lc: any) => ({
+      ...lc.contacts ? lc.contacts : lc,
+      isPrimary: lc.is_primary ?? lc.isPrimary,
+      companyId: lc.contacts?.company_id || lc.contacts?.companyId || lc.company_id || lc.companyId,
+      createdAt: lc.contacts?.created_at || lc.contacts?.createdAt,
+      createdBy: lc.contacts?.created_by || lc.contacts?.createdBy
+    })) || [],
+    members: item.lead_members?.map((lm: any) => ({
+      leadId: lm.lead_id,
+      userId: lm.user_id,
+      role: lm.role,
+      addedAt: lm.added_at,
+      user: lm.profiles ? {
+        id: lm.profiles.id,
+        name: lm.profiles.name,
+        email: lm.profiles.email,
+        avatar: lm.profiles.avatar_url
+      } : undefined
+    })) || [],
+    isSynthetic: item.is_synthetic || item.isSynthetic,
+
+    priorityBucket: item.priority_bucket || item.priorityBucket,
+    priorityScore: item.priority_score || item.priorityScore,
+    priorityDescription: item.priority_description || item.priorityDescription,
+    lastInteractionAt: item.last_interaction_at || item.lastInteractionAt,
+    daysWithoutInteraction: item.days_without_interaction || item.daysWithoutInteraction,
+    nextAction: item.next_action || item.nextAction,
+    // Keep owner mapping when returned by API
+    owner: item.owner
   };
 }
 
@@ -169,6 +244,48 @@ export async function getLead(id: string): Promise<Lead> {
 
   if (error) throw error;
   return mapLeadFromDB(data);
+}
+
+export async function getSalesViewLeads(filters?: SalesViewFilters): Promise<Lead[]> {
+  const params = new URLSearchParams();
+
+  if (filters?.owner === 'me') {
+    params.set('owner', 'me');
+  }
+
+  if (filters?.ownerIds && filters.ownerIds.length > 0) {
+    params.set('owners', filters.ownerIds.join(','));
+  }
+
+  if (filters?.priority && filters.priority.length > 0) {
+    params.set('priority', filters.priority.join(','));
+  }
+
+  if (filters?.status && filters.status.length > 0) {
+    params.set('status', filters.status.join(','));
+  }
+
+  if (filters?.origin && filters.origin.length > 0) {
+    params.set('origin', filters.origin.join(','));
+  }
+
+  if (filters?.daysWithoutInteraction) {
+    params.set('days_without_interaction', String(filters.daysWithoutInteraction));
+  }
+
+  if (filters?.orderBy) {
+    params.set('order_by', filters.orderBy);
+  }
+
+  const query = params.toString();
+  const response = await fetch(`/api/leads/sales-view${query ? `?${query}` : ''}`);
+
+  if (!response.ok) {
+    throw new Error('Falha ao carregar leads da Sales View');
+  }
+
+  const data = await response.json();
+  return (data as any[]).map(mapLeadFromSalesView);
 }
 
 export async function createLead(lead: LeadInput, userId: string): Promise<Lead> {
@@ -309,6 +426,14 @@ export function useLeads(filters?: LeadFilters) {
   return useQuery({
     queryKey: ['leads', filters],
     queryFn: () => getLeads(filters)
+  });
+}
+
+export function useSalesViewLeads(filters?: SalesViewFilters, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['leads', 'sales-view', filters],
+    queryFn: () => getSalesViewLeads(filters),
+    enabled: options?.enabled ?? true
   });
 }
 

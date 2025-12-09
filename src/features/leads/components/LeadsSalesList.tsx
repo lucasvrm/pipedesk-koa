@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Lead, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
+import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,24 @@ interface LeadsSalesListProps {
   onSelectOne: (id: string) => void
   onEdit: (lead: Lead) => void
   onDelete: (lead: Lead) => void
+}
+
+const PRIORITY_INFO: Record<LeadPriorityBucket, { label: string; description: string; className: string }> = {
+  hot: {
+    label: 'Hot',
+    description: 'Score alto, lead muito quente',
+    className: 'bg-red-100 text-red-700 border-red-200'
+  },
+  warm: {
+    label: 'Warm',
+    description: 'Engajamento médio, oportunidade ativa',
+    className: 'bg-amber-100 text-amber-700 border-amber-200'
+  },
+  cold: {
+    label: 'Cold',
+    description: 'Score baixo, precisa de novas interações',
+    className: 'bg-slate-100 text-slate-700 border-slate-200'
+  }
 }
 
 function LeadTagsList({ leadId }: { leadId: string }) {
@@ -120,7 +138,11 @@ export function LeadsSalesList({
             const isSelected = selectedIds.includes(lead.id)
             const daysOpen = differenceInDays(new Date(), new Date(lead.createdAt))
             const lastUpdate = lead.updatedAt ? formatDistanceToNow(new Date(lead.updatedAt), { locale: ptBR, addSuffix: true }) : 'N/A'
-
+            const lastInteraction = lead.lastInteractionAt
+              ? formatDistanceToNow(new Date(lead.lastInteractionAt), { locale: ptBR, addSuffix: true })
+              : lastUpdate
+            const priorityInfo = lead.priorityBucket ? PRIORITY_INFO[lead.priorityBucket] : null
+            
             return (
               <TableRow key={lead.id} className="group cursor-pointer hover:bg-muted/50 transition-colors h-20" onClick={() => navigate(`/leads/${lead.id}`)}>
                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -130,15 +152,48 @@ export function LeadsSalesList({
                 {/* COMPANY / CONTEXT */}
                 <TableCell>
                   <div className="flex flex-col justify-center h-full space-y-1">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-primary/10 p-1.5 rounded-md text-primary shrink-0">
-                        <Building size={16} weight="duotone" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-primary/10 p-1.5 rounded-md text-primary shrink-0">
+                          <Building size={16} weight="duotone" />
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground block leading-tight">{lead.legalName}</span>
+                          {lead.tradeName && <span className="text-xs text-muted-foreground block">{lead.tradeName}</span>}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-semibold text-foreground block leading-tight">{lead.legalName}</span>
-                        {lead.tradeName && <span className="text-xs text-muted-foreground block">{lead.tradeName}</span>}
-                      </div>
+                      {priorityInfo && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className={`text-[11px] font-medium ${priorityInfo.className}`}>
+                                {priorityInfo.label}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {lead.priorityDescription || priorityInfo.description}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
+                    {lead.nextAction && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="outline" className="w-fit text-[11px] font-medium">
+                              Próxima ação: {lead.nextAction.label || 'Definir ação'}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {lead.nextAction.reason ||
+                              (lead.daysWithoutInteraction
+                                ? `Sem interação há ${lead.daysWithoutInteraction} dias`
+                                : 'Sem detalhes adicionais')}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 </TableCell>
 
@@ -227,9 +282,9 @@ export function LeadsSalesList({
                         <CalendarBlank size={12} />
                         <span>{daysOpen} dias</span>
                       </div>
-                      <div className="flex items-center gap-1" title="Última atualização">
+                      <div className="flex items-center gap-1" title="Última interação">
                         <Clock size={12} />
-                        <span>{lastUpdate}</span>
+                        <span>{lastInteraction}</span>
                       </div>
                     </div>
                   </div>
