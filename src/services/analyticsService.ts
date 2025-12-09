@@ -44,7 +44,9 @@ export async function getAnalyticsSummary(
                 .from('pipeline_stages')
                 .select('id, name, probability, pipeline_id, color, stage_order, is_default, active, created_at, updated_at');
             
-            stages = (stagesData || []).map(s => ({
+            // Safe fallback for stages data
+            const safeStagesData = stagesData ?? [];
+            stages = safeStagesData.map(s => ({
                 id: s.id,
                 pipelineId: s.pipeline_id,
                 name: s.name,
@@ -60,7 +62,7 @@ export async function getAnalyticsSummary(
         
         // Build probability map from stages
         const probabilityMap: Record<string, number> = {};
-        stages.forEach(s => {
+        (stages ?? []).forEach(s => {
             probabilityMap[s.id] = s.probability || 0;
         });
 
@@ -86,17 +88,22 @@ export async function getAnalyticsSummary(
         const { data: deals, error: dealsError } = await dealsQuery;
         if (dealsError) throw dealsError;
 
-        const dealIds = (deals || []).map(d => d.id);
+        // Safe fallback for deals
+        const safeDeals = deals ?? [];
+        const dealIds = safeDeals.map(d => d.id);
         let tracksQuery = supabase.from('player_tracks').select('*');
         if (dealIds.length > 0) tracksQuery = tracksQuery.in('master_deal_id', dealIds);
 
         const { data: tracks, error: tracksError } = await tracksQuery;
         if (tracksError) throw tracksError;
 
+        // Safe fallback for tracks
+        const safeTracks = tracks ?? [];
+
         // Filtro de Time (Client-side para arrays)
         const filteredTracks = teamFilter === 'all'
-            ? (tracks || [])
-            : (tracks || []).filter(t => t.responsibles && t.responsibles.includes(teamFilter));
+            ? safeTracks
+            : safeTracks.filter(t => Array.isArray(t.responsibles) && t.responsibles.includes(teamFilter));
 
         // Busca Tarefas e Histórico (SLA)
         const { data: history, error: historyError } = await supabase.from('stage_history').select('*');
@@ -105,10 +112,14 @@ export async function getAnalyticsSummary(
         const { data: tasks, error: tasksError } = await supabase.from('tasks').select('*').eq('completed', false);
         if (tasksError) throw tasksError;
 
+        // Safe fallbacks for history and tasks
+        const safeHistory = history ?? [];
+        const safeTasks = tasks ?? [];
+
         // 3. Calcular Métricas
-        const activeDeals = (deals || []).filter(d => d.status === 'active').length;
-        const concludedDeals = (deals || []).filter(d => d.status === 'concluded').length;
-        const cancelledDeals = (deals || []).filter(d => d.status === 'cancelled').length;
+        const activeDeals = safeDeals.filter(d => d.status === 'active').length;
+        const concludedDeals = safeDeals.filter(d => d.status === 'concluded').length;
+        const cancelledDeals = safeDeals.filter(d => d.status === 'cancelled').length;
 
         // Pipeline Ponderado Dinâmico
         const weightedPipeline = filteredTracks
@@ -147,13 +158,15 @@ export async function getAnalyticsSummary(
                 .select('id, name')
                 .in('id', options.teamMembers);
 
-            teamWorkload = (users || []).map(user => {
+            // Safe fallback for users
+            const safeUsers = users ?? [];
+            teamWorkload = safeUsers.map(user => {
                 const userTracks = filteredTracks.filter(t =>
-                    t.status === 'active' && t.responsibles && t.responsibles.includes(user.id)
+                    t.status === 'active' && Array.isArray(t.responsibles) && t.responsibles.includes(user.id)
                 ).length;
 
-                const userTasks = (tasks || []).filter(t =>
-                    t.assignees && t.assignees.includes(user.id)
+                const userTasks = safeTasks.filter(t =>
+                    Array.isArray(t.assignees) && t.assignees.includes(user.id)
                 ).length;
 
                 return {
@@ -170,13 +183,15 @@ export async function getAnalyticsSummary(
                 .select('id, name, role')
                 .in('role', ['analyst', 'admin', 'newbusiness']);
 
-            teamWorkload = (users || []).map(user => {
+            // Safe fallback for users
+            const safeUsers = users ?? [];
+            teamWorkload = safeUsers.map(user => {
                 const userTracks = filteredTracks.filter(t =>
-                    t.status === 'active' && t.responsibles && t.responsibles.includes(user.id)
+                    t.status === 'active' && Array.isArray(t.responsibles) && t.responsibles.includes(user.id)
                 ).length;
 
-                const userTasks = (tasks || []).filter(t =>
-                    t.assignees && t.assignees.includes(user.id)
+                const userTasks = safeTasks.filter(t =>
+                    Array.isArray(t.assignees) && t.assignees.includes(user.id)
                 ).length;
 
                 return {
@@ -210,7 +225,7 @@ export async function getAnalyticsSummary(
                 
                 const weekLabel = `${weekStart.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
                 
-                const weekDeals = (deals || []).filter(d => {
+                const weekDeals = safeDeals.filter(d => {
                     if (!d.created_at) return false;
                     const dealDate = new Date(d.created_at);
                     return dealDate >= weekStart && dealDate < weekEnd;
@@ -235,7 +250,7 @@ export async function getAnalyticsSummary(
                 const monthKey = date.toISOString().slice(0, 7);
                 const monthLabel = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
                 
-                const monthDeals = (deals || []).filter(d => d.created_at && d.created_at.startsWith(monthKey));
+                const monthDeals = safeDeals.filter(d => d.created_at && d.created_at.startsWith(monthKey));
                 const monthConcluded = monthDeals.filter(d => d.status === 'concluded').length;
                 const monthCancelled = monthDeals.filter(d => d.status === 'cancelled').length;
                 const monthTotal = monthConcluded + monthCancelled;
@@ -255,7 +270,7 @@ export async function getAnalyticsSummary(
                 const monthKey = date.toISOString().slice(0, 7);
                 const monthLabel = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
                 
-                const monthDeals = (deals || []).filter(d => d.created_at && d.created_at.startsWith(monthKey));
+                const monthDeals = safeDeals.filter(d => d.created_at && d.created_at.startsWith(monthKey));
                 const monthConcluded = monthDeals.filter(d => d.status === 'concluded').length;
                 const monthCancelled = monthDeals.filter(d => d.status === 'cancelled').length;
                 const monthTotal = monthConcluded + monthCancelled;
@@ -303,9 +318,11 @@ export async function getAnalyticsSummary(
             .from('leads')
             .select('id, origin, qualified_master_deal_id');
 
+        // Safe fallback for leads
+        const safeLeadsData = leadsData ?? [];
         const leadOriginMap: Record<string, { total: number; converted: number; volumes: number[] }> = {};
         
-        (leadsData || []).forEach(lead => {
+        safeLeadsData.forEach(lead => {
             const origin = lead.origin || 'unknown';
             if (!leadOriginMap[origin]) {
                 leadOriginMap[origin] = { total: 0, converted: 0, volumes: [] };
@@ -314,7 +331,7 @@ export async function getAnalyticsSummary(
             
             // Check if lead converted to a deal
             if (lead.qualified_master_deal_id) {
-                const deal = (deals || []).find(d => d.id === lead.qualified_master_deal_id);
+                const deal = safeDeals.find(d => d.id === lead.qualified_master_deal_id);
                 if (deal) {
                     leadOriginMap[origin].converted += 1;
                     if (deal.volume) {
@@ -337,7 +354,7 @@ export async function getAnalyticsSummary(
         // 3. Product Distribution: Group master_deals by operation_type or product_id
         const productDistributionMap: Record<string, { volume: number; count: number }> = {};
         
-        (deals || []).forEach(deal => {
+        safeDeals.forEach(deal => {
             const productType = deal.operation_type || 'unknown';
             if (!productDistributionMap[productType]) {
                 productDistributionMap[productType] = { volume: 0, count: 0 };
@@ -355,7 +372,7 @@ export async function getAnalyticsSummary(
         // 4. Deal Velocity: Calculate avg days between enteredAt and exitedAt by stage
         const stageVelocityMap: Record<string, { totalDays: number; count: number }> = {};
         
-        (history || []).forEach(record => {
+        safeHistory.forEach(record => {
             if (record.entered_at && record.exited_at) {
                 const enteredDate = new Date(record.entered_at);
                 const exitedDate = new Date(record.exited_at);
@@ -376,7 +393,7 @@ export async function getAnalyticsSummary(
         }));
 
         return {
-            totalDeals: (deals || []).length,
+            totalDeals: safeDeals.length,
             activeDeals,
             concludedDeals,
             cancelledDeals,
@@ -399,7 +416,27 @@ export async function getAnalyticsSummary(
 
     } catch (error) {
         console.error('Error fetching analytics:', error);
-        throw error;
+        // Return zeroed metrics as fallback to prevent UI crash
+        return {
+            totalDeals: 0,
+            activeDeals: 0,
+            concludedDeals: 0,
+            cancelledDeals: 0,
+            averageTimeToClose: 0,
+            conversionRate: 0,
+            weightedPipeline: 0,
+            slaBreach: {
+                total: 0,
+                byStage: {}
+            },
+            dealsByStage: {},
+            teamWorkload: [],
+            conversionTrend: [],
+            playerEfficiency: [],
+            leadOriginPerformance: [],
+            productDistribution: [],
+            dealVelocity: []
+        };
     }
 }
 
