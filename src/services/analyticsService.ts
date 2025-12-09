@@ -275,29 +275,27 @@ export async function getAnalyticsSummary(
         // ============================================================================
 
         // 1. Player Efficiency: Group player_tracks by player
-        const playerEfficiencyMap: Record<string, { volume: number; deals: string[]; concluded: number }> = {};
+        const playerEfficiencyMap: Record<string, { volume: number; deals: Set<string>; concludedDeals: Set<string> }> = {};
         
         filteredTracks.forEach(track => {
             const playerName = track.player_name || 'Unknown';
             if (!playerEfficiencyMap[playerName]) {
-                playerEfficiencyMap[playerName] = { volume: 0, deals: [], concluded: 0 };
+                playerEfficiencyMap[playerName] = { volume: 0, deals: new Set(), concludedDeals: new Set() };
             }
             playerEfficiencyMap[playerName].volume += track.track_volume || 0;
-            if (!playerEfficiencyMap[playerName].deals.includes(track.master_deal_id)) {
-                playerEfficiencyMap[playerName].deals.push(track.master_deal_id);
-            }
+            playerEfficiencyMap[playerName].deals.add(track.master_deal_id);
             
-            // Count concluded tracks
+            // Count concluded deals (unique deal IDs)
             if (track.status === 'concluded') {
-                playerEfficiencyMap[playerName].concluded += 1;
+                playerEfficiencyMap[playerName].concludedDeals.add(track.master_deal_id);
             }
         });
 
         const playerEfficiency = Object.entries(playerEfficiencyMap).map(([name, data]) => ({
             name,
             volume: data.volume,
-            conversionRate: data.deals.length > 0 ? (data.concluded / data.deals.length) * 100 : 0,
-            totalDeals: data.deals.length
+            conversionRate: data.deals.size > 0 ? (data.concludedDeals.size / data.deals.size) * 100 : 0,
+            totalDeals: data.deals.size
         }));
 
         // 2. Lead Origin Performance: Cross leads with master_deals
