@@ -228,7 +228,7 @@ export default function DashboardPage() {
                             {widgetDef.availableSizes && widgetDef.availableSizes.length > 1 ? (
                               <Select
                                 value={widget.size}
-                                onValueChange={(size: any) => updateWidgetSize(widget.id, size)}
+                                onValueChange={(size: 'small' | 'medium' | 'large' | 'full') => updateWidgetSize(widget.id, size)}
                               >
                                 <SelectTrigger className="w-28 h-8 text-xs">
                                   <SelectValue />

@@ -1,10 +1,24 @@
 import { describe, it, expect } from 'vitest';
 
+// Legacy format (for backward compatibility)
+interface LegacyDashboardConfig {
+  topWidgets: string[];
+  mainWidgets: string[];
+}
+
+// New unified format
+interface DashboardConfig {
+  widgets: Array<{
+    id: string;
+    size: 'small' | 'medium' | 'large' | 'full';
+  }>;
+}
+
 // Migration helper function extracted for testing
-function migrateLegacyConfig(config: any): any {
+function migrateLegacyConfig(config: LegacyDashboardConfig | DashboardConfig | any): DashboardConfig {
   // If already in new format, return as-is
   if (config.widgets && Array.isArray(config.widgets)) {
-    return config;
+    return config as DashboardConfig;
   }
   
   // Convert legacy format

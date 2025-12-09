@@ -37,7 +37,7 @@ const DEFAULT_GLOBAL_CONFIG: GlobalDashboardConfig = {
 };
 
 // Migration helper: convert legacy format to new format
-function migrateLegacyConfig(config: any): DashboardConfig {
+function migrateLegacyConfig(config: LegacyDashboardConfig | DashboardConfig | any): DashboardConfig {
   // If already in new format, return as-is
   if (config.widgets && Array.isArray(config.widgets)) {
     return config as DashboardConfig;
@@ -109,8 +109,12 @@ export function useDashboardLayout() {
 
   const userPreferences = localPreferences || (profile?.preferences?.dashboard ? migrateLegacyConfig(profile.preferences.dashboard) : undefined);
   
+  // Resolve templates and defaults with migration
+  const migratedRoleTemplate = roleTemplate ? migrateLegacyConfig(roleTemplate) : undefined;
+  const migratedGlobalDefault = globalConfig.defaultConfig ? migrateLegacyConfig(globalConfig.defaultConfig) : undefined;
+  
   // Updated priority order: User Preferences → Role Template → Global Default → Code Fallback
-  const currentLayout: DashboardConfig = userPreferences || (roleTemplate ? migrateLegacyConfig(roleTemplate) : undefined) || (globalConfig.defaultConfig ? migrateLegacyConfig(globalConfig.defaultConfig) : undefined) || DEFAULT_DASHBOARD_CONFIG;
+  const currentLayout: DashboardConfig = userPreferences || migratedRoleTemplate || migratedGlobalDefault || DEFAULT_DASHBOARD_CONFIG;
 
   // Filter out widgets that are not available globally or not permitted for the user
   const visibleWidgets = (widgets: DashboardConfig['widgets']) => {
