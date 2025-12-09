@@ -245,4 +245,144 @@ describe('settingsService', () => {
       expect(result.data).toBeNull()
     })
   })
+
+  describe('user_role_metadata CRUD', () => {
+    it('should list user role metadata with badgeVariant', async () => {
+      const mockData = [
+        {
+          id: 'role-1',
+          code: 'admin',
+          label: 'Administrador',
+          description: 'Admin role',
+          badge_variant: 'default',
+          permissions: ['manage_users', 'manage_settings'],
+          is_active: true,
+          sort_order: 1,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z'
+        }
+      ]
+
+      const mockSelect = vi.fn(() => ({
+        order: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as any)
+
+      const result = await settingsService.list('user_role_metadata')
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveLength(1)
+      expect(result.data![0]).toHaveProperty('code', 'admin')
+      expect(result.data![0]).toHaveProperty('badgeVariant', 'default')
+      expect(result.data![0]).toHaveProperty('permissions')
+      expect(result.data![0].permissions).toEqual(['manage_users', 'manage_settings'])
+    })
+
+    it('should create user role metadata with permissions array', async () => {
+      const payload = {
+        code: 'viewer',
+        label: 'Viewer',
+        description: 'Read-only access',
+        badgeVariant: 'outline',
+        permissions: ['view_deals', 'view_reports'],
+        isActive: true,
+        sortOrder: 5
+      }
+
+      const mockData = {
+        id: 'role-new',
+        code: 'viewer',
+        label: 'Viewer',
+        description: 'Read-only access',
+        badge_variant: 'outline',
+        permissions: ['view_deals', 'view_reports'],
+        is_active: true,
+        sort_order: 5,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z'
+      }
+
+      const mockSelect = vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      const mockInsert = vi.fn(() => ({ select: mockSelect }))
+
+      vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any)
+
+      const result = await settingsService.create('user_role_metadata', payload)
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveProperty('code', 'viewer')
+      expect(result.data).toHaveProperty('badgeVariant', 'outline')
+      expect(result.data?.permissions).toEqual(['view_deals', 'view_reports'])
+    })
+
+    it('should update user role metadata with new badgeVariant', async () => {
+      const payload = {
+        label: 'Super Admin',
+        badgeVariant: 'destructive',
+        permissions: ['manage_all']
+      }
+
+      const mockData = {
+        id: 'role-1',
+        code: 'admin',
+        label: 'Super Admin',
+        description: 'Admin role',
+        badge_variant: 'destructive',
+        permissions: ['manage_all'],
+        is_active: true,
+        sort_order: 1,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-02T00:00:00Z'
+      }
+
+      const mockSelect = vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      const mockEq = vi.fn(() => ({ select: mockSelect }))
+      const mockUpdate = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ update: mockUpdate } as any)
+
+      const result = await settingsService.update('user_role_metadata', 'role-1', payload)
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveProperty('label', 'Super Admin')
+      expect(result.data).toHaveProperty('badgeVariant', 'destructive')
+      expect(result.data?.permissions).toEqual(['manage_all'])
+    })
+
+    it('should handle empty permissions array', async () => {
+      const mockData = [
+        {
+          id: 'role-2',
+          code: 'guest',
+          label: 'Guest',
+          description: 'Guest role',
+          badge_variant: 'outline',
+          permissions: null, // null permissions in database
+          is_active: true,
+          sort_order: 10,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z'
+        }
+      ]
+
+      const mockSelect = vi.fn(() => ({
+        order: vi.fn(() => Promise.resolve(createMockResponse(mockData)))
+      }))
+
+      vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as any)
+
+      const result = await settingsService.list('user_role_metadata')
+
+      expect(result.error).toBeNull()
+      expect(result.data).toHaveLength(1)
+      expect(result.data![0].permissions).toEqual([]) // Should default to empty array
+    })
+  })
 })

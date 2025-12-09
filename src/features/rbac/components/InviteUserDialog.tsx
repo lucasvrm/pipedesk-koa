@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { magicLinkService } from '@/services/magicLinkService'
-import { User, ROLE_LABELS } from '@/lib/types'
+import { User } from '@/lib/types'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface InviteUserDialogProps {
   open: boolean
@@ -32,6 +33,7 @@ export default function InviteUserDialog({
   onOpenChange,
   currentUser,
 }: InviteUserDialogProps) {
+  const { userRoleMetadata } = useSystemMetadata()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<string>('client')
   const [loading, setLoading] = useState(false)
@@ -91,9 +93,8 @@ export default function InviteUserDialog({
                 <SelectValue placeholder="Selecione uma função" />
               </SelectTrigger>
               <SelectContent>
-                {/* Populando com as labels traduzidas */}
-                {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                {userRoleMetadata.map((role) => (
+                  <SelectItem key={role.code} value={role.code}>{role.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

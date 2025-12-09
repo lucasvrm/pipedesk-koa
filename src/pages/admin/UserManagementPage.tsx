@@ -1,14 +1,14 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService'
-import { User, UserRole, ROLE_LABELS } from '@/lib/types'
+import { User, UserRole } from '@/lib/types'
 import { hasPermission } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { Badge, BadgeVariant } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,6 +43,7 @@ import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
 import RolesManager from '@/features/rbac/components/RolesManager'
 import { PageContainer } from '@/components/PageContainer'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 // Tipos para Ordenação
 type SortKey = 'name' | 'email' | 'role' | 'clientEntity';
@@ -50,6 +51,7 @@ type SortDirection = 'asc' | 'desc';
 
 export default function UserManagementPage() {
   const { profile: currentUser } = useAuth()
+  const { userRoleMetadata, getUserRoleByCode } = useSystemMetadata()
   
   // Hooks de Dados e Mutações
   const { data: users, isLoading } = useUsers()
@@ -160,8 +162,8 @@ export default function UserManagementPage() {
           break
         case 'role':
           // Ordena pelo Label Traduzido
-          aValue = ROLE_LABELS[a.role].toLowerCase()
-          bValue = ROLE_LABELS[b.role].toLowerCase()
+          aValue = (getUserRoleByCode(a.role)?.label || a.role).toLowerCase()
+          bValue = (getUserRoleByCode(b.role)?.label || b.role).toLowerCase()
           break
         case 'clientEntity':
           aValue = (a.clientEntity || '').toLowerCase()
@@ -292,17 +294,12 @@ export default function UserManagementPage() {
 
   // Helper para renderizar nomes traduzidos no Badge
   const getRoleLabel = (role: UserRole) => {
-    return ROLE_LABELS[role] || role;
+    return getUserRoleByCode(role)?.label || role;
   }
 
-  const getRoleBadgeVariant = (role: UserRole) => {
-    switch (role) {
-      case 'admin': return 'default'
-      case 'analyst': return 'secondary'
-      case 'client': return 'outline'
-      case 'newbusiness': return 'outline'
-      default: return 'outline'
-    }
+  const getRoleBadgeVariant = (role: UserRole): BadgeVariant => {
+    const roleMeta = getUserRoleByCode(role);
+    return (roleMeta?.badgeVariant as BadgeVariant) || 'outline';
   }
 
   const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
@@ -389,9 +386,8 @@ export default function UserManagementPage() {
                       <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v as UserRole})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {/* Uso do Object.entries para popular o select automaticamente */}
-                          {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                          {userRoleMetadata.map((role) => (
+                            <SelectItem key={role.code} value={role.code}>{role.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -516,8 +512,8 @@ export default function UserManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as Funções</SelectItem>
-                      {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      {userRoleMetadata.map((role) => (
+                        <SelectItem key={role.code} value={role.code}>{role.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

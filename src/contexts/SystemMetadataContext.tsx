@@ -239,6 +239,7 @@ export function SystemMetadataProvider({ children }: SystemMetadataProviderProps
         code: item.code,
         label: item.label,
         description: item.description,
+        badgeVariant: item.badge_variant,
         permissions: item.permissions || [],
         isActive: item.is_active,
         sortOrder: item.sort_order,

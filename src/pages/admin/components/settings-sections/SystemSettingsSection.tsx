@@ -14,6 +14,7 @@ import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { getSystemSetting, updateSystemSetting } from '@/services/settingsService';
 import { Gear, ShieldCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { RoleMetadataManager } from './RoleMetadataManager';
 
 interface SystemSettingsFormData {
   // Business Defaults
@@ -487,6 +488,9 @@ export function SystemSettingsSection() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Role Metadata Manager */}
+      <RoleMetadataManager />
 
       {/* Save Button */}
       <div className="flex justify-end">

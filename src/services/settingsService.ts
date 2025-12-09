@@ -412,6 +412,7 @@ function mapFromDb(item: any, type: SettingType): any {
     case 'user_role_metadata':
       return {
         ...metadataBase,
+        badgeVariant: item.badge_variant,
         permissions: item.permissions || [],
         updatedAt: item.updated_at,
       }
@@ -479,6 +480,7 @@ function mapToDb(item: any, type: SettingType): any {
     case 'user_role_metadata':
       return {
         ...metadataBase,
+        badge_variant: item.badgeVariant,
         permissions: item.permissions || [],
       }
     default:

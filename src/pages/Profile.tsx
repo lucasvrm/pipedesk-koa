@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge, BadgeVariant } from '@/components/ui/badge'
 import {
   User as UserIcon,
   EnvelopeSimple,
@@ -30,14 +31,15 @@ import {
   Phone
 } from '@phosphor-icons/react'
 import { getInitials } from '@/lib/helpers'
-import { ROLE_LABELS } from '@/lib/types'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { PageContainer } from '@/components/PageContainer'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 export default function Profile() {
+  const { getUserRoleByCode } = useSystemMetadata()
   const { profile, signOut, resetPassword } = useAuth()
   const navigate = useNavigate()
   
@@ -307,9 +309,9 @@ export default function Profile() {
                     <EnvelopeSimple /> {profile.email}
                   </CardDescription>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      {ROLE_LABELS[profile.role]}
-                    </span>
+                    <Badge variant={(getUserRoleByCode(profile.role)?.badgeVariant as BadgeVariant) || 'default'}>
+                      {getUserRoleByCode(profile.role)?.label || profile.role}
+                    </Badge>
                   </div>
                 </div>
               </div>
