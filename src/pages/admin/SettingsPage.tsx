@@ -68,7 +68,6 @@ import {
   LeadSettingsSection,
   DealPipelineSettingsSection,
   CompanyRelationshipSettingsSection,
-  SystemMetadataSettingsSection,
   SystemSettingsSection
 } from '@/pages/admin/components/settings-sections';
 
@@ -1058,7 +1057,6 @@ export default function SettingsPage() {
 
           <TabsContent value="system-meta" className="space-y-6 mt-4">
             <SystemSettingsSection />
-            <SystemMetadataSettingsSection />
           </TabsContent>
 
           {/* Existing Tabs */}
