@@ -52,7 +52,8 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Tag as TagType } from '@/lib/types'
-import { LEAD_ORIGIN_LABELS, LEAD_STATUS_LABELS, LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
@@ -90,6 +91,7 @@ export default function LeadDetailPage() {
   const { data: users } = useUsers()
   const { data: operationTypes } = useOperationTypes()
   const { data: leadTags } = useEntityTags(id || '', 'lead')
+  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
   
   // Fetch related data for RelationshipMap
   const { data: company } = useCompany(lead?.qualifiedCompanyId)
@@ -146,14 +148,15 @@ export default function LeadDetailPage() {
 
   const statusBadge = useMemo(() => {
     if (!lead) return null
+    const statusMeta = getLeadStatusByCode(lead.status)
     return (
       <StatusBadge
         semanticStatus={leadStatusMap(lead.status)}
-        label={LEAD_STATUS_LABELS[lead.status]}
+        label={statusMeta?.label || lead.status}
         className="text-sm"
       />
     )
-  }, [lead])
+  }, [lead, getLeadStatusByCode])
 
   const operationTypeName = useMemo(() => {
     if (!lead?.operationType) return ''
@@ -263,7 +266,8 @@ export default function LeadDetailPage() {
     try {
       await updateLead.mutateAsync({ id: lead.id, data: { status: value } })
       if (profile) {
-        logActivity(lead.id, 'lead', `Status alterado para ${LEAD_STATUS_LABELS[value]}`, profile.id)
+        const statusMeta = getLeadStatusByCode(value)
+        logActivity(lead.id, 'lead', `Status alterado para ${statusMeta?.label || value}`, profile.id)
       }
       toast.success('Status atualizado')
     } catch (error) {
@@ -406,7 +410,7 @@ export default function LeadDetailPage() {
   ]
 
   const SIDEBAR_METRICS = [
-    { label: 'Origem', value: LEAD_ORIGIN_LABELS[lead.origin], icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Origem', value: getLeadOriginByCode(lead.origin)?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }

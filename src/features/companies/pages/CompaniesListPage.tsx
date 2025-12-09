@@ -48,9 +48,7 @@ import {
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import {
-  COMPANY_TYPE_LABELS,
   CompanyType,
-  RELATIONSHIP_LEVEL_LABELS,
   RelationshipLevel
 } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/helpers'
@@ -58,6 +56,7 @@ import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { getCompanyQuickActions } from '@/hooks/useQuickActions'
 
 // Configuração de Ordenação
@@ -71,6 +70,7 @@ interface SortConfig {
 
 export default function CompaniesListPage() {
   const navigate = useNavigate()
+  const { companyTypes, relationshipLevels, getCompanyTypeByCode, getRelationshipLevelByCode } = useSystemMetadata()
   
   // Hooks de Dados e Mutação
   const { data: companies, isLoading } = useCompanies()
@@ -144,8 +144,8 @@ export default function CompaniesListPage() {
           bValue = (b.primaryContactName || '').toLowerCase();
           break;
         case 'type':
-          aValue = COMPANY_TYPE_LABELS[a.type] || '';
-          bValue = COMPANY_TYPE_LABELS[b.type] || '';
+          aValue = getCompanyTypeByCode(a.type)?.label || a.type;
+          bValue = getCompanyTypeByCode(b.type)?.label || b.type;
           break;
         case 'dealsCount':
           aValue = a.dealsCount || 0;
@@ -323,18 +323,18 @@ export default function CompaniesListPage() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {Object.entries(COMPANY_TYPE_LABELS).map(([key, label]) => (
+                    {companyTypes.filter(t => t.isActive).map(type => (
                       <DropdownMenuCheckboxItem
-                        key={key}
-                        checked={typeFilter.includes(key as CompanyType)}
+                        key={type.code}
+                        checked={typeFilter.includes(type.code as CompanyType)}
                         onCheckedChange={(checked) => {
                           setTypeFilter(prev =>
-                            checked ? [...prev, key as CompanyType] : prev.filter(t => t !== key)
+                            checked ? [...prev, type.code as CompanyType] : prev.filter(t => t !== type.code)
                           )
                           setCurrentPage(1)
                         }}
                       >
-                        {label}
+                        {type.label}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
@@ -350,18 +350,18 @@ export default function CompaniesListPage() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Filtrar por Nível</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+                    {relationshipLevels.filter(rl => rl.isActive).map(level => (
                       <DropdownMenuCheckboxItem
-                        key={key}
-                        checked={relationshipFilter.includes(key as RelationshipLevel)}
+                        key={level.code}
+                        checked={relationshipFilter.includes(level.code as RelationshipLevel)}
                         onCheckedChange={(checked) => {
                           setRelationshipFilter(prev =>
-                            checked ? [...prev, key as RelationshipLevel] : prev.filter(t => t !== key)
+                            checked ? [...prev, level.code as RelationshipLevel] : prev.filter(t => t !== level.code)
                           )
                           setCurrentPage(1)
                         }}
                       >
-                        {label}
+                        {level.label}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
@@ -502,7 +502,7 @@ export default function CompaniesListPage() {
 
                         <TableCell>
                           <Badge variant="outline">
-                            {COMPANY_TYPE_LABELS[company.type] || company.type}
+                            {getCompanyTypeByCode(company.type)?.label || company.type}
                           </Badge>
                         </TableCell>
 
@@ -530,7 +530,7 @@ export default function CompaniesListPage() {
                             company.relationshipLevel === 'intermediate' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                             'text-muted-foreground border-border'
                           }>
-                            {RELATIONSHIP_LEVEL_LABELS[company.relationshipLevel]}
+                            {getRelationshipLevelByCode(company.relationshipLevel)?.label || company.relationshipLevel}
                           </Badge>
                         </TableCell>
 

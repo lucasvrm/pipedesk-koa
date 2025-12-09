@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query'
-import { Lead, LeadStatus, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS, LEAD_ORIGIN_LABELS } from '@/lib/types'
+import { Lead, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
 import { updateLead } from '@/services/leadService'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -27,6 +28,7 @@ const columns: { status: LeadStatus; color: string }[] = [
 export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   type UpdateContext = { previous: { key: QueryKey; data: Lead[] | undefined }[] }
 
@@ -50,7 +52,8 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
       toast.error('Não foi possível mover o lead')
     },
     onSuccess: (_data, { status }) => {
-      toast.success(`Lead movido para ${LEAD_STATUS_LABELS[status]}`)
+      const statusMeta = getLeadStatusByCode(status)
+      toast.success(`Lead movido para ${statusMeta?.label || status}`)
     },
     onSettled: (_data, _error, { leadId }) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
@@ -101,7 +104,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
                     )}
                   </div>
                   <Badge variant="secondary" className="text-[10px] h-5 px-2">
-                    {LEAD_STATUS_LABELS[lead.status]}
+                    {getLeadStatusByCode(lead.status)?.label || lead.status}
                   </Badge>
                 </div>
 
@@ -115,7 +118,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span className="font-medium">Origem</span>
-                  <span className="capitalize">{LEAD_ORIGIN_LABELS[lead.origin]}</span>
+                  <span className="capitalize">{getLeadOriginByCode(lead.origin)?.label || lead.origin}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -164,7 +167,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
                 >
                   <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{LEAD_STATUS_LABELS[column.status]}</span>
+                      <span className="font-semibold text-sm">{getLeadStatusByCode(column.status)?.label || column.status}</span>
                     </div>
                     <Badge variant="secondary" className="text-[10px] h-5">{leadsByStatus[column.status]?.length || 0}</Badge>
                   </div>

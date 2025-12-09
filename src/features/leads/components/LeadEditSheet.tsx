@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
 import { Separator } from '@/components/ui/separator'
-import { Lead, LEAD_STATUS_LABELS, LEAD_ORIGIN_LABELS, OPERATION_LABELS, OperationType } from '@/lib/types'
+import { Lead, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useForm } from 'react-hook-form'
 import { useEffect, useMemo } from 'react'
 import { useUpdateLead, LeadUpdate } from '@/services/leadService'
 import { syncName } from '@/services/driveService'
 import { toast } from 'sonner'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface LeadEditSheetProps {
   lead: Lead | null
@@ -24,6 +25,7 @@ interface LeadEditSheetProps {
 export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) {
   const updateLead = useUpdateLead()
   const { register, handleSubmit, reset, setValue, watch } = useForm<LeadUpdate>()
+  const { leadStatuses, leadOrigins, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   const leadInitials = useMemo(() => {
     if (!lead?.legalName) return '--'
@@ -91,9 +93,9 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <StatusBadge
                 semanticStatus={leadStatusMap(lead.status)}
-                label={`Status: ${LEAD_STATUS_LABELS[lead.status]}`}
+                label={`Status: ${getLeadStatusByCode(lead.status)?.label || lead.status}`}
               />
-              <Badge variant="secondary">Origem: {LEAD_ORIGIN_LABELS[lead.origin]}</Badge>
+              <Badge variant="secondary">Origem: {getLeadOriginByCode(lead.origin)?.label || lead.origin}</Badge>
             </div>
           )}
         </SheetHeader>
@@ -131,8 +133,8 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(LEAD_STATUS_LABELS).map(([k, l]) => (
-                      <SelectItem key={k} value={k}>{l}</SelectItem>
+                    {leadStatuses.filter(s => s.isActive).map(status => (
+                      <SelectItem key={status.code} value={status.code}>{status.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -144,8 +146,8 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(LEAD_ORIGIN_LABELS).map(([k, l]) => (
-                      <SelectItem key={k} value={k}>{l}</SelectItem>
+                    {leadOrigins.filter(o => o.isActive).map(origin => (
+                      <SelectItem key={origin.code} value={origin.code}>{origin.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
