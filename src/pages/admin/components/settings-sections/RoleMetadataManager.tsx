@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Badge, BadgeVariant } from '@/components/ui/badge';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { settingsService } from '@/services/settingsService';
 import { UserRoleMetadata } from '@/types/metadata';
@@ -48,12 +48,12 @@ interface RoleFormData {
   code: string;
   label: string;
   description: string;
-  badgeVariant: string;
+  badgeVariant: BadgeVariant;
   sortOrder: number;
   permissions: string;
 }
 
-const BADGE_VARIANTS = [
+const BADGE_VARIANTS: Array<{ value: BadgeVariant; label: string }> = [
   { value: 'default', label: 'Default' },
   { value: 'secondary', label: 'Secondary' },
   { value: 'outline', label: 'Outline' },
@@ -259,7 +259,7 @@ export function RoleMetadataManager() {
                         {role.description || '-'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={role.badgeVariant as any || 'default'}>
+                        <Badge variant={(role.badgeVariant as BadgeVariant) || 'default'}>
                           {role.badgeVariant || 'default'}
                         </Badge>
                       </TableCell>

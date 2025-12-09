@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
+import { Badge, BadgeVariant } from '@/components/ui/badge'
 import {
   User as UserIcon,
   EnvelopeSimple,
@@ -309,7 +309,7 @@ export default function Profile() {
                     <EnvelopeSimple /> {profile.email}
                   </CardDescription>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant={(getUserRoleByCode(profile.role)?.badgeVariant as any) || 'default'}>
+                    <Badge variant={(getUserRoleByCode(profile.role)?.badgeVariant as BadgeVariant) || 'default'}>
                       {getUserRoleByCode(profile.role)?.label || profile.role}
                     </Badge>
                   </div>

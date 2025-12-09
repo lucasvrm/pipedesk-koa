@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { Badge, BadgeVariant } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -297,9 +297,9 @@ export default function UserManagementPage() {
     return getUserRoleByCode(role)?.label || role;
   }
 
-  const getRoleBadgeVariant = (role: UserRole) => {
+  const getRoleBadgeVariant = (role: UserRole): BadgeVariant => {
     const roleMeta = getUserRoleByCode(role);
-    return (roleMeta?.badgeVariant as any) || 'outline';
+    return (roleMeta?.badgeVariant as BadgeVariant) || 'outline';
   }
 
   const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
