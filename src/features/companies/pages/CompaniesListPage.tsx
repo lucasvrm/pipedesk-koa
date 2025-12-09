@@ -42,7 +42,6 @@ import {
   CaretLeft, 
   CaretRight, 
   Funnel, 
-  PencilSimple, 
   Briefcase, 
   ArrowSquareOut 
 } from '@phosphor-icons/react'
@@ -58,7 +57,6 @@ import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { getCompanyQuickActions } from '@/hooks/useQuickActions'
-import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -71,13 +69,19 @@ interface SortConfig {
 
 export default function CompaniesListPage() {
   const navigate = useNavigate()
-  const { companyTypes, relationshipLevels, getCompanyTypeByCode, getRelationshipLevelByCode } = useSystemMetadata()
+
+  // Hooks de metadata – chamada única
+  const {
+    companyTypes,
+    relationshipLevels,
+    getCompanyTypeByCode,
+    getRelationshipLevelByCode,
+  } = useSystemMetadata()
   
   // Hooks de Dados e Mutação
   const { data: companies, isLoading } = useCompanies()
   const deleteCompanyMutation = useDeleteCompany()
   const deleteCompaniesMutation = useDeleteCompanies()
-  const { companyTypes, relationshipLevels, getCompanyTypeByCode, getRelationshipLevelByCode } = useSystemMetadata()
 
   // Estados de Controle
   const [searchTerm, setSearchTerm] = useState('')
@@ -154,6 +158,7 @@ export default function CompaniesListPage() {
           bValue = b.dealsCount || 0;
           break;
         case 'relationshipLevel':
+          // TODO: opcional – pode ordenar por sort_order vindo do metadata
           const relOrder: Record<string, number> = { 'none': 0, 'basic': 1, 'intermediate': 2, 'close': 3 };
           aValue = relOrder[a.relationshipLevel] || 0;
           bValue = relOrder[b.relationshipLevel] || 0;
@@ -170,7 +175,7 @@ export default function CompaniesListPage() {
     });
 
     return result;
-  }, [companies, searchTerm, typeFilter, relationshipFilter, sortConfig]);
+  }, [companies, searchTerm, typeFilter, relationshipFilter, sortConfig, getCompanyTypeByCode]);
 
   // --- Paginação ---
   const totalPages = Math.ceil(processedCompanies.length / itemsPerPage)
