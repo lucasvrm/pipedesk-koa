@@ -270,6 +270,113 @@ export async function getAnalyticsSummary(
             }
         }
 
+        // ============================================================================
+        // NEW RELATIONAL METRICS FOR BI
+        // ============================================================================
+
+        // 1. Player Efficiency: Group player_tracks by player
+        const playerEfficiencyMap: Record<string, { volume: number; deals: string[]; concluded: number }> = {};
+        
+        filteredTracks.forEach(track => {
+            const playerName = track.player_name || 'Unknown';
+            if (!playerEfficiencyMap[playerName]) {
+                playerEfficiencyMap[playerName] = { volume: 0, deals: [], concluded: 0 };
+            }
+            playerEfficiencyMap[playerName].volume += track.track_volume || 0;
+            if (!playerEfficiencyMap[playerName].deals.includes(track.master_deal_id)) {
+                playerEfficiencyMap[playerName].deals.push(track.master_deal_id);
+            }
+            
+            // Count concluded tracks
+            if (track.status === 'concluded') {
+                playerEfficiencyMap[playerName].concluded += 1;
+            }
+        });
+
+        const playerEfficiency = Object.entries(playerEfficiencyMap).map(([name, data]) => ({
+            name,
+            volume: data.volume,
+            conversionRate: data.deals.length > 0 ? (data.concluded / data.deals.length) * 100 : 0,
+            totalDeals: data.deals.length
+        }));
+
+        // 2. Lead Origin Performance: Cross leads with master_deals
+        const { data: leadsData } = await supabase
+            .from('leads')
+            .select('id, origin, qualified_master_deal_id');
+
+        const leadOriginMap: Record<string, { total: number; converted: number; volumes: number[] }> = {};
+        
+        (leadsData || []).forEach(lead => {
+            const origin = lead.origin || 'unknown';
+            if (!leadOriginMap[origin]) {
+                leadOriginMap[origin] = { total: 0, converted: 0, volumes: [] };
+            }
+            leadOriginMap[origin].total += 1;
+            
+            // Check if lead converted to a deal
+            if (lead.qualified_master_deal_id) {
+                const deal = (deals || []).find(d => d.id === lead.qualified_master_deal_id);
+                if (deal) {
+                    leadOriginMap[origin].converted += 1;
+                    if (deal.volume) {
+                        leadOriginMap[origin].volumes.push(deal.volume);
+                    }
+                }
+            }
+        });
+
+        const leadOriginPerformance = Object.entries(leadOriginMap).map(([origin, data]) => ({
+            origin,
+            total: data.total,
+            converted: data.converted,
+            conversionRate: data.total > 0 ? (data.converted / data.total) * 100 : 0,
+            avgTicket: data.volumes.length > 0 
+                ? data.volumes.reduce((sum, v) => sum + v, 0) / data.volumes.length 
+                : 0
+        }));
+
+        // 3. Product Distribution: Group master_deals by operation_type or product_id
+        const productDistributionMap: Record<string, { volume: number; count: number }> = {};
+        
+        (deals || []).forEach(deal => {
+            const productType = deal.operation_type || 'unknown';
+            if (!productDistributionMap[productType]) {
+                productDistributionMap[productType] = { volume: 0, count: 0 };
+            }
+            productDistributionMap[productType].volume += deal.volume || 0;
+            productDistributionMap[productType].count += 1;
+        });
+
+        const productDistribution = Object.entries(productDistributionMap).map(([type, data]) => ({
+            type,
+            volume: data.volume,
+            count: data.count
+        }));
+
+        // 4. Deal Velocity: Calculate avg days between enteredAt and exitedAt by stage
+        const stageVelocityMap: Record<string, { totalDays: number; count: number }> = {};
+        
+        (history || []).forEach(record => {
+            if (record.entered_at && record.exited_at) {
+                const enteredDate = new Date(record.entered_at);
+                const exitedDate = new Date(record.exited_at);
+                const days = Math.abs((exitedDate.getTime() - enteredDate.getTime()) / (1000 * 60 * 60 * 24));
+                
+                const stageName = record.stage || 'unknown';
+                if (!stageVelocityMap[stageName]) {
+                    stageVelocityMap[stageName] = { totalDays: 0, count: 0 };
+                }
+                stageVelocityMap[stageName].totalDays += days;
+                stageVelocityMap[stageName].count += 1;
+            }
+        });
+
+        const dealVelocity = Object.entries(stageVelocityMap).map(([stageName, data]) => ({
+            stageName,
+            avgDays: data.count > 0 ? data.totalDays / data.count : 0
+        }));
+
         return {
             totalDeals: (deals || []).length,
             activeDeals,
@@ -284,7 +391,12 @@ export async function getAnalyticsSummary(
             },
             dealsByStage,
             teamWorkload,
-            conversionTrend
+            conversionTrend,
+            // New relational metrics
+            playerEfficiency,
+            leadOriginPerformance,
+            productDistribution,
+            dealVelocity
         };
 
     } catch (error) {
