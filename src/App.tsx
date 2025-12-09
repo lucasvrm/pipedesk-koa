@@ -27,7 +27,7 @@ const TagSettingsPage = lazy(() => import('@/pages/admin/TagSettings'))
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const GoogleIntegrationPage = lazy(() => import('@/pages/admin/GoogleIntegrationPage'))
 const DashboardSettingsPage = lazy(() => import('@/pages/admin/DashboardSettings')) // Novo import
-const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'))
+const SettingsPage = lazy(() => import('@/pages/admin/NewSettingsPage'))
 const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage'))
 const FolderManagerPage = lazy(() => import('@/pages/FolderManagerPage'))
 const HelpCenterPage = lazy(() => import('@/pages/HelpCenterPage'))
