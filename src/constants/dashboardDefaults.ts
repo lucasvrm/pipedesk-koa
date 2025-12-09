@@ -13,13 +13,15 @@
 import { DashboardConfig } from '@/hooks/useDashboardLayout';
 
 export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
-  topWidgets: [
-    'notifications',
-    'quick-tasks',
-    'weighted-pipeline',
-    'active-deals',
-    'conversion-rate',
-    'total-deals'
-  ],
-  mainWidgets: ['weighted-forecast', 'portfolio-matrix', 'my-deals']
+  widgets: [
+    { id: 'notifications', size: 'small' },
+    { id: 'quick-tasks', size: 'small' },
+    { id: 'weighted-pipeline', size: 'small' },
+    { id: 'active-deals', size: 'small' },
+    { id: 'conversion-rate', size: 'small' },
+    { id: 'total-deals', size: 'small' },
+    { id: 'weighted-forecast', size: 'medium' },
+    { id: 'portfolio-matrix', size: 'medium' },
+    { id: 'my-deals', size: 'medium' }
+  ]
 };
