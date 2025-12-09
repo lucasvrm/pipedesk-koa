@@ -19,7 +19,7 @@ import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
 import { WIDGET_REGISTRY } from '@/features/dashboard/registry'
 import { DEFAULT_DASHBOARD_CONFIG } from '@/constants/dashboardDefaults'
 import { DashboardToolbar } from '@/features/dashboard/components/DashboardToolbar'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -248,27 +248,26 @@ export default function DashboardPage() {
           </div>
       )}
 
-      {/* --- CUSTOMIZE DIALOG --- */}
-      <Dialog open={isCustomizing} onOpenChange={setIsCustomizing}>
-        <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-            <DialogHeader className="p-6 pb-2">
-                <DialogTitle>Personalizar Dashboard</DialogTitle>
-                <DialogDescription>Escolha quais informações você quer ver e organize sua dashboard.</DialogDescription>
-            </DialogHeader>
+      {/* --- CUSTOMIZE SHEET --- */}
+      <Sheet open={isCustomizing} onOpenChange={setIsCustomizing}>
+        <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 overflow-hidden">
+            <SheetHeader className="p-6 pb-4 border-b">
+                <SheetTitle>Personalizar Dashboard</SheetTitle>
+                <SheetDescription>Organize os widgets da sua área de trabalho.</SheetDescription>
+            </SheetHeader>
 
             <ScrollArea className="flex-1 w-full">
-              <div className="p-6 pt-2 space-y-6">
+              <div className="p-6 space-y-8">
 
                 {/* Current Widgets Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold">Widgets Ativos ({(tempLayout?.widgets || []).length})</h3>
-                    {/* Placeholder for reorder hint */}
                   </div>
 
                   {(tempLayout?.widgets || []).length === 0 ? (
-                    <div className="text-sm text-muted-foreground italic p-4 text-center border rounded-lg border-dashed">
-                      Nenhum widget ativo. Adicione widgets abaixo.
+                    <div className="text-sm text-muted-foreground italic p-4 text-center border rounded-lg border-dashed bg-muted/20">
+                      Nenhum widget ativo.
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -277,12 +276,12 @@ export default function DashboardPage() {
                         if (!widgetDef) return null;
                         
                         return (
-                          <div key={widget.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card shadow-sm">
-                            <div className="flex flex-col gap-1 flex-shrink-0">
+                          <div key={widget.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50 transition-colors">
+                            <div className="flex flex-col gap-1 flex-shrink-0 text-muted-foreground">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 hover:bg-muted"
+                                className="h-6 w-6 p-0 hover:bg-muted hover:text-foreground"
                                 onClick={() => moveWidget(index, 'up')}
                                 disabled={index === 0}
                               >
@@ -291,7 +290,7 @@ export default function DashboardPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 hover:bg-muted"
+                                className="h-6 w-6 p-0 hover:bg-muted hover:text-foreground"
                                 onClick={() => moveWidget(index, 'down')}
                                 disabled={index === (tempLayout?.widgets || []).length - 1}
                               >
@@ -300,43 +299,43 @@ export default function DashboardPage() {
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 mb-1">
                                 <Label className="text-sm font-medium truncate">{widgetDef.title}</Label>
-                                <Badge variant="secondary" className="text-[10px] px-1 h-5 font-normal">
+                                <Badge variant="outline" className="text-[10px] px-1 h-4 font-normal text-muted-foreground">
                                   {widgetDef.category}
                                 </Badge>
                               </div>
+
+                              {widgetDef.availableSizes && widgetDef.availableSizes.length > 1 ? (
+                                <Select
+                                  value={widget.size}
+                                  onValueChange={(size: 'small' | 'medium' | 'large' | 'full') => updateWidgetSize(widget.id, size)}
+                                >
+                                  <SelectTrigger className="w-full h-7 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {widgetDef.availableSizes.map(size => (
+                                      <SelectItem key={size} value={size} className="text-xs">
+                                        {size === 'small' && 'Pequeno'}
+                                        {size === 'medium' && 'Médio'}
+                                        {size === 'large' && 'Grande'}
+                                        {size === 'full' && 'Total'}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                                  {widget.size === 'small' && 'Pequeno'}
+                                  {widget.size === 'medium' && 'Médio'}
+                                  {widget.size === 'large' && 'Grande'}
+                                  {widget.size === 'full' && 'Total'}
+                                </div>
+                              )}
                             </div>
                             
-                            {widgetDef.availableSizes && widgetDef.availableSizes.length > 1 ? (
-                              <Select
-                                value={widget.size}
-                                onValueChange={(size: 'small' | 'medium' | 'large' | 'full') => updateWidgetSize(widget.id, size)}
-                              >
-                                <SelectTrigger className="w-28 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {widgetDef.availableSizes.map(size => (
-                                    <SelectItem key={size} value={size} className="text-xs">
-                                      {size === 'small' && 'Pequeno'}
-                                      {size === 'medium' && 'Médio'}
-                                      {size === 'large' && 'Grande'}
-                                      {size === 'full' && 'Total'}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <span className="text-xs text-muted-foreground w-28 text-center bg-muted/50 rounded py-1">
-                                {widget.size === 'small' && 'Pequeno'}
-                                {widget.size === 'medium' && 'Médio'}
-                                {widget.size === 'large' && 'Grande'}
-                                {widget.size === 'full' && 'Total'}
-                              </span>
-                            )}
-                            
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => toggleWidget(widget.id)}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0" onClick={() => toggleWidget(widget.id)}>
                               <Switch checked={true} />
                             </Button>
                           </div>
@@ -350,8 +349,8 @@ export default function DashboardPage() {
                 
                 {/* Available Widgets Section */}
                 <div className="space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-sm font-semibold">Adicionar Widgets</h3>
+                  <div className="sticky top-0 bg-background pt-1 pb-4 z-10">
+                    <h3 className="text-sm font-semibold mb-3">Adicionar Widgets</h3>
                     <div className="relative">
                       <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -367,20 +366,17 @@ export default function DashboardPage() {
                     if (widgets.length === 0) return null;
                     return (
                       <div key={category} className="space-y-2">
-                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{category}</h4>
+                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">{category}</h4>
                          <div className="grid grid-cols-1 gap-2">
                             {widgets.map(widget => (
-                              <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                              <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleWidget(widget.id)}>
                                 <div className="flex-1">
-                                  <Label className="text-sm font-medium cursor-pointer" onClick={() => toggleWidget(widget.id)}>{widget.title}</Label>
+                                  <Label className="text-sm font-medium cursor-pointer">{widget.title}</Label>
                                   <p className="text-xs text-muted-foreground mt-0.5">
-                                    Tamanho padrão: {widget.defaultSize}
+                                    Padrão: {widget.defaultSize === 'small' ? 'Pequeno' : widget.defaultSize === 'medium' ? 'Médio' : widget.defaultSize === 'large' ? 'Grande' : 'Total'}
                                   </p>
                                 </div>
-                                <Switch
-                                  checked={false}
-                                  onCheckedChange={() => toggleWidget(widget.id)}
-                                />
+                                <Plus className="h-4 w-4 text-muted-foreground" />
                               </div>
                             ))}
                          </div>
@@ -397,21 +393,21 @@ export default function DashboardPage() {
               </div>
             </ScrollArea>
 
-            <div className="p-6 border-t bg-background mt-auto">
-              <div className="flex justify-between w-full">
-                  <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive h-9" onClick={handleResetDefaults}>
-                      <ArrowCounterClockwise className="mr-2" /> Restaurar
+            <SheetFooter className="p-6 border-t bg-background mt-auto flex-col sm:flex-col gap-3">
+               <Button onClick={handleSaveCustomize} className="w-full">
+                  <Checks className="mr-2" /> Salvar Alterações
+               </Button>
+               <div className="flex gap-2 w-full">
+                  <Button variant="outline" onClick={() => setIsCustomizing(false)} className="flex-1">
+                    Cancelar
                   </Button>
-                  <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setIsCustomizing(false)} className="h-9">Cancelar</Button>
-                      <Button onClick={handleSaveCustomize} className="h-9">
-                          <Checks className="mr-2" /> Salvar Alterações
-                      </Button>
-                  </div>
-              </div>
-            </div>
-        </DialogContent>
-      </Dialog>
+                  <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive flex-1" onClick={handleResetDefaults}>
+                    <ArrowCounterClockwise className="mr-2" /> Restaurar
+                  </Button>
+               </div>
+            </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </PageContainer>
     </DashboardFiltersProvider>
   )
