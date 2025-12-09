@@ -17,30 +17,6 @@ import { useEffect, useState } from 'react'
  * @param teamFilter - Team filter (user ID or 'all')
  * @param typeFilter - Operation type filter or 'all'
  * @returns Query result with analytics metrics
- * 
- * @example
- * ```tsx
- * function AnalyticsDashboard() {
- *   const [dateFilter, setDateFilter] = useState<DateFilterType>('30d')
- *   const [teamFilter, setTeamFilter] = useState('all')
- *   const [typeFilter, setTypeFilter] = useState('all')
- *   
- *   const { data: metrics, isLoading } = useEnhancedAnalytics(
- *     dateFilter,
- *     teamFilter,
- *     typeFilter
- *   )
- *   
- *   if (isLoading) return <div>Loading...</div>
- *   
- *   return (
- *     <div>
- *       <h2>Total Deals: {metrics?.totalDeals}</h2>
- *       <h2>Weighted Pipeline: ${metrics?.weightedPipeline.toLocaleString()}</h2>
- *     </div>
- *   )
- * }
- * ```
  */
 export function useEnhancedAnalytics(
   dateFilter: DateFilterType,
@@ -60,13 +36,11 @@ export function useEnhancedAnalytics(
   const teamMemberIds = teamMembers?.map(member => member.id)
   
   // Map dateFilter to old analytics format for backward compatibility
-  // Note: Some DateFilterType values ('today', '7d', 'ytd') are mapped to 'all'
-  // because the legacy analytics service only supports '30d', '90d', '1y', and 'all'
   const legacyDateFilter: 'all' | '30d' | '90d' | '1y' = 
     dateFilter === '30d' ? '30d' :
     dateFilter === '90d' ? '90d' :
     dateFilter === '1y' ? '1y' :
-    'all'  // Fallback for 'today', '7d', 'ytd', and 'all'
+    'all'
   
   // Call analytics with metadata integration
   const analytics = useAnalyticsWithMetadata(
@@ -80,42 +54,39 @@ export function useEnhancedAnalytics(
     }
   )
   
-  // Add timeout to prevent infinite loading state
+  // Timeout state
   const [hasTimedOut, setHasTimedOut] = useState(false)
-  const [wasLoading, setWasLoading] = useState(false)
   
+  // Combined loading state
+  const isCombinedLoading = analytics.isLoading || metadataLoading || teamLoading
+
   useEffect(() => {
-    const isCurrentlyLoading = analytics.isLoading || metadataLoading || teamLoading
-    
-    // Clear any existing timeout first
-    let timeout: NodeJS.Timeout | undefined
-    
-    // Reset timeout when loading state changes from false to true
-    if (isCurrentlyLoading && !wasLoading) {
-      setHasTimedOut(false)
-      
-      // Set a timeout to prevent infinite loading
-      timeout = setTimeout(() => {
+    let timer: NodeJS.Timeout
+
+    if (isCombinedLoading) {
+      // If loading, start timer
+      timer = setTimeout(() => {
         console.warn('Analytics loading timed out after 10 seconds')
         setHasTimedOut(true)
       }, 10000) // 10 second timeout
+    } else {
+      // If not loading, reset timeout state
+      setHasTimedOut(false)
     }
-    
-    setWasLoading(isCurrentlyLoading)
-    
-    // Always cleanup timeout on unmount or when effect re-runs
+
     return () => {
-      if (timeout) {
-        clearTimeout(timeout)
-      }
+      if (timer) clearTimeout(timer)
     }
-  }, [analytics.isLoading, metadataLoading, teamLoading, wasLoading])
+  }, [isCombinedLoading]) // Only re-run if loading state changes
   
-  // If timed out, force loading to false and show data if available
-  const effectiveLoading = hasTimedOut ? false : (analytics.isLoading || metadataLoading || teamLoading)
+  // If timed out, force loading to false.
+  // We keep the data if it exists (analytics.data might be undefined if it really timed out)
+  const effectiveLoading = hasTimedOut ? false : isCombinedLoading
   
   return {
     ...analytics,
-    isLoading: effectiveLoading
+    isLoading: effectiveLoading,
+    // Add a specific error if timed out and no data
+    error: hasTimedOut && !analytics.data ? new Error('Request timed out') : analytics.error
   }
 }
