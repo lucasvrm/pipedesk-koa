@@ -55,7 +55,6 @@ import type { Tag as TagType } from '@/lib/types'
 import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
-import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DriveSection from '@/components/DriveSection'
@@ -82,7 +81,11 @@ export default function LeadDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile, user } = useAuth()
-  const { leadStatuses, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+
+  // 🔹 Chamada ÚNICA ao hook de metadata
+  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  // se algum dia precisar de leadStatuses:
+  // const { leadStatuses, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const updateLead = useUpdateLead()
@@ -93,7 +96,6 @@ export default function LeadDetailPage() {
   const { data: users } = useUsers()
   const { data: operationTypes } = useOperationTypes()
   const { data: leadTags } = useEntityTags(id || '', 'lead')
-  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
   
   // Fetch related data for RelationshipMap
   const { data: company } = useCompany(lead?.qualifiedCompanyId)
