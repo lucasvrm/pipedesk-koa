@@ -1,0 +1,108 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { LeadSettingsSection } from '@/pages/admin/components/settings-sections/LeadSettingsSection';
+import { DealPipelineSettingsSection } from '@/pages/admin/components/settings-sections/DealPipelineSettingsSection';
+import { CompanyRelationshipSettingsSection } from '@/pages/admin/components/settings-sections/CompanyRelationshipSettingsSection';
+import { SystemMetadataSettingsSection } from '@/pages/admin/components/settings-sections/SystemMetadataSettingsSection';
+
+// Mock the useSystemMetadata hook
+vi.mock('@/hooks/useSystemMetadata', () => ({
+  useSystemMetadata: () => ({
+    leadStatuses: [
+      { id: '1', code: 'new', label: 'Novo', description: 'Lead novo', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+    ],
+    leadOrigins: [
+      { id: '1', code: 'website', label: 'Website', description: 'Origem site', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+    ],
+    leadMemberRoles: [
+      { id: '1', code: 'owner', label: 'Proprietário', description: 'Dono do lead', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+    ],
+    dealStatuses: [
+      { id: '1', code: 'open', label: 'Aberto', description: 'Deal aberto', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+    ],
+    stages: [
+      { id: '1', pipelineId: 'p1', name: 'Prospecção', color: '#3b82f6', stageOrder: 1, probability: 10, isDefault: false, active: true, createdAt: '2024-01-01', updatedAt: '2024-01-01' }
+    ],
+    companyTypes: [
+      { id: '1', code: 'investor', label: 'Investidor', description: 'Empresa investidora', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+    ],
+    relationshipLevels: [
+      { id: '1', code: 'partner', label: 'Parceiro', description: 'Empresa parceira', isActive: true, sortOrder: 1, createdAt: '2024-01-01' }
+    ],
+    userRoleMetadata: [
+      { id: '1', code: 'admin', label: 'Administrador', description: 'Acesso total', permissions: ['all'], isActive: true, sortOrder: 1, createdAt: '2024-01-01', updatedAt: '2024-01-01' }
+    ],
+    isLoading: false,
+    error: null
+  })
+}));
+
+describe('Settings Sections', () => {
+  describe('LeadSettingsSection', () => {
+    it('renders without crashing', () => {
+      render(<LeadSettingsSection />);
+      expect(screen.getByText('Status de Leads')).toBeTruthy();
+    });
+
+    it('displays lead statuses', () => {
+      render(<LeadSettingsSection />);
+      expect(screen.getByText('Novo')).toBeTruthy();
+    });
+
+    it('displays lead origins', () => {
+      render(<LeadSettingsSection />);
+      expect(screen.getByText('Website')).toBeTruthy();
+    });
+
+    it('displays lead member roles', () => {
+      render(<LeadSettingsSection />);
+      expect(screen.getByText('Proprietário')).toBeTruthy();
+    });
+  });
+
+  describe('DealPipelineSettingsSection', () => {
+    it('renders without crashing', () => {
+      render(<DealPipelineSettingsSection />);
+      expect(screen.getByText('Status de Deals')).toBeTruthy();
+    });
+
+    it('displays deal statuses', () => {
+      render(<DealPipelineSettingsSection />);
+      expect(screen.getByText('Aberto')).toBeTruthy();
+    });
+
+    it('displays pipeline stages', () => {
+      render(<DealPipelineSettingsSection />);
+      expect(screen.getByText('Prospecção')).toBeTruthy();
+    });
+  });
+
+  describe('CompanyRelationshipSettingsSection', () => {
+    it('renders without crashing', () => {
+      render(<CompanyRelationshipSettingsSection />);
+      expect(screen.getByText('Tipos de Empresa')).toBeTruthy();
+    });
+
+    it('displays company types', () => {
+      render(<CompanyRelationshipSettingsSection />);
+      expect(screen.getByText('Investidor')).toBeTruthy();
+    });
+
+    it('displays relationship levels', () => {
+      render(<CompanyRelationshipSettingsSection />);
+      expect(screen.getByText('Parceiro')).toBeTruthy();
+    });
+  });
+
+  describe('SystemMetadataSettingsSection', () => {
+    it('renders without crashing', () => {
+      render(<SystemMetadataSettingsSection />);
+      expect(screen.getByText('Papéis de Usuário')).toBeTruthy();
+    });
+
+    it('displays user roles', () => {
+      render(<SystemMetadataSettingsSection />);
+      expect(screen.getByText('Administrador')).toBeTruthy();
+    });
+  });
+});
