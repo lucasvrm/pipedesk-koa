@@ -40,11 +40,16 @@ export default function DashboardPage() {
   const userAccessibleWidgets = useMemo(() => {
     return allWidgets.filter(widget => {
       // Check role-based access
-      if (widget.requiredRoles && !widget.requiredRoles.includes(profile?.role as UserRole)) {
-        return false;
+      if (widget.requiredRoles) {
+        // Ensure profile.role is defined and valid before checking
+        if (!profile?.role) {
+          return false;
+        }
+        if (!widget.requiredRoles.includes(profile.role as UserRole)) {
+          return false;
+        }
       }
-      // TODO: Check permission-based access if needed
-      // For now, if no role restriction or user has the required role, widget is accessible
+      // If no role restriction, widget is accessible to all users
       return true;
     });
   }, [allWidgets, profile?.role])
