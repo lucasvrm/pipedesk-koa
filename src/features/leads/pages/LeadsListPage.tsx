@@ -518,6 +518,7 @@ export default function LeadsListPage() {
                             deleteLead,
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
+                            getLeadStatusLabel: (code) => getLeadStatusByCode(code)?.label || code,
                           })}
                         />
                       </div>
