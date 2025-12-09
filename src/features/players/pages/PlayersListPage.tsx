@@ -28,7 +28,7 @@ import {
   CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, ListDashes, SquaresFour
 } from '@phosphor-icons/react'
 import { 
-  PLAYER_TYPE_LABELS, RELATIONSHIP_LEVEL_LABELS, Player, PlayerType, RelationshipLevel,
+  PLAYER_TYPE_LABELS, Player, PlayerType, RelationshipLevel,
   CREDIT_SUBTYPE_LABELS, EQUITY_SUBTYPE_LABELS, BARTER_SUBTYPE_LABELS
 } from '@/lib/types'
 import { toast } from 'sonner'
@@ -37,6 +37,7 @@ import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
 import { PageContainer } from '@/components/PageContainer'
 import { cn } from '@/lib/utils'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 // Tipagem para ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'relationshipLevel';
@@ -51,6 +52,7 @@ export default function PlayersListPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const { data: players, isLoading } = usePlayers()
+  const { relationshipLevels, getRelationshipLevelByCode } = useSystemMetadata()
   
   // Mutations
   const deleteSingleMutation = useDeletePlayer()
@@ -376,16 +378,16 @@ export default function PlayersListPage() {
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuLabel>Nível de Relacionamento</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
+              {relationshipLevels.filter(rl => rl.isActive).map((relLevel) => (
                 <DropdownMenuCheckboxItem
-                  key={key}
-                  checked={relFilters.includes(key as RelationshipLevel)}
+                  key={relLevel.code}
+                  checked={relFilters.includes(relLevel.code as RelationshipLevel)}
                   onCheckedChange={(checked) => {
-                    setRelFilters(prev => checked ? [...prev, key as RelationshipLevel] : prev.filter(k => k !== key))
+                    setRelFilters(prev => checked ? [...prev, relLevel.code as RelationshipLevel] : prev.filter(k => k !== relLevel.code))
                     setCurrentPage(1)
                   }}
                 >
-                  {label}
+                  {relLevel.label}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -601,7 +603,7 @@ export default function PlayersListPage() {
 
                       <TableCell>
                           <Badge className={`${getRelationshipBadgeClass(player.relationshipLevel)} font-normal`}>
-                              {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
+                              {getRelationshipLevelByCode(player.relationshipLevel)?.label || player.relationshipLevel}
                           </Badge>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -692,7 +694,7 @@ export default function PlayersListPage() {
                         </div>
                       </div>
                       <Badge className={`${getRelationshipBadgeClass(player.relationshipLevel)} font-normal w-fit`}>
-                        {RELATIONSHIP_LEVEL_LABELS[player.relationshipLevel]}
+                        {getRelationshipLevelByCode(player.relationshipLevel)?.label || player.relationshipLevel}
                       </Badge>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">

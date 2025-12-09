@@ -42,19 +42,19 @@ import {
   PLAYER_TYPE_LABELS,
   ASSET_MANAGER_TYPE_LABELS,
   AssetManagerType,
-  RELATIONSHIP_LEVEL_LABELS,
   CREDIT_SUBTYPE_LABELS,
   EQUITY_SUBTYPE_LABELS,
   BARTER_SUBTYPE_LABELS,
   ALL_PRODUCT_LABELS,
   PlayerType,
   PlayerStage
-} from '@/lib/types' // REMOVIDO: STAGE_LABELS
+} from '@/lib/types' // REMOVIDO: STAGE_LABELS, RELATIONSHIP_LEVEL_LABELS
 import { formatCurrency } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/PageContainer'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 const INPUT_STYLE_SECONDARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-muted-foreground text-muted-foreground font-medium"
 const INPUT_STYLE_PRIMARY = "disabled:opacity-100 disabled:cursor-default disabled:bg-transparent disabled:border-border/50 disabled:text-foreground text-foreground font-bold text-lg"
@@ -72,6 +72,7 @@ export default function PlayerDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { profile } = useAuth()
+  const { relationshipLevels } = useSystemMetadata()
 
   const isNew = id === 'new'
   const startEditing = isNew || location.state?.startEditing
@@ -574,8 +575,8 @@ export default function PlayerDetailPage() {
                     >
                       <SelectTrigger className={INPUT_STYLE_SECONDARY}><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {Object.entries(RELATIONSHIP_LEVEL_LABELS).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        {relationshipLevels.filter(rl => rl.isActive).map((relLevel) => (
+                          <SelectItem key={relLevel.code} value={relLevel.code}>{relLevel.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
