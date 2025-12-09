@@ -251,7 +251,7 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
     let dealStatus = deal.status;
     if (!dealStatus) {
       const defaultStatusSetting = await getSetting('default_deal_status_code');
-      dealStatus = defaultStatusSetting?.code || 'active'; // Fallback to 'active' if no setting
+      dealStatus = defaultStatusSetting?.value || 'active'; // Fallback to 'active' if no setting
     }
 
     const { data: masterDealData, error: dealError } = await supabase

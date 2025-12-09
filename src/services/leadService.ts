@@ -176,7 +176,7 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
   let leadOrigin = lead.origin;
   if (!leadOrigin) {
     const defaultOriginSetting = await getSetting('default_lead_origin_code');
-    leadOrigin = defaultOriginSetting?.code || 'outbound'; // Fallback to 'outbound' if no setting
+    leadOrigin = defaultOriginSetting?.value || 'outbound'; // Fallback to 'outbound' if no setting
   }
 
   const { data, error } = await supabase
@@ -202,7 +202,7 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
 
   // Get default lead member role from system settings
   const defaultRoleSetting = await getSetting('default_lead_member_role_code');
-  const defaultRole = defaultRoleSetting?.code || 'owner'; // Fallback to 'owner' if no setting
+  const defaultRole = defaultRoleSetting?.value || 'owner'; // Fallback to 'owner' if no setting
 
   // Also add creator as owner member
   await addLeadMember({
@@ -268,7 +268,7 @@ export async function addLeadMember(member: { leadId: string, userId: string, ro
   let memberRole = member.role;
   if (!memberRole) {
     const defaultRoleSetting = await getSetting('default_lead_member_role_code');
-    memberRole = defaultRoleSetting?.code || 'collaborator'; // Fallback to 'collaborator' if no setting
+    memberRole = defaultRoleSetting?.value || 'collaborator'; // Fallback to 'collaborator' if no setting
   }
 
   const { error } = await supabase.from('lead_members').insert({
