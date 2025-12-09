@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext'
@@ -26,6 +26,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WidgetErrorBoundary } from '@/components/WidgetErrorBoundary'
 import { toast } from 'sonner'
+import { UserRole } from '@/lib/types'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
@@ -34,6 +35,19 @@ export default function DashboardPage() {
 
   const [isCustomizing, setIsCustomizing] = useState(false)
   const [tempLayout, setTempLayout] = useState<DashboardConfig>(layout)
+
+  // Filter widgets that user has permission to use based on their role
+  const userAccessibleWidgets = useMemo(() => {
+    return allWidgets.filter(widget => {
+      // Check role-based access
+      if (widget.requiredRoles && !widget.requiredRoles.includes(profile?.role as UserRole)) {
+        return false;
+      }
+      // TODO: Check permission-based access if needed
+      // For now, if no role restriction or user has the required role, widget is accessible
+      return true;
+    });
+  }, [allWidgets, profile?.role])
 
   const handleOpenCustomize = () => {
     setTempLayout(layout) // Reset to current
@@ -280,8 +294,7 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Widgets Disponíveis</h3>
                   <div className="space-y-2">
-                    {allWidgets
-                      .filter(w => (availableWidgets || []).includes(w.id))
+                    {userAccessibleWidgets
                       .filter(w => !(tempLayout?.widgets || []).some(tw => tw.id === w.id))
                       .map(widget => (
                         <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">

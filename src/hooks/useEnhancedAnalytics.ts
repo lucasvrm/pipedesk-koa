@@ -3,6 +3,7 @@ import { useOperationalTeam } from './useOperationalTeam'
 import { getDateRange } from '@/utils/dateRangeUtils'
 import { DateFilterType } from '@/types/metadata'
 import { useAnalyticsWithMetadata } from '@/services/analyticsService'
+import { useEffect, useState } from 'react'
 
 /**
  * Enhanced analytics hook that integrates system metadata and operational team data
@@ -79,8 +80,29 @@ export function useEnhancedAnalytics(
     }
   )
   
+  // Add timeout to prevent infinite loading state
+  const [hasTimedOut, setHasTimedOut] = useState(false)
+  
+  useEffect(() => {
+    // Reset timeout when loading starts
+    setHasTimedOut(false)
+    
+    // Set a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (analytics.isLoading || metadataLoading || teamLoading) {
+        console.warn('Analytics loading timed out after 10 seconds')
+        setHasTimedOut(true)
+      }
+    }, 10000) // 10 second timeout
+    
+    return () => clearTimeout(timeout)
+  }, [analytics.isLoading, metadataLoading, teamLoading])
+  
+  // If timed out, force loading to false and show data if available
+  const effectiveLoading = hasTimedOut ? false : (analytics.isLoading || metadataLoading || teamLoading)
+  
   return {
     ...analytics,
-    isLoading: analytics.isLoading || metadataLoading || teamLoading
+    isLoading: effectiveLoading
   }
 }
