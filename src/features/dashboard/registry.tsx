@@ -121,16 +121,3 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     category: 'list'
   }
 };
-
-export const DEFAULT_DASHBOARD_CONFIG = {
-  // New default includes granular KPIs
-  topWidgets: [
-    'notifications',
-    'quick-tasks',
-    'weighted-pipeline',
-    'active-deals',
-    'conversion-rate',
-    'total-deals'
-  ],
-  mainWidgets: ['weighted-forecast', 'portfolio-matrix', 'my-deals']
-};

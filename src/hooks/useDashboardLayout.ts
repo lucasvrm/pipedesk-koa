@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetting, useUpdateSetting } from '@/services/systemSettingsService';
-import { DEFAULT_DASHBOARD_CONFIG, WIDGET_REGISTRY } from '@/features/dashboard/registry';
+import { getTemplateForRole } from '@/services/dashboardTemplateService';
+import { WIDGET_REGISTRY } from '@/features/dashboard/registry';
+import { DEFAULT_DASHBOARD_CONFIG } from '@/constants/dashboardDefaults';
 import { supabase } from '@/lib/supabaseClient';
 import { UserRole } from '@/lib/types';
 import { toast } from 'sonner';
@@ -35,11 +37,19 @@ export function useDashboardLayout() {
   // 1. Fetch Global Settings (Admin defined availability)
   const { data: globalSettings, isLoading: isLoadingGlobal } = useSetting(DASHBOARD_GLOBAL_KEY);
 
-  // 2. Resolve final global config
+  // 2. Fetch Role-based Template from database
+  const { data: roleTemplate, isLoading: isLoadingTemplate } = useQuery({
+    queryKey: ['dashboard-template', profile?.role],
+    queryFn: () => profile?.role ? getTemplateForRole(profile.role as UserRole) : null,
+    enabled: !!profile?.role,
+    staleTime: 1000 * 60 * 5 // 5 minutes cache
+  });
+
+  // 3. Resolve final global config
   const globalConfig: GlobalDashboardConfig = globalSettings || DEFAULT_GLOBAL_CONFIG;
 
-  // 3. Resolve User Preferences
-  // Priority: Local State (optimistic) -> Profile DB -> LocalStorage -> Global Default
+  // 4. Resolve User Preferences
+  // Priority: Local State (optimistic) -> Profile DB -> LocalStorage -> Role Template -> Global Template -> Code Fallback
 
   // Load from LocalStorage on mount if not in DB
   useEffect(() => {
@@ -56,7 +66,9 @@ export function useDashboardLayout() {
   }, [user, profile]);
 
   const userPreferences = localPreferences || (profile?.preferences?.dashboard as DashboardConfig | undefined);
-  const currentLayout: DashboardConfig = userPreferences || globalConfig.defaultConfig;
+  
+  // Updated priority order: User Preferences → Role Template → Global Default → Code Fallback
+  const currentLayout: DashboardConfig = userPreferences || roleTemplate || globalConfig.defaultConfig || DEFAULT_DASHBOARD_CONFIG;
 
   // Filter out widgets that are not available globally or not permitted for the user
   const visibleWidgets = (widgetIds: string[]) => {
@@ -151,7 +163,7 @@ export function useDashboardLayout() {
     layout: finalLayout,
     availableWidgets: globalConfig.availableWidgets, // What is allowed by the system
     allWidgets: Object.values(WIDGET_REGISTRY), // The entire registry
-    isLoading: isLoadingGlobal,
+    isLoading: isLoadingGlobal || isLoadingTemplate,
     saveUserLayout,
     saveGlobalConfig,
     isAdmin: profile?.role === 'admin'
