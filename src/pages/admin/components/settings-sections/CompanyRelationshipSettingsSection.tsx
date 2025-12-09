@@ -28,15 +28,8 @@ import type { CompanyTypeMeta, RelationshipLevelMeta } from '@/types/metadata';
 
 type SettingType = 'company_types' | 'relationship_levels';
 
-interface MetadataItem {
-  id: string;
-  code: string;
-  label: string;
-  description?: string;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-}
+// Base metadata item type that matches CompanyTypeMeta and RelationshipLevelMeta
+type MetadataItem = CompanyTypeMeta | RelationshipLevelMeta;
 
 interface SettingFormData {
   code: string;
@@ -51,7 +44,7 @@ interface SettingsTableProps {
   description: string;
   icon: React.ReactNode;
   iconBgColor: string;
-  data: MetadataItem[];
+  data: CompanyTypeMeta[] | RelationshipLevelMeta[];
   onRefresh: () => void;
 }
 
@@ -352,7 +345,7 @@ export function CompanyRelationshipSettingsSection() {
         description="Categorização de empresas por tipo ou segmento de atuação"
         icon={<Buildings className="h-5 w-5 text-blue-500" />}
         iconBgColor="bg-blue-500/10"
-        data={companyTypes as MetadataItem[]}
+        data={companyTypes}
         onRefresh={refreshMetadata}
       />
 
@@ -363,7 +356,7 @@ export function CompanyRelationshipSettingsSection() {
         description="Classificação do grau de relacionamento com empresas parceiras"
         icon={<Handshake className="h-5 w-5 text-green-500" />}
         iconBgColor="bg-green-500/10"
-        data={relationshipLevels as MetadataItem[]}
+        data={relationshipLevels}
         onRefresh={refreshMetadata}
       />
     </div>
