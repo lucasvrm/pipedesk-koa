@@ -12,6 +12,7 @@ import { Kanban } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface LeadsKanbanProps {
   leads: Lead[]
@@ -79,6 +80,8 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
   const renderLeadCard = (lead: Lead, index: number) => {
     const owner = (lead as any).owner
+    const statusMeta = getLeadStatusByCode(lead.status)
+    const originMeta = getLeadOriginByCode(lead.origin)
     return (
       <Draggable draggableId={lead.id} index={index} key={lead.id}>
         {(provided, snapshot) => (

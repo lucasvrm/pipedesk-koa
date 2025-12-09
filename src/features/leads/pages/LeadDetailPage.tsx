@@ -55,6 +55,7 @@ import type { Tag as TagType } from '@/lib/types'
 import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DriveSection from '@/components/DriveSection'
@@ -81,6 +82,7 @@ export default function LeadDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile, user } = useAuth()
+  const { leadStatuses, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const updateLead = useUpdateLead()
@@ -263,6 +265,7 @@ export default function LeadDetailPage() {
 
   const handleStatusChange = async (value: LeadStatus) => {
     if (!lead) return
+    const statusMeta = getLeadStatusByCode(value)
     try {
       await updateLead.mutateAsync({ id: lead.id, data: { status: value } })
       if (profile) {

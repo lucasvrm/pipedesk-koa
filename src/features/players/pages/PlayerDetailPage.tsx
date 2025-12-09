@@ -48,7 +48,7 @@ import {
   ALL_PRODUCT_LABELS,
   PlayerType,
   PlayerStage
-} from '@/lib/types' // REMOVIDO: STAGE_LABELS
+} from '@/lib/types' // REMOVIDO: STAGE_LABELS, RELATIONSHIP_LEVEL_LABELS
 import { formatCurrency } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/PageContainer'

@@ -58,6 +58,7 @@ import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { getCompanyQuickActions } from '@/hooks/useQuickActions'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 // Configuração de Ordenação
 type SortKey = 'name' | 'primaryContact' | 'type' | 'dealsCount' | 'relationshipLevel' | 'site';
@@ -76,6 +77,7 @@ export default function CompaniesListPage() {
   const { data: companies, isLoading } = useCompanies()
   const deleteCompanyMutation = useDeleteCompany()
   const deleteCompaniesMutation = useDeleteCompanies()
+  const { companyTypes, relationshipLevels, getCompanyTypeByCode, getRelationshipLevelByCode } = useSystemMetadata()
 
   // Estados de Controle
   const [searchTerm, setSearchTerm] = useState('')
