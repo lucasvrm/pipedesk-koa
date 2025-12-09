@@ -128,6 +128,7 @@ export interface UserRoleMetadata {
   code: string
   label: string
   description?: string
+  badgeVariant?: string
   permissions: string[]
   isActive: boolean
   sortOrder: number
