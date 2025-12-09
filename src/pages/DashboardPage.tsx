@@ -10,7 +10,9 @@ import {
   Plus, 
   Gear,
   Checks,
-  ArrowCounterClockwise
+  ArrowCounterClockwise,
+  ArrowUp,
+  ArrowDown
 } from '@phosphor-icons/react'
 import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
 import { WIDGET_REGISTRY } from '@/features/dashboard/registry'
@@ -21,7 +23,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 
 export default function DashboardPage() {
@@ -56,17 +58,57 @@ export default function DashboardPage() {
     }
   }
 
-  const toggleWidget = (zone: 'topWidgets' | 'mainWidgets', widgetId: string) => {
+  const toggleWidget = (widgetId: string) => {
     setTempLayout(prev => {
-        const list = prev[zone];
-        const exists = list.includes(widgetId);
+      const exists = prev.widgets.some(w => w.id === widgetId);
+      if (exists) {
+        // Remove widget
         return {
-            ...prev,
-            [zone]: exists
-                ? list.filter(id => id !== widgetId)
-                : [...list, widgetId]
-        }
-    })
+          widgets: prev.widgets.filter(w => w.id !== widgetId)
+        };
+      } else {
+        // Add widget with default size
+        const widgetDef = WIDGET_REGISTRY[widgetId];
+        return {
+          widgets: [...prev.widgets, { id: widgetId, size: widgetDef?.defaultSize || 'medium' }]
+        };
+      }
+    });
+  }
+
+  const updateWidgetSize = (widgetId: string, size: 'small' | 'medium' | 'large' | 'full') => {
+    setTempLayout(prev => ({
+      widgets: prev.widgets.map(w => w.id === widgetId ? { ...w, size } : w)
+    }));
+  }
+
+  const moveWidget = (index: number, direction: 'up' | 'down') => {
+    setTempLayout(prev => {
+      const newWidgets = [...prev.widgets];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      
+      if (targetIndex < 0 || targetIndex >= newWidgets.length) return prev;
+      
+      [newWidgets[index], newWidgets[targetIndex]] = [newWidgets[targetIndex], newWidgets[index]];
+      
+      return { widgets: newWidgets };
+    });
+  }
+
+  // Helper to get grid class based on size
+  const getGridClass = (size: 'small' | 'medium' | 'large' | 'full') => {
+    switch (size) {
+      case 'small':
+        return 'col-span-1';
+      case 'medium':
+        return 'col-span-1 md:col-span-2';
+      case 'large':
+        return 'col-span-1 md:col-span-2 lg:col-span-3';
+      case 'full':
+        return 'col-span-full';
+      default:
+        return 'col-span-1';
+    }
   }
 
   return (
@@ -103,38 +145,31 @@ export default function DashboardPage() {
         {/* --- TOOLBAR (FILTERS) --- */}
         <DashboardToolbar />
 
-      {/* --- TOP ZONE (CARDS) --- */}
-      {layout.topWidgets.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6 animate-in fade-in slide-in-from-bottom-2">
-            {layout.topWidgets.map(widgetId => {
-                const widgetDef = WIDGET_REGISTRY[widgetId];
-                if (!widgetDef) return null;
+      {/* --- UNIFIED GRID LAYOUT --- */}
+      {layout.widgets.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2">
+            {layout.widgets.map(({ id, size }) => {
+                const widgetDef = WIDGET_REGISTRY[id];
+                
+                // Handle "Widget not found" gracefully
+                if (!widgetDef) {
+                  return (
+                    <div key={id} className={`${getGridClass(size)} min-h-[120px] border-2 border-dashed rounded-lg p-4 flex items-center justify-center`}>
+                      <div className="text-center text-muted-foreground">
+                        <p className="text-sm font-medium">Widget não encontrado</p>
+                        <p className="text-xs mt-1">ID: {id}</p>
+                      </div>
+                    </div>
+                  );
+                }
+                
                 const Component = widgetDef.component;
                 return (
-                    <div key={widgetId} className={widgetDef.defaultSize === 'full' ? 'col-span-full' : ''}>
+                    <div key={id} className={getGridClass(size)}>
                         <Component />
                     </div>
                 )
             })}
-          </div>
-      )}
-
-      {/* --- MAIN ZONE (CONTENT) --- */}
-      {layout.mainWidgets.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             {layout.mainWidgets.map(widgetId => {
-                 const widgetDef = WIDGET_REGISTRY[widgetId];
-                 if (!widgetDef) return null;
-                 const Component = widgetDef.component;
-                 // Se o widget for marcado como full width, ele ocupa 2 colunas no grid
-                 const colSpan = widgetDef.defaultSize === 'full' ? 'lg:col-span-2' : '';
-
-                 return (
-                     <div key={widgetId} className={`min-h-[300px] ${colSpan}`}>
-                         <Component />
-                     </div>
-                 )
-             })}
           </div>
       ) : (
           <div className="text-center py-12 border-2 border-dashed rounded-lg">
@@ -148,55 +183,114 @@ export default function DashboardPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>Personalizar Dashboard</DialogTitle>
-                <DialogDescription>Escolha quais informações você quer ver.</DialogDescription>
+                <DialogDescription>Escolha quais informações você quer ver e organize sua dashboard.</DialogDescription>
             </DialogHeader>
 
-            <Tabs defaultValue="top" className="flex-1 overflow-hidden flex flex-col">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="top">Topo (Resumos)</TabsTrigger>
-                    <TabsTrigger value="main">Principal (Gráficos)</TabsTrigger>
-                </TabsList>
-
-                <div className="flex-1 overflow-y-auto py-4 px-1">
-                    <TabsContent value="top" className="space-y-4">
-                        <p className="text-xs text-muted-foreground mb-2">Widgets compactos ideais para o topo da página.</p>
-                        {allWidgets
-                            .filter(w => w.category === 'operational' || w.category === 'kpi')
-                            .filter(w => availableWidgets.includes(w.id)) // Only global allowed
-                            .map(widget => (
-                            <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                                <div className="space-y-0.5">
-                                    <Label className="text-base">{widget.title}</Label>
-                                    <p className="text-xs text-muted-foreground">Tamanho: {widget.defaultSize}</p>
-                                </div>
-                                <Switch
-                                    checked={tempLayout.topWidgets.includes(widget.id)}
-                                    onCheckedChange={() => toggleWidget('topWidgets', widget.id)}
-                                />
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-6 py-4">
+                {/* Current Widgets Section */}
+                {tempLayout.widgets.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3">Widgets Ativos ({tempLayout.widgets.length})</h3>
+                    <div className="space-y-2">
+                      {tempLayout.widgets.map((widget, index) => {
+                        const widgetDef = WIDGET_REGISTRY[widget.id];
+                        if (!widgetDef) return null;
+                        
+                        return (
+                          <div key={widget.id} className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
+                            <div className="flex flex-col gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => moveWidget(index, 'up')}
+                                disabled={index === 0}
+                              >
+                                <ArrowUp className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => moveWidget(index, 'down')}
+                                disabled={index === tempLayout.widgets.length - 1}
+                              >
+                                <ArrowDown className="h-3 w-3" />
+                              </Button>
                             </div>
-                        ))}
-                    </TabsContent>
-
-                    <TabsContent value="main" className="space-y-4">
-                        <p className="text-xs text-muted-foreground mb-2">Gráficos e tabelas detalhadas.</p>
-                        {allWidgets
-                            .filter(w => w.category === 'chart' || w.category === 'list')
-                            .filter(w => availableWidgets.includes(w.id)) // Only global allowed
-                            .map(widget => (
-                            <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                                <div className="space-y-0.5">
-                                    <Label className="text-base">{widget.title}</Label>
-                                    <p className="text-xs text-muted-foreground">Tamanho: {widget.defaultSize}</p>
-                                </div>
-                                <Switch
-                                    checked={tempLayout.mainWidgets.includes(widget.id)}
-                                    onCheckedChange={() => toggleWidget('mainWidgets', widget.id)}
-                                />
+                            
+                            <div className="flex-1 min-w-0">
+                              <Label className="text-sm font-medium">{widgetDef.title}</Label>
+                              <p className="text-xs text-muted-foreground truncate">{widgetDef.category}</p>
                             </div>
-                        ))}
-                    </TabsContent>
+                            
+                            {widgetDef.availableSizes && widgetDef.availableSizes.length > 1 ? (
+                              <Select
+                                value={widget.size}
+                                onValueChange={(size: any) => updateWidgetSize(widget.id, size)}
+                              >
+                                <SelectTrigger className="w-28 h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {widgetDef.availableSizes.map(size => (
+                                    <SelectItem key={size} value={size} className="text-xs">
+                                      {size === 'small' && 'Pequeno'}
+                                      {size === 'medium' && 'Médio'}
+                                      {size === 'large' && 'Grande'}
+                                      {size === 'full' && 'Total'}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-xs text-muted-foreground w-28 text-center">
+                                {widget.size === 'small' && 'Pequeno'}
+                                {widget.size === 'medium' && 'Médio'}
+                                {widget.size === 'large' && 'Grande'}
+                                {widget.size === 'full' && 'Total'}
+                              </span>
+                            )}
+                            
+                            <Switch
+                              checked={true}
+                              onCheckedChange={() => toggleWidget(widget.id)}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                <Separator />
+                
+                {/* Available Widgets Section */}
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Widgets Disponíveis</h3>
+                  <div className="space-y-2">
+                    {allWidgets
+                      .filter(w => availableWidgets.includes(w.id))
+                      .filter(w => !tempLayout.widgets.some(tw => tw.id === w.id))
+                      .map(widget => (
+                        <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                          <div className="flex-1">
+                            <Label className="text-sm font-medium">{widget.title}</Label>
+                            <p className="text-xs text-muted-foreground">
+                              {widget.category} • Tamanho padrão: {widget.defaultSize}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={false}
+                            onCheckedChange={() => toggleWidget(widget.id)}
+                          />
+                        </div>
+                      ))}
+                  </div>
                 </div>
-            </Tabs>
+              </div>
+            </ScrollArea>
 
             <DialogFooter className="flex justify-between sm:justify-between w-full">
                 <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleResetDefaults}>

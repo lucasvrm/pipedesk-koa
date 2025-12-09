@@ -11,9 +11,18 @@ import { useEffect, useState } from 'react';
 
 const DASHBOARD_GLOBAL_KEY = 'dashboard_global_config';
 
-export interface DashboardConfig {
+// Legacy format (for backward compatibility)
+interface LegacyDashboardConfig {
   topWidgets: string[];
   mainWidgets: string[];
+}
+
+// New unified format
+export interface DashboardConfig {
+  widgets: Array<{
+    id: string;
+    size: 'small' | 'medium' | 'large' | 'full';
+  }>;
 }
 
 export interface GlobalDashboardConfig {
@@ -26,6 +35,38 @@ const DEFAULT_GLOBAL_CONFIG: GlobalDashboardConfig = {
   availableWidgets: Object.keys(WIDGET_REGISTRY),
   defaultConfig: DEFAULT_DASHBOARD_CONFIG
 };
+
+// Migration helper: convert legacy format to new format
+function migrateLegacyConfig(config: any): DashboardConfig {
+  // If already in new format, return as-is
+  if (config.widgets && Array.isArray(config.widgets)) {
+    return config as DashboardConfig;
+  }
+  
+  // Convert legacy format
+  if (config.topWidgets || config.mainWidgets) {
+    const widgets: DashboardConfig['widgets'] = [];
+    
+    // Map topWidgets to small size
+    if (config.topWidgets) {
+      config.topWidgets.forEach((id: string) => {
+        widgets.push({ id, size: 'small' });
+      });
+    }
+    
+    // Map mainWidgets to medium size
+    if (config.mainWidgets) {
+      config.mainWidgets.forEach((id: string) => {
+        widgets.push({ id, size: 'medium' });
+      });
+    }
+    
+    return { widgets };
+  }
+  
+  // Fallback to empty config
+  return { widgets: [] };
+}
 
 export function useDashboardLayout() {
   const { user, profile } = useAuth();
@@ -57,7 +98,8 @@ export function useDashboardLayout() {
         const stored = localStorage.getItem(`dashboard_pref_${user.id}`);
         if (stored) {
             try {
-                setLocalPreferences(JSON.parse(stored));
+                const parsed = JSON.parse(stored);
+                setLocalPreferences(migrateLegacyConfig(parsed));
             } catch (e) {
                 console.error('Invalid JSON in local storage', e);
             }
@@ -65,14 +107,14 @@ export function useDashboardLayout() {
     }
   }, [user, profile]);
 
-  const userPreferences = localPreferences || (profile?.preferences?.dashboard as DashboardConfig | undefined);
+  const userPreferences = localPreferences || (profile?.preferences?.dashboard ? migrateLegacyConfig(profile.preferences.dashboard) : undefined);
   
   // Updated priority order: User Preferences → Role Template → Global Default → Code Fallback
-  const currentLayout: DashboardConfig = userPreferences || roleTemplate || globalConfig.defaultConfig || DEFAULT_DASHBOARD_CONFIG;
+  const currentLayout: DashboardConfig = userPreferences || (roleTemplate ? migrateLegacyConfig(roleTemplate) : undefined) || (globalConfig.defaultConfig ? migrateLegacyConfig(globalConfig.defaultConfig) : undefined) || DEFAULT_DASHBOARD_CONFIG;
 
   // Filter out widgets that are not available globally or not permitted for the user
-  const visibleWidgets = (widgetIds: string[]) => {
-    return widgetIds.filter(id => {
+  const visibleWidgets = (widgets: DashboardConfig['widgets']) => {
+    return widgets.filter(({ id }) => {
       const def = WIDGET_REGISTRY[id];
       if (!def) return false;
 
@@ -87,8 +129,7 @@ export function useDashboardLayout() {
   };
 
   const finalLayout: DashboardConfig = {
-    topWidgets: visibleWidgets(currentLayout.topWidgets),
-    mainWidgets: visibleWidgets(currentLayout.mainWidgets)
+    widgets: visibleWidgets(currentLayout.widgets)
   };
 
   // --- Mutation: Update User Preferences ---
