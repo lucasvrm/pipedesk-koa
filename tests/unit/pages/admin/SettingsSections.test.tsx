@@ -223,6 +223,14 @@ describe('Settings Sections', () => {
       });
     });
 
+    it('displays Role Metadata Manager section', async () => {
+      render(<SystemSettingsSection />);
+      await waitFor(() => {
+        expect(screen.getByText('Metadados de Roles')).toBeTruthy();
+        expect(screen.getByText('Configure labels, badges e permissões para cada role de usuário')).toBeTruthy();
+      });
+    });
+
     it('calls updateSystemSetting when save is clicked', async () => {
       const { updateSystemSetting } = await import('@/services/settingsService');
       const mockUpdate = vi.mocked(updateSystemSetting).mockResolvedValue({ data: {}, error: null });
