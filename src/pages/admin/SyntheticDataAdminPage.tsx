@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabaseClient'
-import { getSystemSetting } from '@/services/settingsService'
+import { getSystemSetting, extractSystemSettingValue } from '@/services/settingsService'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info } from '@phosphor-icons/react'
 import {
@@ -68,9 +68,7 @@ export default function SyntheticDataAdminPage() {
       // Load synthetic_total_users as default for userCount if configured
       const totalUsers = await getSystemSetting('synthetic_total_users')
       if (totalUsers.data !== null) {
-        const value = typeof totalUsers.data === 'object' && 'value' in totalUsers.data 
-          ? totalUsers.data.value 
-          : totalUsers.data
+        const value = extractSystemSettingValue(totalUsers.data, 0)
         if (typeof value === 'number' && value > 0) {
           setUserCount(value)
         }
