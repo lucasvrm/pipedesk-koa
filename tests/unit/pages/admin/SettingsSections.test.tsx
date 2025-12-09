@@ -5,6 +5,7 @@ import { LeadSettingsSection } from '@/pages/admin/components/settings-sections/
 import { DealPipelineSettingsSection } from '@/pages/admin/components/settings-sections/DealPipelineSettingsSection';
 import { CompanyRelationshipSettingsSection } from '@/pages/admin/components/settings-sections/CompanyRelationshipSettingsSection';
 import { SystemMetadataSettingsSection } from '@/pages/admin/components/settings-sections/SystemMetadataSettingsSection';
+import { SystemSettingsSection } from '@/pages/admin/components/settings-sections/SystemSettingsSection';
 
 // Mock settingsService
 vi.mock('@/services/settingsService', () => ({
@@ -12,7 +13,9 @@ vi.mock('@/services/settingsService', () => ({
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn(),
-  }
+  },
+  getSystemSetting: vi.fn(),
+  updateSystemSetting: vi.fn()
 }));
 
 // Mock toast
@@ -177,6 +180,65 @@ describe('Settings Sections', () => {
     it('displays user roles', () => {
       render(<SystemMetadataSettingsSection />);
       expect(screen.getByText('Administrador')).toBeTruthy();
+    });
+  });
+
+  describe('SystemSettingsSection', () => {
+    beforeEach(async () => {
+      const { getSystemSetting } = await import('@/services/settingsService');
+      vi.mocked(getSystemSetting).mockResolvedValue({ data: null, error: null });
+    });
+
+    it('renders without crashing', async () => {
+      render(<SystemSettingsSection />);
+      await waitFor(() => {
+        expect(screen.getByText('Defaults de Negócio')).toBeTruthy();
+      });
+    });
+
+    it('displays business defaults section', async () => {
+      render(<SystemSettingsSection />);
+      await waitFor(() => {
+        expect(screen.getByText('Defaults de Negócio')).toBeTruthy();
+        expect(screen.getByText('Status Padrão de Deal')).toBeTruthy();
+        expect(screen.getByText('Etapa Padrão da Pipeline')).toBeTruthy();
+        expect(screen.getByText('Probabilidade Padrão (%)')).toBeTruthy();
+      });
+    });
+
+    it('displays synthetic users configuration section', async () => {
+      render(<SystemSettingsSection />);
+      await waitFor(() => {
+        expect(screen.getByText('Configurações de Usuários Sintéticos')).toBeTruthy();
+        expect(screen.getByText('Senha Padrão')).toBeTruthy();
+        expect(screen.getByText('Role Padrão')).toBeTruthy();
+        expect(screen.getByText('Quantidade Total de Usuários')).toBeTruthy();
+      });
+    });
+
+    it('has save button', async () => {
+      render(<SystemSettingsSection />);
+      await waitFor(() => {
+        expect(screen.getByText('Salvar Configurações')).toBeTruthy();
+      });
+    });
+
+    it('calls updateSystemSetting when save is clicked', async () => {
+      const { updateSystemSetting } = await import('@/services/settingsService');
+      const mockUpdate = vi.mocked(updateSystemSetting).mockResolvedValue({ data: {}, error: null });
+
+      render(<SystemSettingsSection />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Salvar Configurações')).toBeTruthy();
+      });
+
+      const saveButton = screen.getByText('Salvar Configurações');
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalled();
+      });
     });
   });
 });
