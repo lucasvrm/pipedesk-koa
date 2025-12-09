@@ -53,7 +53,7 @@ interface RoleFormData {
   description: string;
   badgeVariant: BadgeVariant;
   sortOrder: number;
-  permissions: string[];
+  permissions: string[]; // Array of permission codes (not IDs) - matches user_role_metadata.permissions JSONB structure
 }
 
 interface RoleMetadataManagerProps {
@@ -419,6 +419,9 @@ export function RoleMetadataManager({ allPermissions }: RoleMetadataManagerProps
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Note: We store permission codes (not IDs) in user_role_metadata.permissions 
+                          to maintain flexibility and human-readable JSONB data. Permission codes 
+                          have a UNIQUE constraint in the database. */}
                       {allPermissions.map((perm) => (
                         <div key={perm.id} className="flex items-start space-x-2 border p-2 rounded hover:bg-accent/50">
                           <Checkbox
