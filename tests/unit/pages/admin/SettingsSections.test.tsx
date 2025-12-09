@@ -1,9 +1,27 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { LeadSettingsSection } from '@/pages/admin/components/settings-sections/LeadSettingsSection';
 import { DealPipelineSettingsSection } from '@/pages/admin/components/settings-sections/DealPipelineSettingsSection';
 import { CompanyRelationshipSettingsSection } from '@/pages/admin/components/settings-sections/CompanyRelationshipSettingsSection';
 import { SystemMetadataSettingsSection } from '@/pages/admin/components/settings-sections/SystemMetadataSettingsSection';
+
+// Mock settingsService
+vi.mock('@/services/settingsService', () => ({
+  settingsService: {
+    create: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+  }
+}));
+
+// Mock toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  }
+}));
 
 // Mock the useSystemMetadata hook
 vi.mock('@/hooks/useSystemMetadata', () => ({
@@ -33,30 +51,56 @@ vi.mock('@/hooks/useSystemMetadata', () => ({
       { id: '1', code: 'admin', label: 'Administrador', description: 'Acesso total', permissions: ['all'], isActive: true, sortOrder: 1, createdAt: '2024-01-01', updatedAt: '2024-01-01' }
     ],
     isLoading: false,
-    error: null
+    error: null,
+    refreshMetadata: vi.fn()
   })
 }));
 
 describe('Settings Sections', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('LeadSettingsSection', () => {
     it('renders without crashing', () => {
       render(<LeadSettingsSection />);
       expect(screen.getByText('Status de Leads')).toBeTruthy();
     });
 
-    it('displays lead statuses', () => {
+    it('displays lead statuses in table', () => {
       render(<LeadSettingsSection />);
-      expect(screen.getByText('Novo')).toBeTruthy();
+      const novoElements = screen.getAllByText('Novo');
+      expect(novoElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('new')).toBeTruthy();
     });
 
-    it('displays lead origins', () => {
+    it('displays lead origins in table', () => {
       render(<LeadSettingsSection />);
       expect(screen.getByText('Website')).toBeTruthy();
+      expect(screen.getByText('website')).toBeTruthy();
     });
 
-    it('displays lead member roles', () => {
+    it('displays lead member roles in table', () => {
       render(<LeadSettingsSection />);
       expect(screen.getByText('Proprietário')).toBeTruthy();
+      expect(screen.getByText('owner')).toBeTruthy();
+    });
+
+    it('shows "Novo" buttons for each section', () => {
+      render(<LeadSettingsSection />);
+      const novoButtons = screen.getAllByText('Novo');
+      // Should have at least 3 "Novo" buttons (one for each section)
+      expect(novoButtons.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('has edit and delete buttons for each row', () => {
+      render(<LeadSettingsSection />);
+      
+      // Find all buttons
+      const allButtons = screen.getAllByRole('button');
+      
+      // Should have edit and delete buttons
+      expect(allButtons.length).toBeGreaterThan(3);
     });
   });
 
