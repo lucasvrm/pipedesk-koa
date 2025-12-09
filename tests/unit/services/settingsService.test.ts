@@ -32,6 +32,7 @@ describe('settingsService', () => {
           id: 'status-1',
           code: 'active',
           label: 'Ativo',
+          color: '#3b82f6',
           description: 'Deal is active',
           is_active: true,
           sort_order: 1,
@@ -51,6 +52,7 @@ describe('settingsService', () => {
       expect(result.data).toHaveLength(1)
       expect(result.data![0]).toHaveProperty('code', 'active')
       expect(result.data![0]).toHaveProperty('label', 'Ativo')
+      expect(result.data![0]).toHaveProperty('color', '#3b82f6')
     })
 
     it('should handle errors gracefully', async () => {
