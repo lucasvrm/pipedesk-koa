@@ -12,8 +12,6 @@ import { Badge, BadgeVariant } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -36,13 +34,12 @@ import {
   Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon, 
   MagnifyingGlass, Funnel, CaretUp, CaretDown, CaretUpDown,
   User as UserIcon, IdentificationCard, Wallet, FileText, Lightning,
-  CaretLeft, CaretRight, UserList, Info
+  CaretLeft, CaretRight, Info
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from '@/features/rbac/components/InviteUserDialog'
 import MagicLinksDialog from '@/features/rbac/components/MagicLinksDialog'
-
 import { PageContainer } from '@/components/PageContainer'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
