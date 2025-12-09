@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -13,9 +14,10 @@ import {
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { getSystemSetting, updateSystemSetting } from '@/services/settingsService';
 import { usePermissions } from '@/services/roleService';
-import { Gear, ShieldCheck } from '@phosphor-icons/react';
+import { Gear, ShieldCheck, ShieldStar } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { RoleMetadataManager } from './RoleMetadataManager';
+import RolesManager from '@/features/rbac/components/RolesManager';
 
 interface SystemSettingsFormData {
   // Business Defaults
@@ -212,25 +214,39 @@ export function SystemSettingsSection() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Business Defaults Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <Gear className="h-5 w-5 text-blue-500" />
+    <Tabs defaultValue="defaults" className="w-full space-y-6">
+      <TabsList className="mb-4">
+        <TabsTrigger value="defaults">
+          <Gear className="mr-2 h-4 w-4" /> Defaults do Sistema
+        </TabsTrigger>
+        <TabsTrigger value="roles">
+          <ShieldStar className="mr-2 h-4 w-4" /> Papéis de Usuários
+        </TabsTrigger>
+        <TabsTrigger value="permissions">
+          <ShieldCheck className="mr-2 h-4 w-4" /> Permissões Avançadas (RBAC)
+        </TabsTrigger>
+      </TabsList>
+
+      {/* Defaults Tab */}
+      <TabsContent value="defaults" className="space-y-6">
+        {/* Business Defaults Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Gear className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <CardTitle>Defaults de Negócio</CardTitle>
+                <CardDescription>
+                  Configure valores padrão para criação de deals, leads e rastreamento
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle>Defaults de Negócio</CardTitle>
-              <CardDescription>
-                Configure valores padrão para criação de deals, leads e rastreamento
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Default Deal Status */}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Default Deal Status */}
             <div className="space-y-2">
               <Label htmlFor="default_deal_status_code">Status Padrão de Deal</Label>
               <Select
@@ -493,15 +509,23 @@ export function SystemSettingsSection() {
         </CardContent>
       </Card>
 
-      {/* Role Metadata Manager with Permissions */}
-      <RoleMetadataManager allPermissions={allPermissions ?? []} />
+        {/* Save Button for Defaults */}
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={isSaving} size="lg">
+            {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+          </Button>
+        </div>
+      </TabsContent>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} size="lg">
-          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
-        </Button>
-      </div>
-    </div>
+      {/* Papéis de Usuários Tab */}
+      <TabsContent value="roles" className="space-y-6">
+        <RoleMetadataManager allPermissions={allPermissions ?? []} />
+      </TabsContent>
+
+      {/* Permissões Avançadas (RBAC) Tab */}
+      <TabsContent value="permissions" className="space-y-6">
+        <RolesManager />
+      </TabsContent>
+    </Tabs>
   );
 }
