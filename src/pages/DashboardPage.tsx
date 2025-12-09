@@ -12,18 +12,21 @@ import {
   Checks,
   ArrowCounterClockwise,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  MagnifyingGlass
 } from '@phosphor-icons/react'
 import { useDashboardLayout, DashboardConfig } from '@/hooks/useDashboardLayout'
 import { WIDGET_REGISTRY } from '@/features/dashboard/registry'
 import { DEFAULT_DASHBOARD_CONFIG } from '@/constants/dashboardDefaults'
 import { DashboardToolbar } from '@/features/dashboard/components/DashboardToolbar'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { WidgetErrorBoundary } from '@/components/WidgetErrorBoundary'
 import { toast } from 'sonner'
 import { UserRole } from '@/lib/types'
@@ -31,17 +34,23 @@ import { UserRole } from '@/lib/types'
 export default function DashboardPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const { layout, availableWidgets, allWidgets, saveUserLayout } = useDashboardLayout()
+  const { layout, allWidgets, saveUserLayout } = useDashboardLayout()
 
   const [isCustomizing, setIsCustomizing] = useState(false)
   const [tempLayout, setTempLayout] = useState<DashboardConfig>(layout)
+  const [searchTerm, setSearchTerm] = useState('')
 
   // Filter widgets that user has permission to use based on their role
   const userAccessibleWidgets = useMemo(() => {
     return allWidgets.filter(widget => {
+      // If user is admin, they should see everything
+      if (profile?.role === 'admin') {
+        return true;
+      }
+
       // Check role-based access
       if (widget.requiredRoles) {
-        // Ensure profile.role is defined and valid before checking
+        // If profile is not loaded yet, hide restricted widgets safely
         if (!profile?.role) {
           return false;
         }
@@ -49,13 +58,47 @@ export default function DashboardPage() {
           return false;
         }
       }
+
       // If no role restriction, widget is accessible to all users
       return true;
     });
   }, [allWidgets, profile?.role])
 
+  const filteredAvailableWidgets = useMemo(() => {
+    return userAccessibleWidgets
+      .filter(w => !(tempLayout?.widgets || []).some(tw => tw.id === w.id))
+      .filter(w => w.title.toLowerCase().includes(searchTerm.toLowerCase()))
+  }, [userAccessibleWidgets, tempLayout, searchTerm])
+
+  // Group widgets by category
+  const groupedWidgets = useMemo(() => {
+    const groups: Record<string, typeof filteredAvailableWidgets> = {
+      'KPIs': [],
+      'Gráficos': [],
+      'Listas': [],
+      'Operacional': []
+    }
+
+    filteredAvailableWidgets.forEach(w => {
+      const categoryLabel =
+        w.category === 'kpi' ? 'KPIs' :
+        w.category === 'chart' ? 'Gráficos' :
+        w.category === 'list' ? 'Listas' : 'Operacional';
+
+      if (groups[categoryLabel]) {
+        groups[categoryLabel].push(w);
+      } else {
+         // Fallback
+         groups['Operacional'].push(w);
+      }
+    })
+
+    return groups
+  }, [filteredAvailableWidgets])
+
   const handleOpenCustomize = () => {
     setTempLayout(layout) // Reset to current
+    setSearchTerm('')
     setIsCustomizing(true)
   }
 
@@ -74,9 +117,7 @@ export default function DashboardPage() {
     if (window.confirm('Deseja restaurar as configurações padrão? Suas personalizações serão perdidas.')) {
         // Reset local state to default
         setTempLayout(DEFAULT_DASHBOARD_CONFIG);
-        // Persist reset immediately or let user click save?
-        // Better let user click save to confirm, but visually update state now.
-        // Or cleaner: just call save with default.
+        // Persist reset immediately
         saveUserLayout.mutateAsync(DEFAULT_DASHBOARD_CONFIG).then(() => {
             setIsCustomizing(false);
             toast.success('Padrões restaurados.');
@@ -207,32 +248,40 @@ export default function DashboardPage() {
           </div>
       )}
 
-      {/* --- CUSTOMIZE DIALOG --- */}
-      <Dialog open={isCustomizing} onOpenChange={setIsCustomizing}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-            <DialogHeader>
-                <DialogTitle>Personalizar Dashboard</DialogTitle>
-                <DialogDescription>Escolha quais informações você quer ver e organize sua dashboard.</DialogDescription>
-            </DialogHeader>
+      {/* --- CUSTOMIZE SHEET --- */}
+      <Sheet open={isCustomizing} onOpenChange={setIsCustomizing}>
+        <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 overflow-hidden h-full">
+            <SheetHeader className="p-6 pb-4 border-b shrink-0">
+                <SheetTitle>Personalizar Dashboard</SheetTitle>
+                <SheetDescription>Organize os widgets da sua área de trabalho.</SheetDescription>
+            </SheetHeader>
 
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-6 py-4">
+            <ScrollArea className="flex-1 w-full min-h-0">
+              <div className="p-6 space-y-8">
+
                 {/* Current Widgets Section */}
-                {(tempLayout?.widgets || []).length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3">Widgets Ativos ({(tempLayout?.widgets || []).length})</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Widgets Ativos ({(tempLayout?.widgets || []).length})</h3>
+                  </div>
+
+                  {(tempLayout?.widgets || []).length === 0 ? (
+                    <div className="text-sm text-muted-foreground italic p-4 text-center border rounded-lg border-dashed bg-muted/20">
+                      Nenhum widget ativo.
+                    </div>
+                  ) : (
                     <div className="space-y-2">
                       {(tempLayout?.widgets || []).map((widget, index) => {
                         const widgetDef = WIDGET_REGISTRY[widget.id];
                         if (!widgetDef) return null;
                         
                         return (
-                          <div key={widget.id} className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
-                            <div className="flex flex-col gap-1 flex-shrink-0">
+                          <div key={widget.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50 transition-colors">
+                            <div className="flex flex-col gap-1 flex-shrink-0 text-muted-foreground">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0"
+                                className="h-6 w-6 p-0 hover:bg-muted hover:text-foreground"
                                 onClick={() => moveWidget(index, 'up')}
                                 disabled={index === 0}
                               >
@@ -241,7 +290,7 @@ export default function DashboardPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0"
+                                className="h-6 w-6 p-0 hover:bg-muted hover:text-foreground"
                                 onClick={() => moveWidget(index, 'down')}
                                 disabled={index === (tempLayout?.widgets || []).length - 1}
                               >
@@ -250,89 +299,115 @@ export default function DashboardPage() {
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <Label className="text-sm font-medium">{widgetDef.title}</Label>
-                              <p className="text-xs text-muted-foreground truncate">{widgetDef.category}</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Label className="text-sm font-medium truncate">{widgetDef.title}</Label>
+                                <Badge variant="outline" className="text-[10px] px-1 h-4 font-normal text-muted-foreground">
+                                  {widgetDef.category}
+                                </Badge>
+                              </div>
+
+                              {widgetDef.availableSizes && widgetDef.availableSizes.length > 1 ? (
+                                <Select
+                                  value={widget.size}
+                                  onValueChange={(size: 'small' | 'medium' | 'large' | 'full') => updateWidgetSize(widget.id, size)}
+                                >
+                                  <SelectTrigger className="w-full h-7 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {widgetDef.availableSizes.map(size => (
+                                      <SelectItem key={size} value={size} className="text-xs">
+                                        {size === 'small' && 'Pequeno'}
+                                        {size === 'medium' && 'Médio'}
+                                        {size === 'large' && 'Grande'}
+                                        {size === 'full' && 'Total'}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                                  {widget.size === 'small' && 'Pequeno'}
+                                  {widget.size === 'medium' && 'Médio'}
+                                  {widget.size === 'large' && 'Grande'}
+                                  {widget.size === 'full' && 'Total'}
+                                </div>
+                              )}
                             </div>
                             
-                            {widgetDef.availableSizes && widgetDef.availableSizes.length > 1 ? (
-                              <Select
-                                value={widget.size}
-                                onValueChange={(size: 'small' | 'medium' | 'large' | 'full') => updateWidgetSize(widget.id, size)}
-                              >
-                                <SelectTrigger className="w-28 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {widgetDef.availableSizes.map(size => (
-                                    <SelectItem key={size} value={size} className="text-xs">
-                                      {size === 'small' && 'Pequeno'}
-                                      {size === 'medium' && 'Médio'}
-                                      {size === 'large' && 'Grande'}
-                                      {size === 'full' && 'Total'}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <span className="text-xs text-muted-foreground w-28 text-center">
-                                {widget.size === 'small' && 'Pequeno'}
-                                {widget.size === 'medium' && 'Médio'}
-                                {widget.size === 'large' && 'Grande'}
-                                {widget.size === 'full' && 'Total'}
-                              </span>
-                            )}
-                            
-                            <Switch
-                              checked={true}
-                              onCheckedChange={() => toggleWidget(widget.id)}
-                            />
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0" onClick={() => toggleWidget(widget.id)}>
+                              <Switch checked={true} />
+                            </Button>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 
                 <Separator />
                 
                 {/* Available Widgets Section */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3">Widgets Disponíveis</h3>
-                  <div className="space-y-2">
-                    {userAccessibleWidgets
-                      .filter(w => !(tempLayout?.widgets || []).some(tw => tw.id === w.id))
-                      .map(widget => (
-                        <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                          <div className="flex-1">
-                            <Label className="text-sm font-medium">{widget.title}</Label>
-                            <p className="text-xs text-muted-foreground">
-                              {widget.category} • Tamanho padrão: {widget.defaultSize}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={false}
-                            onCheckedChange={() => toggleWidget(widget.id)}
-                          />
-                        </div>
-                      ))}
+                <div className="space-y-4">
+                  <div className="sticky top-0 bg-background pt-1 pb-4 z-10">
+                    <h3 className="text-sm font-semibold mb-3">Adicionar Widgets</h3>
+                    <div className="relative">
+                      <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar widgets..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-9 h-9"
+                      />
+                    </div>
                   </div>
+
+                  {Object.entries(groupedWidgets).map(([category, widgets]) => {
+                    if (widgets.length === 0) return null;
+                    return (
+                      <div key={category} className="space-y-2">
+                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">{category}</h4>
+                         <div className="grid grid-cols-1 gap-2">
+                            {widgets.map(widget => (
+                              <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleWidget(widget.id)}>
+                                <div className="flex-1">
+                                  <Label className="text-sm font-medium cursor-pointer">{widget.title}</Label>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    Padrão: {widget.defaultSize === 'small' ? 'Pequeno' : widget.defaultSize === 'medium' ? 'Médio' : widget.defaultSize === 'large' ? 'Grande' : 'Total'}
+                                  </p>
+                                </div>
+                                <Plus className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            ))}
+                         </div>
+                      </div>
+                    )
+                  })}
+
+                  {filteredAvailableWidgets.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      Nenhum widget encontrado com "{searchTerm}"
+                    </div>
+                  )}
                 </div>
               </div>
             </ScrollArea>
 
-            <DialogFooter className="flex justify-between sm:justify-between w-full">
-                <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleResetDefaults}>
-                    <ArrowCounterClockwise className="mr-2" /> Restaurar Padrões
-                </Button>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsCustomizing(false)}>Cancelar</Button>
-                    <Button onClick={handleSaveCustomize}>
-                        <Checks className="mr-2" /> Salvar
-                    </Button>
-                </div>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <SheetFooter className="p-6 border-t bg-background mt-auto flex-col sm:flex-col gap-3 shrink-0">
+               <Button onClick={handleSaveCustomize} className="w-full">
+                  <Checks className="mr-2" /> Salvar Alterações
+               </Button>
+               <div className="flex gap-2 w-full">
+                  <Button variant="outline" onClick={() => setIsCustomizing(false)} className="flex-1">
+                    Cancelar
+                  </Button>
+                  <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive flex-1" onClick={handleResetDefaults}>
+                    <ArrowCounterClockwise className="mr-2" /> Restaurar
+                  </Button>
+               </div>
+            </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </PageContainer>
     </DashboardFiltersProvider>
   )
