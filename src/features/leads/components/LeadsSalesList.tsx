@@ -130,6 +130,34 @@ export function LeadsSalesList({
     return 'Prioridade'
   }, [orderBy])
 
+  const renderLeadRowSafely = (lead: LeadSalesViewItem) => {
+    const id = lead.leadId ?? lead.lead_id ?? lead.id
+    if (!id) return null
+
+    try {
+      const rowData = toRowData(lead)
+      const actions = getLeadActions?.(lead)
+
+      return (
+        <LeadSalesRow
+          key={id}
+          {...rowData}
+          selected={selectedIds.includes(id)}
+          onSelectChange={(checked) => handleSelectChange(lead, checked)}
+          onClick={() => onNavigate(id)}
+          onMenuClick={() => onNavigate(id)}
+          actions={actions}
+        />
+      )
+    } catch (error) {
+      if (import.meta.env.DEV || import.meta.env.VITE_VERCEL_ENV === 'preview') {
+        console.error('LeadSalesRow render failed', id, lead, error)
+      }
+
+      throw error
+    }
+  }
+
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
@@ -195,23 +223,7 @@ export function LeadsSalesList({
           )}
 
           {!isLoading &&
-            validLeads.map((lead) => {
-              const id = lead.leadId ?? lead.lead_id ?? lead.id
-              if (!id) return null
-              const rowData = toRowData(lead)
-              const actions = getLeadActions?.(lead)
-              return (
-                <LeadSalesRow
-                  key={id}
-                  {...rowData}
-                  selected={selectedIds.includes(id)}
-                  onSelectChange={(checked) => handleSelectChange(lead, checked)}
-                  onClick={() => onNavigate(id)}
-                  onMenuClick={() => onNavigate(id)}
-                  actions={actions}
-                />
-              )
-            })}
+            validLeads.map((lead) => renderLeadRowSafely(lead))}
 
           {!isLoading && invalidLeadCount > 0 && validLeads.length > 0 && (
             <TableRow>

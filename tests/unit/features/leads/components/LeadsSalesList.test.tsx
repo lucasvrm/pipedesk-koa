@@ -63,4 +63,38 @@ describe('LeadsSalesList', () => {
     expect(screen.getByText('Válida')).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
   })
+
+  it('logs the lead data when row rendering fails in preview builds', () => {
+    const originalEnv = { ...import.meta.env }
+    ;(import.meta as any).env.VITE_VERCEL_ENV = 'preview'
+
+    const failingLead: LeadSalesViewItem = {
+      id: 'lead-123',
+      priorityBucket: 'hot',
+      legalName: 'Lead que quebra render'
+    }
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() =>
+      render(
+        <LeadsSalesList
+          {...baseProps}
+          leads={[failingLead]}
+          getLeadActions={() => {
+            throw new Error('Render failure')
+          }}
+        />
+      )
+    ).toThrow()
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'LeadSalesRow render failed',
+      'lead-123',
+      failingLead,
+      expect.any(Error)
+    )
+
+    Object.assign(import.meta.env, originalEnv)
+  })
 })
