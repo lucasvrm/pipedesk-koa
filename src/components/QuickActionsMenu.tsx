@@ -79,8 +79,8 @@ export function QuickActionsMenu({
   // This defensive check prevents React Error #185 if actions array contains malformed objects.
   const validActions = actions.filter((action): action is QuickAction => {
     if (!action || typeof action !== 'object') return false
-    if (!action.id || typeof action.id !== 'string') return false
-    if (!action.label || typeof action.label !== 'string') return false
+    if (!action.id || typeof action.id !== 'string' || action.id.trim() === '') return false
+    if (!action.label || typeof action.label !== 'string' || action.label.trim() === '') return false
     return true
   })
 
