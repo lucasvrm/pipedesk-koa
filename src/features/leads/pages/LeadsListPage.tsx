@@ -148,12 +148,12 @@ export default function LeadsListPage() {
   const [hasCheckedEmptyInitial, setHasCheckedEmptyInitial] = useState(false)
   const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
 
-  const filters: LeadFilters = {
+  const filters = useMemo<LeadFilters>(() => ({
     search: search || undefined,
     status: normalizedStatusFilter !== 'all' ? [normalizedStatusFilter] : undefined,
     origin: normalizedOriginFilter !== 'all' ? [normalizedOriginFilter] : undefined,
     tags: normalizedTagFilter.length > 0 ? normalizedTagFilter : undefined
-  }
+  }), [normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, search])
 
   const { data: leads, isLoading } = useLeads(filters)
   const salesFilters = useMemo(() => ({
