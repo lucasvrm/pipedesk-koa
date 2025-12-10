@@ -66,7 +66,7 @@ export default function LeadSalesViewPage() {
   })
 
   const totalPages = useMemo(() => {
-    if (!data || !data.pagination?.total) return 1
+    if (!data || data.pagination?.total === undefined) return 1
     return Math.max(1, Math.ceil(data.pagination.total / data.pagination.perPage))
   }, [data])
 

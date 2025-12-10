@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { SalesViewFilters } from './leadService'
 import { ApiError } from '@/lib/errors'
 
@@ -169,7 +169,7 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
   return useQuery({
     queryKey: ['leads-sales-view', params],
     queryFn: () => fetchSalesView(params),
-    placeholderData: (previousData) => previousData,
+    placeholderData: keepPreviousData,
     enabled: options?.enabled ?? true
   })
 }
