@@ -29,7 +29,7 @@ import { LeadsKanban } from '../components/LeadsKanban'
 import { LeadsSalesList } from '../components/LeadsSalesList'
 import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Progress } from '@/components/ui/progress'
-import { QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { QuickActionsMenu, QuickAction } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTags } from '@/services/tagService'
@@ -802,10 +802,13 @@ export default function LeadsListPage() {
             onSelectAll={toggleSelectAll}
             onSelectOne={toggleSelectOne}
             onNavigate={(id) => navigate(`/leads/${id}`)}
-            getLeadActions={(lead) => {
+            getLeadActions={(lead): QuickAction[] => {
               const id = lead.leadId ?? lead.lead_id ?? lead.id
               if (!id) return []
 
+              // Return actions that conform to the QuickAction type.
+              // IMPORTANT: Each action MUST have 'id' (string) and 'label' (string).
+              // Never return the entire object or pass non-string values as label.
               return [
                 {
                   id: 'view',
