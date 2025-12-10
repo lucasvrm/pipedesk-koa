@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useStages, useUpdateStage, useCreateStage, useDeleteStage, useReorderStages } from '@/services/pipelineService';
 import { useSlaPolicies, useUpdateSlaPolicy } from '@/services/slaService';
 import { PipelineStage, SlaPolicy } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PencilSimple, Trash, Plus, ArrowsDownUp, WarningCircle, Clock, CheckCircle } from '@phosphor-icons/react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { toast } from 'sonner';
 import TransitionRulesMatrix from '@/features/admin/components/TransitionRulesMatrix';
 import { PageContainer } from '@/components/PageContainer';
@@ -115,19 +117,24 @@ export default function PipelineSettings() {
     }
   };
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) return;
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
 
-    const items = Array.from(stages);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+  const onDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
 
-    // Optimistic update (UI first) is hard without local state management mirroring RQ
-    // So we just call mutation.
-    // Prepare updates
-    const reorderedPayload = items.map((item, index) => ({
+    const oldIndex = stages.findIndex(stage => stage.id === active.id);
+    const newIndex = stages.findIndex(stage => stage.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(stages, oldIndex, newIndex);
+    const reorderedPayload = reordered.map((item, index) => ({
       id: item.id,
-      stageOrder: index + 1
+      stageOrder: index + 1,
     }));
 
     try {
@@ -161,64 +168,24 @@ export default function PipelineSettings() {
             </div>
 
             <div className="bg-muted/10 border rounded-lg p-6">
-                <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="stages">
-                    {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                        {stages.map((stage, index) => {
-                            const sla = slaPolicies.find(p => p.stageId === stage.id);
-                            return (
-                            <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                                {(provided) => (
-                                <Card
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className="flex items-center p-4 justify-between group hover:border-primary/50 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div {...provided.dragHandleProps} className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing">
-                                            <ArrowsDownUp size={20} />
-                                        </div>
-                                        <div
-                                            className="w-4 h-12 rounded-full"
-                                            style={{ backgroundColor: stage.color }}
-                                            title={`Cor: ${stage.color}`}
-                                        />
-                                        <div>
-                                            <h4 className="font-semibold text-sm">{stage.name}</h4>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                                <Badge variant="outline">{stage.probability}% prob.</Badge>
-                                                {sla && (sla.maxHours > 0) && (
-                                                    <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                                                        <Clock size={12} weight="bold" />
-                                                        SLA: {sla.maxHours}h
-                                                    </span>
-                                                )}
-                                                {stage.isDefault && <Badge variant="secondary" className="text-[10px]">Sistema</Badge>}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="ghost" size="icon" onClick={() => openEdit(stage)}>
-                                            <PencilSimple />
-                                        </Button>
-                                        {!stage.isDefault && (
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(stage)}>
-                                                <Trash />
-                                            </Button>
-                                        )}
-                                    </div>
-                                </Card>
-                                )}
-                            </Draggable>
-                            );
-                        })}
-                        {provided.placeholder}
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                  <SortableContext items={stages.map(stage => stage.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3">
+                      {stages.map(stage => {
+                        const sla = slaPolicies.find(p => p.stageId === stage.id);
+                        return (
+                          <StageRow
+                            key={stage.id}
+                            stage={stage}
+                            sla={sla}
+                            onEdit={openEdit}
+                            onDelete={handleDelete}
+                          />
+                        );
+                      })}
                     </div>
-                    )}
-                </Droppable>
-                </DragDropContext>
+                  </SortableContext>
+                </DndContext>
             </div>
         </TabsContent>
 
@@ -298,5 +265,76 @@ export default function PipelineSettings() {
         </DialogContent>
       </Dialog>
     </PageContainer>
+  );
+}
+
+function StageRow({
+  stage,
+  sla,
+  onEdit,
+  onDelete,
+}: {
+  stage: PipelineStage;
+  sla?: SlaPolicy;
+  onEdit: (stage: PipelineStage) => void;
+  onDelete: (stage: PipelineStage) => void;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: stage.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center p-4 justify-between group hover:border-primary/50 transition-colors ${
+        isDragging ? 'shadow-md ring-2 ring-primary/20' : ''
+      }`}
+    >
+      <div className="flex items-center gap-4">
+        <div
+          ref={setActivatorNodeRef}
+          {...listeners}
+          {...attributes}
+          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+        >
+          <ArrowsDownUp size={20} />
+        </div>
+        <div
+          className="w-4 h-12 rounded-full"
+          style={{ backgroundColor: stage.color }}
+          title={`Cor: ${stage.color}`}
+        />
+        <div>
+          <h4 className="font-semibold text-sm">{stage.name}</h4>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            <Badge variant="outline">{stage.probability}% prob.</Badge>
+            {sla && sla.maxHours > 0 && (
+              <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                <Clock size={12} weight="bold" />
+                SLA: {sla.maxHours}h
+              </span>
+            )}
+            {stage.isDefault && <Badge variant="secondary" className="text-[10px]">Sistema</Badge>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button variant="ghost" size="icon" onClick={() => onEdit(stage)}>
+          <PencilSimple />
+        </Button>
+        {!stage.isDefault && (
+          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => onDelete(stage)}>
+            <Trash />
+          </Button>
+        )}
+      </div>
+    </Card>
   );
 }
