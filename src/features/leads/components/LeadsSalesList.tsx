@@ -28,9 +28,29 @@ export function LeadsSalesList({
   onNavigate,
   getLeadActions
 }: LeadsSalesListProps) {
+  const { validLeads, invalidLeadCount } = useMemo(() => {
+    const valid = [] as LeadSalesViewItem[]
+    const invalid = [] as LeadSalesViewItem[]
+
+    leads.forEach((lead) => {
+      const id = lead.leadId ?? lead.lead_id ?? lead.id
+      if (id) {
+        valid.push(lead)
+      } else {
+        invalid.push(lead)
+      }
+    })
+
+    if (invalid.length > 0) {
+      console.warn('LeadsSalesList: ignorando leads sem identificador', invalid)
+    }
+
+    return { validLeads: valid, invalidLeadCount: invalid.length }
+  }, [leads])
+
   const selectableLeadIds = useMemo(
-    () => leads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
-    [leads]
+    () => validLeads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
+    [validLeads]
   )
 
   const allSelected = useMemo(
@@ -39,15 +59,24 @@ export function LeadsSalesList({
   )
 
   const toRowData = (lead: LeadSalesViewItem) => {
-    const priorityBucket = lead.priorityBucket ?? lead.priority_bucket ?? 'warm'
+    const priorityBucketRaw = lead.priorityBucket ?? lead.priority_bucket
+    const priorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
     const priorityDescription = lead.priorityDescription ?? lead.priority_description
-    const legalName = lead.legalName ?? lead.legal_name ?? 'Lead sem nome'
-    const tradeName = lead.tradeName ?? lead.trade_name
-    const primaryContact = lead.primaryContact ?? lead.primary_contact
+    const legalName = (lead.legalName ?? lead.legal_name)?.trim() || 'Lead sem nome'
+    const tradeName = (lead.tradeName ?? lead.trade_name)?.trim() || undefined
+    const primaryContactData = lead.primaryContact ?? lead.primary_contact
+    const primaryContact = primaryContactData
+      ? { ...primaryContactData, name: primaryContactData.name?.trim() || 'Contato não informado' }
+      : undefined
     const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
-    const lastInteractionType = lead.lastInteractionType ?? lead.last_interaction_type
+    const lastInteractionTypeRaw = lead.lastInteractionType ?? lead.last_interaction_type
+    const lastInteractionType = lastInteractionTypeRaw === 'email' || lastInteractionTypeRaw === 'event'
+      ? lastInteractionTypeRaw
+      : null
     const nextAction = lead.nextAction ?? lead.next_action
+    const ownerData = lead.owner
+    const owner = ownerData ? { ...ownerData, name: ownerData.name?.trim() || 'Responsável não informado' } : undefined
 
     return {
       ...lead,
@@ -59,7 +88,8 @@ export function LeadsSalesList({
       primaryContact,
       lastInteractionAt,
       lastInteractionType,
-      nextAction
+      nextAction,
+      owner
     }
   }
 
@@ -123,8 +153,24 @@ export function LeadsSalesList({
             </TableRow>
           )}
 
+          {!isLoading && leads.length > 0 && validLeads.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={8} className="py-10">
+                <div className="flex flex-col items-center justify-center gap-3 text-center">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-1">
+                    <p className="text-lg font-semibold text-foreground">Não foi possível exibir os leads</p>
+                    <p className="text-sm text-muted-foreground">
+                      Os dados retornados estão incompletos. Tente novamente mais tarde ou contate o suporte.
+                    </p>
+                  </div>
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
+
           {!isLoading &&
-            leads.map((lead) => {
+            validLeads.map((lead) => {
               const id = lead.leadId ?? lead.lead_id ?? lead.id
               if (!id) return null
               const rowData = toRowData(lead)
@@ -141,6 +187,14 @@ export function LeadsSalesList({
                 />
               )
             })}
+
+          {!isLoading && invalidLeadCount > 0 && validLeads.length > 0 && (
+            <TableRow>
+              <TableCell colSpan={8} className="py-4 text-xs text-muted-foreground">
+                Alguns registros retornados pelo servidor foram ignorados por estarem sem identificador.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>
