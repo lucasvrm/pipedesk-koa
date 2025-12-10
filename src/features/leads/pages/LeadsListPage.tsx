@@ -36,18 +36,10 @@ import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { useUsers } from '@/services/userService'
+import { safeString } from '@/lib/utils'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
-
-// Safely convert any value to string for React rendering
-const safeString = (value: unknown, fallback = ''): string => {
-  if (value === null || value === undefined) return fallback
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  // If it's an object, don't render it - return fallback to prevent React error #185
-  return fallback
-}
 
 export default function LeadsListPage() {
   const navigate = useNavigate()

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowsDownUp } from '@phosphor-icons/react'
+import { safeStringOptional } from '@/lib/utils'
 
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
@@ -59,29 +60,15 @@ export function LeadsSalesList({
   )
 
   const toRowData = (lead: LeadSalesViewItem) => {
-    // Enhanced safe string normalization to prevent React error #185
-    const normalizeString = (value: unknown, fallback?: string): string | undefined => {
-      if (value === null || value === undefined) return fallback
-      if (typeof value === 'string') {
-        const trimmed = value.trim()
-        if (trimmed) return trimmed
-      }
-      if (typeof value === 'number' || typeof value === 'boolean') {
-        return String(value)
-      }
-      // If it's an object or array, don't use it - return fallback
-      return fallback
-    }
-
     const priorityBucketRaw = lead.priorityBucket ?? lead.priority_bucket
     const priorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
     const priorityDescription = lead.priorityDescription ?? lead.priority_description
-    const legalName = normalizeString(lead.legalName ?? lead.legal_name, 'Lead sem nome') ?? 'Lead sem nome'
-    const tradeName = normalizeString(lead.tradeName ?? lead.trade_name)
+    const legalName = safeStringOptional(lead.legalName ?? lead.legal_name, 'Lead sem nome') ?? 'Lead sem nome'
+    const tradeName = safeStringOptional(lead.tradeName ?? lead.trade_name)
     const primaryContactData = lead.primaryContact ?? lead.primary_contact
     const primaryContact = primaryContactData
-      ? { ...primaryContactData, name: normalizeString(primaryContactData.name, 'Contato não informado') ?? 'Contato não informado' }
+      ? { ...primaryContactData, name: safeStringOptional(primaryContactData.name, 'Contato não informado') ?? 'Contato não informado' }
       : undefined
     const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
     const lastInteractionTypeRaw = lead.lastInteractionType ?? lead.last_interaction_type
@@ -93,23 +80,23 @@ export function LeadsSalesList({
       nextActionRaw && typeof nextActionRaw.label === 'string'
         ? {
             ...nextActionRaw,
-            label: normalizeString(nextActionRaw.label, '—') ?? '—',
-            reason: normalizeString(nextActionRaw.reason ?? undefined)
+            label: safeStringOptional(nextActionRaw.label, '—') ?? '—',
+            reason: safeStringOptional(nextActionRaw.reason)
           }
         : undefined
     const ownerData = lead.owner
     const owner = ownerData
       ? {
           ...ownerData,
-          name: normalizeString(ownerData.name, 'Responsável não informado') ?? 'Responsável não informado'
+          name: safeStringOptional(ownerData.name, 'Responsável não informado') ?? 'Responsável não informado'
         }
       : undefined
     const tags = Array.isArray(lead.tags)
       ? lead.tags
           .filter((tag): tag is NonNullable<LeadSalesViewItem['tags']>[number] => !!tag && typeof tag === 'object')
           .map((tag) => {
-            const name = normalizeString(tag.name, 'Tag') ?? 'Tag'
-            const color = normalizeString(tag.color ?? undefined)
+            const name = safeStringOptional(tag.name, 'Tag') ?? 'Tag'
+            const color = safeStringOptional(tag.color)
             const id = typeof tag.id === 'string' ? tag.id : undefined
 
             return { id, name, color }
