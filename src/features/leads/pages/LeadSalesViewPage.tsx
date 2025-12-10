@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LeadSalesRow, LeadSalesRowSkeleton } from '../components/LeadSalesRow'
 import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -13,10 +13,56 @@ import { toast } from 'sonner'
 const PAGE_SIZE = 10
 
 export default function LeadSalesViewPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [ownerFilter, setOwnerFilter] = useState<'me' | 'all' | undefined>(() => {
+    const owner = searchParams.get('owner')
+    if (owner === 'me' || owner === 'all') return owner
+    return undefined
+  })
+  const [priorityBuckets, setPriorityBuckets] = useState<Array<'hot' | 'warm' | 'cold'>>(() => {
+    const buckets = searchParams.get('bucket')?.split(',').filter(Boolean) ?? []
+    return buckets.filter((bucket): bucket is 'hot' | 'warm' | 'cold' => ['hot', 'warm', 'cold'].includes(bucket))
+  })
+  const [statusFilters, setStatusFilters] = useState<string[]>(() => {
+    const status = searchParams.get('status')
+    if (!status) return []
+    return status.split(',').filter(Boolean)
+  })
+  const [originFilters, setOriginFilters] = useState<string[]>(() => {
+    const origin = searchParams.get('origem')
+    if (!origin) return []
+    return origin.split(',').filter(Boolean)
+  })
+  const [daysWithoutInteraction, setDaysWithoutInteraction] = useState<number | undefined>(() => {
+    const days = searchParams.get('days_without_interaction')
+    if (!days) return undefined
+    const parsed = Number(days)
+    return Number.isFinite(parsed) ? parsed : undefined
+  })
+  const [orderBy, setOrderBy] = useState<'priority' | 'last_interaction' | 'created_at' | undefined>(() => {
+    const order = searchParams.get('order_by')
+    if (order === 'priority' || order === 'last_interaction' || order === 'created_at') return order
+    return undefined
+  })
   const navigate = useNavigate()
-  const { data, isLoading, isFetching, isError } = useLeadsSalesView({ page, pageSize: PAGE_SIZE })
+  const filters = useMemo(
+    () => ({
+      owner: ownerFilter,
+      priority: priorityBuckets.length ? priorityBuckets : undefined,
+      status: statusFilters.length ? statusFilters : undefined,
+      origin: originFilters.length ? originFilters : undefined,
+      daysWithoutInteraction,
+      orderBy
+    }),
+    [daysWithoutInteraction, originFilters, orderBy, ownerFilter, priorityBuckets, statusFilters]
+  )
+  const { data, isLoading, isFetching, isError } = useLeadsSalesView({
+    page,
+    pageSize: PAGE_SIZE,
+    ...filters
+  })
 
   const totalPages = useMemo(() => {
     if (!data || !data.pagination.total) return 1
@@ -73,6 +119,52 @@ export default function LeadSalesViewPage() {
     setPage(Math.max(1, Math.min(nextPage, totalPages)))
     setSelectedIds([])
   }
+
+  const arraysEqual = (a: string[], b: string[]) => a.length === b.length && a.every((value, index) => value === b[index])
+
+  useEffect(() => {
+    const owner = searchParams.get('owner')
+    setOwnerFilter(owner === 'me' || owner === 'all' ? owner : undefined)
+
+    const buckets = searchParams.get('bucket')?.split(',').filter(Boolean) ?? []
+    const parsedBuckets = buckets.filter((bucket): bucket is 'hot' | 'warm' | 'cold' => ['hot', 'warm', 'cold'].includes(bucket))
+    if (!arraysEqual(parsedBuckets, priorityBuckets)) setPriorityBuckets(parsedBuckets)
+
+    const status = searchParams.get('status')?.split(',').filter(Boolean) ?? []
+    if (!arraysEqual(status, statusFilters)) setStatusFilters(status)
+
+    const origin = searchParams.get('origem')?.split(',').filter(Boolean) ?? []
+    if (!arraysEqual(origin, originFilters)) setOriginFilters(origin)
+
+    const days = searchParams.get('days_without_interaction')
+    const parsedDays = days ? Number(days) : undefined
+    const validDays = Number.isFinite(parsedDays ?? NaN) ? parsedDays : undefined
+    if (validDays !== daysWithoutInteraction) setDaysWithoutInteraction(validDays)
+
+    const order = searchParams.get('order_by')
+    const validOrder = order === 'priority' || order === 'last_interaction' || order === 'created_at' ? order : undefined
+    if (validOrder !== orderBy) setOrderBy(validOrder)
+  }, [daysWithoutInteraction, orderBy, originFilters, priorityBuckets, searchParams, statusFilters])
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+
+    if (ownerFilter) params.set('owner', ownerFilter)
+    if (priorityBuckets.length) params.set('bucket', priorityBuckets.join(','))
+    if (statusFilters.length) params.set('status', statusFilters.join(','))
+    if (originFilters.length) params.set('origem', originFilters.join(','))
+    if (typeof daysWithoutInteraction === 'number') params.set('days_without_interaction', String(daysWithoutInteraction))
+    if (orderBy) params.set('order_by', orderBy)
+
+    const nextSearch = params.toString()
+    if (nextSearch !== searchParams.toString()) {
+      setSearchParams(params, { replace: true })
+    }
+  }, [daysWithoutInteraction, orderBy, originFilters, ownerFilter, priorityBuckets, searchParams, setSearchParams, statusFilters])
+
+  useEffect(() => {
+    setPage(1)
+  }, [daysWithoutInteraction, orderBy, originFilters, ownerFilter, priorityBuckets, statusFilters])
 
   useEffect(() => {
     if (isError) {
