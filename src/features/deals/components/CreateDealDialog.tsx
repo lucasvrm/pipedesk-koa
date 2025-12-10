@@ -56,7 +56,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSystemMetadata } from "@/hooks/useSystemMetadata";
 
 // Schema de validação
 const formSchema = z.object({
