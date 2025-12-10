@@ -7,8 +7,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useToast } from '@/components/ui/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
 
 const PAGE_SIZE = 10
 
@@ -17,7 +17,6 @@ export default function LeadSalesViewPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const navigate = useNavigate()
   const { data, isLoading, isFetching, isError } = useLeadsSalesView({ page, pageSize: PAGE_SIZE })
-  const { toast } = useToast()
 
   const totalPages = useMemo(() => {
     if (!data || !data.total) return 1
@@ -50,13 +49,11 @@ export default function LeadSalesViewPage() {
 
   useEffect(() => {
     if (isError) {
-      toast({
-        title: 'Erro ao carregar leads',
-        description: 'Não foi possível carregar a Sales View. Tente novamente em instantes.',
-        variant: 'destructive'
-      })
+      toast.error(
+        'Erro ao carregar leads. Não foi possível carregar a Sales View. Tente novamente em instantes.'
+      )
     }
-  }, [isError, toast])
+  }, [isError])
 
   return (
     <div className="space-y-6">
