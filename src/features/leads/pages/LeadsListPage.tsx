@@ -120,6 +120,12 @@ export default function LeadsListPage() {
 
   const lastSearchRef = useRef<string | null>(null)
 
+  useEffect(() => {
+    if (viewMode !== 'sales') return
+
+    lastSearchRef.current = searchParams.toString()
+  }, [searchParams, viewMode])
+
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusCodes.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginCodes.includes(originFilter) ? originFilter : 'all'
   const normalizedTagFilter = tagFilter.filter(tagId => activeTagIds.includes(tagId))
