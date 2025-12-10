@@ -50,7 +50,7 @@ npm run dev
 
 **Acesse:** http://localhost:5173
 
-> ℹ️ O repositório inclui um `.npmrc` com `legacy-peer-deps` ativado para evitar erros de resolução com pacotes que ainda não declaram compatibilidade com React 19 (ex.: `react-beautiful-dnd`).
+> ℹ️ O repositório inclui um `.npmrc` com `legacy-peer-deps=true`, portanto **`npm install` e `npm ci` devem ser executados com essa flag** até que todas as dependências declarem suporte oficial ao React 19 (ex.: `react-beautiful-dnd`, `react-joyride`).
 
 📘 **[Guia de Instalação Completo →](docs/getting-started/installation.md)**
 

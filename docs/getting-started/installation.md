@@ -28,8 +28,10 @@ PipeDesk uses React 19, which requires the `--legacy-peer-deps` flag due to some
 npm install --legacy-peer-deps
 ```
 
-**Why `--legacy-peer-deps`?**  
+**Why `--legacy-peer-deps`?**
 The onboarding tour library (`react-joyride`) currently lists React 15-18 as peer dependencies. However, it works correctly with React 19. This is a conscious decision while awaiting official React 19 support.
+
+> **Note:** CI pipelines should run `npm ci --legacy-peer-deps` (or rely on the root `.npmrc`) until all dependencies formally support React 19.
 
 ### 3. Environment Configuration
 
