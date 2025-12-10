@@ -157,7 +157,7 @@ export default function LeadDetailPage() {
     return (
       <StatusBadge
         semanticStatus={leadStatusMap(lead.status)}
-        label={statusMeta?.label || lead.status}
+        label={safeString(statusMeta?.label, lead.status)}
         className="text-sm"
       />
     )
@@ -166,7 +166,7 @@ export default function LeadDetailPage() {
   const operationTypeName = useMemo(() => {
     if (!lead?.operationType) return ''
     const found = operationTypes?.find(op => op.id === lead.operationType)
-    return found?.name || OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType
+    return safeString(found?.name, OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType)
   }, [lead?.operationType, operationTypes])
 
   // Build RelationshipMap data - Must be called before any early returns to follow Rules of Hooks
@@ -273,7 +273,7 @@ export default function LeadDetailPage() {
       await updateLead.mutateAsync({ id: lead.id, data: { status: value } })
       if (profile) {
         const statusMeta = getLeadStatusByCode(value)
-        logActivity(lead.id, 'lead', `Status alterado para ${statusMeta?.label || value}`, profile.id)
+        logActivity(lead.id, 'lead', `Status alterado para ${safeString(statusMeta?.label, value)}`, profile.id)
       }
       toast.success('Status atualizado')
     } catch (error) {
