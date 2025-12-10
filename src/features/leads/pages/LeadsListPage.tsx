@@ -403,7 +403,7 @@ export default function LeadsListPage() {
     return (
       <StatusBadge
         semanticStatus={leadStatusMap(status as LeadStatus)}
-        label={statusMeta?.label || status}
+        label={safeString(statusMeta?.label, status)}
       />
     );
   }
@@ -413,7 +413,7 @@ export default function LeadsListPage() {
     return (
       <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
         <Globe className="w-3 h-3" />
-        {originMeta?.label || origin}
+        {safeString(originMeta?.label, origin)}
       </div>
     );
   }
@@ -632,7 +632,7 @@ export default function LeadsListPage() {
                           setTagFilter(newTags);
                           setCurrentPage(1);
                         }}
-                        style={tagFilter.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
+                        style={tagFilter.includes(tag.id) ? { backgroundColor: safeString(tag.color, '#888'), borderColor: safeString(tag.color, '#888') } : { color: safeString(tag.color, '#888'), borderColor: safeString(tag.color, '#888') + '40' }}
                       >
                         {safeString(tag.name, 'Tag')}
                       </Badge>
@@ -774,8 +774,8 @@ export default function LeadsListPage() {
                   <CardHeader className="pb-2 space-y-0">
                     <div className="flex justify-between items-start mb-2">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg line-clamp-1" title={lead.legalName}>{lead.legalName}</CardTitle>
-                        {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{lead.tradeName}</p>}
+                        <CardTitle className="text-lg line-clamp-1" title={safeString(lead.legalName, 'Lead sem nome')}>{safeString(lead.legalName, 'Lead sem nome')}</CardTitle>
+                        {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
                       </div>
                       <div onClick={e => e.stopPropagation()} className="flex gap-1">
                         <QuickActionsMenu
@@ -803,7 +803,7 @@ export default function LeadsListPage() {
 
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{getLeadStatusByCode(lead.status)?.label || lead.status}</span>
+                        <span>{safeString(getLeadStatusByCode(lead.status)?.label, lead.status)}</span>
                         <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
                       </div>
                       <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />

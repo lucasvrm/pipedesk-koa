@@ -189,16 +189,19 @@ export function LeadSalesRow({
         <div className="space-y-2">
           {safeTags.length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {safeTags.slice(0, 3).map((tag) => (
-                <Badge
-                  key={tag.id ?? tag.name}
-                  variant="outline"
-                  className="text-[10px] px-2 py-0 h-5 border-muted-foreground/40"
-                  style={tag.color ? { backgroundColor: `${tag.color}20`, color: tag.color } : undefined}
-                >
-                  {safeString(tag.name, '—')}
-                </Badge>
-              ))}
+              {safeTags.slice(0, 3).map((tag) => {
+                const safeColor = safeStringOptional(tag.color)
+                return (
+                  <Badge
+                    key={tag.id ?? tag.name}
+                    variant="outline"
+                    className="text-[10px] px-2 py-0 h-5 border-muted-foreground/40"
+                    style={safeColor ? { backgroundColor: `${safeColor}20`, color: safeColor } : undefined}
+                  >
+                    {safeString(tag.name, '—')}
+                  </Badge>
+                )
+              })}
               {safeTags.length > 3 && (
                 <span className="text-[11px] text-muted-foreground">+{safeTags.length - 3}</span>
               )}
