@@ -36,6 +36,7 @@ import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { useUsers } from '@/services/userService'
+import { safeString } from '@/lib/utils'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
@@ -591,7 +592,7 @@ export default function LeadsListPage() {
             <SelectContent>
               <SelectItem value="all">Todos Status</SelectItem>
               {leadStatuses.filter(s => s.isActive).map((status) => (
-                <SelectItem key={status.code} value={status.code}>{status.label}</SelectItem>
+                <SelectItem key={status.code} value={status.code}>{safeString(status.label, status.code)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -603,7 +604,7 @@ export default function LeadsListPage() {
             <SelectContent>
               <SelectItem value="all">Todas Origens</SelectItem>
               {leadOrigins.filter(o => o.isActive).map((origin) => (
-                <SelectItem key={origin.code} value={origin.code}>{origin.label}</SelectItem>
+                <SelectItem key={origin.code} value={origin.code}>{safeString(origin.label, origin.code)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -633,7 +634,7 @@ export default function LeadsListPage() {
                         }}
                         style={tagFilter.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
                       >
-                        {tag.name}
+                        {safeString(tag.name, 'Tag')}
                       </Badge>
                     ))}
                     {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}

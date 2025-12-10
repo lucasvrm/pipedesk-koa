@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { QuickAction, QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
+import { safeString, safeStringOptional } from '@/lib/utils'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -59,23 +60,14 @@ export function LeadSalesRow({
   const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
-  const displayText = (value: unknown, fallback = '—') =>
-    typeof value === 'string' && value.trim() ? value.trim() : fallback
-
-  const displayOptionalText = (value: unknown) => {
-    const valueAsText = displayText(value, '')
-    return valueAsText || undefined
-  }
-
-  const safeLegalName = displayText(legalName, 'Lead sem nome')
-  const safeTradeName = displayOptionalText(tradeName)
-  const safePriorityDescription = displayOptionalText(priorityDescription)
-  const safePrimaryContactName = displayText(primaryContact?.name, 'Contato não informado')
-  const safePrimaryContactRole =
-    primaryContact && primaryContact.role !== undefined ? displayText(primaryContact.role) : undefined
-  const safeNextActionLabel = safeNextAction ? displayText(safeNextAction.label) : null
-  const safeNextActionReason = safeNextAction ? displayOptionalText(safeNextAction.reason) : undefined
-  const safeOwnerName = owner ? displayText(owner.name, 'Responsável não informado') : null
+  const safeLegalName = safeString(legalName, 'Lead sem nome')
+  const safeTradeName = safeStringOptional(tradeName)
+  const safePriorityDescription = safeStringOptional(priorityDescription)
+  const safePrimaryContactName = safeString(primaryContact?.name, 'Contato não informado')
+  const safePrimaryContactRole = safeStringOptional(primaryContact?.role)
+  const safeNextActionLabel = safeNextAction ? safeString(safeNextAction.label, '—') : null
+  const safeNextActionReason = safeNextAction ? safeStringOptional(safeNextAction.reason) : undefined
+  const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
 
   const parsedLastInteractionDate = lastInteractionAt
     ? (() => {
@@ -204,7 +196,7 @@ export function LeadSalesRow({
                   className="text-[10px] px-2 py-0 h-5 border-muted-foreground/40"
                   style={tag.color ? { backgroundColor: `${tag.color}20`, color: tag.color } : undefined}
                 >
-                  {displayText(tag.name, '—')}
+                  {safeString(tag.name, '—')}
                 </Badge>
               ))}
               {safeTags.length > 3 && (
