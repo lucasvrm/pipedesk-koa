@@ -4,20 +4,37 @@ import { SalesViewFilters } from './leadService'
 export type LeadPriorityBucket = 'hot' | 'warm' | 'cold'
 
 export interface LeadSalesViewItem {
-  id: string
+  id?: string
   leadId?: string
+  lead_id?: string
   priorityScore?: number | null
-  priorityBucket: LeadPriorityBucket
-  legalName: string
+  priority_score?: number | null
+  priorityBucket?: LeadPriorityBucket
+  priority_bucket?: LeadPriorityBucket
+  legalName?: string
+  legal_name?: string
   tradeName?: string | null
+  trade_name?: string | null
   primaryContact?: {
     name: string
     role?: string | null
     avatar?: string | null
   }
+  primary_contact?: {
+    name: string
+    role?: string | null
+    avatar?: string | null
+  }
   lastInteractionAt?: string | null
+  last_interaction_at?: string | null
   lastInteractionType?: 'email' | 'event' | null
+  last_interaction_type?: 'email' | 'event' | null
   nextAction?: {
+    code: string
+    label: string
+    reason?: string | null
+  }
+  next_action?: {
     code: string
     label: string
     reason?: string | null
@@ -33,11 +50,15 @@ export interface LeadSalesViewItem {
   }>
 }
 
-export interface LeadSalesViewResponse {
-  items: LeadSalesViewItem[]
+export interface LeadSalesViewPagination {
   total: number
   page: number
-  pageSize: number
+  perPage: number
+}
+
+export interface LeadSalesViewResponse {
+  data: LeadSalesViewItem[]
+  pagination: LeadSalesViewPagination
 }
 
 export interface LeadSalesViewQuery extends SalesViewFilters {
@@ -68,10 +89,12 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
   const payload = await response.json()
 
   return {
-    items: payload.items || payload.data || [],
-    total: payload.total ?? payload.count ?? payload.meta?.total ?? 0,
-    page: payload.page ?? payload.meta?.page ?? page,
-    pageSize: payload.pageSize ?? payload.meta?.pageSize ?? payload.meta?.perPage ?? pageSize
+    data: payload.data ?? payload.items ?? [],
+    pagination: {
+      total: payload.pagination?.total ?? payload.total ?? payload.count ?? payload.meta?.total ?? 0,
+      page: payload.pagination?.page ?? payload.page ?? payload.meta?.page ?? page,
+      perPage: payload.pagination?.per_page ?? payload.pagination?.perPage ?? payload.pageSize ?? payload.meta?.perPage ?? pageSize
+    }
   }
 }
 
