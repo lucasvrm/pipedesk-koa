@@ -281,7 +281,24 @@ export async function getSalesViewLeads(filters?: SalesViewFilters): Promise<Lea
   const response = await fetch(`/api/leads/sales-view${query ? `?${query}` : ''}`);
 
   if (!response.ok) {
+    console.error('[SalesViewLeads] API request failed', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url
+    });
     throw new Error('Falha ao carregar leads da Sales View');
+  }
+
+  // Validate content-type before parsing JSON
+  const contentType = response.headers.get('content-type');
+  if (!contentType?.includes('application/json')) {
+    console.error('[SalesViewLeads] Expected JSON but received unexpected content-type', {
+      contentType,
+      url: response.url
+    });
+    throw new Error(
+      `sales-view expected JSON but received: ${contentType ?? 'unknown'}`
+    );
   }
 
   const data = await response.json();

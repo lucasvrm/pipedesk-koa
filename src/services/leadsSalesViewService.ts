@@ -68,6 +68,32 @@ export interface LeadSalesViewQuery extends SalesViewFilters {
   pageSize?: number
 }
 
+/**
+ * Validates that the response from sales-view API has the expected structure.
+ * Returns true if valid, throws an error with details if invalid.
+ */
+function isSalesViewResponseValid(data: unknown): data is { data?: unknown[]; items?: unknown[]; pagination?: unknown; total?: number; count?: number } {
+  if (data === null || typeof data !== 'object') {
+    throw new Error('sales-view response is not an object')
+  }
+
+  const payload = data as Record<string, unknown>
+  
+  // Check if items or data exists and is an array
+  const items = payload.data ?? payload.items
+  if (items !== undefined && !Array.isArray(items)) {
+    throw new Error(`sales-view expected items to be an array but received: ${typeof items}`)
+  }
+
+  // Check if count/total is a number when present
+  const count = payload.total ?? payload.count ?? (payload.pagination as Record<string, unknown>)?.total
+  if (count !== undefined && typeof count !== 'number') {
+    throw new Error(`sales-view expected count to be a number but received: ${typeof count}`)
+  }
+
+  return true
+}
+
 async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
   const searchParams = new URLSearchParams({
     page: String(page),
@@ -84,10 +110,30 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
   const response = await fetch(`/api/leads/sales-view?${searchParams.toString()}`)
 
   if (!response.ok) {
+    console.error('[SalesView] API request failed', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url
+    })
     throw new Error('Falha ao carregar leads da Sales View')
   }
 
+  // Validate content-type before parsing JSON
+  const contentType = response.headers.get('content-type')
+  if (!contentType?.includes('application/json')) {
+    console.error('[SalesView] Expected JSON but received unexpected content-type', {
+      contentType,
+      url: response.url
+    })
+    throw new Error(
+      `sales-view expected JSON but received: ${contentType ?? 'unknown'}`
+    )
+  }
+
   const payload = await response.json()
+
+  // Validate response structure
+  isSalesViewResponseValid(payload)
 
   return {
     data: payload.data ?? payload.items ?? [],

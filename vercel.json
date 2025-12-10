@@ -10,7 +10,11 @@
             "destination": "/assets/$1"
         },
         {
-            "source": "/(.*)",
+            "source": "/api/(.*)",
+            "destination": "https://google-api-xwhd.onrender.com/api/$1"
+        },
+        {
+            "source": "/((?!api/).*)",
             "destination": "/index.html"
         }
     ],
