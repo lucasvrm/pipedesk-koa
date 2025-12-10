@@ -37,6 +37,9 @@ import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { useUsers } from '@/services/userService'
 
+const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
+const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
+
 export default function LeadsListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -117,6 +120,30 @@ export default function LeadsListPage() {
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusCodes.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginCodes.includes(originFilter) ? originFilter : 'all'
   const normalizedTagFilter = tagFilter.filter(tagId => activeTagIds.includes(tagId))
+
+  useEffect(() => {
+    if (!leadStatuses.length && !leadOrigins.length && !tags.length) return
+
+    const validStatus = normalizedStatusFilter !== 'all' ? normalizedStatusFilter : 'all'
+    const validOrigin = normalizedOriginFilter !== 'all' ? normalizedOriginFilter : 'all'
+    const validTags = normalizedTagFilter
+
+    if (validStatus !== statusFilter) setStatusFilter(validStatus)
+    if (validOrigin !== originFilter) setOriginFilter(validOrigin)
+    if (JSON.stringify(validTags) !== JSON.stringify(tagFilter)) setTagFilter(validTags)
+  }, [leadStatuses.length, leadOrigins.length, tags.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, originFilter, statusFilter, tagFilter])
+
+  useEffect(() => {
+    if (!leadStatuses.length && !leadOrigins.length) return
+
+    const validSalesStatus = salesStatusFilter.filter(code => activeStatusCodes.includes(code))
+    const validSalesOrigin = salesOriginFilter.filter(code => activeOriginCodes.includes(code))
+    const validPriority = salesPriority.filter(priority => PRIORITY_OPTIONS.includes(priority))
+
+    if (!arraysEqual(validSalesStatus, salesStatusFilter)) setSalesStatusFilter(validSalesStatus)
+    if (!arraysEqual(validSalesOrigin, salesOriginFilter)) setSalesOriginFilter(validSalesOrigin)
+    if (!arraysEqual(validPriority, salesPriority)) setSalesPriority(validPriority)
+  }, [activeOriginCodes, activeStatusCodes, salesOriginFilter, salesPriority, salesStatusFilter])
 
   const [hasCheckedEmptyInitial, setHasCheckedEmptyInitial] = useState(false)
   const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
@@ -209,18 +236,6 @@ export default function LeadsListPage() {
     }
     localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
   }, [itemsPerPage, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, search, viewMode])
-
-  useEffect(() => {
-    if (!leadStatuses.length && !leadOrigins.length && !tags.length) return
-
-    const nextStatus = normalizedStatusFilter === 'all' ? 'all' : normalizedStatusFilter
-    const nextOrigin = normalizedOriginFilter === 'all' ? 'all' : normalizedOriginFilter
-    const nextTags = normalizedTagFilter
-
-    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
-    if (nextOrigin !== originFilter) setOriginFilter(nextOrigin)
-    if (JSON.stringify(nextTags) !== JSON.stringify(tagFilter)) setTagFilter(nextTags)
-  }, [leadStatuses.length, leadOrigins.length, tags.length, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, originFilter, statusFilter, tagFilter])
 
   useEffect(() => {
     if (viewMode === 'sales') return
