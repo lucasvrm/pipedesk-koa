@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button'
 import { DotsThreeOutline } from '@phosphor-icons/react'
+import { safeString } from '@/lib/utils'
 
 export interface QuickAction {
   id: string
@@ -57,28 +58,35 @@ export function QuickActionsMenu({
   triggerSize = 'icon',
   align = 'end'
 }: QuickActionsMenuProps) {
-  
+  const sanitizeLabel = (value: unknown, fallback = 'Ação') => safeString(value, fallback)
+
   const renderAction = (action: QuickAction) => {
+    const actionLabel = sanitizeLabel(action.label)
+
     // If action has sub-actions, render as submenu
     if (action.subActions && action.subActions.length > 0) {
       return (
         <DropdownMenuSub key={action.id}>
           <DropdownMenuSubTrigger disabled={action.disabled}>
             {action.icon && <span className="mr-2">{action.icon}</span>}
-            {action.label}
+            {actionLabel}
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
-            {action.subActions.map(subAction => (
-              <DropdownMenuItem
-                key={subAction.id}
-                onClick={subAction.onClick}
-                disabled={subAction.disabled}
-                className={subAction.variant === 'destructive' ? 'text-red-600 focus:text-red-600' : ''}
-              >
-                {subAction.icon && <span className="mr-2">{subAction.icon}</span>}
-                {subAction.label}
-              </DropdownMenuItem>
-            ))}
+            {action.subActions.map(subAction => {
+              const subActionLabel = sanitizeLabel(subAction.label)
+
+              return (
+                <DropdownMenuItem
+                  key={subAction.id}
+                  onClick={subAction.onClick}
+                  disabled={subAction.disabled}
+                  className={subAction.variant === 'destructive' ? 'text-red-600 focus:text-red-600' : ''}
+                >
+                  {subAction.icon && <span className="mr-2">{subAction.icon}</span>}
+                  {subActionLabel}
+                </DropdownMenuItem>
+              )
+            })}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
       )
@@ -93,25 +101,28 @@ export function QuickActionsMenu({
         className={action.variant === 'destructive' ? 'text-red-600 focus:text-red-600' : ''}
       >
         {action.icon && <span className="mr-2">{action.icon}</span>}
-        {action.label}
+        {actionLabel}
       </DropdownMenuItem>
     )
   }
 
+  const triggerLabel = label ? sanitizeLabel(label) : null
+  const showMenuLabel = Boolean(triggerLabel)
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant={triggerVariant} 
+        <Button
+          variant={triggerVariant}
           size={triggerSize}
           className="focus-visible:ring-1"
         >
           {triggerIcon}
-          {label && <span className="ml-2">{label}</span>}
+          {triggerLabel && <span className="ml-2">{triggerLabel}</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-56">
-        {label && (
+        {showMenuLabel && (
           <>
             <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
             <DropdownMenuSeparator />
