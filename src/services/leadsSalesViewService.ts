@@ -69,7 +69,8 @@ export interface LeadSalesViewQuery extends SalesViewFilters {
 async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
   const searchParams = new URLSearchParams({
     page: String(page),
-    pageSize: String(pageSize)
+    pageSize: String(pageSize),
+    order_by: filters.orderBy ?? 'priority'
   })
 
   if (filters.owner) searchParams.set('owner', filters.owner)
@@ -78,8 +79,6 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
   if (filters.status?.length) searchParams.set('status', filters.status.join(','))
   if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
   if (filters.daysWithoutInteraction) searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
-  if (filters.orderBy) searchParams.set('order_by', filters.orderBy)
-
   const response = await fetch(`/api/leads/sales-view?${searchParams.toString()}`)
 
   if (!response.ok) {
