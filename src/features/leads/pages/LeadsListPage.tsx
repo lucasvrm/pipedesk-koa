@@ -137,13 +137,13 @@ export default function LeadsListPage() {
     }
   } as any
 
-  const salesLeads = salesViewData?.items || []
+  const salesLeads = salesViewData?.data || []
   const activeLeads = (viewMode === 'sales' ? salesLeads : leads) || []
   const isActiveLoading = viewMode === 'sales' ? isSalesLoading || isSalesFetching : isLoading
 
   const leadMetrics = useMemo(() => {
     if (viewMode === 'sales') {
-      const total = salesViewData?.total ?? salesLeads.length
+      const total = salesViewData?.pagination.total ?? salesLeads.length
       return { openLeads: total, createdThisMonth: 0, qualifiedThisMonth: 0 }
     }
 
@@ -155,7 +155,7 @@ export default function LeadsListPage() {
     ).length || 0
 
     return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [leads, monthStart, salesLeads.length, salesViewData?.total, viewMode])
+  }, [leads, monthStart, salesLeads.length, salesViewData?.pagination.total, viewMode])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -202,12 +202,12 @@ export default function LeadsListPage() {
     setSearchParams(params, { replace: true })
   }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, setSearchParams, viewMode])
 
-  const totalLeads = viewMode === 'sales' ? salesViewData?.total ?? 0 : activeLeads.length
+  const totalLeads = viewMode === 'sales' ? salesViewData?.pagination.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
     1,
-    Math.ceil(totalLeads / (viewMode === 'sales' ? salesViewData?.pageSize || itemsPerPage : itemsPerPage))
+    Math.ceil(totalLeads / (viewMode === 'sales' ? salesViewData?.pagination.perPage || itemsPerPage : itemsPerPage))
   )
-  const currentPageSize = viewMode === 'sales' ? salesViewData?.pageSize || itemsPerPage : itemsPerPage
+  const currentPageSize = viewMode === 'sales' ? salesViewData?.pagination.perPage || itemsPerPage : itemsPerPage
 
   const paginatedLeads = useMemo<Lead[] | LeadSalesViewItem[]>(() => {
     if (viewMode === 'sales') return salesLeads
@@ -226,7 +226,10 @@ export default function LeadsListPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
 
-  const getLeadId = (lead: Lead | { id: string; leadId?: string }) => (lead as any).leadId ?? lead.id
+  const getLeadId = (lead: Lead | LeadSalesViewItem) => {
+    const raw = lead as any
+    return raw.leadId ?? raw.lead_id ?? raw.id ?? raw.lead?.id
+  }
 
   const handleCreate = async () => {
     if (!newLeadName) return
@@ -261,10 +264,11 @@ export default function LeadsListPage() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === currentLeads.length) {
+    const leadIds = currentLeads.map(lead => getLeadId(lead)).filter(Boolean) as string[]
+    if (leadIds.length > 0 && selectedIds.length === leadIds.length) {
       setSelectedIds([])
     } else {
-      setSelectedIds(Array.from(new Set(currentLeads.map(lead => getLeadId(lead)))))
+      setSelectedIds(Array.from(new Set(leadIds)))
     }
   }
 

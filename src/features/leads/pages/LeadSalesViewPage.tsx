@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LeadSalesRow, LeadSalesRowSkeleton } from '../components/LeadSalesRow'
-import { useLeadsSalesView } from '@/services/leadsSalesViewService'
+import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { Card } from '@/components/ui/card'
@@ -19,18 +19,45 @@ export default function LeadSalesViewPage() {
   const { data, isLoading, isFetching, isError } = useLeadsSalesView({ page, pageSize: PAGE_SIZE })
 
   const totalPages = useMemo(() => {
-    if (!data || !data.total) return 1
-    return Math.max(1, Math.ceil(data.total / data.pageSize))
+    if (!data || !data.pagination.total) return 1
+    return Math.max(1, Math.ceil(data.pagination.total / data.pagination.perPage))
   }, [data])
 
-  const leads = data?.items || []
+  const leads = data?.data || []
+  const leadIds = useMemo(
+    () => leads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
+    [leads]
+  )
+  const allSelected = useMemo(
+    () => leadIds.length > 0 && leadIds.every((id) => selectedIds.includes(id)),
+    [leadIds, selectedIds]
+  )
+
+  const mapLeadToRow = (lead: LeadSalesViewItem) => {
+    const priorityBucket = lead.priorityBucket ?? lead.priority_bucket ?? 'warm'
+    const priorityScore = lead.priorityScore ?? lead.priority_score
+    const legalName = lead.legalName ?? lead.legal_name ?? 'Lead sem nome'
+    const tradeName = lead.tradeName ?? lead.trade_name
+    const primaryContact = lead.primaryContact ?? lead.primary_contact
+    const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
+    const lastInteractionType = lead.lastInteractionType ?? lead.last_interaction_type
+    const nextAction = lead.nextAction ?? lead.next_action
+
+    return {
+      ...lead,
+      priorityBucket,
+      priorityScore,
+      legalName,
+      tradeName,
+      primaryContact,
+      lastInteractionAt,
+      lastInteractionType,
+      nextAction
+    }
+  }
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === leads.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(leads.map((lead) => lead.id))
-    }
+    setSelectedIds(allSelected ? [] : leadIds)
   }
 
   const toggleSelect = (id: string, selected: boolean) => {
@@ -70,9 +97,9 @@ export default function LeadSalesViewPage() {
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[40px]">
                 <Checkbox
-                  checked={leads.length > 0 && selectedIds.length === leads.length}
+                  checked={allSelected}
                   onCheckedChange={toggleSelectAll}
-                  disabled={isLoading || leads.length === 0}
+                  disabled={isLoading || leadIds.length === 0}
                 />
               </TableHead>
               <TableHead className="w-[22%]">Empresa</TableHead>
@@ -113,11 +140,13 @@ export default function LeadSalesViewPage() {
 
             {!isLoading &&
               leads.map((lead) => {
-                const leadId = lead.leadId ?? lead.id
+                const leadId = lead.leadId ?? lead.lead_id ?? lead.id
+                if (!leadId) return null
+                const rowData = mapLeadToRow(lead)
                 return (
                   <LeadSalesRow
                     key={leadId}
-                    {...lead}
+                    {...rowData}
                     selected={selectedIds.includes(leadId)}
                     onSelectChange={(checked) => toggleSelect(leadId, checked)}
                     onClick={() => navigate(`/leads/${leadId}`)}

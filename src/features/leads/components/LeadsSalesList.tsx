@@ -22,10 +22,42 @@ export function LeadsSalesList({
   onSelectOne,
   onNavigate
 }: LeadsSalesListProps) {
-  const allSelected = useMemo(() => leads.length > 0 && selectedIds.length === leads.length, [leads.length, selectedIds.length])
+  const selectableLeadIds = useMemo(
+    () => leads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
+    [leads]
+  )
+
+  const allSelected = useMemo(
+    () => selectableLeadIds.length > 0 && selectableLeadIds.every((id) => selectedIds.includes(id)),
+    [selectableLeadIds, selectedIds]
+  )
+
+  const toRowData = (lead: LeadSalesViewItem) => {
+    const priorityBucket = lead.priorityBucket ?? lead.priority_bucket ?? 'warm'
+    const priorityScore = lead.priorityScore ?? lead.priority_score
+    const legalName = lead.legalName ?? lead.legal_name ?? 'Lead sem nome'
+    const tradeName = lead.tradeName ?? lead.trade_name
+    const primaryContact = lead.primaryContact ?? lead.primary_contact
+    const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
+    const lastInteractionType = lead.lastInteractionType ?? lead.last_interaction_type
+    const nextAction = lead.nextAction ?? lead.next_action
+
+    return {
+      ...lead,
+      priorityBucket,
+      priorityScore,
+      legalName,
+      tradeName,
+      primaryContact,
+      lastInteractionAt,
+      lastInteractionType,
+      nextAction
+    }
+  }
 
   const handleSelectChange = (lead: LeadSalesViewItem, selected: boolean) => {
-    const id = lead.leadId ?? lead.id
+    const id = lead.leadId ?? lead.lead_id ?? lead.id
+    if (!id) return
     onSelectOne(id, selected)
   }
 
@@ -72,11 +104,13 @@ export function LeadsSalesList({
 
           {!isLoading &&
             leads.map((lead) => {
-              const id = lead.leadId ?? lead.id
+              const id = lead.leadId ?? lead.lead_id ?? lead.id
+              if (!id) return null
+              const rowData = toRowData(lead)
               return (
                 <LeadSalesRow
                   key={id}
-                  {...lead}
+                  {...rowData}
                   selected={selectedIds.includes(id)}
                   onSelectChange={(checked) => handleSelectChange(lead, checked)}
                   onClick={() => onNavigate(id)}
