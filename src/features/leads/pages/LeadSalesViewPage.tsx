@@ -58,18 +58,19 @@ export default function LeadSalesViewPage() {
     }),
     [daysWithoutInteraction, originFilters, orderBy, ownerFilter, priorityBuckets, statusFilters]
   )
-  const { data, isLoading, isFetching, isError } = useLeadsSalesView({
+  const { data, isLoading, isFetching, isError, error } = useLeadsSalesView({
     page,
     pageSize: PAGE_SIZE,
     ...filters
   })
 
   const totalPages = useMemo(() => {
-    if (!data || !data.pagination.total) return 1
+    if (!data || !data.pagination?.total) return 1
     return Math.max(1, Math.ceil(data.pagination.total / data.pagination.perPage))
   }, [data])
 
-  const leads = data?.data || []
+  // Ensure leads is always an array, even on error
+  const leads = (data && Array.isArray(data.data)) ? data.data : []
   const leadIds = useMemo(
     () => leads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
     [leads]
@@ -215,7 +216,35 @@ export default function LeadSalesViewPage() {
               </>
             )}
 
-            {!isLoading && leads.length === 0 && (
+            {!isLoading && isError && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12">
+                  <div className="flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="space-y-2 max-w-md">
+                      <p className="text-lg font-semibold text-foreground">Não foi possível carregar a visão de vendas</p>
+                      <p className="text-sm text-muted-foreground">
+                        Ocorreu um erro ao buscar os dados. Por favor, tente novamente.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => navigate('/leads')}>
+                        Voltar para lista de leads
+                      </Button>
+                      <Button onClick={() => window.location.reload()}>
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+
+            {!isLoading && !isError && leads.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="py-12">
                   <div className="flex flex-col items-center justify-center gap-3 text-center">
@@ -232,7 +261,7 @@ export default function LeadSalesViewPage() {
               </TableRow>
             )}
 
-            {!isLoading &&
+            {!isLoading && !isError &&
               leads.map((lead) => {
                 const leadId = lead.leadId ?? lead.lead_id ?? lead.id
                 if (!leadId) return null
@@ -256,7 +285,7 @@ export default function LeadSalesViewPage() {
                 )
               })}
 
-            {isFetching && !isLoading && (
+            {isFetching && !isLoading && !isError && (
               <TableRow>
                 <TableCell colSpan={8}>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">

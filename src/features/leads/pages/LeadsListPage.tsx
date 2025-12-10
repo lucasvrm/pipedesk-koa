@@ -176,7 +176,7 @@ export default function LeadsListPage() {
     }),
     [currentPage, itemsPerPage, salesFilters]
   )
-  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching } = useLeadsSalesView(salesViewQuery, {
+  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError } = useLeadsSalesView(salesViewQuery, {
     enabled: viewMode === 'sales'
   })
   const createLead = useCreateLead()
@@ -195,13 +195,14 @@ export default function LeadsListPage() {
     }
   } as any
 
-  const salesLeads = salesViewData?.data || []
+  // Ensure salesLeads is always an array, even on error
+  const salesLeads = (salesViewData && Array.isArray(salesViewData.data)) ? salesViewData.data : []
   const activeLeads = (viewMode === 'sales' ? salesLeads : leads) || []
   const isActiveLoading = viewMode === 'sales' ? isSalesLoading || isSalesFetching : isLoading
 
   const leadMetrics = useMemo(() => {
     if (viewMode === 'sales') {
-      const total = salesViewData?.pagination.total ?? salesLeads.length
+      const total = salesViewData?.pagination?.total ?? salesLeads.length
       return { openLeads: total, createdThisMonth: 0, qualifiedThisMonth: 0 }
     }
 
@@ -259,8 +260,11 @@ export default function LeadsListPage() {
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
   // The ref stores the last written URL search string, avoiding re-reads of searchParams
   // which would cause a stale reference and trigger unnecessary setSearchParams calls.
+  // Skip URL updates during error states to prevent potential loops.
   useEffect(() => {
     if (viewMode !== 'sales') return
+    // Don't update URL during error state
+    if (isSalesError) return
 
     const params = new URLSearchParams()
 
@@ -295,15 +299,16 @@ export default function LeadsListPage() {
     salesOriginFilter,
     salesDaysWithoutInteraction,
     salesOrderBy,
+    isSalesError,
     setSearchParams
   ])
 
-  const totalLeads = viewMode === 'sales' ? salesViewData?.pagination.total ?? 0 : activeLeads.length
+  const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
     1,
-    Math.ceil(totalLeads / (viewMode === 'sales' ? salesViewData?.pagination.perPage || itemsPerPage : itemsPerPage))
+    Math.ceil(totalLeads / (viewMode === 'sales' ? salesViewData?.pagination?.perPage || itemsPerPage : itemsPerPage))
   )
-  const currentPageSize = viewMode === 'sales' ? salesViewData?.pagination.perPage || itemsPerPage : itemsPerPage
+  const currentPageSize = viewMode === 'sales' ? salesViewData?.pagination?.perPage || itemsPerPage : itemsPerPage
 
   const paginatedLeads = useMemo<Lead[] | LeadSalesViewItem[]>(() => {
     if (viewMode === 'sales') return salesLeads
@@ -749,6 +754,28 @@ export default function LeadsListPage() {
       >
         {isActiveLoading ? (
           <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
+        ) : viewMode === 'sales' && isSalesError ? (
+          <div className="flex flex-col items-center justify-center gap-4 text-center border rounded-lg bg-card p-12">
+            <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <svg className="h-8 w-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="space-y-2 max-w-lg">
+              <h3 className="text-xl font-semibold text-foreground">Não foi possível carregar a visão de vendas</h3>
+              <p className="text-sm text-muted-foreground">
+                Ocorreu um erro ao buscar os dados da Sales View. A página de leads permanece funcional em outros modos de visualização.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setViewMode('grid')}>
+                Alternar para Grade
+              </Button>
+              <Button onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado.
