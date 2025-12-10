@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { Kanban } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { cn, safeString, safeStringOptional } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 
 interface LeadsKanbanProps {
@@ -60,7 +60,8 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
     },
     onSuccess: (_data, { status }) => {
       const statusMeta = getLeadStatusByCode(status)
-      toast.success(`Lead movido para ${statusMeta?.label || status}`)
+      const statusLabel = safeStringOptional(statusMeta?.label) || status
+      toast.success(`Lead movido para ${statusLabel}`)
     },
     onSettled: (_data, _error, { leadId }) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
@@ -88,6 +89,15 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
   const LeadCard = ({ lead, columnStatus }: { lead: Lead; columnStatus: LeadStatus }) => {
     const owner = (lead as any).owner
+    const statusMeta = getLeadStatusByCode(lead.status)
+    const originMeta = getLeadOriginByCode(lead.origin)
+    const legalName = safeStringOptional(lead.legalName) || 'Lead sem nome'
+    const tradeName = safeStringOptional(lead.tradeName)
+    const statusLabel = safeStringOptional(statusMeta?.label) || safeString(lead.status)
+    const originLabel = safeStringOptional(originMeta?.label) || safeStringOptional(lead.origin) || '—'
+    const ownerName = safeStringOptional(owner?.name) || '—'
+    const ownerAvatar = safeStringOptional(owner?.avatar)
+    const ownerInitials = ownerName.substring(0, 2).toUpperCase()
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: lead.id,
       data: { status: columnStatus },
@@ -114,13 +124,13 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
           <CardContent className="p-3 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-1 min-w-0">
-                <h4 className="font-semibold text-sm leading-tight truncate" title={lead.legalName}>{lead.legalName}</h4>
-                {lead.tradeName && (
-                  <p className="text-xs text-muted-foreground truncate" title={lead.tradeName}>{lead.tradeName}</p>
+                <h4 className="font-semibold text-sm leading-tight truncate" title={legalName}>{legalName}</h4>
+                {tradeName && (
+                  <p className="text-xs text-muted-foreground truncate" title={tradeName}>{tradeName}</p>
                 )}
               </div>
               <Badge variant="secondary" className="text-[10px] h-5 px-2">
-                {getLeadStatusByCode(lead.status)?.label || lead.status}
+                {statusLabel}
               </Badge>
             </div>
 
@@ -134,7 +144,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="font-medium">Origem</span>
-              <span className="capitalize">{getLeadOriginByCode(lead.origin)?.label || lead.origin}</span>
+              <span className="capitalize">{originLabel}</span>
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -142,12 +152,12 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
               {owner ? (
                 <div className="flex items-center gap-1">
                   <Avatar className="h-5 w-5">
-                    <AvatarImage src={owner.avatar} />
-                    <AvatarFallback className="text-[8px]">{owner.name?.substring(0, 2)?.toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={ownerAvatar} />
+                    <AvatarFallback className="text-[8px]">{ownerInitials}</AvatarFallback>
                   </Avatar>
-                  <span className="truncate max-w-[100px] text-foreground">{owner.name}</span>
+                  <span className="truncate max-w-[100px] text-foreground">{ownerName}</span>
                 </div>
-              ) : <span>-</span>}
+              ) : <span>—</span>}
             </div>
           </CardContent>
         </Card>
@@ -176,7 +186,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
             >
               <DroppableColumn
                 column={column}
-                label={getLeadStatusByCode(column.status)?.label || column.status}
+                label={safeStringOptional(getLeadStatusByCode(column.status)?.label) || column.status}
                 count={leadsByStatus[column.status]?.length || 0}
                 isLoading={isLoading}
               >
