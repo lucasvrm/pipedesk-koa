@@ -93,11 +93,39 @@ export default function LeadsListPage() {
   const { data: tags = [] } = useTags('lead')
   const { data: settings } = useSettings()
 
+  const activeStatusCodes = useMemo(
+    () => leadStatuses.filter(status => status.isActive).map(status => status.code),
+    [leadStatuses]
+  )
+
+  const activeOriginCodes = useMemo(
+    () => leadOrigins.filter(origin => origin.isActive).map(origin => origin.code),
+    [leadOrigins]
+  )
+
+  const activeTagIds = useMemo(() => {
+    return tags
+      .filter(tag => {
+        const anyTag = tag as any
+        if (typeof anyTag.isActive === 'boolean') return anyTag.isActive
+        if (typeof anyTag.is_active === 'boolean') return anyTag.is_active
+        return true
+      })
+      .map(tag => tag.id)
+  }, [tags])
+
+  const normalizedStatusFilter = statusFilter !== 'all' && activeStatusCodes.includes(statusFilter) ? statusFilter : 'all'
+  const normalizedOriginFilter = originFilter !== 'all' && activeOriginCodes.includes(originFilter) ? originFilter : 'all'
+  const normalizedTagFilter = tagFilter.filter(tagId => activeTagIds.includes(tagId))
+
+  const [hasCheckedEmptyInitial, setHasCheckedEmptyInitial] = useState(false)
+  const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
+
   const filters: LeadFilters = {
     search: search || undefined,
-    status: statusFilter !== 'all' ? [statusFilter] : undefined,
-    origin: originFilter !== 'all' ? [originFilter] : undefined,
-    tags: tagFilter.length > 0 ? tagFilter : undefined
+    status: normalizedStatusFilter !== 'all' ? [normalizedStatusFilter] : undefined,
+    origin: normalizedOriginFilter !== 'all' ? [normalizedOriginFilter] : undefined,
+    tags: normalizedTagFilter.length > 0 ? normalizedTagFilter : undefined
   }
 
   const { data: leads, isLoading } = useLeads(filters)
@@ -159,7 +187,7 @@ export default function LeadsListPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, statusFilter, originFilter, tagFilter])
+  }, [search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter])
 
   useEffect(() => {
     if (viewMode !== 'sales') return
@@ -168,19 +196,46 @@ export default function LeadsListPage() {
 
   useEffect(() => {
     setSelectedIds([])
-  }, [viewMode, search, statusFilter, originFilter, tagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction])
+  }, [viewMode, search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction])
 
   useEffect(() => {
     const payload = {
       viewMode,
       search,
-      statusFilter,
-      originFilter,
-      tagFilter,
+      statusFilter: normalizedStatusFilter !== 'all' ? normalizedStatusFilter : 'all',
+      originFilter: normalizedOriginFilter !== 'all' ? normalizedOriginFilter : 'all',
+      tagFilter: normalizedTagFilter,
       itemsPerPage
     }
     localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
-  }, [itemsPerPage, originFilter, search, statusFilter, tagFilter, viewMode])
+  }, [itemsPerPage, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, search, viewMode])
+
+  useEffect(() => {
+    if (!leadStatuses.length && !leadOrigins.length && !tags.length) return
+
+    const nextStatus = normalizedStatusFilter === 'all' ? 'all' : normalizedStatusFilter
+    const nextOrigin = normalizedOriginFilter === 'all' ? 'all' : normalizedOriginFilter
+    const nextTags = normalizedTagFilter
+
+    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    if (nextOrigin !== originFilter) setOriginFilter(nextOrigin)
+    if (JSON.stringify(nextTags) !== JSON.stringify(tagFilter)) setTagFilter(nextTags)
+  }, [leadStatuses.length, leadOrigins.length, tags.length, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, originFilter, statusFilter, tagFilter])
+
+  useEffect(() => {
+    if (viewMode === 'sales') return
+    if (isLoading || hasCheckedEmptyInitial) return
+
+    setHasCheckedEmptyInitial(true)
+
+    if ((leads?.length || 0) === 0 && (search || normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || normalizedTagFilter.length > 0)) {
+      if (savedPreferences) {
+        setShowPreferencesResetPrompt(true)
+      } else {
+        clearFilters()
+      }
+    }
+  }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, search, viewMode])
 
   useEffect(() => {
     if (viewMode !== 'sales') return
@@ -299,6 +354,13 @@ export default function LeadsListPage() {
     setCurrentPage(1)
   }
 
+  const handleResetPreferences = () => {
+    clearFilters()
+    localStorage.removeItem('leads-list-preferences')
+    setShowPreferencesResetPrompt(false)
+    toast.info('Filtros e preferências foram limpos para mostrar resultados.')
+  }
+
   const getPrimaryContact = (lead: Lead) => {
     return lead.contacts?.find(c => c.isPrimary) || lead.contacts?.[0]
   }
@@ -346,7 +408,7 @@ export default function LeadsListPage() {
     </RequirePermission>
   )
 
-  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || search || tagFilter.length > 0
+  const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || search || normalizedTagFilter.length > 0
 
   const metrics = (
     <div className="grid gap-4 md:grid-cols-3 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -752,6 +814,22 @@ export default function LeadsListPage() {
           onConfirm={handleDelete}
           isDeleting={deleteLead.isPending}
         />
+
+        <AlertDialog open={showPreferencesResetPrompt} onOpenChange={setShowPreferencesResetPrompt}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Filtros podem estar desatualizados</AlertDialogTitle>
+              <AlertDialogDescription>
+                Não encontramos leads com as preferências salvas. Deseja limpar filtros e redefinir suas preferências para ver
+                resultados novamente?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Manter filtros</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetPreferences}>Limpar filtros e preferências</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
           <AlertDialogContent>
