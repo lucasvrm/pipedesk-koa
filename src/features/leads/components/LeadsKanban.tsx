@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
+import { DndContext, PointerSensor, useDroppable, useSensor, useSensors, DragEndEvent, closestCorners } from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query'
 import { Lead, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
 import { updateLead } from '@/services/leadService'
@@ -12,7 +14,6 @@ import { Kanban } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
-import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface LeadsKanbanProps {
   leads: Lead[]
@@ -30,6 +31,11 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  )
 
   type UpdateContext = { previous: { key: QueryKey; data: Lead[] | undefined }[] }
 
@@ -69,78 +75,83 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
     }, {} as Record<LeadStatus, Lead[]>)
   }, [leads])
 
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination, draggableId } = result
-    if (!destination) return
-    if (source.droppableId === destination.droppableId) return
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over) return
 
-    const newStatus = destination.droppableId as LeadStatus
-    updateStatus.mutate({ leadId: draggableId, status: newStatus })
+    const sourceStatus = active.data.current?.status as LeadStatus | undefined
+    const destinationStatus = over.data.current?.status as LeadStatus | undefined
+
+    if (!sourceStatus || !destinationStatus || sourceStatus === destinationStatus) return
+
+    updateStatus.mutate({ leadId: active.id as string, status: destinationStatus })
   }
 
-  const renderLeadCard = (lead: Lead, index: number) => {
+  const LeadCard = ({ lead, columnStatus }: { lead: Lead; columnStatus: LeadStatus }) => {
     const owner = (lead as any).owner
-    const statusMeta = getLeadStatusByCode(lead.status)
-    const originMeta = getLeadOriginByCode(lead.origin)
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: lead.id,
+      data: { status: columnStatus },
+    })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }
+
     return (
-      <Draggable draggableId={lead.id} index={index} key={lead.id}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
-            className={cn(
-              'transition-all',
-              snapshot.isDragging ? 'rotate-1 shadow-lg scale-[1.01]' : ''
-            )}
-          >
-            <Card
-              className="border-l-4 hover:border-l-primary cursor-grab"
-              onClick={() => navigate(`/leads/${lead.id}`)}
-            >
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1 min-w-0">
-                    <h4 className="font-semibold text-sm leading-tight truncate" title={lead.legalName}>{lead.legalName}</h4>
-                    {lead.tradeName && (
-                      <p className="text-xs text-muted-foreground truncate" title={lead.tradeName}>{lead.tradeName}</p>
-                    )}
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-2">
-                    {getLeadStatusByCode(lead.status)?.label || lead.status}
-                  </Badge>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Progresso</span>
-                    <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
-                  </div>
-                  <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span className="font-medium">Origem</span>
-                  <span className="capitalize">{getLeadOriginByCode(lead.origin)?.label || lead.origin}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span className="font-medium">Responsável</span>
-                  {owner ? (
-                    <div className="flex items-center gap-1">
-                      <Avatar className="h-5 w-5">
-                        <AvatarImage src={owner.avatar} />
-                        <AvatarFallback className="text-[8px]">{owner.name?.substring(0, 2)?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <span className="truncate max-w-[100px] text-foreground">{owner.name}</span>
-                    </div>
-                  ) : <span>-</span>}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          'transition-all',
+          isDragging ? 'rotate-1 shadow-lg scale-[1.01]' : ''
         )}
-      </Draggable>
+        onClick={() => navigate(`/leads/${lead.id}`)}
+      >
+        <Card className="border-l-4 hover:border-l-primary cursor-grab">
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-1 min-w-0">
+                <h4 className="font-semibold text-sm leading-tight truncate" title={lead.legalName}>{lead.legalName}</h4>
+                {lead.tradeName && (
+                  <p className="text-xs text-muted-foreground truncate" title={lead.tradeName}>{lead.tradeName}</p>
+                )}
+              </div>
+              <Badge variant="secondary" className="text-[10px] h-5 px-2">
+                {getLeadStatusByCode(lead.status)?.label || lead.status}
+              </Badge>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>Progresso</span>
+                <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
+              </div>
+              <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="font-medium">Origem</span>
+              <span className="capitalize">{getLeadOriginByCode(lead.origin)?.label || lead.origin}</span>
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="font-medium">Responsável</span>
+              {owner ? (
+                <div className="flex items-center gap-1">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={owner.avatar} />
+                    <AvatarFallback className="text-[8px]">{owner.name?.substring(0, 2)?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span className="truncate max-w-[100px] text-foreground">{owner.name}</span>
+                </div>
+              ) : <span>-</span>}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -155,40 +166,73 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-4">
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
           {columns.map(column => (
-            <Droppable droppableId={column.status} key={column.status}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={cn(
-                    'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[280px] flex flex-col min-h-[400px]',
-                    snapshot.isDraggingOver ? 'border-primary border-dashed bg-primary/10' : '',
-                    column.color
-                  )}
-                >
-                  <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{getLeadStatusByCode(column.status)?.label || column.status}</span>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] h-5">{leadsByStatus[column.status]?.length || 0}</Badge>
-                  </div>
-                  <div className="p-3 space-y-2 flex-1">
-                    {isLoading ? (
-                      <div className="text-xs text-muted-foreground">Carregando...</div>
-                    ) : leadsByStatus[column.status]?.length ? (
-                      leadsByStatus[column.status].map((lead, index) => renderLeadCard(lead, index))
-                    ) : (
-                      <div className="text-xs text-muted-foreground text-center py-6">Nenhum lead</div>
-                    )}
-                    {provided.placeholder}
-                  </div>
-                </div>
-              )}
-            </Droppable>
+            <SortableContext
+              key={column.status}
+              id={column.status}
+              items={leadsByStatus[column.status]?.map(lead => lead.id) || []}
+              strategy={verticalListSortingStrategy}
+            >
+              <DroppableColumn
+                column={column}
+                label={getLeadStatusByCode(column.status)?.label || column.status}
+                count={leadsByStatus[column.status]?.length || 0}
+                isLoading={isLoading}
+              >
+                {leadsByStatus[column.status]?.length
+                  ? leadsByStatus[column.status].map(lead => (
+                      <LeadCard key={lead.id} lead={lead} columnStatus={column.status} />
+                    ))
+                  : <div className="text-xs text-muted-foreground text-center py-6">Nenhum lead</div>}
+              </DroppableColumn>
+            </SortableContext>
           ))}
-        </DragDropContext>
+        </DndContext>
+      </div>
+    </div>
+  )
+}
+
+function DroppableColumn({
+  column,
+  label,
+  count,
+  isLoading,
+  children,
+}: {
+  column: { status: LeadStatus; color: string }
+  label: string
+  count: number
+  isLoading?: boolean
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.status,
+    data: { status: column.status },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[280px] flex flex-col min-h-[400px]',
+        isOver ? 'border-primary border-dashed bg-primary/10' : '',
+        column.color
+      )}
+    >
+      <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-sm">{label}</span>
+        </div>
+        <Badge variant="secondary" className="text-[10px] h-5">{count}</Badge>
+      </div>
+      <div className="p-3 space-y-2 flex-1">
+        {isLoading ? (
+          <div className="text-xs text-muted-foreground">Carregando...</div>
+        ) : (
+          children
+        )}
       </div>
     </div>
   )
