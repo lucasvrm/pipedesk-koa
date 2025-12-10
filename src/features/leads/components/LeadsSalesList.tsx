@@ -83,23 +83,31 @@ export function LeadsSalesList({
       ? lastInteractionTypeRaw
       : null
     const nextActionRaw = lead.nextAction ?? lead.next_action
-    const nextAction = nextActionRaw
+    const normalizedNextAction =
+      nextActionRaw && typeof nextActionRaw.label === 'string'
+        ? {
+            ...nextActionRaw,
+            label: normalizeString(nextActionRaw.label, '—') ?? '—',
+            reason: normalizeString(nextActionRaw.reason ?? undefined)
+          }
+        : undefined
+    const ownerData = lead.owner
+    const owner = ownerData
       ? {
-          ...nextActionRaw,
-          label: normalizeString(nextActionRaw.label, '—') ?? '—',
-          reason: normalizeString(nextActionRaw.reason ?? undefined)
+          ...ownerData,
+          name: normalizeString(ownerData.name, 'Responsável não informado') ?? 'Responsável não informado'
         }
       : undefined
-    const ownerData = lead.owner
-    const owner = ownerData ? { ...ownerData, name: ownerData.name?.trim() || 'Responsável não informado' } : undefined
     const tags = Array.isArray(lead.tags)
       ? lead.tags
           .filter((tag): tag is NonNullable<LeadSalesViewItem['tags']>[number] => !!tag && typeof tag === 'object')
-          .map((tag) => ({
-            ...tag,
-            name: normalizeString(tag.name, 'Tag') ?? 'Tag',
-            color: normalizeString(tag.color ?? undefined)
-          }))
+          .map((tag) => {
+            const name = normalizeString(tag.name, 'Tag') ?? 'Tag'
+            const color = normalizeString(tag.color ?? undefined)
+            const id = typeof tag.id === 'string' ? tag.id : undefined
+
+            return { id, name, color }
+          })
       : []
 
     return {
@@ -112,7 +120,7 @@ export function LeadsSalesList({
       primaryContact,
       lastInteractionAt,
       lastInteractionType,
-      nextAction,
+      nextAction: normalizedNextAction,
       owner,
       tags
     }

@@ -61,7 +61,33 @@ describe('LeadsSalesList', () => {
 
     expect(screen.getByText('Tag')).toBeInTheDocument()
     expect(screen.getByText('Válida')).toBeInTheDocument()
-    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
+  })
+
+  it('handles missing next action label and invalid tag name without crashing', () => {
+    const leads: LeadSalesViewItem[] = [
+      {
+        id: 'incomplete-data',
+        priorityBucket: 'warm',
+        legalName: 'Lead com payload incompleto',
+        nextAction: {
+          code: 'email',
+          reason: 'Seguir com follow-up'
+        },
+        tags: [
+          {
+            // @ts-expect-error simulating malformed payload
+            name: { text: 'Objeto inválido' },
+            color: '#00ff00'
+          }
+        ]
+      }
+    ]
+
+    expect(() => render(<LeadsSalesList {...baseProps} leads={leads} />)).not.toThrow()
+
+    expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
+    expect(screen.getByText('Tag')).toBeInTheDocument()
   })
 
   it('logs the lead data when row rendering fails in preview builds', () => {
