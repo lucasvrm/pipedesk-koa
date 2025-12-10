@@ -59,24 +59,48 @@ export function LeadsSalesList({
   )
 
   const toRowData = (lead: LeadSalesViewItem) => {
+    const normalizeString = (value: unknown, fallback?: string) => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (trimmed) return trimmed
+      }
+      return fallback
+    }
+
     const priorityBucketRaw = lead.priorityBucket ?? lead.priority_bucket
     const priorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
     const priorityDescription = lead.priorityDescription ?? lead.priority_description
-    const legalName = (lead.legalName ?? lead.legal_name)?.trim() || 'Lead sem nome'
-    const tradeName = (lead.tradeName ?? lead.trade_name)?.trim() || undefined
+    const legalName = normalizeString(lead.legalName ?? lead.legal_name, 'Lead sem nome') ?? 'Lead sem nome'
+    const tradeName = normalizeString(lead.tradeName ?? lead.trade_name)
     const primaryContactData = lead.primaryContact ?? lead.primary_contact
     const primaryContact = primaryContactData
-      ? { ...primaryContactData, name: primaryContactData.name?.trim() || 'Contato não informado' }
+      ? { ...primaryContactData, name: normalizeString(primaryContactData.name, 'Contato não informado') ?? 'Contato não informado' }
       : undefined
     const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
     const lastInteractionTypeRaw = lead.lastInteractionType ?? lead.last_interaction_type
     const lastInteractionType = lastInteractionTypeRaw === 'email' || lastInteractionTypeRaw === 'event'
       ? lastInteractionTypeRaw
       : null
-    const nextAction = lead.nextAction ?? lead.next_action
+    const nextActionRaw = lead.nextAction ?? lead.next_action
+    const nextAction = nextActionRaw
+      ? {
+          ...nextActionRaw,
+          label: normalizeString(nextActionRaw.label, '—') ?? '—',
+          reason: normalizeString(nextActionRaw.reason ?? undefined)
+        }
+      : undefined
     const ownerData = lead.owner
     const owner = ownerData ? { ...ownerData, name: ownerData.name?.trim() || 'Responsável não informado' } : undefined
+    const tags = Array.isArray(lead.tags)
+      ? lead.tags
+          .filter((tag): tag is NonNullable<LeadSalesViewItem['tags']>[number] => !!tag && typeof tag === 'object')
+          .map((tag) => ({
+            ...tag,
+            name: normalizeString(tag.name, 'Tag') ?? 'Tag',
+            color: normalizeString(tag.color ?? undefined)
+          }))
+      : []
 
     return {
       ...lead,
@@ -89,7 +113,8 @@ export function LeadsSalesList({
       lastInteractionAt,
       lastInteractionType,
       nextAction,
-      owner
+      owner,
+      tags
     }
   }
 
