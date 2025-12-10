@@ -40,6 +40,15 @@ import { useUsers } from '@/services/userService'
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
 
+// Safely convert any value to string for React rendering
+const safeString = (value: unknown, fallback = ''): string => {
+  if (value === null || value === undefined) return fallback
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  // If it's an object, don't render it - return fallback to prevent React error #185
+  return fallback
+}
+
 export default function LeadsListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -591,7 +600,7 @@ export default function LeadsListPage() {
             <SelectContent>
               <SelectItem value="all">Todos Status</SelectItem>
               {leadStatuses.filter(s => s.isActive).map((status) => (
-                <SelectItem key={status.code} value={status.code}>{status.label}</SelectItem>
+                <SelectItem key={status.code} value={status.code}>{safeString(status.label, status.code)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -603,7 +612,7 @@ export default function LeadsListPage() {
             <SelectContent>
               <SelectItem value="all">Todas Origens</SelectItem>
               {leadOrigins.filter(o => o.isActive).map((origin) => (
-                <SelectItem key={origin.code} value={origin.code}>{origin.label}</SelectItem>
+                <SelectItem key={origin.code} value={origin.code}>{safeString(origin.label, origin.code)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -633,7 +642,7 @@ export default function LeadsListPage() {
                         }}
                         style={tagFilter.includes(tag.id) ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color, borderColor: tag.color + '40' }}
                       >
-                        {tag.name}
+                        {safeString(tag.name, 'Tag')}
                       </Badge>
                     ))}
                     {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}

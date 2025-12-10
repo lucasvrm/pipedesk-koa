@@ -59,11 +59,17 @@ export function LeadsSalesList({
   )
 
   const toRowData = (lead: LeadSalesViewItem) => {
-    const normalizeString = (value: unknown, fallback?: string) => {
+    // Enhanced safe string normalization to prevent React error #185
+    const normalizeString = (value: unknown, fallback?: string): string | undefined => {
+      if (value === null || value === undefined) return fallback
       if (typeof value === 'string') {
         const trimmed = value.trim()
         if (trimmed) return trimmed
       }
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value)
+      }
+      // If it's an object or array, don't use it - return fallback
       return fallback
     }
 

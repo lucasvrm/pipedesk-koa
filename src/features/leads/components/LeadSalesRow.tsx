@@ -59,10 +59,16 @@ export function LeadSalesRow({
   const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
-  const displayText = (value: unknown, fallback = '—') =>
-    typeof value === 'string' && value.trim() ? value.trim() : fallback
+  // Enhanced safe string conversion to prevent React error #185
+  const displayText = (value: unknown, fallback = '—'): string => {
+    if (value === null || value === undefined) return fallback
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+    // If it's an object or array, don't render it - return fallback
+    return fallback
+  }
 
-  const displayOptionalText = (value: unknown) => {
+  const displayOptionalText = (value: unknown): string | undefined => {
     const valueAsText = displayText(value, '')
     return valueAsText || undefined
   }
