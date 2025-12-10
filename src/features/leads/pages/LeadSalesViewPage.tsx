@@ -16,7 +16,7 @@ export default function LeadSalesViewPage() {
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const navigate = useNavigate()
-  const { data, isLoading, isFetching, isError } = useLeadsSalesView(page, PAGE_SIZE)
+  const { data, isLoading, isFetching, isError } = useLeadsSalesView({ page, pageSize: PAGE_SIZE })
   const { toast } = useToast()
 
   const totalPages = useMemo(() => {
@@ -24,7 +24,7 @@ export default function LeadSalesViewPage() {
     return Math.max(1, Math.ceil(data.total / data.pageSize))
   }, [data])
 
-  const leads = data?.data || []
+  const leads = data?.items || []
 
   const toggleSelectAll = () => {
     if (selectedIds.length === leads.length) {
@@ -115,16 +115,19 @@ export default function LeadSalesViewPage() {
             )}
 
             {!isLoading &&
-              leads.map((lead) => (
-                <LeadSalesRow
-                  key={lead.id}
-                  {...lead}
-                  selected={selectedIds.includes(lead.id)}
-                  onSelectChange={(checked) => toggleSelect(lead.id, checked)}
-                  onClick={() => navigate(`/leads/${lead.id}`)}
-                  onMenuClick={() => navigate(`/leads/${lead.id}`)}
-                />
-              ))}
+              leads.map((lead) => {
+                const leadId = lead.leadId ?? lead.id
+                return (
+                  <LeadSalesRow
+                    key={leadId}
+                    {...lead}
+                    selected={selectedIds.includes(leadId)}
+                    onSelectChange={(checked) => toggleSelect(leadId, checked)}
+                    onClick={() => navigate(`/leads/${leadId}`)}
+                    onMenuClick={() => navigate(`/leads/${leadId}`)}
+                  />
+                )
+              })}
 
             {isFetching && !isLoading && (
               <TableRow>

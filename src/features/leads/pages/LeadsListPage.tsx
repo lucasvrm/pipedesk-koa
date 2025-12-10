@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead, useSalesViewLeads } from '@/services/leadService'
+import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
@@ -26,6 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { LeadsSalesList } from '../components/LeadsSalesList'
+import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Progress } from '@/components/ui/progress'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
@@ -109,7 +110,17 @@ export default function LeadsListPage() {
     daysWithoutInteraction: salesDaysWithoutInteraction ?? undefined,
     orderBy: salesOrderBy
   }), [salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
-  const { data: salesLeads, isLoading: isSalesLoading } = useSalesViewLeads(salesFilters, { enabled: viewMode === 'sales' })
+  const salesViewQuery = useMemo(
+    () => ({
+      ...salesFilters,
+      page: currentPage,
+      pageSize: itemsPerPage
+    }),
+    [currentPage, itemsPerPage, salesFilters]
+  )
+  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching } = useLeadsSalesView(salesViewQuery, {
+    enabled: viewMode === 'sales'
+  })
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
@@ -126,18 +137,25 @@ export default function LeadsListPage() {
     }
   } as any
 
+  const salesLeads = salesViewData?.items || []
   const activeLeads = (viewMode === 'sales' ? salesLeads : leads) || []
-  const isActiveLoading = viewMode === 'sales' ? isSalesLoading : isLoading
+  const isActiveLoading = viewMode === 'sales' ? isSalesLoading || isSalesFetching : isLoading
 
   const leadMetrics = useMemo(() => {
-    const openLeads = activeLeads.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
-    const createdThisMonth = activeLeads.filter(l => new Date(l.createdAt) >= monthStart).length || 0
-    const qualifiedThisMonth = activeLeads.filter(
+    if (viewMode === 'sales') {
+      const total = salesViewData?.total ?? salesLeads.length
+      return { openLeads: total, createdThisMonth: 0, qualifiedThisMonth: 0 }
+    }
+
+    const dataset = (leads || []) as Lead[]
+    const openLeads = dataset.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
+    const createdThisMonth = dataset.filter(l => new Date(l.createdAt) >= monthStart).length || 0
+    const qualifiedThisMonth = dataset.filter(
       l => l.status === 'qualified' && l.qualifiedAt && new Date(l.qualifiedAt) >= monthStart
     ).length || 0
 
     return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [activeLeads, monthStart])
+  }, [leads, monthStart, salesLeads.length, salesViewData?.total, viewMode])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -184,15 +202,20 @@ export default function LeadsListPage() {
     setSearchParams(params, { replace: true })
   }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, setSearchParams, viewMode])
 
-  const totalLeads = activeLeads.length
-  const totalPages = Math.max(1, Math.ceil(totalLeads / itemsPerPage))
+  const totalLeads = viewMode === 'sales' ? salesViewData?.total ?? 0 : activeLeads.length
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalLeads / (viewMode === 'sales' ? salesViewData?.pageSize || itemsPerPage : itemsPerPage))
+  )
+  const currentPageSize = viewMode === 'sales' ? salesViewData?.pageSize || itemsPerPage : itemsPerPage
 
-  const paginatedLeads = useMemo(() => {
+  const paginatedLeads = useMemo<Lead[] | LeadSalesViewItem[]>(() => {
+    if (viewMode === 'sales') return salesLeads
     if (!activeLeads) return []
     const start = (currentPage - 1) * itemsPerPage
     return activeLeads.slice(start, start + itemsPerPage)
-  }, [activeLeads, currentPage, itemsPerPage])
-  const currentLeads = paginatedLeads
+  }, [activeLeads, currentPage, itemsPerPage, salesLeads, viewMode])
+  const currentLeads = paginatedLeads as Array<Lead | LeadSalesViewItem>
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newLeadName, setNewLeadName] = useState('')
@@ -202,6 +225,8 @@ export default function LeadsListPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
+
+  const getLeadId = (lead: Lead | { id: string; leadId?: string }) => (lead as any).leadId ?? lead.id
 
   const handleCreate = async () => {
     if (!newLeadName) return
@@ -239,12 +264,12 @@ export default function LeadsListPage() {
     if (selectedIds.length === currentLeads.length) {
       setSelectedIds([])
     } else {
-      setSelectedIds(currentLeads.map(lead => lead.id))
+      setSelectedIds(Array.from(new Set(currentLeads.map(lead => getLeadId(lead)))))
     }
   }
 
-  const toggleSelectOne = (id: string) => {
-    setSelectedIds(prev => (prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]))
+  const toggleSelectOne = (id: string, selected: boolean) => {
+    setSelectedIds(prev => (selected ? [...new Set([...prev, id])] : prev.filter(item => item !== id)))
   }
 
   const handleBulkDelete = async () => {
@@ -540,7 +565,8 @@ export default function LeadsListPage() {
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
       <div className="flex items-center gap-3 flex-wrap">
         <span>
-          Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalLeads)}–{Math.min(currentPage * itemsPerPage, totalLeads)} de {totalLeads} leads
+          Mostrando {Math.min((currentPage - 1) * currentPageSize + 1, totalLeads)}–
+          {Math.min(currentPage * currentPageSize, totalLeads)} de {totalLeads} leads
         </span>
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline">Linhas:</span>
@@ -601,13 +627,12 @@ export default function LeadsListPage() {
           </div>
         ) : viewMode === 'sales' ? (
           <LeadsSalesList
-            leads={paginatedLeads}
+            leads={paginatedLeads as LeadSalesViewItem[]}
             isLoading={isActiveLoading}
             selectedIds={selectedIds}
             onSelectAll={toggleSelectAll}
             onSelectOne={toggleSelectOne}
-            onEdit={openEdit}
-            onDelete={openDelete}
+            onNavigate={(id) => navigate(`/leads/${id}`)}
           />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

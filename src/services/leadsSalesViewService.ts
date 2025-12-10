@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
+import { SalesViewFilters } from './leadService'
 
 export type LeadPriorityBucket = 'hot' | 'warm' | 'cold'
 
 export interface LeadSalesViewItem {
   id: string
+  leadId?: string
   priorityScore?: number | null
   priorityBucket: LeadPriorityBucket
   legalName: string
@@ -32,17 +34,30 @@ export interface LeadSalesViewItem {
 }
 
 export interface LeadSalesViewResponse {
-  data: LeadSalesViewItem[]
+  items: LeadSalesViewItem[]
   total: number
   page: number
   pageSize: number
 }
 
-async function fetchSalesView(page: number, pageSize: number): Promise<LeadSalesViewResponse> {
+export interface LeadSalesViewQuery extends SalesViewFilters {
+  page?: number
+  pageSize?: number
+}
+
+async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
   const searchParams = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize)
   })
+
+  if (filters.owner) searchParams.set('owner', filters.owner)
+  if (filters.ownerIds?.length) searchParams.set('owners', filters.ownerIds.join(','))
+  if (filters.priority?.length) searchParams.set('priority', filters.priority.join(','))
+  if (filters.status?.length) searchParams.set('status', filters.status.join(','))
+  if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
+  if (filters.daysWithoutInteraction) searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
+  if (filters.orderBy) searchParams.set('order_by', filters.orderBy)
 
   const response = await fetch(`/api/leads/sales-view?${searchParams.toString()}`)
 
@@ -53,17 +68,18 @@ async function fetchSalesView(page: number, pageSize: number): Promise<LeadSales
   const payload = await response.json()
 
   return {
-    data: payload.data || payload.items || [],
-    total: payload.total ?? payload.count ?? 0,
-    page: payload.page ?? page,
-    pageSize: payload.pageSize ?? pageSize
+    items: payload.items || payload.data || [],
+    total: payload.total ?? payload.count ?? payload.meta?.total ?? 0,
+    page: payload.page ?? payload.meta?.page ?? page,
+    pageSize: payload.pageSize ?? payload.meta?.pageSize ?? payload.meta?.perPage ?? pageSize
   }
 }
 
-export function useLeadsSalesView(page: number, pageSize: number) {
+export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enabled?: boolean }) {
   return useQuery({
-    queryKey: ['leads-sales-view', page, pageSize],
-    queryFn: () => fetchSalesView(page, pageSize),
-    keepPreviousData: true
+    queryKey: ['leads-sales-view', params],
+    queryFn: () => fetchSalesView(params),
+    keepPreviousData: true,
+    enabled: options?.enabled ?? true
   })
 }
