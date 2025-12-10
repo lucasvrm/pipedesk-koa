@@ -40,6 +40,7 @@ For developers and contributors:
 - [Testing Guide](TESTING.md) - Testing strategy and guidelines
 - [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
 - [Security Policy](SECURITY.md) - Security guidelines
+- [Frontend logging & source maps](frontend/logging.md) - Coleta de logs em produção
 - Architecture - ❌ Precisa criar `development/architecture.md`
 - Database Schema - ❌ Precisa criar `development/database-schema.md`
 - Troubleshooting - ❌ Precisa criar `development/troubleshooting.md`
