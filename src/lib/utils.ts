@@ -26,6 +26,13 @@ export function formatPercent(value: number): string {
   }).format(value / 100)
 }
 
+function normalizeToString(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  return undefined
+}
+
 /**
  * Safely converts any value to a string for React rendering.
  * Prevents React error #185 (objects rendered as children) by returning
@@ -36,11 +43,11 @@ export function formatPercent(value: number): string {
  * @returns A safe string that can be rendered by React
  */
 export function safeString(value: unknown, fallback = ''): string {
-  if (value === null || value === undefined) return fallback
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  // If it's an object or array, don't render it - return fallback
-  return fallback
+  const normalized = normalizeToString(value)
+  if (normalized !== undefined) return normalized
+
+  const fallbackNormalized = normalizeToString(fallback)
+  return fallbackNormalized ?? ''
 }
 
 /**
@@ -52,12 +59,15 @@ export function safeString(value: unknown, fallback = ''): string {
  * @returns A safe string or undefined
  */
 export function safeStringOptional(value: unknown, fallback?: string): string | undefined {
-  if (value === null || value === undefined) return fallback
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed || fallback
+  const normalized = normalizeToString(value)
+  if (normalized !== undefined) {
+    const trimmed = normalized.trim()
+    if (trimmed) return trimmed
   }
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  // If it's an object or array, don't render it - return fallback
-  return fallback
+
+  const fallbackNormalized = normalizeToString(fallback)
+  if (fallbackNormalized === undefined) return undefined
+
+  const trimmedFallback = fallbackNormalized.trim()
+  return trimmedFallback || undefined
 }
