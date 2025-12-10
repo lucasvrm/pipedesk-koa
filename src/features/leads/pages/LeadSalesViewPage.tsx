@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { ensureArray } from '@/lib/utils'
 
 const PAGE_SIZE = 10
 
@@ -70,7 +71,7 @@ export default function LeadSalesViewPage() {
   }, [data])
 
   // Ensure leads is always an array, even on error
-  const leads = (data && Array.isArray(data.data)) ? data.data : []
+  const leads = ensureArray<LeadSalesViewItem>(data?.data)
   const leadIds = useMemo(
     () => leads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
     [leads]

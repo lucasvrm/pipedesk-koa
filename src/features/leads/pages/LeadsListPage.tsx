@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
+import { ensureArray } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
@@ -196,7 +197,7 @@ export default function LeadsListPage() {
   } as any
 
   // Ensure salesLeads is always an array, even on error
-  const salesLeads = (salesViewData && Array.isArray(salesViewData.data)) ? salesViewData.data : []
+  const salesLeads = ensureArray<LeadSalesViewItem>(salesViewData?.data)
   const activeLeads = (viewMode === 'sales' ? salesLeads : leads) || []
   const isActiveLoading = viewMode === 'sales' ? isSalesLoading || isSalesFetching : isLoading
 

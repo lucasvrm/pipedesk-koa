@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowsDownUp } from '@phosphor-icons/react'
-import { safeStringOptional } from '@/lib/utils'
+import { safeStringOptional, ensureArray } from '@/lib/utils'
 
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
@@ -30,7 +30,7 @@ export function LeadsSalesList({
   getLeadActions
 }: LeadsSalesListProps) {
   // Ensure leads is always an array to prevent React Error #185
-  const safeLeads = Array.isArray(leads) ? leads : []
+  const safeLeads = ensureArray<LeadSalesViewItem>(leads)
 
   const { validLeads, invalidLeadCount } = useMemo(() => {
     const valid = [] as LeadSalesViewItem[]

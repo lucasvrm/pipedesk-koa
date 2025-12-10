@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { SalesViewFilters } from './leadService'
+import { ApiError } from '@/lib/errors'
 
 export type LeadPriorityBucket = 'hot' | 'warm' | 'cold'
 
@@ -120,11 +121,11 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
         statusText: response.statusText,
         url: response.url
       })
-      // Create a normalized error object that won't cause React Error #185
-      const error = new Error(`Falha ao carregar leads da Sales View (${response.status})`)
-      ;(error as any).status = response.status
-      ;(error as any).url = url
-      throw error
+      throw new ApiError(
+        `Falha ao carregar leads da Sales View (${response.status})`,
+        response.status,
+        url
+      )
     }
 
     // Validate content-type before parsing JSON
