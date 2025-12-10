@@ -255,17 +255,23 @@ export default function LeadsListPage() {
     }
   }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, search, viewMode])
 
+  // Idempotent URL sync effect for Sales view filters.
+  // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
+  // The ref stores the last written URL search string, avoiding re-reads of searchParams
+  // which would cause a stale reference and trigger unnecessary setSearchParams calls.
   useEffect(() => {
     if (viewMode !== 'sales') return
 
     const params = new URLSearchParams()
 
+    // Reconstruct owner/owners params
     if (salesOwnerMode === 'me') {
       params.set('owner', 'me')
     } else if (salesOwnerMode === 'custom' && salesOwnerIds.length > 0) {
       params.set('owners', salesOwnerIds.join(','))
     }
 
+    // Apply filters
     if (salesPriority.length > 0) params.set('priority', salesPriority.join(','))
     if (salesStatusFilter.length > 0) params.set('status', salesStatusFilter.join(','))
     if (salesOriginFilter.length > 0) params.set('origin', salesOriginFilter.join(','))
@@ -273,13 +279,24 @@ export default function LeadsListPage() {
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const nextSearch = params.toString()
-    const currentSearch = lastSearchRef.current || searchParams.toString()
 
-    if (nextSearch !== currentSearch) {
-      lastSearchRef.current = nextSearch
-      setSearchParams(params, { replace: true })
-    }
-  }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, setSearchParams])
+    // Only update URL if the computed params differ from the last written value.
+    // This prevents infinite loops by ensuring idempotent updates.
+    if (lastSearchRef.current === nextSearch) return
+
+    lastSearchRef.current = nextSearch
+    setSearchParams(params, { replace: true })
+  }, [
+    viewMode,
+    salesOwnerMode,
+    salesOwnerIds,
+    salesPriority,
+    salesStatusFilter,
+    salesOriginFilter,
+    salesDaysWithoutInteraction,
+    salesOrderBy,
+    setSearchParams
+  ])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
