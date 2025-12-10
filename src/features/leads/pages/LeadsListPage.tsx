@@ -269,8 +269,13 @@ export default function LeadsListPage() {
     if (salesDaysWithoutInteraction) params.set('days_without_interaction', String(salesDaysWithoutInteraction))
     if (salesOrderBy) params.set('order_by', salesOrderBy)
 
-    setSearchParams(params, { replace: true })
-  }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, setSearchParams, viewMode])
+    const newParams = params.toString()
+    const currentParams = searchParams.toString()
+
+    if (newParams !== currentParams) {
+      setSearchParams(params, { replace: true })
+    }
+  }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, searchParams, setSearchParams, viewMode])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
