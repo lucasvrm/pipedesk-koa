@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/badge'
@@ -56,6 +56,20 @@ export function LeadSalesRow({
   tags,
   actions
 }: LeadSalesRowProps) {
+  const parsedLastInteractionDate = lastInteractionAt
+    ? (() => {
+        const parsedDate = typeof lastInteractionAt === 'string'
+          ? parseISO(lastInteractionAt)
+          : new Date(lastInteractionAt)
+
+        return isValid(parsedDate) ? parsedDate : null
+      })()
+    : null
+
+  const interactionType = lastInteractionType === 'email' || lastInteractionType === 'event'
+    ? lastInteractionType
+    : null
+
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={onClick}>
       <TableCell className="w-[40px]" onClick={(e) => e.stopPropagation()}>
@@ -114,12 +128,12 @@ export function LeadSalesRow({
       <TableCell className="w-[18%]">
         <div className="space-y-1">
           <div className="text-xs text-muted-foreground">Última interação</div>
-          {lastInteractionAt ? (
+          {parsedLastInteractionDate ? (
             <div className="flex items-center gap-2 text-sm text-foreground">
-              {lastInteractionType === 'email' && <EnvelopeSimple size={16} />}
-              {lastInteractionType === 'event' && <CalendarBlank size={16} />}
+              {interactionType === 'email' && <EnvelopeSimple size={16} />}
+              {interactionType === 'event' && <CalendarBlank size={16} />}
               <span>
-                {formatDistanceToNow(new Date(lastInteractionAt), { addSuffix: true, locale: ptBR })}
+                {formatDistanceToNow(parsedLastInteractionDate, { addSuffix: true, locale: ptBR })}
               </span>
             </div>
           ) : (
