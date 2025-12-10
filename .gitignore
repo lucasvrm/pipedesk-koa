@@ -37,3 +37,16 @@ pids
 
 .spark-workbench-id
 src/pages/admin/SettingsPage.old.tsx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
