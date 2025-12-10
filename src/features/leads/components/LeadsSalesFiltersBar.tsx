@@ -162,7 +162,7 @@ export function LeadsSalesFiltersBar({
                             <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
                               {isSelected && <Check size={12} weight="bold" />}
                             </div>
-                            <span>{user.name}</span>
+                            <span>{safeString(user.name, 'Usuário')}</span>
                           </CommandItem>
                         )
                       })}
@@ -201,7 +201,7 @@ export function LeadsSalesFiltersBar({
                   size="sm"
                   onClick={() => handlePriorityToggle(option.value)}
                 >
-                  {option.label}
+                  {safeString(option.label, option.value)}
                 </Button>
               )
             })}

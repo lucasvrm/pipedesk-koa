@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Check, Buildings, ArrowRight, Spinner } from '@phosphor-icons/react'
-import { cn } from '@/lib/utils'
+import { cn, safeString } from '@/lib/utils'
 
 interface Props {
   open: boolean;
@@ -104,7 +104,7 @@ export function QualifyLeadDialog({ open, onOpenChange, lead, userId }: Props) {
                 </p>
                 <ul className="list-disc pl-5">
                   {matches.map(m => (
-                    <li key={m.id}>{m.name} ({m.cnpj || 'Sem CNPJ'})</li>
+                    <li key={m.id}>{safeString(m.name, 'Empresa')} ({m.cnpj || 'Sem CNPJ'})</li>
                   ))}
                 </ul>
                 <p>Considere vincular a uma existente para evitar duplicidade.</p>
@@ -168,7 +168,7 @@ export function QualifyLeadDialog({ open, onOpenChange, lead, userId }: Props) {
                     </SelectTrigger>
                     <SelectContent>
                       {companies?.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>{safeString(c.name, 'Empresa')}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -187,7 +187,7 @@ export function QualifyLeadDialog({ open, onOpenChange, lead, userId }: Props) {
                  <li>
                    {mode === 'new'
                      ? `Será criada a empresa: ${newName}`
-                     : `Vínculo com empresa existente: ${companies?.find(c => c.id === selectedCompanyId)?.name}`
+                     : `Vínculo com empresa existente: ${safeString(companies?.find(c => c.id === selectedCompanyId)?.name, 'Empresa')}`
                    }
                  </li>
                  <li>Será criado um <strong>Master Deal</strong> automático.</li>

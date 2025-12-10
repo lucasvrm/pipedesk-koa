@@ -268,7 +268,7 @@ export default function LeadsListPage() {
     if (salesStatusFilter.length > 0) params.set('status', salesStatusFilter.join(','))
     if (salesOriginFilter.length > 0) params.set('origin', salesOriginFilter.join(','))
     if (salesDaysWithoutInteraction) params.set('days_without_interaction', String(salesDaysWithoutInteraction))
-    if (salesOrderBy) params.set('order_by', salesOrderBy)
+    if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const newParams = params.toString()
     const currentParams = searchParams.toString()
@@ -820,7 +820,7 @@ export default function LeadsListPage() {
                               navigate(`/contacts/${contact.id}`)
                             }}
                           >
-                            {contact.name}
+                            {safeString(contact.name, 'Contato')}
                           </div>
                         ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
                       </div>
