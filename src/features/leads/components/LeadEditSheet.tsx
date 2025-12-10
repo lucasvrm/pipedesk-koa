@@ -15,6 +15,7 @@ import { useUpdateLead, LeadUpdate } from '@/services/leadService'
 import { syncName } from '@/services/driveService'
 import { toast } from 'sonner'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
+import { safeString } from '@/lib/utils'
 
 interface LeadEditSheetProps {
   lead: Lead | null
@@ -134,7 +135,7 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                   </SelectTrigger>
                   <SelectContent>
                     {leadStatuses.filter(s => s.isActive).map(status => (
-                      <SelectItem key={status.code} value={status.code}>{status.label}</SelectItem>
+                      <SelectItem key={status.code} value={status.code}>{safeString(status.label, status.code)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -147,7 +148,7 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                   </SelectTrigger>
                   <SelectContent>
                     {leadOrigins.filter(o => o.isActive).map(origin => (
-                      <SelectItem key={origin.code} value={origin.code}>{origin.label}</SelectItem>
+                      <SelectItem key={origin.code} value={origin.code}>{safeString(origin.label, origin.code)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

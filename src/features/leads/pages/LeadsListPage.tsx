@@ -830,9 +830,9 @@ export default function LeadsListPage() {
                           <div className="flex items-center gap-1.5">
                             <Avatar className="h-5 w-5">
                               <AvatarImage src={owner.avatar} />
-                              <AvatarFallback className="text-[8px]">{getInitials(owner.name)}</AvatarFallback>
+                              <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
                             </Avatar>
-                            <span className="truncate text-xs">{owner.name.split(' ')[0]}</span>
+                            <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
                           </div>
                         ) : <span>-</span>}
                       </div>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Funnel, UserSwitch, Check, CaretDown, X } from '@phosphor-icons/react'
 import { useMemo } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
+import { safeString } from '@/lib/utils'
 
 interface OptionItem {
   code: string
@@ -223,7 +224,7 @@ export function LeadsSalesFiltersBar({
                   checked={statuses.includes(status.code)}
                   onCheckedChange={() => handleStatusToggle(status.code)}
                 >
-                  {status.label}
+                  {safeString(status.label, status.code)}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -233,7 +234,7 @@ export function LeadsSalesFiltersBar({
               const status = leadStatuses.find(s => s.code === code)
               return (
                 <Badge key={code} variant="secondary" className="text-xs">
-                  {status?.label || code}
+                  {safeString(status?.label, code)}
                 </Badge>
               )
             })}
@@ -256,7 +257,7 @@ export function LeadsSalesFiltersBar({
                   checked={origins.includes(origin.code)}
                   onCheckedChange={() => handleOriginToggle(origin.code)}
                 >
-                  {origin.label}
+                  {safeString(origin.label, origin.code)}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -266,7 +267,7 @@ export function LeadsSalesFiltersBar({
               const origin = leadOrigins.find(o => o.code === code)
               return (
                 <Badge key={code} variant="secondary" className="text-xs">
-                  {origin?.label || code}
+                  {safeString(origin?.label, code)}
                 </Badge>
               )
             })}
