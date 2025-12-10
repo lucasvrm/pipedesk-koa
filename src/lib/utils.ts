@@ -71,3 +71,14 @@ export function safeStringOptional(value: unknown, fallback?: string): string | 
   const trimmedFallback = fallbackNormalized.trim()
   return trimmedFallback || undefined
 }
+
+/**
+ * Ensures a value is an array, returning an empty array if not.
+ * Prevents React error #185 by guaranteeing safe array operations.
+ * 
+ * @param value - The value to check
+ * @returns The value if it's an array, otherwise an empty array
+ */
+export function ensureArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value : []
+}

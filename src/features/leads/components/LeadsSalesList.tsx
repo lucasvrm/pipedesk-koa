@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowsDownUp } from '@phosphor-icons/react'
-import { safeStringOptional } from '@/lib/utils'
+import { safeStringOptional, ensureArray } from '@/lib/utils'
 
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
@@ -29,11 +29,14 @@ export function LeadsSalesList({
   onNavigate,
   getLeadActions
 }: LeadsSalesListProps) {
+  // Ensure leads is always an array to prevent React Error #185
+  const safeLeads = ensureArray<LeadSalesViewItem>(leads)
+
   const { validLeads, invalidLeadCount } = useMemo(() => {
     const valid = [] as LeadSalesViewItem[]
     const invalid = [] as LeadSalesViewItem[]
 
-    leads.forEach((lead) => {
+    safeLeads.forEach((lead) => {
       const id = lead.leadId ?? lead.lead_id ?? lead.id
       if (id) {
         valid.push(lead)
@@ -47,7 +50,7 @@ export function LeadsSalesList({
     }
 
     return { validLeads: valid, invalidLeadCount: invalid.length }
-  }, [leads])
+  }, [safeLeads])
 
   const selectableLeadIds = useMemo(
     () => validLeads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
@@ -166,7 +169,7 @@ export function LeadsSalesList({
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-[40px]">
-              <Checkbox checked={allSelected} onCheckedChange={() => onSelectAll()} disabled={isLoading || leads.length === 0} />
+              <Checkbox checked={allSelected} onCheckedChange={() => onSelectAll()} disabled={isLoading || safeLeads.length === 0} />
             </TableHead>
             <TableHead className="w-[22%]">Empresa</TableHead>
             <TableHead className="w-[18%]">Contato principal</TableHead>
@@ -187,7 +190,7 @@ export function LeadsSalesList({
             </>
           )}
 
-          {!isLoading && leads.length === 0 && (
+          {!isLoading && safeLeads.length === 0 && (
             <TableRow>
               <TableCell colSpan={8} className="py-10">
                 <div className="flex flex-col items-center justify-center gap-3 text-center">
@@ -201,7 +204,7 @@ export function LeadsSalesList({
             </TableRow>
           )}
 
-          {!isLoading && leads.length > 0 && validLeads.length === 0 && (
+          {!isLoading && safeLeads.length > 0 && validLeads.length === 0 && (
             <TableRow>
               <TableCell colSpan={8} className="py-10">
                 <div className="flex flex-col items-center justify-center gap-3 text-center">

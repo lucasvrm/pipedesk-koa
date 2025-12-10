@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { SalesViewFilters } from './leadService'
+import { ApiError } from '@/lib/errors'
 
 export type LeadPriorityBucket = 'hot' | 'warm' | 'cold'
 
@@ -97,53 +98,70 @@ function validateSalesViewResponse(data: unknown): void {
 }
 
 async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
-  const searchParams = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-    order_by: filters.orderBy ?? 'priority'
-  })
-
-  if (filters.owner) searchParams.set('owner', filters.owner)
-  if (filters.ownerIds?.length) searchParams.set('owners', filters.ownerIds.join(','))
-  if (filters.priority?.length) searchParams.set('priority', filters.priority.join(','))
-  if (filters.status?.length) searchParams.set('status', filters.status.join(','))
-  if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
-  if (filters.daysWithoutInteraction) searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
-  const response = await fetch(`/api/leads/sales-view?${searchParams.toString()}`)
-
-  if (!response.ok) {
-    console.error('[SalesView] API request failed', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url
+  try {
+    const searchParams = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      order_by: filters.orderBy ?? 'priority'
     })
-    throw new Error('Falha ao carregar leads da Sales View')
-  }
 
-  // Validate content-type before parsing JSON
-  const contentType = response.headers.get('content-type')
-  if (!contentType?.includes('application/json')) {
-    console.error('[SalesView] Expected JSON but received unexpected content-type', {
-      contentType,
-      url: response.url
-    })
-    throw new Error(
-      `sales-view expected JSON but received: ${contentType ?? 'unknown'}`
-    )
-  }
+    if (filters.owner) searchParams.set('owner', filters.owner)
+    if (filters.ownerIds?.length) searchParams.set('owners', filters.ownerIds.join(','))
+    if (filters.priority?.length) searchParams.set('priority', filters.priority.join(','))
+    if (filters.status?.length) searchParams.set('status', filters.status.join(','))
+    if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
+    if (filters.daysWithoutInteraction) searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
+    
+    const url = `/api/leads/sales-view?${searchParams.toString()}`
+    const response = await fetch(url)
 
-  const payload = await response.json()
-
-  // Validate response structure
-  validateSalesViewResponse(payload)
-
-  return {
-    data: payload.data ?? payload.items ?? [],
-    pagination: {
-      total: payload.pagination?.total ?? payload.total ?? payload.count ?? payload.meta?.total ?? 0,
-      page: payload.pagination?.page ?? payload.page ?? payload.meta?.page ?? page,
-      perPage: payload.pagination?.per_page ?? payload.pagination?.perPage ?? payload.pageSize ?? payload.meta?.perPage ?? pageSize
+    if (!response.ok) {
+      console.error('[SalesView] API request failed', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      })
+      throw new ApiError(
+        `Falha ao carregar leads da Sales View (${response.status})`,
+        response.status,
+        url
+      )
     }
+
+    // Validate content-type before parsing JSON
+    const contentType = response.headers.get('content-type')
+    if (!contentType?.includes('application/json')) {
+      console.error('[SalesView] Expected JSON but received unexpected content-type', {
+        contentType,
+        url: response.url
+      })
+      throw new Error(
+        `sales-view expected JSON but received: ${contentType ?? 'unknown'}`
+      )
+    }
+
+    const payload = await response.json()
+
+    // Validate response structure
+    validateSalesViewResponse(payload)
+
+    return {
+      data: payload.data ?? payload.items ?? [],
+      pagination: {
+        total: payload.pagination?.total ?? payload.total ?? payload.count ?? payload.meta?.total ?? 0,
+        page: payload.pagination?.page ?? payload.page ?? payload.meta?.page ?? page,
+        perPage: payload.pagination?.per_page ?? payload.pagination?.perPage ?? payload.pageSize ?? payload.meta?.perPage ?? pageSize
+      }
+    }
+  } catch (error) {
+    // Re-throw with normalized error message
+    if (error instanceof Error) {
+      console.error('[SalesView] Error fetching sales view:', error.message)
+      throw error
+    }
+    // Handle non-Error objects (network failures, etc.)
+    console.error('[SalesView] Unknown error:', error)
+    throw new Error('Falha ao carregar leads da Sales View')
   }
 }
 
@@ -151,7 +169,7 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
   return useQuery({
     queryKey: ['leads-sales-view', params],
     queryFn: () => fetchSalesView(params),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled: options?.enabled ?? true
   })
 }
