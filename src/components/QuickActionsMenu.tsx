@@ -14,11 +14,25 @@ import { Button } from '@/components/ui/button'
 import { DotsThreeOutline } from '@phosphor-icons/react'
 import { safeString } from '@/lib/utils'
 
+/**
+ * Action type for quick actions menu items.
+ * 
+ * IMPORTANT: All action objects MUST have a valid 'label' property (string).
+ * This prevents React Error #185: "Objects are not valid as a React child".
+ * 
+ * @property id - Unique identifier for the action
+ * @property label - Display text for the action (must be string, not object)
+ * @property onClick - Handler function to execute when action is clicked
+ * @property icon - Optional icon component to display before label
+ * @property variant - Visual variant: 'default' or 'destructive'
+ * @property disabled - Whether the action is disabled
+ * @property subActions - Optional nested actions for submenu
+ */
 export interface QuickAction {
   id: string
   label: string
   icon?: ReactNode
-  onClick: () => void
+  onClick?: () => void
   variant?: 'default' | 'destructive'
   disabled?: boolean
   subActions?: QuickAction[]
@@ -60,7 +74,21 @@ export function QuickActionsMenu({
 }: QuickActionsMenuProps) {
   const sanitizeLabel = (value: unknown, fallback = 'Ação') => safeString(value, fallback)
 
+  // Filter out invalid actions to prevent rendering issues.
+  // Actions MUST have a valid 'id' and 'label' to be rendered.
+  // This defensive check prevents React Error #185 if actions array contains malformed objects.
+  const validActions = actions.filter((action): action is QuickAction => {
+    if (!action || typeof action !== 'object') return false
+    if (!action.id || typeof action.id !== 'string') return false
+    if (!action.label || typeof action.label !== 'string') return false
+    return true
+  })
+
   const renderAction = (action: QuickAction) => {
+    // IMPORTANT: Always use sanitizeLabel(action.label) instead of rendering action or action.label directly.
+    // This prevents "Objects are not valid as a React child" errors (React Error #185).
+    // If action.label is somehow an object at runtime (e.g., {en: "View", pt: "Ver"}),
+    // sanitizeLabel will convert it to a safe string fallback.
     const actionLabel = sanitizeLabel(action.label)
 
     // If action has sub-actions, render as submenu
@@ -109,6 +137,11 @@ export function QuickActionsMenu({
   const triggerLabel = label ? sanitizeLabel(label) : null
   const showMenuLabel = Boolean(triggerLabel)
 
+  // Early return if no valid actions to render
+  if (validActions.length === 0) {
+    return null
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -128,11 +161,13 @@ export function QuickActionsMenu({
             <DropdownMenuSeparator />
           </>
         )}
-        {actions.map((action, index) => (
+        {/* Iterate over validActions (already filtered) instead of raw actions.
+            This ensures we never attempt to render malformed action objects. */}
+        {validActions.map((action, index) => (
           <div key={action.id}>
             {renderAction(action)}
             {/* Add separator after groups of related actions */}
-            {index < actions.length - 1 && action.id.includes('separator') && (
+            {index < validActions.length - 1 && action.id.includes('separator') && (
               <DropdownMenuSeparator />
             )}
           </div>
