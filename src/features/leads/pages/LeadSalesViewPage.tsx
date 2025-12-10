@@ -82,6 +82,7 @@ export default function LeadSalesViewPage() {
   const mapLeadToRow = (lead: LeadSalesViewItem) => {
     const priorityBucket = lead.priorityBucket ?? lead.priority_bucket ?? 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
+    const priorityDescription = lead.priorityDescription ?? lead.priority_description
     const legalName = lead.legalName ?? lead.legal_name ?? 'Lead sem nome'
     const tradeName = lead.tradeName ?? lead.trade_name
     const primaryContact = lead.primaryContact ?? lead.primary_contact
@@ -93,6 +94,7 @@ export default function LeadSalesViewPage() {
       ...lead,
       priorityBucket,
       priorityScore,
+      priorityDescription,
       legalName,
       tradeName,
       primaryContact,
@@ -243,6 +245,13 @@ export default function LeadSalesViewPage() {
                     onSelectChange={(checked) => toggleSelect(leadId, checked)}
                     onClick={() => navigate(`/leads/${leadId}`)}
                     onMenuClick={() => navigate(`/leads/${leadId}`)}
+                    actions={[
+                      {
+                        id: 'view',
+                        label: 'Ver detalhes do lead',
+                        onClick: () => navigate(`/leads/${leadId}`)
+                      }
+                    ]}
                   />
                 )
               })}

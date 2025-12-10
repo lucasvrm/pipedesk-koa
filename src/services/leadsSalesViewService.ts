@@ -9,6 +9,8 @@ export interface LeadSalesViewItem {
   lead_id?: string
   priorityScore?: number | null
   priority_score?: number | null
+  priorityDescription?: string | null
+  priority_description?: string | null
   priorityBucket?: LeadPriorityBucket
   priority_bucket?: LeadPriorityBucket
   legalName?: string
