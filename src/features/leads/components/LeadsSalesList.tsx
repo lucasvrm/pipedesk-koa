@@ -4,10 +4,12 @@ import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ArrowsDownUp } from '@phosphor-icons/react'
 
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
   isLoading: boolean
+  orderBy?: 'priority' | 'last_interaction' | 'created_at'
   selectedIds: string[]
   onSelectAll: () => void
   onSelectOne: (id: string, selected: boolean) => void
@@ -17,6 +19,7 @@ interface LeadsSalesListProps {
 export function LeadsSalesList({
   leads,
   isLoading,
+  orderBy = 'priority',
   selectedIds,
   onSelectAll,
   onSelectOne,
@@ -61,8 +64,21 @@ export function LeadsSalesList({
     onSelectOne(id, selected)
   }
 
+  const orderLabel = useMemo(() => {
+    if (orderBy === 'last_interaction') return 'Última interação'
+    if (orderBy === 'created_at') return 'Data de criação'
+    return 'Prioridade'
+  }, [orderBy])
+
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
+        <div className="inline-flex items-center gap-2">
+          <ArrowsDownUp className="h-4 w-4" />
+          <span className="text-muted-foreground">Ordenado por</span>
+          <span className="text-foreground font-semibold">{orderLabel}</span>
+        </div>
+      </div>
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

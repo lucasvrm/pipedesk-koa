@@ -740,6 +740,7 @@ export default function LeadsListPage() {
           <LeadsSalesList
             leads={paginatedLeads as LeadSalesViewItem[]}
             isLoading={isActiveLoading}
+            orderBy={salesOrderBy}
             selectedIds={selectedIds}
             onSelectAll={toggleSelectAll}
             onSelectOne={toggleSelectOne}
