@@ -53,9 +53,12 @@ export function LeadSalesRow({
   lastInteractionType,
   nextAction,
   owner,
-  tags = [],
+  tags,
   actions
 }: LeadSalesRowProps) {
+  const safeTags = tags ?? []
+  const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
+
   const displayText = (value: unknown, fallback = '—') =>
     typeof value === 'string' && value.trim() ? value.trim() : fallback
 
@@ -70,8 +73,8 @@ export function LeadSalesRow({
   const safePrimaryContactName = displayText(primaryContact?.name, 'Contato não informado')
   const safePrimaryContactRole =
     primaryContact && primaryContact.role !== undefined ? displayText(primaryContact.role) : undefined
-  const safeNextActionLabel = nextAction ? displayText(nextAction.label) : null
-  const safeNextActionReason = nextAction ? displayOptionalText(nextAction.reason) : undefined
+  const safeNextActionLabel = safeNextAction ? displayText(safeNextAction.label) : null
+  const safeNextActionReason = safeNextAction ? displayOptionalText(safeNextAction.reason) : undefined
   const safeOwnerName = owner ? displayText(owner.name, 'Responsável não informado') : null
 
   const parsedLastInteractionDate = lastInteractionAt
@@ -165,7 +168,7 @@ export function LeadSalesRow({
       </TableCell>
 
       <TableCell className="w-[18%]">
-        {nextAction ? (
+        {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -192,9 +195,9 @@ export function LeadSalesRow({
 
       <TableCell className="w-[12%]">
         <div className="space-y-2">
-          {tags.length > 0 ? (
+          {safeTags.length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {tags.slice(0, 3).map((tag) => (
+              {safeTags.slice(0, 3).map((tag) => (
                 <Badge
                   key={tag.id ?? tag.name}
                   variant="outline"
@@ -204,8 +207,8 @@ export function LeadSalesRow({
                   {displayText(tag.name, '—')}
                 </Badge>
               ))}
-              {tags.length > 3 && (
-                <span className="text-[11px] text-muted-foreground">+{tags.length - 3}</span>
+              {safeTags.length > 3 && (
+                <span className="text-[11px] text-muted-foreground">+{safeTags.length - 3}</span>
               )}
             </div>
           ) : (
