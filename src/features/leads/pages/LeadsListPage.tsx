@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { Button } from '@/components/ui/button'
@@ -117,6 +117,8 @@ export default function LeadsListPage() {
       })
       .map(tag => tag.id)
   }, [tags])
+
+  const lastSearchRef = useRef<string | null>(null)
 
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusCodes.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginCodes.includes(originFilter) ? originFilter : 'all'
@@ -270,13 +272,13 @@ export default function LeadsListPage() {
     if (salesDaysWithoutInteraction) params.set('days_without_interaction', String(salesDaysWithoutInteraction))
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
-    const newParams = params.toString()
-    const currentParams = searchParams.toString()
+    const nextSearch = params.toString()
 
-    if (newParams !== currentParams) {
+    if (nextSearch !== lastSearchRef.current) {
+      lastSearchRef.current = nextSearch
       setSearchParams(params, { replace: true })
     }
-  }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, searchParams, setSearchParams, viewMode])
+  }, [salesDaysWithoutInteraction, salesOrderBy, salesOriginFilter, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, setSearchParams])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
@@ -790,7 +792,7 @@ export default function LeadsListPage() {
                             deleteLead,
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
-                            getLeadStatusLabel: (code) => getLeadStatusByCode(code)?.label || code,
+                            getLeadStatusLabel: (code) => safeString(getLeadStatusByCode(code)?.label, code),
                           })}
                         />
                       </div>
