@@ -745,6 +745,18 @@ export default function LeadsListPage() {
             onSelectAll={toggleSelectAll}
             onSelectOne={toggleSelectOne}
             onNavigate={(id) => navigate(`/leads/${id}`)}
+            getLeadActions={(lead) => {
+              const id = lead.leadId ?? lead.lead_id ?? lead.id
+              if (!id) return []
+
+              return [
+                {
+                  id: 'view',
+                  label: 'Ver detalhes do lead',
+                  onClick: () => navigate(`/leads/${id}`)
+                }
+              ]
+            }}
           />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

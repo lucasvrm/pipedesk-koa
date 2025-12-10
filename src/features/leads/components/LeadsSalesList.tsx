@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { LeadSalesRow, LeadSalesRowSkeleton } from './LeadSalesRow'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
+import { QuickAction } from '@/components/QuickActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +15,7 @@ interface LeadsSalesListProps {
   onSelectAll: () => void
   onSelectOne: (id: string, selected: boolean) => void
   onNavigate: (leadId: string) => void
+  getLeadActions?: (lead: LeadSalesViewItem) => QuickAction[] | undefined
 }
 
 export function LeadsSalesList({
@@ -23,7 +25,8 @@ export function LeadsSalesList({
   selectedIds,
   onSelectAll,
   onSelectOne,
-  onNavigate
+  onNavigate,
+  getLeadActions
 }: LeadsSalesListProps) {
   const selectableLeadIds = useMemo(
     () => leads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
@@ -38,6 +41,7 @@ export function LeadsSalesList({
   const toRowData = (lead: LeadSalesViewItem) => {
     const priorityBucket = lead.priorityBucket ?? lead.priority_bucket ?? 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
+    const priorityDescription = lead.priorityDescription ?? lead.priority_description
     const legalName = lead.legalName ?? lead.legal_name ?? 'Lead sem nome'
     const tradeName = lead.tradeName ?? lead.trade_name
     const primaryContact = lead.primaryContact ?? lead.primary_contact
@@ -49,6 +53,7 @@ export function LeadsSalesList({
       ...lead,
       priorityBucket,
       priorityScore,
+      priorityDescription,
       legalName,
       tradeName,
       primaryContact,
@@ -123,6 +128,7 @@ export function LeadsSalesList({
               const id = lead.leadId ?? lead.lead_id ?? lead.id
               if (!id) return null
               const rowData = toRowData(lead)
+              const actions = getLeadActions?.(lead)
               return (
                 <LeadSalesRow
                   key={id}
@@ -131,6 +137,7 @@ export function LeadsSalesList({
                   onSelectChange={(checked) => handleSelectChange(lead, checked)}
                   onClick={() => onNavigate(id)}
                   onMenuClick={() => onNavigate(id)}
+                  actions={actions}
                 />
               )
             })}

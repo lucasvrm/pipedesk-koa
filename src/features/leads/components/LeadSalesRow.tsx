@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { QuickAction, QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
@@ -14,12 +16,19 @@ interface LeadSalesRowProps extends LeadSalesViewItem {
   onSelectChange?: (selected: boolean) => void
   onClick?: () => void
   onMenuClick?: () => void
+  actions?: QuickAction[]
 }
 
 const PRIORITY_COLORS: Record<LeadPriorityBucket, string> = {
   hot: 'bg-destructive/20 text-destructive',
   warm: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-100',
   cold: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100'
+}
+
+const PRIORITY_LABELS: Record<LeadPriorityBucket, string> = {
+  hot: 'Prioridade Alta',
+  warm: 'Prioridade Média',
+  cold: 'Prioridade Baixa'
 }
 
 function getInitials(name?: string) {
@@ -36,6 +45,7 @@ export function LeadSalesRow({
   onMenuClick,
   priorityBucket,
   priorityScore,
+  priorityDescription,
   legalName,
   tradeName,
   primaryContact,
@@ -43,7 +53,8 @@ export function LeadSalesRow({
   lastInteractionType,
   nextAction,
   owner,
-  tags
+  tags,
+  actions
 }: LeadSalesRowProps) {
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={onClick}>
@@ -52,18 +63,35 @@ export function LeadSalesRow({
       </TableCell>
 
       <TableCell className="w-[22%]">
-        <div className="flex items-start gap-3">
-          <div className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[priorityBucket]}`}>
-            <FireSimple size={18} />
+        <TooltipProvider delayDuration={200}>
+          <div className="flex items-start gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[priorityBucket]}`}
+                >
+                  <FireSimple size={18} />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-left space-y-1">
+                <div className="font-semibold text-primary-foreground">{PRIORITY_LABELS[priorityBucket]}</div>
+                {priorityScore !== undefined && priorityScore !== null && (
+                  <div className="text-primary-foreground/80">Score: {priorityScore}</div>
+                )}
+                {priorityDescription && (
+                  <div className="text-primary-foreground/80 text-xs leading-relaxed">{priorityDescription}</div>
+                )}
+              </TooltipContent>
+            </Tooltip>
+            <div className="space-y-1">
+              <div className="font-semibold leading-tight text-foreground">{legalName}</div>
+              {tradeName && <div className="text-xs text-muted-foreground">{tradeName}</div>}
+              {priorityScore !== undefined && priorityScore !== null && (
+                <div className="text-[11px] text-muted-foreground">Score: {priorityScore}</div>
+              )}
+            </div>
           </div>
-          <div className="space-y-1">
-            <div className="font-semibold leading-tight text-foreground">{legalName}</div>
-            {tradeName && <div className="text-xs text-muted-foreground">{tradeName}</div>}
-            {priorityScore !== undefined && priorityScore !== null && (
-              <div className="text-[11px] text-muted-foreground">Score: {priorityScore}</div>
-            )}
-          </div>
-        </div>
+        </TooltipProvider>
       </TableCell>
 
       <TableCell className="w-[18%]">
@@ -102,11 +130,25 @@ export function LeadSalesRow({
 
       <TableCell className="w-[18%]">
         {nextAction ? (
-          <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Próxima ação</span>
-            <span className="text-sm font-semibold text-foreground">{nextAction.label}</span>
-            {nextAction.reason && <span className="text-[11px] text-muted-foreground">{nextAction.reason}</span>}
-          </Badge>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Próxima ação</span>
+                  <span className="text-sm font-semibold text-foreground">{nextAction.label}</span>
+                  {nextAction.reason && (
+                    <span className="text-[11px] text-muted-foreground line-clamp-1">{nextAction.reason}</span>
+                  )}
+                </Badge>
+              </TooltipTrigger>
+              {nextAction.reason && (
+                <TooltipContent className="max-w-xs text-left">
+                  <div className="text-primary-foreground text-sm font-semibold">Motivo</div>
+                  <div className="text-primary-foreground/80 text-xs leading-relaxed">{nextAction.reason}</div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         ) : (
           <span className="text-sm text-muted-foreground">Sem próxima ação</span>
         )}
@@ -151,9 +193,18 @@ export function LeadSalesRow({
       </TableCell>
 
       <TableCell className="w-[40px] text-right" onClick={(e) => e.stopPropagation()}>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMenuClick}>
-          <DotsThreeVertical size={18} />
-        </Button>
+        {actions && actions.length > 0 ? (
+          <QuickActionsMenu
+            actions={actions}
+            triggerIcon={<DotsThreeVertical size={18} />}
+            triggerVariant="ghost"
+            triggerSize="icon"
+          />
+        ) : (
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMenuClick}>
+            <DotsThreeVertical size={18} />
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   )
