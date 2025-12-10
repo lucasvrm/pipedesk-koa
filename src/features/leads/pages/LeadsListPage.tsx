@@ -118,13 +118,7 @@ export default function LeadsListPage() {
       .map(tag => tag.id)
   }, [tags])
 
-  const lastSearchRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (viewMode !== 'sales') return
-
-    lastSearchRef.current = searchParams.toString()
-  }, [searchParams, viewMode])
+  const lastSearchRef = useRef<string>(searchParams.toString())
 
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusCodes.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginCodes.includes(originFilter) ? originFilter : 'all'
@@ -279,8 +273,9 @@ export default function LeadsListPage() {
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const nextSearch = params.toString()
+    const currentSearch = lastSearchRef.current || searchParams.toString()
 
-    if (nextSearch !== lastSearchRef.current) {
+    if (nextSearch !== currentSearch) {
       lastSearchRef.current = nextSearch
       setSearchParams(params, { replace: true })
     }
