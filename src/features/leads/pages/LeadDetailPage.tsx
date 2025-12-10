@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { UnifiedTimeline } from '@/components/UnifiedTimeline'
+import { safeString } from '@/lib/utils'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -499,7 +500,7 @@ export default function LeadDetailPage() {
                         className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
                       >
                         <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }} />
-                        <span className="font-medium max-w-[100px] truncate" style={{ color: tag.color }}>{tag.name}</span>
+                        <span className="font-medium max-w-[100px] truncate" style={{ color: tag.color }}>{safeString(tag.name, 'Tag')}</span>
                         <Button
                           variant="ghost"
                           size="icon"
