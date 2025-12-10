@@ -820,7 +820,7 @@ export default function LeadsListPage() {
                               navigate(`/contacts/${contact.id}`)
                             }}
                           >
-                            {contact.name}
+                            {safeString(contact.name, 'Contato')}
                           </div>
                         ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
                       </div>

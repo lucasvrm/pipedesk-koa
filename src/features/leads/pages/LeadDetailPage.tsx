@@ -309,7 +309,7 @@ export default function LeadDetailPage() {
       const contact = await createContact.mutateAsync({ data: { ...newContact }, userId: profile.id })
       await addContact({ contactId: contact.id, isPrimary: newContact.isPrimary })
       await queryClient.invalidateQueries({ queryKey: ['leads', id] })
-      if (profile) logActivity(lead.id, 'lead', `Contato ${contact.name} adicionado`, profile.id)
+      if (profile) logActivity(lead.id, 'lead', `Contato ${safeString(contact.name, 'desconhecido')} adicionado`, profile.id)
       toast.success('Contato adicionado')
       setNewContact({ name: '', email: '', phone: '', role: '', isPrimary: false })
       setContactModalOpen(false)
@@ -580,7 +580,7 @@ export default function LeadDetailPage() {
                             .filter(op => op.isActive)
                             .map(op => (
                               <SelectItem key={op.id} value={op.id}>
-                                {op.name}
+                                {safeString(op.name, 'Tipo de operação')}
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -789,7 +789,7 @@ export default function LeadDetailPage() {
                   {contacts?.map(contact => (
                     <CommandItem
                       key={contact.id}
-                      value={`${contact.name} ${contact.email} ${contact.phone}`}
+                      value={`${safeString(contact.name, '')} ${contact.email || ''} ${contact.phone || ''}`}
                       onSelect={() => setSelectedContact(contact.id)}
                       className={cn(
                         'flex items-start gap-3 px-3 py-2',
@@ -797,10 +797,10 @@ export default function LeadDetailPage() {
                       )}
                     >
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                        {contact.name.charAt(0)}
+                        {safeString(contact.name, 'C').charAt(0)}
                       </div>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium leading-tight">{contact.name}</p>
+                        <p className="text-sm font-medium leading-tight">{safeString(contact.name, 'Contato')}</p>
                         <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo'}</p>
                         <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                           {contact.email && <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>}
@@ -838,7 +838,7 @@ export default function LeadDetailPage() {
                 <SelectTrigger><SelectValue placeholder="Selecione um usuário" /></SelectTrigger>
                 <SelectContent>
                   {users?.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    <SelectItem key={u.id} value={u.id}>{safeString(u.name, 'Usuário')}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
