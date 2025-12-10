@@ -10,6 +10,7 @@ interface SharedListLayoutProps {
   metrics?: ReactNode
   footer?: ReactNode
   children: ReactNode
+  emptyState?: ReactNode
   className?: string
 }
 
@@ -21,6 +22,7 @@ export function SharedListLayout({
   metrics,
   footer,
   children,
+  emptyState,
   className
 }: SharedListLayoutProps) {
   return (
@@ -41,7 +43,7 @@ export function SharedListLayout({
             {filtersBar}
           </CardHeader>
         )}
-        <CardContent className="pt-4 space-y-4">{children}</CardContent>
+        <CardContent className="pt-4 space-y-4">{emptyState ?? children}</CardContent>
         {footer && (
           <CardFooter className="border-t border-border/60 bg-muted/20 rounded-b-xl py-4">
             <div className="w-full">{footer}</div>

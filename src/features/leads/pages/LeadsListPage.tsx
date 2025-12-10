@@ -410,6 +410,23 @@ export default function LeadsListPage() {
 
   const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || search || normalizedTagFilter.length > 0
 
+  const showFiltersEmptyState =
+    viewMode !== 'kanban' && hasFilters && !isActiveLoading && activeLeads.length === 0
+
+  const filtersEmptyState = showFiltersEmptyState ? (
+    <div className="flex flex-col items-center gap-3 text-center py-10 border border-dashed rounded-lg bg-muted/30">
+      <div className="space-y-2 max-w-xl">
+        <p className="text-lg font-semibold text-foreground">Nenhum lead encontrado</p>
+        <p className="text-sm text-muted-foreground">
+          Seus filtros podem estar ocultando resultados. Tente limpar os filtros para visualizar todos os leads novamente.
+        </p>
+      </div>
+      <Button variant="secondary" onClick={clearFilters}>
+        Limpar filtros
+      </Button>
+    </div>
+  ) : null
+
   const metrics = (
     <div className="grid gap-4 md:grid-cols-3 animate-in fade-in slide-in-from-top-4 duration-500">
       <Card className="border-l-4 border-l-primary shadow-sm">
@@ -683,13 +700,14 @@ export default function LeadsListPage() {
         primaryAction={actions}
         metrics={metrics}
         filtersBar={activeFiltersBar}
+        emptyState={filtersEmptyState}
         footer={viewMode === 'kanban' ? null : pagination}
       >
         {isActiveLoading ? (
           <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
-            Nenhum lead encontrado com os filtros atuais.
+            Nenhum lead encontrado.
           </div>
         ) : viewMode === 'sales' ? (
           <LeadsSalesList
