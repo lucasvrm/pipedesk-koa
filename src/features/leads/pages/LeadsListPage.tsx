@@ -708,6 +708,18 @@ export default function LeadsListPage() {
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado.
+            {hasFilters && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Limpar filtros
+                </Button>
+                {viewMode !== 'grid' && (
+                  <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
+                    Ir para grade
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         ) : viewMode === 'sales' ? (
           <LeadsSalesList
