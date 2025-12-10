@@ -70,9 +70,9 @@ export interface LeadSalesViewQuery extends SalesViewFilters {
 
 /**
  * Validates that the response from sales-view API has the expected structure.
- * Returns true if valid, throws an error with details if invalid.
+ * Throws an error with details if invalid.
  */
-function isSalesViewResponseValid(data: unknown): data is { data?: unknown[]; items?: unknown[]; pagination?: unknown; total?: number; count?: number } {
+function validateSalesViewResponse(data: unknown): void {
   if (data === null || typeof data !== 'object') {
     throw new Error('sales-view response is not an object')
   }
@@ -86,12 +86,14 @@ function isSalesViewResponseValid(data: unknown): data is { data?: unknown[]; it
   }
 
   // Check if count/total is a number when present
-  const count = payload.total ?? payload.count ?? (payload.pagination as Record<string, unknown>)?.total
+  const pagination = payload.pagination
+  const paginationTotal = pagination != null && typeof pagination === 'object' 
+    ? (pagination as Record<string, unknown>).total 
+    : undefined
+  const count = payload.total ?? payload.count ?? paginationTotal
   if (count !== undefined && typeof count !== 'number') {
     throw new Error(`sales-view expected count to be a number but received: ${typeof count}`)
   }
-
-  return true
 }
 
 async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
@@ -133,7 +135,7 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
   const payload = await response.json()
 
   // Validate response structure
-  isSalesViewResponseValid(payload)
+  validateSalesViewResponse(payload)
 
   return {
     data: payload.data ?? payload.items ?? [],
