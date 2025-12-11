@@ -138,20 +138,28 @@ export function LeadsSalesList({
     const id = lead.leadId ?? lead.lead_id ?? lead.id
     if (!id) return null
 
-    const rowData = toRowData(lead)
-    const actions = getLeadActions?.(lead)
+    try {
+      const rowData = toRowData(lead)
+      const actions = getLeadActions?.(lead)
 
-    return (
-      <LeadSalesRow
-        key={id}
-        {...rowData}
-        selected={selectedIds.includes(id)}
-        onSelectChange={(checked) => handleSelectChange(lead, checked)}
-        onClick={() => onNavigate(id)}
-        onMenuClick={() => onNavigate(id)}
-        actions={actions}
-      />
-    )
+      return (
+        <LeadSalesRow
+          key={id}
+          {...rowData}
+          selected={selectedIds.includes(id)}
+          onSelectChange={(checked) => handleSelectChange(lead, checked)}
+          onClick={() => onNavigate(id)}
+          onMenuClick={() => onNavigate(id)}
+          actions={actions}
+        />
+      )
+    } catch (error) {
+      if (shouldLogRenderError) {
+        console.error('LeadSalesRow render failed', id, lead, error)
+      }
+
+      throw error
+    }
   }
 
   const shouldLogRenderError = !import.meta.env.PROD || import.meta.env.VITE_VERCEL_ENV === 'preview'

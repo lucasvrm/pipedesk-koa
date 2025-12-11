@@ -1,6 +1,7 @@
 import React, { useSyncExternalStore } from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import LeadDetailPage from '@/features/leads/pages/LeadDetailPage'
@@ -121,6 +122,22 @@ vi.mock('@/services/leadService', () => ({
   useUpdateLead: () => ({ mutateAsync: vi.fn() })
 }))
 
+vi.mock('@/hooks/useSystemMetadata', () => ({
+  useSystemMetadata: () => ({
+    leadStatuses: [],
+    leadOrigins: [],
+    leadMemberRoles: [],
+    dealStatuses: [],
+    stages: [],
+    companyTypes: [],
+    relationshipLevels: [],
+    userRoleMetadata: [],
+    isLoading: false,
+    error: null,
+    refreshMetadata: vi.fn()
+  })
+}))
+
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'user-1', name: 'Test User' } })
 }))
@@ -135,7 +152,10 @@ vi.mock('@/features/rbac/components/RequirePermission', () => ({
 }))
 
 describe('LeadDetailPage tagging', () => {
+  let queryClient: QueryClient
+
   beforeEach(() => {
+    queryClient = new QueryClient()
     resetStore()
   })
 
@@ -143,11 +163,13 @@ describe('LeadDetailPage tagging', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter initialEntries={[`/leads/${leadFixture.id}`]}>
-        <Routes>
-          <Route path="/leads/:id" element={<LeadDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[`/leads/${leadFixture.id}`]}>
+          <Routes>
+            <Route path="/leads/:id" element={<LeadDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
     )
 
     await user.click(screen.getByRole('button', { name: /tags/i }))
