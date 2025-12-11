@@ -26,7 +26,7 @@ interface LeadEditSheetProps {
 export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) {
   const updateLead = useUpdateLead()
   const { register, handleSubmit, reset, setValue, watch } = useForm<LeadUpdate>()
-  const { leadStatuses, leadOrigins, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
 
   const leadInitials = useMemo(() => {
     if (!lead?.legalName) return '--'
@@ -49,8 +49,8 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
         addressCity: lead.addressCity,
         addressState: lead.addressState,
         description: lead.description,
-        status: lead.status,
-        origin: lead.origin,
+        leadStatusId: lead.leadStatusId,
+        leadOriginId: lead.leadOriginId,
         operationType: lead.operationType,
       })
     }
@@ -93,10 +93,10 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
           {lead && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <StatusBadge
-                semanticStatus={leadStatusMap(lead.status)}
-                label={`Status: ${getLeadStatusByCode(lead.status)?.label || lead.status}`}
+                semanticStatus={leadStatusMap(getLeadStatusById(lead.leadStatusId)?.code as any)}
+                label={`Status: ${getLeadStatusById(lead.leadStatusId)?.label || lead.leadStatusId}`}
               />
-              <Badge variant="secondary">Origem: {getLeadOriginByCode(lead.origin)?.label || lead.origin}</Badge>
+              <Badge variant="secondary">Origem: {getLeadOriginById(lead.leadOriginId)?.label || lead.leadOriginId}</Badge>
             </div>
           )}
         </SheetHeader>
@@ -129,26 +129,26 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={watch('status')} onValueChange={(v: OperationType | string) => setValue('status', v as string)}>
+                <Select value={watch('leadStatusId')} onValueChange={(v: string) => setValue('leadStatusId', v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     {leadStatuses.filter(s => s.isActive).map(status => (
-                      <SelectItem key={status.code} value={status.code}>{safeString(status.label, status.code)}</SelectItem>
+                      <SelectItem key={status.id} value={status.id}>{safeString(status.label, status.code)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Origem</Label>
-                <Select value={watch('origin')} onValueChange={(v: string) => setValue('origin', v)}>
+                <Select value={watch('leadOriginId')} onValueChange={(v: string) => setValue('leadOriginId', v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     {leadOrigins.filter(o => o.isActive).map(origin => (
-                      <SelectItem key={origin.code} value={origin.code}>{safeString(origin.label, origin.code)}</SelectItem>
+                      <SelectItem key={origin.id} value={origin.id}>{safeString(origin.label, origin.code)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

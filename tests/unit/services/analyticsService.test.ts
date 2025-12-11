@@ -233,9 +233,9 @@ describe('analyticsService', () => {
       ]
 
       const mockLeads = [
-        { id: 'lead-1', origin: 'inbound', qualified_master_deal_id: 'deal-1' },
-        { id: 'lead-2', origin: 'inbound', qualified_master_deal_id: 'deal-2' },
-        { id: 'lead-3', origin: 'outbound', qualified_master_deal_id: null }
+        { id: 'lead-1', lead_origin_id: 'inbound', qualified_master_deal_id: 'deal-1' },
+        { id: 'lead-2', lead_origin_id: 'inbound', qualified_master_deal_id: 'deal-2' },
+        { id: 'lead-3', lead_origin_id: 'outbound', qualified_master_deal_id: null }
       ]
 
       const createQueryBuilder = (data: any) => ({

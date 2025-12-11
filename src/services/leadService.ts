@@ -21,13 +21,13 @@ export interface LeadInput {
   addressCity?: string;
   addressState?: string;
   description?: string;
-  origin?: string;
+  leadOriginId?: string;
   operationType?: string;
   ownerUserId?: string;
 }
 
 export interface LeadUpdate extends Partial<LeadInput> {
-  status?: LeadStatus;
+  leadStatusId?: string;
 }
 
 export interface LeadFilters {
@@ -72,10 +72,11 @@ function mapLeadFromDB(item: any): Lead {
     addressCity: item.address_city,
     addressState: item.address_state,
     description: item.description,
-    status: item.status,
-    origin: item.origin,
+    leadStatusId: item.lead_status_id,
+    leadOriginId: item.lead_origin_id,
     operationType: item.operation_type,
     ownerUserId: item.owner_user_id,
+    owner: item.owner,
 
     qualifiedAt: item.qualified_at,
     qualifiedCompanyId: item.qualified_company_id,
@@ -130,8 +131,8 @@ function mapLeadFromSalesView(item: any): Lead {
     addressCity: item.address_city || item.addressCity,
     addressState: item.address_state || item.addressState,
     description: item.description,
-    status: item.status,
-    origin: item.origin,
+    leadStatusId: item.lead_status_id || item.leadStatusId || item.status,
+    leadOriginId: item.lead_origin_id || item.leadOriginId || item.origin,
     operationType: item.operation_type || item.operationType,
     ownerUserId: item.owner_user_id || item.ownerUserId,
 
@@ -210,10 +211,10 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
     }
 
     if (filters.status && filters.status.length > 0) {
-      query = query.in('status', filters.status);
+      query = query.in('lead_status_id', filters.status);
     }
     if (filters.origin && filters.origin.length > 0) {
-      query = query.in('origin', filters.origin);
+      query = query.in('lead_origin_id', filters.origin);
     }
     if (filters.responsibleId) {
       query = query.eq('owner_user_id', filters.responsibleId);
@@ -307,11 +308,12 @@ export async function getSalesViewLeads(filters?: SalesViewFilters): Promise<Lea
 
 export async function createLead(lead: LeadInput, userId: string): Promise<Lead> {
   // Get default origin from system settings if not provided
-  let leadOrigin = lead.origin;
-  if (!leadOrigin) {
-    const defaultOriginSetting = await getSetting('default_lead_origin_code');
-    leadOrigin = defaultOriginSetting?.value || 'outbound'; // Fallback to 'outbound' if no setting
-  }
+  let leadOriginId = lead.leadOriginId;
+  // TODO: Fix fallback to use ID instead of code, or rely on UI to provide valid ID
+  // if (!leadOriginId) {
+  //   const defaultOriginSetting = await getSetting('default_lead_origin_code');
+  //   leadOriginId = defaultOriginSetting?.value || 'outbound';
+  // }
 
   const { data, error } = await supabase
     .from('leads')
@@ -324,7 +326,7 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
       address_city: lead.addressCity,
       address_state: lead.addressState,
       description: lead.description,
-      origin: leadOrigin,
+      lead_origin_id: leadOriginId,
       operation_type: lead.operationType,
       owner_user_id: lead.ownerUserId || userId, // Default owner is creator
       created_by: userId
@@ -359,8 +361,8 @@ export async function updateLead(id: string, updates: LeadUpdate) {
   if (updates.addressCity !== undefined) updateData.address_city = updates.addressCity;
   if (updates.addressState !== undefined) updateData.address_state = updates.addressState;
   if (updates.description !== undefined) updateData.description = updates.description;
-  if (updates.status !== undefined) updateData.status = updates.status;
-  if (updates.origin !== undefined) updateData.origin = updates.origin;
+  if (updates.leadStatusId !== undefined) updateData.lead_status_id = updates.leadStatusId;
+  if (updates.leadOriginId !== undefined) updateData.lead_origin_id = updates.leadOriginId;
   if (updates.operationType !== undefined) updateData.operation_type = updates.operationType;
   if (updates.ownerUserId !== undefined) updateData.owner_user_id = updates.ownerUserId;
 
