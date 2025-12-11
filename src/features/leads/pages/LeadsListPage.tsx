@@ -38,6 +38,7 @@ import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
+import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES } from '../constants/salesViewMessages'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
@@ -261,9 +262,9 @@ export default function LeadsListPage() {
     if (viewMode !== 'sales') return
     if (!isSalesError) return
     
-    console.error('[SalesView] Error state detected in LeadsListPage:', salesError)
+    console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadsListPage:`, salesError)
     toast.error(
-      'Não foi possível carregar a visão de vendas. Por favor, tente novamente ou alterne para outro modo de visualização.',
+      SALES_VIEW_MESSAGES.ERROR_TOAST_WITH_OPTIONS,
       {
         duration: 5000
       }
@@ -279,7 +280,7 @@ export default function LeadsListPage() {
     if (viewMode !== 'sales') return
     // Don't update URL during error state to prevent loops
     if (isSalesError) {
-      console.log('[SalesView] Skipping URL sync due to error state')
+      console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Skipping URL sync due to error state`)
       return
     }
 
@@ -799,26 +800,26 @@ export default function LeadsListPage() {
               </svg>
             </div>
             <div className="space-y-2 max-w-lg">
-              <h3 className="text-xl font-semibold text-foreground">Não foi possível carregar a visão de vendas</h3>
+              <h3 className="text-xl font-semibold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
               <p className="text-sm text-muted-foreground">
-                Ocorreu um erro ao buscar os dados da Sales View. Você pode alternar para outros modos de visualização ou tentar novamente.
+                {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION_SHORT}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button variant="outline" onClick={() => setViewMode('grid')} className="min-w-[180px]">
-                Alternar para Grade
+              <Button variant="outline" onClick={() => setViewMode('grid')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+                {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_GRID}
               </Button>
-              <Button variant="outline" onClick={() => setViewMode('kanban')} className="min-w-[180px]">
-                Alternar para Kanban
+              <Button variant="outline" onClick={() => setViewMode('kanban')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+                {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_KANBAN}
               </Button>
               <Button 
                 onClick={() => {
-                  console.log('[SalesView] User initiated retry from error UI in LeadsListPage')
+                  console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI in LeadsListPage`)
                   refetchSalesView()
                 }} 
-                className="min-w-[180px]"
+                className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}
               >
-                Tentar novamente
+                {SALES_VIEW_MESSAGES.BUTTON_RETRY}
               </Button>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { ensureArray } from '@/lib/utils'
+import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES } from '../constants/salesViewMessages'
 
 const PAGE_SIZE = 10
 
@@ -172,15 +173,15 @@ export default function LeadSalesViewPage() {
 
   useEffect(() => {
     if (isError) {
-      console.error('[SalesView] Error state detected in LeadSalesViewPage:', error)
+      console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadSalesViewPage:`, error)
       toast.error(
-        'Não foi possível carregar a visão de vendas. Por favor, tente novamente.',
+        SALES_VIEW_MESSAGES.ERROR_TOAST,
         {
           duration: 5000,
           action: {
-            label: 'Tentar novamente',
+            label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
             onClick: () => {
-              console.log('[SalesView] User initiated retry from toast')
+              console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast`)
               refetch()
             }
           }
@@ -238,23 +239,23 @@ export default function LeadSalesViewPage() {
                       </svg>
                     </div>
                     <div className="space-y-2 max-w-lg">
-                      <h3 className="text-xl font-semibold text-foreground">Não foi possível carregar a visão de vendas</h3>
+                      <h3 className="text-xl font-semibold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Ocorreu um erro ao buscar os dados da Sales View. Por favor, tente novamente ou retorne à lista principal de leads.
+                        {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION}
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Button variant="outline" onClick={() => navigate('/leads')} className="min-w-[180px]">
-                        Voltar para a lista
+                      <Button variant="outline" onClick={() => navigate('/leads')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+                        {SALES_VIEW_MESSAGES.BUTTON_BACK_TO_LIST}
                       </Button>
                       <Button 
                         onClick={() => {
-                          console.log('[SalesView] User initiated retry from error UI')
+                          console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI`)
                           refetch()
                         }} 
-                        className="min-w-[180px]"
+                        className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}
                       >
-                        Tentar novamente
+                        {SALES_VIEW_MESSAGES.BUTTON_RETRY}
                       </Button>
                     </div>
                   </div>
@@ -268,9 +269,9 @@ export default function LeadSalesViewPage() {
                   <div className="flex flex-col items-center justify-center gap-3 text-center">
                     <Skeleton className="h-12 w-12 rounded-full" />
                     <div className="space-y-1">
-                      <p className="text-lg font-semibold text-foreground">Nenhum lead encontrado</p>
+                      <p className="text-lg font-semibold text-foreground">{SALES_VIEW_MESSAGES.NO_LEADS_FOUND}</p>
                       <p className="text-sm text-muted-foreground">
-                        Ajuste os filtros ou retorne mais tarde para acompanhar novos leads.
+                        {SALES_VIEW_MESSAGES.NO_LEADS_DESCRIPTION}
                       </p>
                     </div>
                     <Button variant="outline" onClick={() => navigate('/leads')}>Ver todos os leads</Button>
