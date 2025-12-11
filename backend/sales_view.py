@@ -129,19 +129,66 @@ def with_endpoint_metrics(
     return wrapper
 
 
+def _normalize_filters(filters: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize incoming filters to the expected lead keys."""
+
+    filter_key_map = {
+        "owners": "owner",
+        "ownerIds": "owner",
+        "owner": "owner",
+        "status": "status",
+        "origin": "origin",
+        "priority": "priority",
+    }
+
+    normalized: Dict[str, Any] = {}
+    for key, value in filters.items():
+        target_key = filter_key_map.get(key)
+        if not target_key:
+            continue
+
+        if value is None:
+            continue
+
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                continue
+            if "," in value:
+                value = [item for item in value.split(",") if item]
+
+        if isinstance(value, Iterable) and not isinstance(value, (str, bytes, dict)):
+            value = list(value)
+            if not value:
+                continue
+
+        normalized[target_key] = value
+
+    return normalized
+
+
 def _apply_filters(leads: Iterable[Dict[str, Any]], filters: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not filters:
+        return list(leads)
+
+    normalized_filters = _normalize_filters(filters)
+    if not normalized_filters:
         return list(leads)
 
     results: List[Dict[str, Any]] = []
     for lead in leads:
         include = True
-        for key, value in filters.items():
-            if value is None:
-                continue
-            if lead.get(key) != value:
+        for key, value in normalized_filters.items():
+            lead_value = lead.get(key)
+
+            if isinstance(value, Iterable) and not isinstance(value, (str, bytes, dict)):
+                if lead_value not in value:
+                    include = False
+                    break
+            elif lead_value != value:
                 include = False
                 break
+
         if include:
             results.append(lead)
     return results
