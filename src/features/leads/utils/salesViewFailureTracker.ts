@@ -72,7 +72,8 @@ export function recordSalesViewSuccess(): void {
   // Only reset if there were previous failures
   if (record.count > 0) {
     console.log('[SalesView] Success after failures, resetting counter')
-    saveFailureRecord({ count: 0, lastFailureAt: 0 })
+    // Preserve preferred fallback when resetting
+    saveFailureRecord({ count: 0, lastFailureAt: 0, preferredFallback: record.preferredFallback })
   }
 }
 

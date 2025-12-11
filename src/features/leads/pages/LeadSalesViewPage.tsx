@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { ensureArray } from '@/lib/utils'
 import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES } from '../constants/salesViewMessages'
+import { SquaresFour, Kanban } from '@phosphor-icons/react'
 
 const PAGE_SIZE = 10
 
@@ -238,32 +239,49 @@ export default function LeadSalesViewPage() {
             {!isLoading && isError && (
               <TableRow>
                 <TableCell colSpan={8} className="py-12">
-                  <div className="flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                      <svg className="h-8 w-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex flex-col items-center justify-center gap-6 text-center">
+                    <div className="h-20 w-20 rounded-full bg-destructive/10 flex items-center justify-center ring-4 ring-destructive/10">
+                      <svg className="h-10 w-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
                     </div>
-                    <div className="space-y-2 max-w-lg">
-                      <h3 className="text-xl font-semibold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION}
+                    <div className="space-y-3 max-w-2xl">
+                      <h3 className="text-2xl font-bold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION_ALTERNATE}
                       </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button variant="outline" onClick={() => navigate('/leads')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
-                        {SALES_VIEW_MESSAGES.BUTTON_BACK_TO_LIST}
+                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                      <Button 
+                        variant="default" 
+                        size="lg"
+                        onClick={() => navigate('/leads?view=grid')} 
+                        className="flex-1 text-base font-semibold"
+                      >
+                        <SquaresFour className="mr-2 h-5 w-5" />
+                        {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_GRID}
                       </Button>
                       <Button 
-                        onClick={() => {
-                          console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI`)
-                          refetch()
-                        }} 
-                        className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}
+                        variant="default" 
+                        size="lg"
+                        onClick={() => navigate('/leads?view=kanban')} 
+                        className="flex-1 text-base font-semibold"
                       >
-                        {SALES_VIEW_MESSAGES.BUTTON_RETRY}
+                        <Kanban className="mr-2 h-5 w-5" />
+                        {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_KANBAN}
                       </Button>
                     </div>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI`)
+                        refetch()
+                      }} 
+                      className="text-sm"
+                    >
+                      {SALES_VIEW_MESSAGES.BUTTON_RETRY}
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

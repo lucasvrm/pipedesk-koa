@@ -69,6 +69,13 @@ export default function LeadsListPage() {
   }, [])
 
   const [viewMode, setViewModeInternal] = useState<'grid' | 'kanban' | 'sales'>(() => {
+    // Check URL params first for explicit view selection
+    const viewParam = searchParams.get('view')
+    const validViews = ['grid', 'kanban', 'sales'] as const
+    if (viewParam && validViews.includes(viewParam as any)) {
+      return viewParam as 'grid' | 'kanban' | 'sales'
+    }
+    
     const saved = savedPreferences?.viewMode
     // Force 'sales' if 'list' was saved previously
     if (saved === 'list') {
@@ -128,6 +135,7 @@ export default function LeadsListPage() {
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [hasSalesShownErrorToast, setHasSalesShownErrorToast] = useState(false)
+  const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -294,20 +302,25 @@ export default function LeadsListPage() {
   // Handle Sales View errors with logging and user feedback
   useEffect(() => {
     if (viewMode !== 'sales') {
-      // Reset error toast flag when switching away from sales view
+      // Reset flags when switching away from sales view
       if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
+      if (hasSalesRecordedSuccess) setHasSalesRecordedSuccess(false)
       return
     }
     if (!isSalesError) {
-      // Reset the flag when error is resolved
+      // Reset the error flag when error is resolved
       if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
-      // Record success to reset failure counter
-      if (!isSalesLoading && !isSalesFetching) {
+      // Record success to reset failure counter (only once per successful load)
+      if (!isSalesLoading && !isSalesFetching && !hasSalesRecordedSuccess) {
         recordSalesViewSuccess()
+        setHasSalesRecordedSuccess(true)
       }
       return
     }
     if (hasSalesShownErrorToast) return
+    
+    // Reset success flag when error occurs
+    if (hasSalesRecordedSuccess) setHasSalesRecordedSuccess(false)
     
     // Record this failure for tracking persistent issues
     recordSalesViewFailure()
@@ -328,7 +341,7 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast])
+  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess])
 
   // Idempotent URL sync effect for Sales view filters.
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
