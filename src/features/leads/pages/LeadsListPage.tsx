@@ -99,16 +99,6 @@ export default function LeadsListPage() {
     return (saved as 'grid' | 'kanban' | 'sales') || 'sales'
   })
   
-  // Wrapper to track preferred fallback when user switches views during Sales View errors
-  const setViewMode = useCallback((mode: 'grid' | 'kanban' | 'sales') => {
-    // If switching away from sales while it's in error, save this as preferred fallback
-    if (viewMode === 'sales' && isSalesError && (mode === 'grid' || mode === 'kanban')) {
-      setPreferredFallback(mode)
-      console.log(`[SalesView] User switched to ${mode} during error, saving as preferred fallback`)
-    }
-    setViewModeInternal(mode)
-  }, [viewMode, isSalesError])
-
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
@@ -223,6 +213,16 @@ export default function LeadsListPage() {
   const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError, refetch: refetchSalesView } = useLeadsSalesView(salesViewQuery, {
     enabled: viewMode === 'sales'
   })
+
+  // Wrapper to track preferred fallback when user switches views during Sales View errors
+  const setViewMode = useCallback((mode: 'grid' | 'kanban' | 'sales') => {
+    // If switching away from sales while it's in error, save this as preferred fallback
+    if (viewMode === 'sales' && isSalesError && (mode === 'grid' || mode === 'kanban')) {
+      setPreferredFallback(mode)
+      console.log(`[SalesView] User switched to ${mode} during error, saving as preferred fallback`)
+    }
+    setViewModeInternal(mode)
+  }, [viewMode, isSalesError])
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
