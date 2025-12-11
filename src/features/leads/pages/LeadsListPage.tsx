@@ -38,6 +38,7 @@ import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
+import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES } from '../constants/salesViewMessages'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
@@ -93,6 +94,7 @@ export default function LeadsListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [hasSalesShownErrorToast, setHasSalesShownErrorToast] = useState(false)
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -176,7 +178,7 @@ export default function LeadsListPage() {
     }),
     [currentPage, itemsPerPage, salesFilters]
   )
-  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError } = useLeadsSalesView(salesViewQuery, {
+  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError, refetch: refetchSalesView } = useLeadsSalesView(salesViewQuery, {
     enabled: viewMode === 'sales'
   })
   const createLead = useCreateLead()
@@ -256,6 +258,38 @@ export default function LeadsListPage() {
     }
   }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, search, viewMode])
 
+  // Handle Sales View errors with logging and user feedback
+  useEffect(() => {
+    if (viewMode !== 'sales') {
+      // Reset error toast flag when switching away from sales view
+      if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
+      return
+    }
+    if (!isSalesError) {
+      // Reset the flag when error is resolved
+      if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
+      return
+    }
+    if (hasSalesShownErrorToast) return
+    
+    console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadsListPage:`, salesError)
+    toast.error(
+      SALES_VIEW_MESSAGES.ERROR_TOAST_WITH_OPTIONS,
+      {
+        duration: 5000,
+        action: {
+          label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
+          onClick: () => {
+            console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast in LeadsListPage`)
+            setHasSalesShownErrorToast(false)
+            refetchSalesView()
+          }
+        }
+      }
+    )
+    setHasSalesShownErrorToast(true)
+  }, [isSalesError, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast])
+
   // Idempotent URL sync effect for Sales view filters.
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
   // The ref stores the last written URL search string, avoiding re-reads of searchParams
@@ -263,8 +297,11 @@ export default function LeadsListPage() {
   // Skip URL updates during error states to prevent potential loops.
   useEffect(() => {
     if (viewMode !== 'sales') return
-    // Don't update URL during error state
-    if (isSalesError) return
+    // Don't update URL during error state to prevent loops
+    if (isSalesError) {
+      console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Skipping URL sync due to error state`)
+      return
+    }
 
     const params = new URLSearchParams()
 
@@ -782,17 +819,26 @@ export default function LeadsListPage() {
               </svg>
             </div>
             <div className="space-y-2 max-w-lg">
-              <h3 className="text-xl font-semibold text-foreground">Não foi possível carregar a visão de vendas</h3>
+              <h3 className="text-xl font-semibold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
               <p className="text-sm text-muted-foreground">
-                Ocorreu um erro ao buscar os dados da Sales View. A página de leads permanece funcional em outros modos de visualização.
+                {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION_SHORT}
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setViewMode('grid')}>
-                Alternar para Grade
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="outline" onClick={() => setViewMode('grid')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+                {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_GRID}
               </Button>
-              <Button onClick={() => window.location.reload()}>
-                Tentar novamente
+              <Button variant="outline" onClick={() => setViewMode('kanban')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+                {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_KANBAN}
+              </Button>
+              <Button 
+                onClick={() => {
+                  console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI in LeadsListPage`)
+                  refetchSalesView()
+                }} 
+                className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}
+              >
+                {SALES_VIEW_MESSAGES.BUTTON_RETRY}
               </Button>
             </div>
           </div>

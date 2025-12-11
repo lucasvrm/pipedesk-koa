@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { ensureArray } from '@/lib/utils'
+import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES } from '../constants/salesViewMessages'
 
 const PAGE_SIZE = 10
 
@@ -47,6 +48,7 @@ export default function LeadSalesViewPage() {
     if (order === 'priority' || order === 'last_interaction' || order === 'created_at') return order
     return undefined
   })
+  const [hasShownErrorToast, setHasShownErrorToast] = useState(false)
   const navigate = useNavigate()
   const filters = useMemo(
     () => ({
@@ -59,7 +61,7 @@ export default function LeadSalesViewPage() {
     }),
     [daysWithoutInteraction, originFilters, orderBy, ownerFilter, priorityBuckets, statusFilters]
   )
-  const { data, isLoading, isFetching, isError, error } = useLeadsSalesView({
+  const { data, isLoading, isFetching, isError, error, refetch } = useLeadsSalesView({
     page,
     pageSize: PAGE_SIZE,
     ...filters
@@ -171,12 +173,28 @@ export default function LeadSalesViewPage() {
   }, [daysWithoutInteraction, orderBy, originFilters, ownerFilter, priorityBuckets, statusFilters])
 
   useEffect(() => {
-    if (isError) {
+    if (isError && !hasShownErrorToast) {
+      console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadSalesViewPage:`, error)
       toast.error(
-        'Erro ao carregar leads. Não foi possível carregar a Sales View. Tente novamente em instantes.'
+        SALES_VIEW_MESSAGES.ERROR_TOAST,
+        {
+          duration: 5000,
+          action: {
+            label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
+            onClick: () => {
+              console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast`)
+              setHasShownErrorToast(false)
+              refetch()
+            }
+          }
+        }
       )
+      setHasShownErrorToast(true)
+    } else if (!isError && hasShownErrorToast) {
+      // Reset the flag when error is resolved
+      setHasShownErrorToast(false)
     }
-  }, [isError])
+  }, [isError, error, refetch, hasShownErrorToast])
 
   return (
     <div className="space-y-6">
@@ -221,23 +239,29 @@ export default function LeadSalesViewPage() {
               <TableRow>
                 <TableCell colSpan={8} className="py-12">
                   <div className="flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <svg className="h-8 w-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
                     </div>
-                    <div className="space-y-2 max-w-md">
-                      <p className="text-lg font-semibold text-foreground">Não foi possível carregar a visão de vendas</p>
+                    <div className="space-y-2 max-w-lg">
+                      <h3 className="text-xl font-semibold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Ocorreu um erro ao buscar os dados. Por favor, tente novamente.
+                        {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => navigate('/leads')}>
-                        Voltar para lista de leads
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button variant="outline" onClick={() => navigate('/leads')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+                        {SALES_VIEW_MESSAGES.BUTTON_BACK_TO_LIST}
                       </Button>
-                      <Button onClick={() => window.location.reload()}>
-                        Tentar novamente
+                      <Button 
+                        onClick={() => {
+                          console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI`)
+                          refetch()
+                        }} 
+                        className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}
+                      >
+                        {SALES_VIEW_MESSAGES.BUTTON_RETRY}
                       </Button>
                     </div>
                   </div>
@@ -249,11 +273,15 @@ export default function LeadSalesViewPage() {
               <TableRow>
                 <TableCell colSpan={8} className="py-12">
                   <div className="flex flex-col items-center justify-center gap-3 text-center">
-                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                    </div>
                     <div className="space-y-1">
-                      <p className="text-lg font-semibold text-foreground">Nenhum lead encontrado</p>
+                      <p className="text-lg font-semibold text-foreground">{SALES_VIEW_MESSAGES.NO_LEADS_FOUND}</p>
                       <p className="text-sm text-muted-foreground">
-                        Ajuste os filtros ou retorne mais tarde para acompanhar novos leads.
+                        {SALES_VIEW_MESSAGES.NO_LEADS_DESCRIPTION}
                       </p>
                     </div>
                     <Button variant="outline" onClick={() => navigate('/leads')}>Ver todos os leads</Button>
