@@ -5,17 +5,18 @@
 
 export const SALES_VIEW_MESSAGES = {
   // Error messages
-  ERROR_TITLE: 'Não foi possível carregar a visão de vendas',
+  ERROR_TITLE: 'Sales View está temporariamente indisponível',
   ERROR_DESCRIPTION: 'Ocorreu um erro ao buscar os dados da Sales View. Por favor, tente novamente ou retorne à lista principal de leads.',
-  ERROR_DESCRIPTION_SHORT: 'Ocorreu um erro ao buscar os dados da Sales View. Você pode alternar para outros modos de visualização ou tentar novamente.',
+  ERROR_DESCRIPTION_SHORT: 'A visão Sales está temporariamente indisponível. Você pode continuar trabalhando normalmente usando a visualização em Grade ou Kanban.',
+  ERROR_DESCRIPTION_ALTERNATE: 'O problema é específico da visualização Sales. Continue trabalhando em modo Grade ou Kanban.',
   ERROR_TOAST: 'Não foi possível carregar a visão de vendas. Por favor, tente novamente.',
-  ERROR_TOAST_WITH_OPTIONS: 'Não foi possível carregar a visão de vendas. Por favor, tente novamente ou alterne para outro modo de visualização.',
+  ERROR_TOAST_WITH_OPTIONS: 'Sales View indisponível. Use Grade ou Kanban para continuar trabalhando.',
   
   // Action button labels
   BUTTON_RETRY: 'Tentar novamente',
   BUTTON_BACK_TO_LIST: 'Voltar para a lista',
-  BUTTON_SWITCH_TO_GRID: 'Alternar para Grade',
-  BUTTON_SWITCH_TO_KANBAN: 'Alternar para Kanban',
+  BUTTON_SWITCH_TO_GRID: 'Abrir em Grade',
+  BUTTON_SWITCH_TO_KANBAN: 'Abrir em Kanban',
   
   // Console log prefixes
   LOG_PREFIX: '[SalesView]',

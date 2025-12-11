@@ -39,6 +39,13 @@ import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
 import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES } from '../constants/salesViewMessages'
+import {
+  hasPersistentFailures,
+  getPreferredFallback,
+  setPreferredFallback,
+  recordSalesViewFailure,
+  recordSalesViewSuccess
+} from '../utils/salesViewFailureTracker'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
@@ -61,12 +68,38 @@ export default function LeadsListPage() {
     }
   }, [])
 
-  const [viewMode, setViewMode] = useState<'grid' | 'kanban' | 'sales'>(() => {
+  const [viewMode, setViewModeInternal] = useState<'grid' | 'kanban' | 'sales'>(() => {
     const saved = savedPreferences?.viewMode
     // Force 'sales' if 'list' was saved previously
-    if (saved === 'list') return 'sales'
+    if (saved === 'list') {
+      // Check if Sales View has been failing persistently
+      if (hasPersistentFailures()) {
+        const fallback = getPreferredFallback()
+        console.log(`[SalesView] Persistent failures detected, falling back to: ${fallback}`)
+        return fallback
+      }
+      return 'sales'
+    }
+    
+    // If user explicitly chose sales view but it's failing persistently, use fallback
+    if (saved === 'sales' && hasPersistentFailures()) {
+      const fallback = getPreferredFallback()
+      console.log(`[SalesView] Persistent failures detected, falling back to: ${fallback}`)
+      return fallback
+    }
+    
     return (saved as 'grid' | 'kanban' | 'sales') || 'sales'
   })
+  
+  // Wrapper to track preferred fallback when user switches views during Sales View errors
+  const setViewMode = useCallback((mode: 'grid' | 'kanban' | 'sales') => {
+    // If switching away from sales while it's in error, save this as preferred fallback
+    if (viewMode === 'sales' && isSalesError && (mode === 'grid' || mode === 'kanban')) {
+      setPreferredFallback(mode)
+      console.log(`[SalesView] User switched to ${mode} during error, saving as preferred fallback`)
+    }
+    setViewModeInternal(mode)
+  }, [viewMode, isSalesError])
 
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
@@ -268,9 +301,16 @@ export default function LeadsListPage() {
     if (!isSalesError) {
       // Reset the flag when error is resolved
       if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
+      // Record success to reset failure counter
+      if (!isSalesLoading && !isSalesFetching) {
+        recordSalesViewSuccess()
+      }
       return
     }
     if (hasSalesShownErrorToast) return
+    
+    // Record this failure for tracking persistent issues
+    recordSalesViewFailure()
     
     console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadsListPage:`, salesError)
     toast.error(
@@ -288,7 +328,7 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [isSalesError, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast])
+  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast])
 
   // Idempotent URL sync effect for Sales view filters.
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
@@ -812,35 +852,49 @@ export default function LeadsListPage() {
         {isActiveLoading ? (
           <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
         ) : viewMode === 'sales' && isSalesError ? (
-          <div className="flex flex-col items-center justify-center gap-4 text-center border rounded-lg bg-card p-12">
-            <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-              <svg className="h-8 w-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex flex-col items-center justify-center gap-6 text-center border-2 border-dashed border-destructive/30 rounded-lg bg-destructive/5 p-12">
+            <div className="h-20 w-20 rounded-full bg-destructive/10 flex items-center justify-center ring-4 ring-destructive/10">
+              <svg className="h-10 w-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <div className="space-y-2 max-w-lg">
-              <h3 className="text-xl font-semibold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
-              <p className="text-sm text-muted-foreground">
-                {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION_SHORT}
+            <div className="space-y-3 max-w-2xl">
+              <h3 className="text-2xl font-bold text-foreground">{SALES_VIEW_MESSAGES.ERROR_TITLE}</h3>
+              <p className="text-base text-muted-foreground leading-relaxed">
+                {SALES_VIEW_MESSAGES.ERROR_DESCRIPTION_ALTERNATE}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button variant="outline" onClick={() => setViewMode('grid')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+              <Button 
+                variant="default" 
+                size="lg"
+                onClick={() => setViewMode('grid')} 
+                className="flex-1 text-base font-semibold"
+              >
+                <SquaresFour className="mr-2 h-5 w-5" />
                 {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_GRID}
               </Button>
-              <Button variant="outline" onClick={() => setViewMode('kanban')} className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}>
+              <Button 
+                variant="default" 
+                size="lg"
+                onClick={() => setViewMode('kanban')} 
+                className="flex-1 text-base font-semibold"
+              >
+                <Kanban className="mr-2 h-5 w-5" />
                 {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_KANBAN}
               </Button>
-              <Button 
-                onClick={() => {
-                  console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI in LeadsListPage`)
-                  refetchSalesView()
-                }} 
-                className={SALES_VIEW_STYLES.ACTION_BUTTON_MIN_WIDTH}
-              >
-                {SALES_VIEW_MESSAGES.BUTTON_RETRY}
-              </Button>
             </div>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI in LeadsListPage`)
+                refetchSalesView()
+              }} 
+              className="text-sm"
+            >
+              {SALES_VIEW_MESSAGES.BUTTON_RETRY}
+            </Button>
           </div>
         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
