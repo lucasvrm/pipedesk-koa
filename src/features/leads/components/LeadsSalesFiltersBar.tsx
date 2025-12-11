@@ -6,7 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Funnel, UserSwitch, Check, CaretDown, X } from '@phosphor-icons/react'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString } from '@/lib/utils'
 
@@ -65,6 +65,10 @@ export function LeadsSalesFiltersBar({
   leadOrigins,
   onClear
 }: LeadsSalesFiltersBarProps) {
+  // Defensive: Ensure orderBy is always a valid value to prevent controlled/uncontrolled warnings
+  const safeOrderBy: 'priority' | 'last_interaction' | 'created_at' = 
+    orderBy === 'last_interaction' || orderBy === 'created_at' ? orderBy : 'priority'
+
   const ownerLabel = useMemo(() => {
     if (ownerMode === 'me') return 'Meus leads'
     if (ownerMode === 'all') return 'Todos'
@@ -73,30 +77,30 @@ export function LeadsSalesFiltersBar({
       : 'Seleção manual'
   }, [ownerMode, selectedOwners])
 
-  const toggleItem = (list: string[], value: string, onChange: (values: string[]) => void) => {
+  const toggleItem = useCallback((list: string[], value: string, onChange: (values: string[]) => void) => {
     if (list.includes(value)) {
       onChange(list.filter(item => item !== value))
     } else {
       onChange([...list, value])
     }
-  }
+  }, [])
 
-  const handleUserSelect = (userId: string) => {
+  const handleUserSelect = useCallback((userId: string) => {
     onOwnerModeChange('custom')
     toggleItem(selectedOwners, userId, onSelectedOwnersChange)
-  }
+  }, [onOwnerModeChange, onSelectedOwnersChange, selectedOwners, toggleItem])
 
-  const handlePriorityToggle = (bucket: LeadPriorityBucket) => {
+  const handlePriorityToggle = useCallback((bucket: LeadPriorityBucket) => {
     toggleItem(priority, bucket, (values) => onPriorityChange(values as LeadPriorityBucket[]))
-  }
+  }, [onPriorityChange, priority, toggleItem])
 
-  const handleStatusToggle = (code: string) => {
+  const handleStatusToggle = useCallback((code: string) => {
     toggleItem(statuses, code, onStatusesChange)
-  }
+  }, [onStatusesChange, statuses, toggleItem])
 
-  const handleOriginToggle = (code: string) => {
+  const handleOriginToggle = useCallback((code: string) => {
     toggleItem(origins, code, onOriginsChange)
-  }
+  }, [onOriginsChange, origins, toggleItem])
 
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
@@ -107,7 +111,7 @@ export function LeadsSalesFiltersBar({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground">Ordenar por</span>
-          <Select value={orderBy} onValueChange={(value) => onOrderByChange(value as LeadsSalesFiltersBarProps['orderBy'])}>
+          <Select value={safeOrderBy} onValueChange={(value) => onOrderByChange(value as LeadsSalesFiltersBarProps['orderBy'])}>
             <SelectTrigger className="h-9 w-[180px]">
               <SelectValue />
             </SelectTrigger>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { ensureArray } from '@/lib/utils'
@@ -287,10 +287,15 @@ export default function LeadsListPage() {
     // This breaks the render loop caused by useSearchParams() returning a new object reference on every render
     const currentSearch = window.location.search.replace(/^\?/, '')
 
-    // Only update URL if the computed params differ from the last written value.
-    // This prevents infinite loops by ensuring idempotent updates.
-    if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) return
+    // Idempotent guard: Only proceed if state has changed
+    // Check both lastSearchRef (what we last wrote) and currentSearch (what browser has)
+    // This double-check prevents loops from both internal and external URL changes
+    if (lastSearchRef.current === nextSearch) {
+      // State hasn't changed from our perspective, but verify URL is in sync
+      if (currentSearch === nextSearch) return
+    }
 
+    // Update ref and URL atomically to maintain consistency
     lastSearchRef.current = nextSearch
     if (currentSearch !== nextSearch) {
       setSearchParams(params, { replace: true })
@@ -304,9 +309,9 @@ export default function LeadsListPage() {
     salesOriginFilter,
     salesDaysWithoutInteraction,
     salesOrderBy,
-    isSalesError,
-    // searchParams, // Removed to prevent infinite loop
-    setSearchParams
+    isSalesError
+    // searchParams deliberately omitted to prevent infinite loop
+    // setSearchParams is stable and does not need to be a dependency
   ])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
@@ -557,7 +562,7 @@ export default function LeadsListPage() {
     </Button>
   )
 
-  const resetSalesFilters = () => {
+  const resetSalesFilters = useCallback(() => {
     setSalesOwnerMode('me')
     setSalesOwnerIds([])
     setSalesPriority([])
@@ -565,7 +570,21 @@ export default function LeadsListPage() {
     setSalesOriginFilter([])
     setSalesDaysWithoutInteraction(null)
     setSalesOrderBy('priority')
-  }
+  }, [])
+
+  const handleOwnerModeChange = useCallback((mode: 'me' | 'all' | 'custom') => {
+    setSalesOwnerMode(mode)
+    if (mode !== 'custom') {
+      setSalesOwnerIds([])
+    }
+  }, [])
+
+  const handlePriorityChange = useCallback((values: LeadPriorityBucket[]) => {
+    setSalesPriority(values)
+  }, [])
+
+  const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
+  const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
 
   const salesFiltersBar = (
     <div className="space-y-3">
@@ -575,16 +594,11 @@ export default function LeadsListPage() {
       </div>
       <LeadsSalesFiltersBar
         ownerMode={salesOwnerMode}
-        onOwnerModeChange={(mode) => {
-          setSalesOwnerMode(mode)
-          if (mode !== 'custom') {
-            setSalesOwnerIds([])
-          }
-        }}
+        onOwnerModeChange={handleOwnerModeChange}
         selectedOwners={salesOwnerIds}
         onSelectedOwnersChange={setSalesOwnerIds}
         priority={salesPriority}
-        onPriorityChange={(values) => setSalesPriority(values)}
+        onPriorityChange={handlePriorityChange}
         statuses={salesStatusFilter}
         onStatusesChange={setSalesStatusFilter}
         origins={salesOriginFilter}
@@ -594,8 +608,8 @@ export default function LeadsListPage() {
         orderBy={salesOrderBy}
         onOrderByChange={setSalesOrderBy}
         users={users}
-        leadStatuses={leadStatuses.filter(s => s.isActive)}
-        leadOrigins={leadOrigins.filter(o => o.isActive)}
+        leadStatuses={activeLeadStatuses}
+        leadOrigins={activeLeadOrigins}
         onClear={resetSalesFilters}
       />
     </div>
