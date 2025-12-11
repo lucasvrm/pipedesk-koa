@@ -8,6 +8,18 @@ export interface LeadSalesViewItem {
   id?: string
   leadId?: string
   lead_id?: string
+  lead?: {
+    id: string
+    legal_name?: string
+    trade_name?: string | null
+    status?: string | null
+    origin?: string | null
+    created_at?: string | null
+    owner?: {
+      name?: string
+      avatar_url?: string | null
+    } | null
+  }
   priorityScore?: number | null
   priority_score?: number | null
   priorityDescription?: string | null
@@ -28,6 +40,10 @@ export interface LeadSalesViewItem {
     role?: string | null
     avatar?: string | null
   }
+  status?: string | null
+  origin?: string | null
+  createdAt?: string | null
+  created_at?: string | null
   lastInteractionAt?: string | null
   last_interaction_at?: string | null
   lastInteractionType?: 'email' | 'event' | null
@@ -46,6 +62,7 @@ export interface LeadSalesViewItem {
     name: string
     avatar?: string | null
   }
+  owner_id?: string | null
   tags?: Array<{
     id?: string
     name: string
