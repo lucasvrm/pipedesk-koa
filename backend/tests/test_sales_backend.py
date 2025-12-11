@@ -130,6 +130,31 @@ class SalesViewEndpointTests(unittest.TestCase):
 
         self.assertEqual(ordered_ids, ["l1", "l3"])
 
+    def test_sales_view_filters_with_multiple_values(self):
+        base_time = datetime.utcnow()
+        leads = [
+            {"id": "l1", "owner": "alice", "status": "open", "priority": "high", "origin": "web"},
+            {"id": "l2", "owner": "bob", "status": "open", "priority": "medium", "origin": "event"},
+            {"id": "l3", "owner": "carol", "status": "lost", "priority": "high", "origin": "web"},
+            {"id": "l4", "owner": "dan", "status": "won", "priority": "low", "origin": "referral"},
+        ]
+
+        def stats_provider(_lead_id: str):
+            return {"last_interaction_at": base_time.isoformat(), "engagement_score": 10}
+
+        filters = {
+            "status": ["open", "lost"],
+            "origin": ["web"],
+            "priority": ["high", "medium"],
+            "ownerIds": ["alice", "carol"],
+            "unknown_filter": ["should", "be", "ignored"],
+        }
+
+        response = get_sales_view(leads, stats_provider, filters=filters, order_by="id")
+        filtered_ids = [lead["id"] for lead in response["data"]]
+
+        self.assertEqual(filtered_ids, ["l1", "l3"])
+
     def test_sales_view_paginates_and_reports_metadata(self):
         base_time = datetime.utcnow()
         leads = [
