@@ -166,12 +166,13 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
             errorDetails
           )
         } catch (e) {
-          // Fallback if parsing fails despite header
-          // If e is already an ApiError, re-throw it
-          if (e instanceof ApiError) {
+          // Fallback if parsing fails despite header (e.g., malformed JSON)
+          if (e instanceof Error && !(e instanceof ApiError)) {
+            console.error('[SalesView] Failed to parse error response:', e)
+          } else {
+            // Re-throw ApiError
             throw e
           }
-          console.error('[SalesView] Failed to parse error response:', e)
         }
       }
 
