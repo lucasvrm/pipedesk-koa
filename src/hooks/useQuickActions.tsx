@@ -36,6 +36,7 @@ import {
   LeadStatus,
 } from '@/lib/types'
 import { toast } from 'sonner'
+import { safeString } from '@/lib/utils'
 
 interface GetDealQuickActionsProps {
   deal: MasterDeal
@@ -820,7 +821,7 @@ export function getLeadQuickActions({
 
   const statusActions: QuickAction[] = statusOptions?.map(status => ({
     id: `status-${status.id}`,
-    label: status.label,
+    label: safeString(status.label, status.code),
     icon: status.code === 'new' ? <PlayCircle className="h-4 w-4" /> :
           status.code === 'contacted' ? <PauseCircle className="h-4 w-4" /> :
           status.code === 'qualified' ? <CheckCircle className="h-4 w-4" /> :
