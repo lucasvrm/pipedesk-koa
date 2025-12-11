@@ -102,8 +102,10 @@ def suggest_next_action(lead: Dict[str, Any], stats: Dict[str, Any]) -> ActionRe
     }
 
 
-def with_endpoint_metrics(fn: Callable[..., List[Dict[str, Any]]]) -> Callable[..., List[Dict[str, Any]]]:
-    def wrapper(*args: Any, **kwargs: Any) -> List[Dict[str, Any]]:
+def with_endpoint_metrics(
+    fn: Callable[..., Dict[str, Any]]
+) -> Callable[..., Dict[str, Any]]:
+    def wrapper(*args: Any, **kwargs: Any) -> Dict[str, Any]:
         start = time.time()
         endpoint_metrics["call_count"] += 1
         try:
@@ -169,11 +171,17 @@ def get_sales_view(
     stats_provider: Callable[[str], Dict[str, Any]],
     filters: Optional[Dict[str, Any]] = None,
     order_by: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """Returns leads decorated with the next action suggestion."""
+    page: int = 1,
+    page_size: Optional[int] = None,
+    pageSize: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Returns leads decorated with the next action suggestion and pagination."""
 
     raw_leads = _apply_filters(leads, filters)
     ordered_leads = _apply_ordering(raw_leads, order_by)
+
+    per_page = page_size or pageSize or 10
+    current_page = max(1, page)
 
     response = []
     for lead in ordered_leads:
@@ -185,4 +193,13 @@ def get_sales_view(
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.exception("Erro ao processar lead %s", lead.get("id"))
             raise exc
-    return response
+
+    total = len(response)
+    start = (current_page - 1) * per_page
+    end = start + per_page
+    paginated_items = response[start:end]
+
+    return {
+        "data": paginated_items,
+        "pagination": {"total": total, "page": current_page, "perPage": per_page},
+    }
