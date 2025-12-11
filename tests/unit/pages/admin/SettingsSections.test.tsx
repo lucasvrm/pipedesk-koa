@@ -1,5 +1,7 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { LeadSettingsSection } from '@/pages/admin/components/settings-sections/LeadSettingsSection';
 import { DealPipelineSettingsSection } from '@/pages/admin/components/settings-sections/DealPipelineSettingsSection';
@@ -16,6 +18,10 @@ vi.mock('@/services/settingsService', () => ({
   },
   getSystemSetting: vi.fn(),
   updateSystemSetting: vi.fn()
+}));
+
+vi.mock('@/services/roleService', () => ({
+  usePermissions: () => ({ data: [], isLoading: false }),
 }));
 
 // Mock toast
@@ -60,44 +66,49 @@ vi.mock('@/hooks/useSystemMetadata', () => ({
 }));
 
 describe('Settings Sections', () => {
+  const renderWithClient = (ui: React.ReactElement) => {
+    const client = new QueryClient()
+    return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('LeadSettingsSection', () => {
     it('renders without crashing', () => {
-      render(<LeadSettingsSection />);
+      renderWithClient(<LeadSettingsSection />);
       expect(screen.getByText('Status de Leads')).toBeTruthy();
     });
 
     it('displays lead statuses in table', () => {
-      render(<LeadSettingsSection />);
+      renderWithClient(<LeadSettingsSection />);
       const novoElements = screen.getAllByText('Novo');
       expect(novoElements.length).toBeGreaterThan(0);
       expect(screen.getByText('new')).toBeTruthy();
     });
 
     it('displays lead origins in table', () => {
-      render(<LeadSettingsSection />);
+      renderWithClient(<LeadSettingsSection />);
       expect(screen.getByText('Website')).toBeTruthy();
       expect(screen.getByText('website')).toBeTruthy();
     });
 
     it('displays lead member roles in table', () => {
-      render(<LeadSettingsSection />);
+      renderWithClient(<LeadSettingsSection />);
       expect(screen.getByText('Proprietário')).toBeTruthy();
       expect(screen.getByText('owner')).toBeTruthy();
     });
 
     it('shows "Novo" buttons for each section', () => {
-      render(<LeadSettingsSection />);
+      renderWithClient(<LeadSettingsSection />);
       const novoButtons = screen.getAllByText('Novo');
       // Should have at least 3 "Novo" buttons (one for each section)
       expect(novoButtons.length).toBeGreaterThanOrEqual(3);
     });
 
     it('has edit and delete buttons for each row', () => {
-      render(<LeadSettingsSection />);
+      renderWithClient(<LeadSettingsSection />);
       
       // Find all buttons
       const allButtons = screen.getAllByRole('button');
@@ -109,29 +120,29 @@ describe('Settings Sections', () => {
 
   describe('DealPipelineSettingsSection', () => {
     it('renders without crashing', () => {
-      render(<DealPipelineSettingsSection />);
+      renderWithClient(<DealPipelineSettingsSection />);
       expect(screen.getByText('Status de Deals')).toBeTruthy();
     });
 
     it('displays deal statuses in table', () => {
-      render(<DealPipelineSettingsSection />);
+      renderWithClient(<DealPipelineSettingsSection />);
       expect(screen.getByText('Aberto')).toBeTruthy();
       expect(screen.getByText('open')).toBeTruthy();
     });
 
     it('displays pipeline stages', () => {
-      render(<DealPipelineSettingsSection />);
+      renderWithClient(<DealPipelineSettingsSection />);
       expect(screen.getByText('Prospecção')).toBeTruthy();
     });
 
     it('has "Novo" button for deal statuses', () => {
-      render(<DealPipelineSettingsSection />);
+      renderWithClient(<DealPipelineSettingsSection />);
       const novoButtons = screen.getAllByText('Novo');
       expect(novoButtons.length).toBeGreaterThanOrEqual(1);
     });
 
     it('has edit and delete buttons for deal statuses', () => {
-      render(<DealPipelineSettingsSection />);
+      renderWithClient(<DealPipelineSettingsSection />);
       const allButtons = screen.getAllByRole('button');
       // Should have at least: 1 "Novo" button + edit/delete buttons for each status
       expect(allButtons.length).toBeGreaterThan(2);
@@ -140,31 +151,31 @@ describe('Settings Sections', () => {
 
   describe('CompanyRelationshipSettingsSection', () => {
     it('renders without crashing', () => {
-      render(<CompanyRelationshipSettingsSection />);
+      renderWithClient(<CompanyRelationshipSettingsSection />);
       expect(screen.getByText('Tipos de Empresa')).toBeTruthy();
     });
 
     it('displays company types in table', () => {
-      render(<CompanyRelationshipSettingsSection />);
+      renderWithClient(<CompanyRelationshipSettingsSection />);
       expect(screen.getByText('Investidor')).toBeTruthy();
       expect(screen.getByText('investor')).toBeTruthy();
     });
 
     it('displays relationship levels in table', () => {
-      render(<CompanyRelationshipSettingsSection />);
+      renderWithClient(<CompanyRelationshipSettingsSection />);
       expect(screen.getByText('Parceiro')).toBeTruthy();
       expect(screen.getByText('partner')).toBeTruthy();
     });
 
     it('has "Novo" buttons for both sections', () => {
-      render(<CompanyRelationshipSettingsSection />);
+      renderWithClient(<CompanyRelationshipSettingsSection />);
       const novoButtons = screen.getAllByText('Novo');
       // Should have 2 "Novo" buttons (one for each section)
       expect(novoButtons.length).toBeGreaterThanOrEqual(2);
     });
 
     it('has edit and delete buttons for each row', () => {
-      render(<CompanyRelationshipSettingsSection />);
+      renderWithClient(<CompanyRelationshipSettingsSection />);
       const allButtons = screen.getAllByRole('button');
       // Should have: 2 "Novo" buttons + edit/delete for each type and level
       expect(allButtons.length).toBeGreaterThan(4);
@@ -173,12 +184,12 @@ describe('Settings Sections', () => {
 
   describe('SystemMetadataSettingsSection', () => {
     it('renders without crashing', () => {
-      render(<SystemMetadataSettingsSection />);
+      renderWithClient(<SystemMetadataSettingsSection />);
       expect(screen.getByText('Papéis de Usuário')).toBeTruthy();
     });
 
     it('displays user roles', () => {
-      render(<SystemMetadataSettingsSection />);
+      renderWithClient(<SystemMetadataSettingsSection />);
       expect(screen.getByText('Administrador')).toBeTruthy();
     });
   });
@@ -190,14 +201,14 @@ describe('Settings Sections', () => {
     });
 
     it('renders without crashing', async () => {
-      render(<SystemSettingsSection />);
+      renderWithClient(<SystemSettingsSection />);
       await waitFor(() => {
         expect(screen.getByText('Defaults de Negócio')).toBeTruthy();
       });
     });
 
     it('displays business defaults section', async () => {
-      render(<SystemSettingsSection />);
+      renderWithClient(<SystemSettingsSection />);
       await waitFor(() => {
         expect(screen.getByText('Defaults de Negócio')).toBeTruthy();
         expect(screen.getByText('Status Padrão de Deal')).toBeTruthy();
@@ -207,7 +218,7 @@ describe('Settings Sections', () => {
     });
 
     it('displays synthetic users configuration section', async () => {
-      render(<SystemSettingsSection />);
+      renderWithClient(<SystemSettingsSection />);
       await waitFor(() => {
         expect(screen.getByText('Configurações de Usuários Sintéticos')).toBeTruthy();
         expect(screen.getByText('Senha Padrão')).toBeTruthy();
@@ -217,14 +228,14 @@ describe('Settings Sections', () => {
     });
 
     it('has save button', async () => {
-      render(<SystemSettingsSection />);
+      renderWithClient(<SystemSettingsSection />);
       await waitFor(() => {
         expect(screen.getByText('Salvar Configurações')).toBeTruthy();
       });
     });
 
     it('displays Role Metadata Manager section', async () => {
-      render(<SystemSettingsSection />);
+      renderWithClient(<SystemSettingsSection />);
       await waitFor(() => {
         expect(screen.getByText('Metadados de Roles')).toBeTruthy();
         expect(screen.getByText('Configure labels, badges e permissões para cada role de usuário')).toBeTruthy();
@@ -235,7 +246,7 @@ describe('Settings Sections', () => {
       const { updateSystemSetting } = await import('@/services/settingsService');
       const mockUpdate = vi.mocked(updateSystemSetting).mockResolvedValue({ data: {}, error: null });
 
-      render(<SystemSettingsSection />);
+      renderWithClient(<SystemSettingsSection />);
       
       await waitFor(() => {
         expect(screen.getByText('Salvar Configurações')).toBeTruthy();
