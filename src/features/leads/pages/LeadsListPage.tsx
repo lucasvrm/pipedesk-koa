@@ -99,6 +99,13 @@ export default function LeadsListPage() {
     return (saved as 'grid' | 'kanban' | 'sales') || 'sales'
   })
   
+  const normalizeSalesOrderBy = (
+    value: string | null
+  ): 'priority' | 'last_interaction' | 'created_at' => {
+    if (value === 'last_interaction' || value === 'created_at') return value
+    return 'priority'
+  }
+
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
@@ -120,7 +127,7 @@ export default function LeadsListPage() {
     return value ? Number(value) : null
   })
   const [salesOrderBy, setSalesOrderBy] = useState<'priority' | 'last_interaction' | 'created_at'>(() =>
-    (searchParams.get('order_by') as 'priority' | 'last_interaction' | 'created_at') || 'priority'
+    normalizeSalesOrderBy(searchParams.get('order_by'))
   )
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
@@ -691,6 +698,16 @@ export default function LeadsListPage() {
     setSalesPriority(values)
   }, [])
 
+  const handleOrderByChange = useCallback(
+    (value: 'priority' | 'last_interaction' | 'created_at') => {
+      setSalesOrderBy(prev => {
+        const normalized = normalizeSalesOrderBy(value)
+        return prev === normalized ? prev : normalized
+      })
+    },
+    []
+  )
+
   const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
   const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
 
@@ -714,7 +731,7 @@ export default function LeadsListPage() {
         daysWithoutInteraction={salesDaysWithoutInteraction}
         onDaysWithoutInteractionChange={setSalesDaysWithoutInteraction}
         orderBy={salesOrderBy}
-        onOrderByChange={setSalesOrderBy}
+        onOrderByChange={handleOrderByChange}
         users={users}
         leadStatuses={activeLeadStatuses}
         leadOrigins={activeLeadOrigins}

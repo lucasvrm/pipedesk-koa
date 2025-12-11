@@ -66,8 +66,19 @@ export function LeadsSalesFiltersBar({
   onClear
 }: LeadsSalesFiltersBarProps) {
   // Defensive: Ensure orderBy is always a valid value to prevent controlled/uncontrolled warnings
-  const safeOrderBy: 'priority' | 'last_interaction' | 'created_at' = 
-    orderBy === 'last_interaction' || orderBy === 'created_at' ? orderBy : 'priority'
+  const safeOrderBy: 'priority' | 'last_interaction' | 'created_at' =
+    orderBy === 'priority' || orderBy === 'last_interaction' || orderBy === 'created_at'
+      ? orderBy
+      : 'priority'
+
+  const handleOrderByChange = useCallback(
+    (value: string) => {
+      if (value === 'priority' || value === 'last_interaction' || value === 'created_at') {
+        onOrderByChange(value)
+      }
+    },
+    [onOrderByChange]
+  )
 
   const ownerLabel = useMemo(() => {
     if (ownerMode === 'me') return 'Meus leads'
@@ -116,7 +127,7 @@ export function LeadsSalesFiltersBar({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground">Ordenar por</span>
-          <Select value={safeOrderBy} onValueChange={(value) => onOrderByChange(value as LeadsSalesFiltersBarProps['orderBy'])}>
+          <Select value={safeOrderBy} onValueChange={handleOrderByChange}>
             <SelectTrigger className="h-9 w-[180px]">
               <SelectValue />
             </SelectTrigger>
