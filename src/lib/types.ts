@@ -716,9 +716,16 @@ export interface Lead {
 
   operationType?: OperationType;
 
-  status: LeadStatus;
-  origin: LeadOrigin;
+  leadStatusId: string;
+  leadOriginId: string;
   ownerUserId?: string;
+  // Populated for UI convenience
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
 
   qualifiedAt?: string;
   qualifiedCompanyId?: string;

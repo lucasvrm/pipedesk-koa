@@ -84,9 +84,7 @@ export default function LeadDetailPage() {
   const { profile, user } = useAuth()
 
   // 🔹 Chamada ÚNICA ao hook de metadata
-  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
-  // se algum dia precisar de leadStatuses:
-  // const { leadStatuses, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const { leadStatuses, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const updateLead = useUpdateLead()
@@ -153,15 +151,15 @@ export default function LeadDetailPage() {
 
   const statusBadge = useMemo(() => {
     if (!lead) return null
-    const statusMeta = getLeadStatusByCode(lead.status)
+    const statusMeta = getLeadStatusById(lead.leadStatusId)
     return (
       <StatusBadge
-        semanticStatus={leadStatusMap(lead.status)}
-        label={safeString(statusMeta?.label, lead.status)}
+        semanticStatus={leadStatusMap(statusMeta?.code as any)}
+        label={safeString(statusMeta?.label, lead.leadStatusId)}
         className="text-sm"
       />
     )
-  }, [lead, getLeadStatusByCode])
+  }, [lead, getLeadStatusById])
 
   const operationTypeName = useMemo(() => {
     if (!lead?.operationType) return ''
@@ -266,13 +264,13 @@ export default function LeadDetailPage() {
   )
   if (!lead) return <div className="p-8">Lead não encontrado.</div>
 
-  const handleStatusChange = async (value: LeadStatus) => {
+  const handleStatusChange = async (value: string) => { // value is ID now
     if (!lead) return
-    const statusMeta = getLeadStatusByCode(value)
+    const statusMeta = getLeadStatusById(value)
     try {
-      await updateLead.mutateAsync({ id: lead.id, data: { status: value } })
+      await updateLead.mutateAsync({ id: lead.id, data: { leadStatusId: value } })
       if (profile) {
-        const statusMeta = getLeadStatusByCode(value)
+        // const statusMeta = getLeadStatusById(value) // Already fetched above
         logActivity(lead.id, 'lead', `Status alterado para ${safeString(statusMeta?.label, value)}`, profile.id)
       }
       toast.success('Status atualizado')
@@ -294,8 +292,13 @@ export default function LeadDetailPage() {
   const handleDisqualify = async () => {
     if (!lead) return
     if (confirm('Tem certeza que deseja desqualificar este lead?')) {
-      await updateLead.mutateAsync({ id: lead.id, data: { status: 'disqualified' } })
-      if (profile) logActivity(lead.id, 'lead', 'Lead desqualificado', profile.id)
+      const disqualifiedStatus = leadStatuses.find(s => s.code === 'disqualified')
+      if (disqualifiedStatus) {
+        await updateLead.mutateAsync({ id: lead.id, data: { leadStatusId: disqualifiedStatus.id } })
+        if (profile) logActivity(lead.id, 'lead', 'Lead desqualificado', profile.id)
+      } else {
+        toast.error('Status "desqualificado" não encontrado no sistema.')
+      }
     }
   }
 
@@ -408,15 +411,17 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
 
-  const PIPELINE_STAGES = [
-    { id: 'new', label: 'Novo', color: 'bg-slate-500' },
-    { id: 'contacted', label: 'Contatado', color: 'bg-blue-500' },
-    { id: 'qualified', label: 'Qualificado', color: 'bg-green-500' },
-    { id: 'disqualified', label: 'Desqualificado', color: 'bg-red-500' }
-  ]
+  const PIPELINE_STAGES = leadStatuses
+    .filter(s => s.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(s => ({
+      id: s.id,
+      label: s.label,
+      color: 'bg-primary' // TODO: Use s.color if available or map code to color
+    }))
 
   const SIDEBAR_METRICS = [
-    { label: 'Origem', value: getLeadOriginByCode(lead.origin)?.label || lead.origin, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Origem', value: getLeadOriginById(lead.leadOriginId)?.label || lead.leadOriginId, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
@@ -443,8 +448,8 @@ export default function LeadDetailPage() {
         header={
           <PipelineVisualizer
             stages={PIPELINE_STAGES}
-            currentStageId={lead.status}
-            onStageClick={(id) => handleStatusChange(id as LeadStatus)}
+            currentStageId={lead.leadStatusId}
+            onStageClick={(id) => handleStatusChange(id)}
           />
         }
         sidebar={
@@ -474,6 +479,7 @@ export default function LeadDetailPage() {
                     onEdit: () => setEditOpen(true),
                     onQualify: () => setQualifyOpen(true),
                     onManageTags: () => setTagManagerOpen(true),
+                    statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: s.label, code: s.code }))
                   })}
                 />
               }

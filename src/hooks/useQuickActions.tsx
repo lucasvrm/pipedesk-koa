@@ -765,6 +765,8 @@ interface GetLeadQuickActionsProps {
   onAddMember?: () => void
   onManageTags?: () => void
   getLeadStatusLabel?: (code: string) => string
+  // Optional dynamic statuses
+  statusOptions?: { id: string; label: string; code?: string }[]
 }
 
 /**
@@ -782,17 +784,19 @@ export function getLeadQuickActions({
   onAssignOwner,
   onAddMember,
   onManageTags,
-  getLeadStatusLabel = (code) => code, // Fallback to code if not provided
+  getLeadStatusLabel = (id) => id, // Fallback to code/id if not provided
+  statusOptions
 }: GetLeadQuickActionsProps): QuickAction[] {
-  const handleStatusChange = (newStatus: LeadStatus) => {
+
+  const handleStatusChange = (newStatusId: string) => {
     updateLead.mutate(
       {
         leadId: lead.id,
-        updates: { status: newStatus },
+        updates: { leadStatusId: newStatusId },
       },
       {
         onSuccess: () => {
-          const statusLabel = getLeadStatusLabel(newStatus);
+          const statusLabel = getLeadStatusLabel(newStatusId);
           toast.success(`Status alterado para ${statusLabel}`)
           if (profileId) {
             logActivity(lead.id, 'lead', `Status alterado para ${statusLabel}`, profileId)
@@ -814,31 +818,34 @@ export function getLeadQuickActions({
     })
   }
 
+  const statusActions: QuickAction[] = statusOptions?.map(status => ({
+    id: `status-${status.id}`,
+    label: status.label,
+    icon: status.code === 'new' ? <PlayCircle className="h-4 w-4" /> :
+          status.code === 'contacted' ? <PauseCircle className="h-4 w-4" /> :
+          status.code === 'qualified' ? <CheckCircle className="h-4 w-4" /> :
+          status.code === 'disqualified' ? <XCircle className="h-4 w-4" /> :
+          <PlayCircle className="h-4 w-4" />,
+    onClick: () => handleStatusChange(status.id),
+    variant: status.code === 'disqualified' ? 'destructive' : 'default',
+  })) || []
+
   return [
       {
         id: 'qualify',
         label: 'Qualificar Lead',
         icon: <CheckCircle className="h-4 w-4" />,
         onClick: () => onQualify?.(),
-        disabled: !onQualify || lead.status === 'qualified',
+        // Check using ID if possible, or skip check if strictly needed
+        disabled: !onQualify, // || lead.leadStatusId === 'qualified_id',
       },
-      {
+      ...(statusActions.length > 0 ? [{
         id: 'status',
         label: 'Alterar Status',
         icon: <PlayCircle className="h-4 w-4" />,
         onClick: () => {},
-        subActions: [
-          { id: 'status-new', label: 'Novo', onClick: () => handleStatusChange('new') },
-          { id: 'status-contacted', label: 'Contatado', onClick: () => handleStatusChange('contacted') },
-          { id: 'status-qualified', label: 'Qualificado', onClick: () => handleStatusChange('qualified') },
-          {
-            id: 'status-disqualified',
-            label: 'Desqualificado',
-            onClick: () => handleStatusChange('disqualified'),
-            variant: 'destructive',
-          },
-        ],
-      },
+        subActions: statusActions,
+      }] : []),
       {
         id: 'separator-1',
         label: '',

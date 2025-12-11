@@ -11,6 +11,7 @@ import { LeadPriorityBucket } from '@/lib/types'
 import { safeString } from '@/lib/utils'
 
 interface OptionItem {
+  id?: string
   code: string
   label: string
 }
@@ -23,9 +24,9 @@ interface LeadsSalesFiltersBarProps {
   priority: LeadPriorityBucket[]
   onPriorityChange: (values: LeadPriorityBucket[]) => void
   statuses: string[]
-  onStatusesChange: (codes: string[]) => void
+  onStatusesChange: (ids: string[]) => void
   origins: string[]
-  onOriginsChange: (codes: string[]) => void
+  onOriginsChange: (ids: string[]) => void
   daysWithoutInteraction: number | null
   onDaysWithoutInteractionChange: (value: number | null) => void
   orderBy: 'priority' | 'last_interaction' | 'created_at'
@@ -220,9 +221,9 @@ export function LeadsSalesFiltersBar({
             <DropdownMenuContent className="w-56">
               {leadStatuses.map(status => (
                 <DropdownMenuCheckboxItem
-                  key={status.code}
-                  checked={statuses.includes(status.code)}
-                  onCheckedChange={() => handleStatusToggle(status.code)}
+                  key={status.id}
+                  checked={status.id ? statuses.includes(status.id) : false}
+                  onCheckedChange={() => status.id && handleStatusToggle(status.id)}
                 >
                   {safeString(status.label, status.code)}
                 </DropdownMenuCheckboxItem>
@@ -230,11 +231,11 @@ export function LeadsSalesFiltersBar({
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="flex flex-wrap gap-1">
-            {statuses.map(code => {
-              const status = leadStatuses.find(s => s.code === code)
+            {statuses.map(id => {
+              const status = leadStatuses.find(s => s.id === id)
               return (
-                <Badge key={code} variant="secondary" className="text-xs">
-                  {safeString(status?.label, code)}
+                <Badge key={id} variant="secondary" className="text-xs">
+                  {safeString(status?.label, id)}
                 </Badge>
               )
             })}
@@ -253,9 +254,9 @@ export function LeadsSalesFiltersBar({
             <DropdownMenuContent className="w-56">
               {leadOrigins.map(origin => (
                 <DropdownMenuCheckboxItem
-                  key={origin.code}
-                  checked={origins.includes(origin.code)}
-                  onCheckedChange={() => handleOriginToggle(origin.code)}
+                  key={origin.id}
+                  checked={origin.id ? origins.includes(origin.id) : false}
+                  onCheckedChange={() => origin.id && handleOriginToggle(origin.id)}
                 >
                   {safeString(origin.label, origin.code)}
                 </DropdownMenuCheckboxItem>
@@ -263,11 +264,11 @@ export function LeadsSalesFiltersBar({
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="flex flex-wrap gap-1">
-            {origins.map(code => {
-              const origin = leadOrigins.find(o => o.code === code)
+            {origins.map(id => {
+              const origin = leadOrigins.find(o => o.id === id)
               return (
-                <Badge key={code} variant="secondary" className="text-xs">
-                  {safeString(origin?.label, code)}
+                <Badge key={id} variant="secondary" className="text-xs">
+                  {safeString(origin?.label, id)}
                 </Badge>
               )
             })}
