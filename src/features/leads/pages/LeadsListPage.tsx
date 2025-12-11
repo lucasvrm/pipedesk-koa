@@ -861,7 +861,7 @@ export default function LeadsListPage() {
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
                             getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
-                            statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: s.label, code: s.code }))
+                            statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
                           })}
                         />
                       </div>

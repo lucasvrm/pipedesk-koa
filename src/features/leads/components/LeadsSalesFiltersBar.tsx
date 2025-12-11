@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Funnel, UserSwitch, Check, CaretDown, X } from '@phosphor-icons/react'
 import { useMemo, useCallback } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
-import { safeString } from '@/lib/utils'
+import { safeString, ensureArray } from '@/lib/utils'
 
 interface OptionItem {
   id?: string
@@ -76,6 +76,11 @@ export function LeadsSalesFiltersBar({
       ? `${selectedOwners.length} selecionado${selectedOwners.length > 1 ? 's' : ''}`
       : 'Seleção manual'
   }, [ownerMode, selectedOwners])
+
+  // Defensive: ensure arrays are valid to prevent React Error #185
+  const safeUsers = ensureArray<User>(users)
+  const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
+  const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
 
   const toggleItem = useCallback((list: string[], value: string, onChange: (values: string[]) => void) => {
     if (list.includes(value)) {
@@ -160,7 +165,7 @@ export function LeadsSalesFiltersBar({
                   <CommandList>
                     <CommandEmpty>Nenhum usuário encontrado</CommandEmpty>
                     <CommandGroup>
-                      {users.map(user => {
+                      {safeUsers.map(user => {
                         const isSelected = selectedOwners.includes(user.id)
                         return (
                           <CommandItem key={user.id} onSelect={() => handleUserSelect(user.id)}>
@@ -179,10 +184,10 @@ export function LeadsSalesFiltersBar({
             {selectedOwners.length > 0 && (
               <div className="flex items-center gap-1 flex-wrap">
                 {selectedOwners.slice(0, 3).map(ownerId => {
-                  const user = users.find(u => u.id === ownerId)
+                  const user = safeUsers.find(u => u.id === ownerId)
                   return (
                     <Badge key={ownerId} variant="outline" className="text-xs">
-                      {user?.name || 'Usuário'}
+                      {safeString(user?.name, 'Usuário')}
                     </Badge>
                   )
                 })}
@@ -223,7 +228,7 @@ export function LeadsSalesFiltersBar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-              {leadStatuses.map(status => (
+              {safeLeadStatuses.map(status => (
                 <DropdownMenuCheckboxItem
                   key={status.id}
                   checked={status.id ? statuses.includes(status.id) : false}
@@ -236,7 +241,7 @@ export function LeadsSalesFiltersBar({
           </DropdownMenu>
           <div className="flex flex-wrap gap-1">
             {statuses.map(id => {
-              const status = leadStatuses.find(s => s.id === id)
+              const status = safeLeadStatuses.find(s => s.id === id)
               return (
                 <Badge key={id} variant="secondary" className="text-xs">
                   {safeString(status?.label, id)}
@@ -256,7 +261,7 @@ export function LeadsSalesFiltersBar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-              {leadOrigins.map(origin => (
+              {safeLeadOrigins.map(origin => (
                 <DropdownMenuCheckboxItem
                   key={origin.id}
                   checked={origin.id ? origins.includes(origin.id) : false}
@@ -269,7 +274,7 @@ export function LeadsSalesFiltersBar({
           </DropdownMenu>
           <div className="flex flex-wrap gap-1">
             {origins.map(id => {
-              const origin = leadOrigins.find(o => o.id === id)
+              const origin = safeLeadOrigins.find(o => o.id === id)
               return (
                 <Badge key={id} variant="secondary" className="text-xs">
                   {safeString(origin?.label, id)}
