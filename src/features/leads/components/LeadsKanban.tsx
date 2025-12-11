@@ -20,34 +20,46 @@ interface LeadsKanbanProps {
   isLoading?: boolean
 }
 
-const columns: { status: LeadStatus; color: string }[] = [
-  { status: 'new', color: 'border-t-blue-500' },
-  { status: 'contacted', color: 'border-t-amber-500' },
-  { status: 'qualified', color: 'border-t-emerald-500' },
-  { status: 'disqualified', color: 'border-t-rose-500' }
-]
+// TODO: Replace hardcoded colors with metadata colors
+const statusColors: Record<string, string> = {
+  new: 'border-t-blue-500',
+  contacted: 'border-t-amber-500',
+  qualified: 'border-t-emerald-500',
+  disqualified: 'border-t-rose-500'
+}
 
 export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const { leadStatuses, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     })
   )
 
+  // Use metadata for columns instead of hardcoded list
+  const columns = useMemo(() => {
+    return leadStatuses.sort((a, b) => a.sortOrder - b.sortOrder).map(s => ({
+      id: s.id,
+      status: s.id, // Using ID as status key
+      label: s.label,
+      code: s.code,
+      color: statusColors[s.code] || 'border-t-gray-500' // Fallback color
+    }))
+  }, [leadStatuses])
+
   type UpdateContext = { previous: { key: QueryKey; data: Lead[] | undefined }[] }
 
-  const updateStatus = useMutation<Lead, unknown, { leadId: string; status: LeadStatus }, UpdateContext>({
-    mutationFn: ({ leadId, status }: { leadId: string; status: LeadStatus }) => updateLead(leadId, { status }),
-    onMutate: async ({ leadId, status }) => {
+  const updateStatus = useMutation<Lead, unknown, { leadId: string; statusId: string }, UpdateContext>({
+    mutationFn: ({ leadId, statusId }: { leadId: string; statusId: string }) => updateLead(leadId, { leadStatusId: statusId }),
+    onMutate: async ({ leadId, statusId }) => {
       const queries = queryClient.getQueriesData<Lead[]>({ queryKey: ['leads'] })
       const previous = queries.map(([key, data]) => ({ key, data }))
 
       queries.forEach(([key, data]) => {
         if (!data) return
-        queryClient.setQueryData<Lead[]>(key, data.map(lead => lead.id === leadId ? { ...lead, status } : lead))
+        queryClient.setQueryData<Lead[]>(key, data.map(lead => lead.id === leadId ? { ...lead, leadStatusId: statusId } : lead))
       })
 
       return { previous }
@@ -58,9 +70,9 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
       })
       toast.error('Não foi possível mover o lead')
     },
-    onSuccess: (_data, { status }) => {
-      const statusMeta = getLeadStatusByCode(status)
-      const statusLabel = safeStringOptional(statusMeta?.label) || status
+    onSuccess: (_data, { statusId }) => {
+      const statusMeta = getLeadStatusById(statusId)
+      const statusLabel = safeStringOptional(statusMeta?.label) || 'Status atualizado'
       toast.success(`Lead movido para ${statusLabel}`)
     },
     onSettled: (_data, _error, { leadId }) => {
@@ -71,33 +83,38 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
   const leadsByStatus = useMemo(() => {
     return columns.reduce((acc, column) => {
-      acc[column.status] = leads.filter(lead => lead.status === column.status)
+      acc[column.id] = leads.filter(lead => lead.leadStatusId === column.id)
       return acc
-    }, {} as Record<LeadStatus, Lead[]>)
-  }, [leads])
+    }, {} as Record<string, Lead[]>)
+  }, [leads, columns])
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return
 
-    const sourceStatus = active.data.current?.status as LeadStatus | undefined
-    const destinationStatus = over.data.current?.status as LeadStatus | undefined
+    const sourceStatusId = active.data.current?.status as string | undefined
+    const destinationStatusId = over.data.current?.status as string | undefined
 
-    if (!sourceStatus || !destinationStatus || sourceStatus === destinationStatus) return
+    if (!sourceStatusId || !destinationStatusId || sourceStatusId === destinationStatusId) return
 
-    updateStatus.mutate({ leadId: active.id as string, status: destinationStatus })
+    updateStatus.mutate({ leadId: active.id as string, statusId: destinationStatusId })
   }
 
-  const LeadCard = ({ lead, columnStatus }: { lead: Lead; columnStatus: LeadStatus }) => {
-    const owner = (lead as any).owner
-    const statusMeta = getLeadStatusByCode(lead.status)
-    const originMeta = getLeadOriginByCode(lead.origin)
+  const LeadCard = ({ lead, columnStatus }: { lead: Lead; columnStatus: string }) => {
+    const owner = lead.owner
+    const statusMeta = getLeadStatusById(lead.leadStatusId)
+    const originMeta = getLeadOriginById(lead.leadOriginId)
     const legalName = safeStringOptional(lead.legalName) || 'Lead sem nome'
     const tradeName = safeStringOptional(lead.tradeName)
-    const statusLabel = safeStringOptional(statusMeta?.label) || safeString(lead.status)
-    const originLabel = safeStringOptional(originMeta?.label) || safeStringOptional(lead.origin) || '—'
+    const statusLabel = safeStringOptional(statusMeta?.label) || '—'
+    const originLabel = safeStringOptional(originMeta?.label) || '—'
     const ownerName = safeStringOptional(owner?.name) || '—'
     const ownerAvatar = safeStringOptional(owner?.avatar)
     const ownerInitials = ownerName.substring(0, 2).toUpperCase()
+
+    // Legacy progress support (optional)
+    const progress = statusMeta?.code ? LEAD_STATUS_PROGRESS[statusMeta.code as any] ?? 0 : 0
+    const colorClass = statusMeta?.code ? LEAD_STATUS_COLORS[statusMeta.code as any] ?? 'bg-gray-500' : 'bg-gray-500'
+
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: lead.id,
       data: { status: columnStatus },
@@ -137,9 +154,9 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>Progresso</span>
-                <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
+                <span className="font-semibold text-foreground">{progress}%</span>
               </div>
-              <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
+              <Progress value={progress} indicatorClassName={colorClass} />
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -211,15 +228,15 @@ function DroppableColumn({
   isLoading,
   children,
 }: {
-  column: { status: LeadStatus; color: string }
+  column: { id: string; status: string; color: string }
   label: string
   count: number
   isLoading?: boolean
   children: React.ReactNode
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: column.status,
-    data: { status: column.status },
+    id: column.id,
+    data: { status: column.id },
   })
 
   return (

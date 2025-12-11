@@ -316,14 +316,14 @@ export async function getAnalyticsSummary(
         // 2. Lead Origin Performance: Cross leads with master_deals
         const { data: leadsData } = await supabase
             .from('leads')
-            .select('id, origin, qualified_master_deal_id');
+            .select('id, lead_origin_id, qualified_master_deal_id');
 
         // Safe fallback for leads
         const safeLeadsData = leadsData ?? [];
         const leadOriginMap: Record<string, { total: number; converted: number; volumes: number[] }> = {};
         
         safeLeadsData.forEach(lead => {
-            const origin = lead.origin || 'unknown';
+            const origin = lead.lead_origin_id || 'unknown';
             if (!leadOriginMap[origin]) {
                 leadOriginMap[origin] = { total: 0, converted: 0, volumes: [] };
             }

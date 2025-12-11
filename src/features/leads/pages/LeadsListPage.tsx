@@ -46,7 +46,7 @@ export default function LeadsListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { profile } = useAuth()
-  const { leadStatuses, leadOrigins, getLeadStatusByCode, getLeadOriginByCode } = useSystemMetadata()
+  const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const { data: users = [] } = useUsers()
 
   const savedPreferences = useMemo(() => {
@@ -98,13 +98,13 @@ export default function LeadsListPage() {
   const { data: tags = [] } = useTags('lead')
   const { data: settings } = useSettings()
 
-  const activeStatusCodes = useMemo(
-    () => leadStatuses.filter(status => status.isActive).map(status => status.code),
+  const activeStatusIds = useMemo(
+    () => leadStatuses.filter(status => status.isActive).map(status => status.id),
     [leadStatuses]
   )
 
-  const activeOriginCodes = useMemo(
-    () => leadOrigins.filter(origin => origin.isActive).map(origin => origin.code),
+  const activeOriginIds = useMemo(
+    () => leadOrigins.filter(origin => origin.isActive).map(origin => origin.id),
     [leadOrigins]
   )
 
@@ -121,8 +121,8 @@ export default function LeadsListPage() {
 
   const lastSearchRef = useRef<string>(searchParams.toString())
 
-  const normalizedStatusFilter = statusFilter !== 'all' && activeStatusCodes.includes(statusFilter) ? statusFilter : 'all'
-  const normalizedOriginFilter = originFilter !== 'all' && activeOriginCodes.includes(originFilter) ? originFilter : 'all'
+  const normalizedStatusFilter = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
+  const normalizedOriginFilter = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
   const normalizedTagFilter = tagFilter.filter(tagId => activeTagIds.includes(tagId))
 
   useEffect(() => {
@@ -140,14 +140,14 @@ export default function LeadsListPage() {
   useEffect(() => {
     if (!leadStatuses.length && !leadOrigins.length) return
 
-    const validSalesStatus = salesStatusFilter.filter(code => activeStatusCodes.includes(code))
-    const validSalesOrigin = salesOriginFilter.filter(code => activeOriginCodes.includes(code))
+    const validSalesStatus = salesStatusFilter.filter(id => activeStatusIds.includes(id))
+    const validSalesOrigin = salesOriginFilter.filter(id => activeOriginIds.includes(id))
     const validPriority = salesPriority.filter(priority => PRIORITY_OPTIONS.includes(priority))
 
     if (!arraysEqual(validSalesStatus, salesStatusFilter)) setSalesStatusFilter(validSalesStatus)
     if (!arraysEqual(validSalesOrigin, salesOriginFilter)) setSalesOriginFilter(validSalesOrigin)
     if (!arraysEqual(validPriority, salesPriority)) setSalesPriority(validPriority)
-  }, [activeOriginCodes, activeStatusCodes, salesOriginFilter, salesPriority, salesStatusFilter])
+  }, [activeOriginIds, activeStatusIds, salesOriginFilter, salesPriority, salesStatusFilter])
 
   const [hasCheckedEmptyInitial, setHasCheckedEmptyInitial] = useState(false)
   const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
@@ -428,22 +428,22 @@ export default function LeadsListPage() {
     setIsDeleteOpen(true)
   }
 
-  const renderStatusBadge = (status: string) => {
-    const statusMeta = getLeadStatusByCode(status);
+  const renderStatusBadge = (statusId: string) => {
+    const statusMeta = getLeadStatusById(statusId);
     return (
       <StatusBadge
-        semanticStatus={leadStatusMap(status as LeadStatus)}
-        label={safeString(statusMeta?.label, status)}
+        semanticStatus={leadStatusMap(statusMeta?.code as any)}
+        label={safeString(statusMeta?.label, statusId)}
       />
     );
   }
 
-  const renderOriginBadge = (origin: string) => {
-    const originMeta = getLeadOriginByCode(origin);
+  const renderOriginBadge = (originId: string) => {
+    const originMeta = getLeadOriginById(originId);
     return (
       <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
         <Globe className="w-3 h-3" />
-        {safeString(originMeta?.label, origin)}
+        {safeString(originMeta?.label, originId)}
       </div>
     );
   }
@@ -622,7 +622,7 @@ export default function LeadsListPage() {
             <SelectContent>
               <SelectItem value="all">Todos Status</SelectItem>
               {leadStatuses.filter(s => s.isActive).map((status) => (
-                <SelectItem key={status.code} value={status.code}>{safeString(status.label, status.code)}</SelectItem>
+                <SelectItem key={status.id} value={status.id}>{safeString(status.label, status.code)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -634,7 +634,7 @@ export default function LeadsListPage() {
             <SelectContent>
               <SelectItem value="all">Todas Origens</SelectItem>
               {leadOrigins.filter(o => o.isActive).map((origin) => (
-                <SelectItem key={origin.code} value={origin.code}>{safeString(origin.label, origin.code)}</SelectItem>
+                <SelectItem key={origin.id} value={origin.id}>{safeString(origin.label, origin.code)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -845,14 +845,15 @@ export default function LeadsListPage() {
                             deleteLead,
                             profileId: profile?.id,
                             onEdit: () => openEdit(lead),
-                            getLeadStatusLabel: (code) => safeString(getLeadStatusByCode(code)?.label, code),
+                            getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
+                            statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: s.label, code: s.code }))
                           })}
                         />
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {renderStatusBadge(lead.status)}
-                      {renderOriginBadge(lead.origin)}
+                      {renderStatusBadge(lead.leadStatusId)}
+                      {renderOriginBadge(lead.leadOriginId)}
                     </div>
                   </CardHeader>
                   <CardContent className="pb-3 text-sm space-y-3">
@@ -862,10 +863,10 @@ export default function LeadsListPage() {
 
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{safeString(getLeadStatusByCode(lead.status)?.label, lead.status)}</span>
-                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[lead.status]}%</span>
+                        <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
+                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
                       </div>
-                      <Progress value={LEAD_STATUS_PROGRESS[lead.status]} indicatorClassName={LEAD_STATUS_COLORS[lead.status]} />
+                      <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t">
@@ -902,7 +903,7 @@ export default function LeadsListPage() {
             })}
           </div>
         ) : (
-          <LeadsKanban leads={activeLeads || []} isLoading={isLoading} />
+          <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
         )}
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

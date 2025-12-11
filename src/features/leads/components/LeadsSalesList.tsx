@@ -74,8 +74,9 @@ export function LeadsSalesList({
     const primaryContact = primaryContactData
       ? { ...primaryContactData, name: safeStringOptional(primaryContactData.name, 'Contato não informado') ?? 'Contato não informado' }
       : undefined
-    const status = lead.status ?? lead.lead?.status ?? null
-    const origin = lead.origin ?? lead.lead?.origin ?? null
+    // Mapped to use new metadata IDs
+    const status = (lead as any).leadStatusId ?? (lead as any).lead_status_id ?? lead.status ?? lead.lead?.status ?? null
+    const origin = (lead as any).leadOriginId ?? (lead as any).lead_origin_id ?? lead.origin ?? lead.lead?.origin ?? null
     const createdAt = lead.createdAt ?? lead.created_at ?? lead.lead?.created_at ?? null
     const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
     const lastInteractionTypeRaw = lead.lastInteractionType ?? lead.last_interaction_type

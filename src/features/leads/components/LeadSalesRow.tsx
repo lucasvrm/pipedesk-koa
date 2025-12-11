@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { QuickAction, QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 import { safeString, safeStringOptional } from '@/lib/utils'
+import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -57,6 +58,7 @@ export function LeadSalesRow({
   tags,
   actions
 }: LeadSalesRowProps) {
+  const { getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
