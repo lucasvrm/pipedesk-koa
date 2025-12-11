@@ -59,7 +59,7 @@ export default function LeadSalesViewPage() {
     }),
     [daysWithoutInteraction, originFilters, orderBy, ownerFilter, priorityBuckets, statusFilters]
   )
-  const { data, isLoading, isFetching, isError, error } = useLeadsSalesView({
+  const { data, isLoading, isFetching, isError, error, refetch } = useLeadsSalesView({
     page,
     pageSize: PAGE_SIZE,
     ...filters
@@ -179,12 +179,15 @@ export default function LeadSalesViewPage() {
           duration: 5000,
           action: {
             label: 'Tentar novamente',
-            onClick: () => window.location.reload()
+            onClick: () => {
+              console.log('[SalesView] User initiated retry from toast')
+              refetch()
+            }
           }
         }
       )
     }
-  }, [isError, error])
+  }, [isError, error, refetch])
 
   return (
     <div className="space-y-6">
@@ -244,7 +247,13 @@ export default function LeadSalesViewPage() {
                       <Button variant="outline" onClick={() => navigate('/leads')} className="min-w-[180px]">
                         Voltar para a lista
                       </Button>
-                      <Button onClick={() => window.location.reload()} className="min-w-[180px]">
+                      <Button 
+                        onClick={() => {
+                          console.log('[SalesView] User initiated retry from error UI')
+                          refetch()
+                        }} 
+                        className="min-w-[180px]"
+                      >
                         Tentar novamente
                       </Button>
                     </div>

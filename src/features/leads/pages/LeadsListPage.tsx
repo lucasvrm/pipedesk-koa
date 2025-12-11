@@ -176,7 +176,7 @@ export default function LeadsListPage() {
     }),
     [currentPage, itemsPerPage, salesFilters]
   )
-  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError } = useLeadsSalesView(salesViewQuery, {
+  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError, refetch: refetchSalesView } = useLeadsSalesView(salesViewQuery, {
     enabled: viewMode === 'sales'
   })
   const createLead = useCreateLead()
@@ -811,7 +811,13 @@ export default function LeadsListPage() {
               <Button variant="outline" onClick={() => setViewMode('kanban')} className="min-w-[180px]">
                 Alternar para Kanban
               </Button>
-              <Button onClick={() => window.location.reload()} className="min-w-[180px]">
+              <Button 
+                onClick={() => {
+                  console.log('[SalesView] User initiated retry from error UI in LeadsListPage')
+                  refetchSalesView()
+                }} 
+                className="min-w-[180px]"
+              >
                 Tentar novamente
               </Button>
             </div>
