@@ -48,6 +48,7 @@ export default function LeadSalesViewPage() {
     if (order === 'priority' || order === 'last_interaction' || order === 'created_at') return order
     return undefined
   })
+  const [hasShownErrorToast, setHasShownErrorToast] = useState(false)
   const navigate = useNavigate()
   const filters = useMemo(
     () => ({
@@ -172,7 +173,7 @@ export default function LeadSalesViewPage() {
   }, [daysWithoutInteraction, orderBy, originFilters, ownerFilter, priorityBuckets, statusFilters])
 
   useEffect(() => {
-    if (isError) {
+    if (isError && !hasShownErrorToast) {
       console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadSalesViewPage:`, error)
       toast.error(
         SALES_VIEW_MESSAGES.ERROR_TOAST,
@@ -182,13 +183,18 @@ export default function LeadSalesViewPage() {
             label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
             onClick: () => {
               console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast`)
+              setHasShownErrorToast(false)
               refetch()
             }
           }
         }
       )
+      setHasShownErrorToast(true)
+    } else if (!isError && hasShownErrorToast) {
+      // Reset the flag when error is resolved
+      setHasShownErrorToast(false)
     }
-  }, [isError, error, refetch])
+  }, [isError, error, refetch, hasShownErrorToast])
 
   return (
     <div className="space-y-6">

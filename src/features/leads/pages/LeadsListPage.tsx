@@ -94,6 +94,7 @@ export default function LeadsListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [hasSalesShownErrorToast, setHasSalesShownErrorToast] = useState(false)
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -259,8 +260,17 @@ export default function LeadsListPage() {
 
   // Handle Sales View errors with logging and user feedback
   useEffect(() => {
-    if (viewMode !== 'sales') return
-    if (!isSalesError) return
+    if (viewMode !== 'sales') {
+      // Reset error toast flag when switching away from sales view
+      if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
+      return
+    }
+    if (!isSalesError) {
+      // Reset the flag when error is resolved
+      if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
+      return
+    }
+    if (hasSalesShownErrorToast) return
     
     console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadsListPage:`, salesError)
     toast.error(
@@ -271,12 +281,14 @@ export default function LeadsListPage() {
           label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
           onClick: () => {
             console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast in LeadsListPage`)
+            setHasSalesShownErrorToast(false)
             refetchSalesView()
           }
         }
       }
     )
-  }, [isSalesError, refetchSalesView, salesError, viewMode])
+    setHasSalesShownErrorToast(true)
+  }, [isSalesError, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast])
 
   // Idempotent URL sync effect for Sales view filters.
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
