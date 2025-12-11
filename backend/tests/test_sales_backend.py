@@ -105,9 +105,9 @@ class SalesViewEndpointTests(unittest.TestCase):
 
         response = get_sales_view(leads, stats_provider, order_by="id")
 
-        self.assertEqual(len(response), 2)
-        self.assertEqual(response[0]["next_action"]["code"], "call_first_time")
-        self.assertEqual(response[1]["next_action"]["code"], "send_follow_up")
+        self.assertEqual(len(response["data"]), 2)
+        self.assertEqual(response["data"][0]["next_action"]["code"], "call_first_time")
+        self.assertEqual(response["data"][1]["next_action"]["code"], "send_follow_up")
         self.assertEqual(endpoint_metrics["call_count"], 1)
         self.assertEqual(endpoint_metrics["error_count"], 0)
         self.assertEqual(len(endpoint_metrics["latencies_ms"]), 1)
@@ -123,10 +123,37 @@ class SalesViewEndpointTests(unittest.TestCase):
         def stats_provider(_lead_id: str):
             return {"last_interaction_at": base_time.isoformat(), "engagement_score": 10}
 
-        response = get_sales_view(leads, stats_provider, filters={"owner": "alice"}, order_by="-created_at")
-        ordered_ids = [lead["id"] for lead in response]
+        response = get_sales_view(
+            leads, stats_provider, filters={"owner": "alice"}, order_by="-created_at"
+        )
+        ordered_ids = [lead["id"] for lead in response["data"]]
 
         self.assertEqual(ordered_ids, ["l1", "l3"])
+
+    def test_sales_view_paginates_and_reports_metadata(self):
+        base_time = datetime.utcnow()
+        leads = [
+            {"id": f"l{i}", "created_at": (base_time - timedelta(days=i)).isoformat()}
+            for i in range(1, 6)
+        ]
+
+        def stats_provider(_lead_id: str):
+            return {"last_interaction_at": base_time.isoformat(), "engagement_score": 10}
+
+        first_page = get_sales_view(leads, stats_provider, order_by="-created_at", page=1, page_size=2)
+        second_page = get_sales_view(leads, stats_provider, order_by="-created_at", page=2, page_size=2)
+        out_of_range = get_sales_view(leads, stats_provider, order_by="-created_at", page=5, page_size=2)
+
+        self.assertEqual(first_page["pagination"], {"total": 5, "page": 1, "perPage": 2})
+        self.assertEqual(len(first_page["data"]), 2)
+        self.assertEqual(first_page["data"][0]["id"], "l1")
+        self.assertEqual(first_page["data"][1]["id"], "l2")
+
+        self.assertEqual(second_page["pagination"], {"total": 5, "page": 2, "perPage": 2})
+        self.assertEqual([lead["id"] for lead in second_page["data"]], ["l3", "l4"])
+
+        self.assertEqual(out_of_range["pagination"], {"total": 5, "page": 5, "perPage": 2})
+        self.assertEqual(out_of_range["data"], [])
 
 
 if __name__ == "__main__":
