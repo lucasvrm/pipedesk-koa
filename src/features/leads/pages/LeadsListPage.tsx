@@ -284,13 +284,16 @@ export default function LeadsListPage() {
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const nextSearch = params.toString()
+    const currentSearch = searchParams.toString()
 
     // Only update URL if the computed params differ from the last written value.
     // This prevents infinite loops by ensuring idempotent updates.
-    if (lastSearchRef.current === nextSearch) return
+    if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) return
 
     lastSearchRef.current = nextSearch
-    setSearchParams(params, { replace: true })
+    if (currentSearch !== nextSearch) {
+      setSearchParams(params, { replace: true })
+    }
   }, [
     viewMode,
     salesOwnerMode,
@@ -301,6 +304,7 @@ export default function LeadsListPage() {
     salesDaysWithoutInteraction,
     salesOrderBy,
     isSalesError,
+    searchParams,
     setSearchParams
   ])
 

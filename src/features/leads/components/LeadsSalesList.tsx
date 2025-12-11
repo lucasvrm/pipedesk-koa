@@ -37,7 +37,7 @@ export function LeadsSalesList({
     const invalid = [] as LeadSalesViewItem[]
 
     safeLeads.forEach((lead) => {
-      const id = lead.leadId ?? lead.lead_id ?? lead.id
+      const id = lead.leadId ?? lead.lead_id ?? lead.id ?? lead.lead?.id
       if (id) {
         valid.push(lead)
       } else {
@@ -53,7 +53,7 @@ export function LeadsSalesList({
   }, [safeLeads])
 
   const selectableLeadIds = useMemo(
-    () => validLeads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id).filter(Boolean) as string[],
+    () => validLeads.map((lead) => lead.leadId ?? lead.lead_id ?? lead.id ?? lead.lead?.id).filter(Boolean) as string[],
     [validLeads]
   )
 
@@ -67,12 +67,16 @@ export function LeadsSalesList({
     const priorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
     const priorityDescription = lead.priorityDescription ?? lead.priority_description
-    const legalName = safeStringOptional(lead.legalName ?? lead.legal_name, 'Lead sem nome') ?? 'Lead sem nome'
-    const tradeName = safeStringOptional(lead.tradeName ?? lead.trade_name)
+    const legalName =
+      safeStringOptional(lead.legalName ?? lead.legal_name ?? lead.lead?.legal_name, 'Lead sem nome') ?? 'Lead sem nome'
+    const tradeName = safeStringOptional(lead.tradeName ?? lead.trade_name ?? lead.lead?.trade_name)
     const primaryContactData = lead.primaryContact ?? lead.primary_contact
     const primaryContact = primaryContactData
       ? { ...primaryContactData, name: safeStringOptional(primaryContactData.name, 'Contato não informado') ?? 'Contato não informado' }
       : undefined
+    const status = lead.status ?? lead.lead?.status ?? null
+    const origin = lead.origin ?? lead.lead?.origin ?? null
+    const createdAt = lead.createdAt ?? lead.created_at ?? lead.lead?.created_at ?? null
     const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
     const lastInteractionTypeRaw = lead.lastInteractionType ?? lead.last_interaction_type
     const lastInteractionType = lastInteractionTypeRaw === 'email' || lastInteractionTypeRaw === 'event'
@@ -87,7 +91,13 @@ export function LeadsSalesList({
             reason: safeStringOptional(nextActionRaw.reason)
           }
         : undefined
-    const ownerData = lead.owner
+    const ownerData = lead.owner ??
+      (lead.lead?.owner
+        ? {
+            name: lead.lead.owner.name,
+            avatar: lead.lead.owner.avatar_url ?? undefined
+          }
+        : undefined)
     const owner = ownerData
       ? {
           ...ownerData,
@@ -113,6 +123,9 @@ export function LeadsSalesList({
       priorityDescription,
       legalName,
       tradeName,
+      status,
+      origin,
+      createdAt,
       primaryContact,
       lastInteractionAt,
       lastInteractionType,
@@ -135,7 +148,7 @@ export function LeadsSalesList({
   }, [orderBy])
 
   const renderLeadRowSafely = (lead: LeadSalesViewItem) => {
-    const id = lead.leadId ?? lead.lead_id ?? lead.id
+    const id = lead.leadId ?? lead.lead_id ?? lead.id ?? lead.lead?.id
     if (!id) return null
 
     try {
