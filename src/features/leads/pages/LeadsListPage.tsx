@@ -125,29 +125,28 @@ export default function LeadsListPage() {
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
   const normalizedTagFilter = tagFilter.filter(tagId => activeTagIds.includes(tagId))
 
+  // Validate filters against metadata only when metadata loads or changes
+  // This prevents feedback loops where setting state triggers re-validation infinitely
   useEffect(() => {
-    if (!leadStatuses.length && !leadOrigins.length && !tags.length) return
+    if (leadStatuses.length === 0 && leadOrigins.length === 0) return
 
-    const validStatus = normalizedStatusFilter !== 'all' ? normalizedStatusFilter : 'all'
-    const validOrigin = normalizedOriginFilter !== 'all' ? normalizedOriginFilter : 'all'
-    const validTags = normalizedTagFilter
+    // Standard view validation
+    const validStatus = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
+    const validOrigin = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
 
     if (validStatus !== statusFilter) setStatusFilter(validStatus)
     if (validOrigin !== originFilter) setOriginFilter(validOrigin)
-    if (JSON.stringify(validTags) !== JSON.stringify(tagFilter)) setTagFilter(validTags)
-  }, [leadStatuses.length, leadOrigins.length, tags.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, originFilter, statusFilter, tagFilter])
 
-  useEffect(() => {
-    if (!leadStatuses.length && !leadOrigins.length) return
-
+    // Sales view validation
     const validSalesStatus = salesStatusFilter.filter(id => activeStatusIds.includes(id))
     const validSalesOrigin = salesOriginFilter.filter(id => activeOriginIds.includes(id))
-    const validPriority = salesPriority.filter(priority => PRIORITY_OPTIONS.includes(priority))
 
     if (!arraysEqual(validSalesStatus, salesStatusFilter)) setSalesStatusFilter(validSalesStatus)
     if (!arraysEqual(validSalesOrigin, salesOriginFilter)) setSalesOriginFilter(validSalesOrigin)
-    if (!arraysEqual(validPriority, salesPriority)) setSalesPriority(validPriority)
-  }, [activeOriginIds, activeStatusIds, salesOriginFilter, salesPriority, salesStatusFilter])
+
+  }, [leadStatuses.length, leadOrigins.length, activeStatusIds, activeOriginIds])
+  // Intentionally omitting 'statusFilter', 'originFilter', etc. from dependency array to avoid cycles.
+  // We only want to re-validate if the METADATA changes (e.g. initial load), not if user changes selection.
 
   const [hasCheckedEmptyInitial, setHasCheckedEmptyInitial] = useState(false)
   const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
@@ -284,7 +283,9 @@ export default function LeadsListPage() {
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const nextSearch = params.toString()
-    const currentSearch = searchParams.toString()
+    // Use window.location.search to check current URL state without adding searchParams dependency
+    // This breaks the render loop caused by useSearchParams() returning a new object reference on every render
+    const currentSearch = window.location.search.replace(/^\?/, '')
 
     // Only update URL if the computed params differ from the last written value.
     // This prevents infinite loops by ensuring idempotent updates.
@@ -304,7 +305,7 @@ export default function LeadsListPage() {
     salesDaysWithoutInteraction,
     salesOrderBy,
     isSalesError,
-    searchParams,
+    // searchParams, // Removed to prevent infinite loop
     setSearchParams
   ])
 

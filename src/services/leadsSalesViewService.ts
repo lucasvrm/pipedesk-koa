@@ -132,12 +132,33 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
     const url = `/api/leads/sales-view?${searchParams.toString()}`
     const response = await fetch(url)
 
+    // Validate content-type before parsing JSON to handle non-JSON error responses (e.g. 500 HTML)
+    const contentType = response.headers.get('content-type')
+    const isJson = contentType?.includes('application/json')
+
     if (!response.ok) {
       console.error('[SalesView] API request failed', {
         status: response.status,
         statusText: response.statusText,
-        url: response.url
+        url: response.url,
+        contentType
       })
+
+      // If it's JSON, try to parse error details, otherwise throw generic error
+      if (isJson) {
+        try {
+          const errorData = await response.json()
+          throw new ApiError(
+            errorData.message || `Falha ao carregar leads da Sales View (${response.status})`,
+            response.status,
+            url,
+            errorData
+          )
+        } catch (e) {
+          // Fallback if parsing fails despite header
+        }
+      }
+
       throw new ApiError(
         `Falha ao carregar leads da Sales View (${response.status})`,
         response.status,
@@ -145,9 +166,7 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
       )
     }
 
-    // Validate content-type before parsing JSON
-    const contentType = response.headers.get('content-type')
-    if (!contentType?.includes('application/json')) {
+    if (!isJson) {
       console.error('[SalesView] Expected JSON but received unexpected content-type', {
         contentType,
         url: response.url
