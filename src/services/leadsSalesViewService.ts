@@ -151,16 +151,26 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
       if (isJson) {
         try {
           const errorData = await response.json()
-          const errorMessage = errorData.message || 'Não foi possível carregar a visão de vendas'
-          console.error('[SalesView] Error details:', errorData)
+          // Extract structured error fields from backend response
+          const errorMessage = errorData.error || errorData.message || 'Não foi possível carregar a visão de vendas'
+          const errorCode = errorData.code
+          const errorDetails = errorData.details
+          
+          console.error('[SalesView] Error details:', { errorMessage, errorCode, errorDetails })
+          
           throw new ApiError(
             errorMessage,
             response.status,
             url,
-            errorData
+            errorCode,
+            errorDetails
           )
         } catch (e) {
           // Fallback if parsing fails despite header
+          // If e is already an ApiError, re-throw it
+          if (e instanceof ApiError) {
+            throw e
+          }
           console.error('[SalesView] Failed to parse error response:', e)
         }
       }
