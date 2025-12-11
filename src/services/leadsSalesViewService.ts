@@ -92,7 +92,8 @@ export interface LeadSalesViewQuery extends SalesViewFilters {
  */
 function validateSalesViewResponse(data: unknown): void {
   if (data === null || typeof data !== 'object') {
-    throw new Error('sales-view response is not an object')
+    console.error('[SalesView] Invalid response: not an object', data)
+    throw new Error('Resposta inválida do servidor')
   }
 
   const payload = data as Record<string, unknown>
@@ -100,7 +101,8 @@ function validateSalesViewResponse(data: unknown): void {
   // Check if items or data exists and is an array
   const items = payload.data ?? payload.items
   if (items !== undefined && !Array.isArray(items)) {
-    throw new Error(`sales-view expected items to be an array but received: ${typeof items}`)
+    console.error('[SalesView] Invalid response: items is not an array', { items, type: typeof items })
+    throw new Error('Formato de dados inválido recebido do servidor')
   }
 
   // Check if count/total is a number when present
@@ -110,7 +112,8 @@ function validateSalesViewResponse(data: unknown): void {
     : undefined
   const count = payload.total ?? payload.count ?? paginationTotal
   if (count !== undefined && typeof count !== 'number') {
-    throw new Error(`sales-view expected count to be a number but received: ${typeof count}`)
+    console.error('[SalesView] Invalid response: count is not a number', { count, type: typeof count })
+    throw new Error('Formato de paginação inválido recebido do servidor')
   }
 }
 
@@ -148,19 +151,22 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
       if (isJson) {
         try {
           const errorData = await response.json()
+          const errorMessage = errorData.message || 'Não foi possível carregar a visão de vendas'
+          console.error('[SalesView] Error details:', errorData)
           throw new ApiError(
-            errorData.message || `Falha ao carregar leads da Sales View (${response.status})`,
+            errorMessage,
             response.status,
             url,
             errorData
           )
         } catch (e) {
           // Fallback if parsing fails despite header
+          console.error('[SalesView] Failed to parse error response:', e)
         }
       }
 
       throw new ApiError(
-        `Falha ao carregar leads da Sales View (${response.status})`,
+        'Não foi possível carregar a visão de vendas',
         response.status,
         url
       )
@@ -172,7 +178,7 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
         url: response.url
       })
       throw new Error(
-        `sales-view expected JSON but received: ${contentType ?? 'unknown'}`
+        'Resposta inválida do servidor. Por favor, tente novamente.'
       )
     }
 
@@ -197,7 +203,7 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
     }
     // Handle non-Error objects (network failures, etc.)
     console.error('[SalesView] Unknown error:', error)
-    throw new Error('Falha ao carregar leads da Sales View')
+    throw new Error('Ocorreu um erro inesperado ao carregar a visão de vendas')
   }
 }
 

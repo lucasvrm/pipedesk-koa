@@ -256,6 +256,20 @@ export default function LeadsListPage() {
     }
   }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, search, viewMode])
 
+  // Handle Sales View errors with logging and user feedback
+  useEffect(() => {
+    if (viewMode !== 'sales') return
+    if (!isSalesError) return
+    
+    console.error('[SalesView] Error state detected in LeadsListPage:', salesError)
+    toast.error(
+      'Não foi possível carregar a visão de vendas. Por favor, tente novamente ou alterne para outro modo de visualização.',
+      {
+        duration: 5000
+      }
+    )
+  }, [isSalesError, salesError, viewMode])
+
   // Idempotent URL sync effect for Sales view filters.
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
   // The ref stores the last written URL search string, avoiding re-reads of searchParams
@@ -263,8 +277,11 @@ export default function LeadsListPage() {
   // Skip URL updates during error states to prevent potential loops.
   useEffect(() => {
     if (viewMode !== 'sales') return
-    // Don't update URL during error state
-    if (isSalesError) return
+    // Don't update URL during error state to prevent loops
+    if (isSalesError) {
+      console.log('[SalesView] Skipping URL sync due to error state')
+      return
+    }
 
     const params = new URLSearchParams()
 
@@ -784,14 +801,17 @@ export default function LeadsListPage() {
             <div className="space-y-2 max-w-lg">
               <h3 className="text-xl font-semibold text-foreground">Não foi possível carregar a visão de vendas</h3>
               <p className="text-sm text-muted-foreground">
-                Ocorreu um erro ao buscar os dados da Sales View. A página de leads permanece funcional em outros modos de visualização.
+                Ocorreu um erro ao buscar os dados da Sales View. Você pode alternar para outros modos de visualização ou tentar novamente.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setViewMode('grid')}>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="outline" onClick={() => setViewMode('grid')} className="min-w-[180px]">
                 Alternar para Grade
               </Button>
-              <Button onClick={() => window.location.reload()}>
+              <Button variant="outline" onClick={() => setViewMode('kanban')} className="min-w-[180px]">
+                Alternar para Kanban
+              </Button>
+              <Button onClick={() => window.location.reload()} className="min-w-[180px]">
                 Tentar novamente
               </Button>
             </div>

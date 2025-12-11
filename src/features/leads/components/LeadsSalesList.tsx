@@ -46,7 +46,7 @@ export function LeadsSalesList({
     })
 
     if (invalid.length > 0) {
-      console.warn('LeadsSalesList: ignorando leads sem identificador', invalid)
+      console.warn('[SalesView] LeadsSalesList: ignorando leads sem identificador', invalid)
     }
 
     return { validLeads: valid, invalidLeadCount: invalid.length }
@@ -169,7 +169,7 @@ export function LeadsSalesList({
       )
     } catch (error) {
       if (shouldLogRenderError) {
-        console.error('LeadSalesRow render failed', id, lead, error)
+        console.error('[SalesView] LeadSalesRow render failed', id, lead, error)
       }
 
       throw error
@@ -250,7 +250,7 @@ export function LeadsSalesList({
                 const id = lead.leadId ?? lead.lead_id ?? lead.id
 
                 if (shouldLogRenderError) {
-                  console.error('LeadSalesRow render failed', id, lead, error)
+                  console.error('[SalesView] LeadSalesRow render failed', id, lead, error)
                 }
 
                 return null
