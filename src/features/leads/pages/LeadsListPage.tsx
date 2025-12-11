@@ -266,10 +266,17 @@ export default function LeadsListPage() {
     toast.error(
       SALES_VIEW_MESSAGES.ERROR_TOAST_WITH_OPTIONS,
       {
-        duration: 5000
+        duration: 5000,
+        action: {
+          label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
+          onClick: () => {
+            console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast in LeadsListPage`)
+            refetchSalesView()
+          }
+        }
       }
     )
-  }, [isSalesError, salesError, viewMode])
+  }, [isSalesError, refetchSalesView, salesError, viewMode])
 
   // Idempotent URL sync effect for Sales view filters.
   // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).

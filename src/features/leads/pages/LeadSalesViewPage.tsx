@@ -267,7 +267,11 @@ export default function LeadSalesViewPage() {
               <TableRow>
                 <TableCell colSpan={8} className="py-12">
                   <div className="flex flex-col items-center justify-center gap-3 text-center">
-                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                    </div>
                     <div className="space-y-1">
                       <p className="text-lg font-semibold text-foreground">{SALES_VIEW_MESSAGES.NO_LEADS_FOUND}</p>
                       <p className="text-sm text-muted-foreground">
