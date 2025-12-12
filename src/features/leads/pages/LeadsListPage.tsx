@@ -162,7 +162,10 @@ export default function LeadsListPage() {
 
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
-  const normalizedTagFilter = tagFilter.filter(tagId => activeTagIds.includes(tagId))
+  const normalizedTagFilter = useMemo(
+    () => tagFilter.filter(tagId => activeTagIds.includes(tagId)),
+    [activeTagIds, tagFilter]
+  )
 
   // Validate filters against metadata only when metadata loads or changes
   // This prevents feedback loops where setting state triggers re-validation infinitely
