@@ -50,6 +50,7 @@ import {
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
+const SALES_VIEW_ERROR_GUARD_LIMIT = 8
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -136,6 +137,16 @@ export default function LeadsListPage() {
   const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
   const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
   const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
+  const getSalesErrorKey = useCallback((error: unknown) => {
+    if (!error) return null
+    if (error instanceof ApiError) return error.code ?? error.message ?? 'unknown-api-error'
+    if (error instanceof Error) return error.message ?? 'unknown-error'
+    try {
+      return String(error)
+    } catch {
+      return 'unknown-error'
+    }
+  }, [])
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -312,9 +323,7 @@ export default function LeadsListPage() {
 
   // Handle Sales View errors with logging and user feedback
   useEffect(() => {
-    const currentErrorKey = isSalesError
-      ? `${salesError instanceof ApiError ? salesError.code ?? salesError.message : salesError?.message ?? 'unknown'}`
-      : null
+    const currentErrorKey = isSalesError ? getSalesErrorKey(salesError) : null
 
     if (viewMode !== 'sales') {
       salesErrorGuardRef.current = { key: null, count: 0 }
@@ -337,15 +346,12 @@ export default function LeadsListPage() {
 
     if (currentErrorKey) {
       if (salesErrorGuardRef.current.key === currentErrorKey) {
-        salesErrorGuardRef.current = {
-          key: currentErrorKey,
-          count: salesErrorGuardRef.current.count + 1
-        }
+        salesErrorGuardRef.current.count += 1
       } else {
         salesErrorGuardRef.current = { key: currentErrorKey, count: 1 }
       }
 
-      if (salesErrorGuardRef.current.count > 8) {
+      if (salesErrorGuardRef.current.count > SALES_VIEW_ERROR_GUARD_LIMIT) {
         if (!import.meta.env.PROD) {
           console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error handler suppressed to prevent render loop`, {
             currentErrorKey,
@@ -405,7 +411,7 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess, hasAppliedPersistentFallback])
+  }, [getSalesErrorKey, hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, viewMode])
 
   useEffect(() => {
     if (viewMode !== 'sales' && hasAppliedPersistentFallback) {
