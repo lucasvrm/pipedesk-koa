@@ -398,7 +398,6 @@ export default function LeadsListPage() {
   useEffect(() => {
     // Keep refs aligned when Sales view is not active to prevent stale comparisons later
     if (viewMode !== 'sales') {
-      lastSyncedSalesFilters.current = serializedSalesFilters
       lastSearchRef.current = window.location.search.replace(/^\?/, '')
       return
     }
@@ -434,6 +433,7 @@ export default function LeadsListPage() {
 
     if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) {
       lastSyncedSalesFilters.current = serializedSalesFilters
+      lastSearchRef.current = nextSearch
       return
     }
 
