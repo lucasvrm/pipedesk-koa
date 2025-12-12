@@ -119,14 +119,17 @@ function validateSalesViewResponse(data: unknown): void {
 
 async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
   try {
+    const normalizedOrderBy =
+      filters.orderBy === 'last_interaction' || filters.orderBy === 'created_at' ? filters.orderBy : 'priority'
+
     const searchParams = new URLSearchParams({
       page: String(page),
       pageSize: String(pageSize),
-      order_by: filters.orderBy ?? 'priority'
+      order_by: normalizedOrderBy
     })
 
-    if (filters.owner) searchParams.set('owner', filters.owner)
-    if (filters.ownerIds?.length) searchParams.set('owners', filters.ownerIds.join(','))
+    if (filters.owner === 'me') searchParams.set('owner', filters.owner)
+    if (filters.ownerIds?.length) searchParams.set('ownerIds', filters.ownerIds.join(','))
     if (filters.priority?.length) searchParams.set('priority', filters.priority.join(','))
     if (filters.status?.length) searchParams.set('status', filters.status.join(','))
     if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
