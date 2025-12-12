@@ -335,6 +335,16 @@ export default function LeadsListPage() {
     }
 
     if (currentErrorKey) {
+      if (salesErrorGuardRef.current.key === currentErrorKey && salesErrorGuardRef.current.count >= SALES_VIEW_ERROR_GUARD_LIMIT) {
+        if (!import.meta.env.PROD) {
+          console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error handler suppressed to prevent render loop`, {
+            currentErrorKey,
+            count: salesErrorGuardRef.current.count
+          })
+        }
+        return
+      }
+
       if (salesErrorGuardRef.current.key === currentErrorKey) {
         salesErrorGuardRef.current.count += 1
       } else {
