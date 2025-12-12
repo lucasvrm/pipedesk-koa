@@ -134,6 +134,7 @@ export default function LeadsListPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [hasSalesShownErrorToast, setHasSalesShownErrorToast] = useState(false)
   const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
+  const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -333,6 +334,14 @@ export default function LeadsListPage() {
     
     // Record this failure for tracking persistent issues
     recordSalesViewFailure()
+    if (!hasAppliedPersistentFallback && hasPersistentFailures()) {
+      const fallback = getPreferredFallback()
+      console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Persistent failures detected, auto-switching to ${fallback}`)
+      setHasAppliedPersistentFallback(true)
+      setViewMode(fallback)
+      // Avoid triggering downstream toast/error UI when we immediately move to a fallback view
+      return
+    }
     
     // Get error code from ApiError if available
     const errorCode = salesError instanceof ApiError ? salesError.code : undefined
@@ -367,7 +376,13 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess])
+  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess, hasAppliedPersistentFallback])
+
+  useEffect(() => {
+    if (viewMode !== 'sales' && hasAppliedPersistentFallback) {
+      setHasAppliedPersistentFallback(false)
+    }
+  }, [hasAppliedPersistentFallback, viewMode])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
