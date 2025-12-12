@@ -339,6 +339,7 @@ export default function LeadsListPage() {
       console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Persistent failures detected, auto-switching to ${fallback}`)
       setHasAppliedPersistentFallback(true)
       setViewMode(fallback)
+      // Avoid triggering downstream toast/error UI when we immediately move to a fallback view
       return
     }
     
@@ -375,7 +376,7 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess, hasAppliedPersistentFallback, setViewMode])
+  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess, hasAppliedPersistentFallback])
 
   useEffect(() => {
     if (viewMode !== 'sales' && hasAppliedPersistentFallback) {
