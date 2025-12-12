@@ -55,7 +55,7 @@ export function BuyingCommitteeCard({ contact, onEdit }: BuyingCommitteeCardProp
   const roleIcon = contact.buyingRole ? ROLE_ICONS[contact.buyingRole] : <Question className="text-muted-foreground" />
   const sentimentColor = contact.sentiment ? SENTIMENT_COLORS[contact.sentiment] : SENTIMENT_COLORS.unknown
   const safeName = safeString(contact.name, 'Contato')
-  const safeRole = safeStringOptional(contact.role, 'Sem cargo') ?? 'Sem cargo'
+  const safeRole = safeStringOptional(contact.role) ?? 'Sem cargo'
   const initials = safeName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 
   return (

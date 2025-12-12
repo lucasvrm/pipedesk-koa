@@ -512,31 +512,29 @@ export default function LeadDetailPage() {
               <CardContent className="px-4 pb-4 pt-0">
                 {leadTags && leadTags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {leadTags.map(tag => (
-                      <div
-                        key={tag.id}
-                        className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
-                      >
-                        {(() => {
-                          const safeColor = safeStringOptional(tag.color, defaultTagColor)
-                          return (
-                            <>
-                              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor || defaultTagColor }} />
-                              <span className="font-medium max-w-[100px] truncate" style={{ color: safeColor || undefined }}>{safeString(tag.name, 'Tag')}</span>
-                            </>
-                          )
-                        })()}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleUnassignTag(tag.id)}
-                          title="Remover"
+                    {leadTags.map(tag => {
+                      const safeColor = safeStringOptional(tag.color) ?? defaultTagColor
+                      const safeTagName = safeString(tag.name, 'Tag')
+
+                      return (
+                        <div
+                          key={tag.id}
+                          className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor }} />
+                          <span className="font-medium max-w-[100px] truncate" style={{ color: safeColor }}>{safeTagName}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleUnassignTag(tag.id)}
+                            title="Remover"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div
