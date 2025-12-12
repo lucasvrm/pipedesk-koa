@@ -47,21 +47,10 @@ import {
   recordSalesViewFailure,
   recordSalesViewSuccess
 } from '../utils/salesViewFailureTracker'
+import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
-// Allow a small number of consecutive error-handling runs before suppressing to avoid render loops
-const SALES_VIEW_ERROR_GUARD_LIMIT = 8
-function getSalesErrorKey(error: unknown): string | null {
-  if (!error) return null
-  if (error instanceof ApiError) return error.code ?? error.message ?? 'unknown-api-error'
-  if (error instanceof Error) return error.message ?? 'unknown-error'
-  try {
-    return String(error)
-  } catch {
-    return 'unknown-error'
-  }
-}
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
