@@ -666,6 +666,15 @@ export default function LeadsListPage() {
     </Button>
   )
 
+  const viewActionsBar = (
+    <div className="flex items-center justify-between gap-2 flex-wrap">
+      <div className="flex items-center gap-2">
+        {viewToggleControl}
+      </div>
+      {bulkActions}
+    </div>
+  )
+
   const resetSalesFilters = useCallback(() => {
     setSalesOwnerMode('all')
     setSalesOwnerIds([])
@@ -736,10 +745,7 @@ export default function LeadsListPage() {
 
   const salesFiltersBar = (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        {viewToggleControl}
-        {bulkActions}
-      </div>
+      {viewActionsBar}
       <LeadsSalesFiltersBar
         ownerMode={salesOwnerMode}
         onOwnerModeChange={handleOwnerModeChange}
@@ -764,141 +770,138 @@ export default function LeadsListPage() {
   )
 
   const filtersBar = (
-    <SharedListToolbar
-      searchField={
-        <div className="relative w-full sm:w-64">
-          <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar leads..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      }
-      filters={
-        <div className="flex flex-wrap items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[150px] justify-between">
-                <span className="truncate">
-                  {statusFilter === 'all'
-                    ? 'Todos Status'
-                    : safeString(
-                        leadStatuses.find(s => s.id === statusFilter)?.label,
-                        'Status'
-                      )}
-                </span>
-                <CaretDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[200px]">
-              <DropdownMenuRadioGroup
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value)}
-              >
-                <DropdownMenuRadioItem value="all">
-                  Todos Status
-                </DropdownMenuRadioItem>
-                {leadStatuses
-                  .filter(s => s.isActive)
-                  .map((status) => (
-                    <DropdownMenuRadioItem key={status.id} value={status.id}>
-                      {safeString(status.label, status.code)}
-                    </DropdownMenuRadioItem>
-                  ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[150px] justify-between">
-                <span className="truncate">
-                  {originFilter === 'all'
-                    ? 'Todas Origens'
-                    : safeString(
-                        leadOrigins.find(o => o.id === originFilter)?.label,
-                        'Origem'
-                      )}
-                </span>
-                <CaretDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[220px]">
-              <DropdownMenuRadioGroup
-                value={originFilter}
-                onValueChange={(value) => setOriginFilter(value)}
-              >
-                <DropdownMenuRadioItem value="all">
-                  Todas Origens
-                </DropdownMenuRadioItem>
-                {leadOrigins
-                  .filter(o => o.isActive)
-                  .map((origin) => (
-                    <DropdownMenuRadioItem key={origin.id} value={origin.id}>
-                      {safeString(origin.label, origin.code)}
-                    </DropdownMenuRadioItem>
-                  ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {tagsEnabled && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
-                  <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
+    <div className="space-y-3">
+      {viewActionsBar}
+      <SharedListToolbar
+        searchField={
+          <div className="relative w-full sm:w-64">
+            <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar leads..."
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        }
+        filters={
+          <div className="flex flex-wrap items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-[150px] justify-between">
+                  <span className="truncate">
+                    {statusFilter === 'all'
+                      ? 'Todos Status'
+                      : safeString(
+                          leadStatuses.find(s => s.id === statusFilter)?.label,
+                          'Status'
+                        )}
+                  </span>
+                  <CaretDown className="ml-1 h-4 w-4" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
-                  <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
-                    {tags.map(tag => {
-                      const safeColor = safeString(tag.color, '#888')
-                      return (
-                        <Badge
-                          key={tag.id}
-                          variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
-                          className="cursor-pointer hover:opacity-80"
-                          onClick={() => {
-                            const newTags = tagFilter.includes(tag.id)
-                              ? tagFilter.filter(t => t !== tag.id)
-                              : [...tagFilter, tag.id];
-                            setTagFilter(newTags);
-                            setCurrentPage(1);
-                          }}
-                          style={tagFilter.includes(tag.id) ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
-                        >
-                          {safeString(tag.name, 'Tag')}
-                        </Badge>
-                      )
-                    })}
-                    {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
-                  </div>
-                  {tagFilter.length > 0 && (
-                    <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setCurrentPage(1); }}>
-                      Limpar Tags
-                    </Button>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[200px]">
+                <DropdownMenuRadioGroup
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value)}
+                >
+                  <DropdownMenuRadioItem value="all">
+                    Todos Status
+                  </DropdownMenuRadioItem>
+                  {leadStatuses
+                    .filter(s => s.isActive)
+                    .map((status) => (
+                      <DropdownMenuRadioItem key={status.id} value={status.id}>
+                        {safeString(status.label, status.code)}
+                      </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {hasFilters && (
-            <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
-          )}
-        </div>
-      }
-      viewToggle={
-        viewToggleControl
-      }
-      rightContent={
-        bulkActions
-      }
-    />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-[150px] justify-between">
+                  <span className="truncate">
+                    {originFilter === 'all'
+                      ? 'Todas Origens'
+                      : safeString(
+                          leadOrigins.find(o => o.id === originFilter)?.label,
+                          'Origem'
+                        )}
+                  </span>
+                  <CaretDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[220px]">
+                <DropdownMenuRadioGroup
+                  value={originFilter}
+                  onValueChange={(value) => setOriginFilter(value)}
+                >
+                  <DropdownMenuRadioItem value="all">
+                    Todas Origens
+                  </DropdownMenuRadioItem>
+                  {leadOrigins
+                    .filter(o => o.isActive)
+                    .map((origin) => (
+                      <DropdownMenuRadioItem key={origin.id} value={origin.id}>
+                        {safeString(origin.label, origin.code)}
+                      </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {tagsEnabled && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
+                    <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
+                    <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
+                      {tags.map(tag => {
+                        const safeColor = safeString(tag.color, '#888')
+                        return (
+                          <Badge
+                            key={tag.id}
+                            variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
+                            className="cursor-pointer hover:opacity-80"
+                            onClick={() => {
+                              const newTags = tagFilter.includes(tag.id)
+                                ? tagFilter.filter(t => t !== tag.id)
+                                : [...tagFilter, tag.id];
+                              setTagFilter(newTags);
+                              setCurrentPage(1);
+                            }}
+                            style={tagFilter.includes(tag.id) ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
+                          >
+                            {safeString(tag.name, 'Tag')}
+                          </Badge>
+                        )
+                      })}
+                      {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
+                    </div>
+                    {tagFilter.length > 0 && (
+                      <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setCurrentPage(1); }}>
+                        Limpar Tags
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {hasFilters && (
+              <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
+            )}
+          </div>
+        }
+      />
+    </div>
   )
 
   const activeFiltersBar = viewMode === 'sales' ? salesFiltersBar : filtersBar
