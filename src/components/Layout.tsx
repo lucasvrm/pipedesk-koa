@@ -507,21 +507,21 @@ export function Layout({ children }: LayoutProps) {
                   </SheetDescription>
                 </SheetHeader>
 
-                  <div className="flex items-center gap-3 py-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {getInitials(currentUser.name || 'U')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <p className="text-sm font-medium">
-                        {currentUser.name || 'Usuário'}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {currentUser.email || ''}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-3 py-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {getInitials(currentUser.name || 'U')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium">
+                      {currentUser.name || 'Usuário'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                      {currentUser.email || ''}
+                    </p>
                   </div>
+                </div>
 
                   <div className="space-y-4">
                     <div className="space-y-1">
@@ -647,105 +647,105 @@ export function Layout({ children }: LayoutProps) {
 
               <div className="hidden lg:block">
                 <DropdownMenu>
-                <DropdownMenuTrigger asChild>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Menu de navegação"
-                        aria-label="Menu de navegação"
-                      >
-                        <List weight="bold" />
-                      </Button>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Menu de navegação"
+                          aria-label="Menu de navegação"
+                        >
+                          <List weight="bold" />
+                        </Button>
+                      </DropdownMenuTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
                       Menu, atalhos e configurações
                     </TooltipContent>
                   </Tooltip>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72">
-                  <DropdownMenuLabel>
-                    <div className="flex items-center gap-3 py-1">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                          {getInitials(currentUser.name || 'U')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <p className="text-sm font-medium">
-                          {currentUser.name || 'Usuário'}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {currentUser.email || ''}
-                        </p>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuLabel>
+                      <div className="flex items-center gap-3 py-1">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                            {getInitials(currentUser.name || 'U')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-medium">
+                            {currentUser.name || 'Usuário'}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            {currentUser.email || ''}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </DropdownMenuLabel>
+                    </DropdownMenuLabel>
 
-                  <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                  {personalItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={item.path}
-                        className={isActive(item.path) ? 'bg-muted text-primary' : ''}
-                        onClick={() => handleNavigate(item.path)}
-                      >
-                        <Icon className="mr-2" />
-                        {item.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
-                    Gestão
-                  </DropdownMenuLabel>
-
-                  {managementItems.map((item) => {
-                    const Icon = item.icon as typeof Gear;
-                    return (
-                      <Tooltip key={item.path}>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuItem
-                            className={isActive(item.path) ? 'bg-muted text-primary' : ''}
-                            onClick={() => handleNavigate(item.path)}
-                          >
-                            <Icon className="mr-2" />
-                            <span className="flex-1">{item.label}</span>
-                            {item.restricted && (
-                              <Badge variant="outline" className="text-[10px] uppercase">
-                                Restrito
-                              </Badge>
-                            )}
-                          </DropdownMenuItem>
-                        </TooltipTrigger>
-                        <TooltipContent side="left">
-                          Abrir {item.label}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-
-                  {settingsShortcuts.length > 0 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      {renderSettingsDropdown()}
-                    </>
-                  )}
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={handleSignOut}
-                  >
-                    <SignOut className="mr-2" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
+                    {personalItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={item.path}
+                          className={isActive(item.path) ? 'bg-muted text-primary' : ''}
+                          onClick={() => handleNavigate(item.path)}
+                        >
+                          <Icon className="mr-2" />
+                          {item.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+  
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
+                      Gestão
+                    </DropdownMenuLabel>
+  
+                    {managementItems.map((item) => {
+                      const Icon = item.icon as typeof Gear;
+                      return (
+                        <Tooltip key={item.path}>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuItem
+                              className={isActive(item.path) ? 'bg-muted text-primary' : ''}
+                              onClick={() => handleNavigate(item.path)}
+                            >
+                              <Icon className="mr-2" />
+                              <span className="flex-1">{item.label}</span>
+                              {item.restricted && (
+                                <Badge variant="outline" className="text-[10px] uppercase">
+                                  Restrito
+                                </Badge>
+                              )}
+                            </DropdownMenuItem>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            Abrir {item.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+  
+                    {settingsShortcuts.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {renderSettingsDropdown()}
+                      </>
+                    )}
+  
+                    <DropdownMenuSeparator />
+  
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={handleSignOut}
+                    >
+                      <SignOut className="mr-2" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
