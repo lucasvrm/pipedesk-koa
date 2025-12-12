@@ -492,6 +492,7 @@ export function Layout({ children }: LayoutProps) {
                     size="icon"
                     title="Menu, gestão e configurações"
                     aria-label="Menu, gestão e configurações"
+                    onClick={() => setMenuOpen(true)}
                   >
                     <List weight="bold" />
                   </Button>
