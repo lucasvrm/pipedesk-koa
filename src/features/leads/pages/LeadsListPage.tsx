@@ -4,14 +4,20 @@ import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } fr
 import { ensureArray } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -738,29 +744,71 @@ export default function LeadsListPage() {
       }
       filters={
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos Status</SelectItem>
-              {leadStatuses.filter(s => s.isActive).map((status) => (
-                <SelectItem key={status.id} value={status.id}>{safeString(status.label, status.code)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[150px] justify-between">
+                <span className="truncate">
+                  {statusFilter === 'all'
+                    ? 'Todos Status'
+                    : safeString(
+                        leadStatuses.find(s => s.id === statusFilter)?.label,
+                        'Status'
+                      )}
+                </span>
+                <CaretDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[200px]">
+              <DropdownMenuRadioGroup
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value)}
+              >
+                <DropdownMenuRadioItem value="all">
+                  Todos Status
+                </DropdownMenuRadioItem>
+                {leadStatuses
+                  .filter(s => s.isActive)
+                  .map((status) => (
+                    <DropdownMenuRadioItem key={status.id} value={status.id}>
+                      {safeString(status.label, status.code)}
+                    </DropdownMenuRadioItem>
+                  ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <Select value={originFilter} onValueChange={setOriginFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Origem" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas Origens</SelectItem>
-              {leadOrigins.filter(o => o.isActive).map((origin) => (
-                <SelectItem key={origin.id} value={origin.id}>{safeString(origin.label, origin.code)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[150px] justify-between">
+                <span className="truncate">
+                  {originFilter === 'all'
+                    ? 'Todas Origens'
+                    : safeString(
+                        leadOrigins.find(o => o.id === originFilter)?.label,
+                        'Origem'
+                      )}
+                </span>
+                <CaretDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[220px]">
+              <DropdownMenuRadioGroup
+                value={originFilter}
+                onValueChange={(value) => setOriginFilter(value)}
+              >
+                <DropdownMenuRadioItem value="all">
+                  Todas Origens
+                </DropdownMenuRadioItem>
+                {leadOrigins
+                  .filter(o => o.isActive)
+                  .map((origin) => (
+                    <DropdownMenuRadioItem key={origin.id} value={origin.id}>
+                      {safeString(origin.label, origin.code)}
+                    </DropdownMenuRadioItem>
+                  ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {tagsEnabled && (
             <Popover>
@@ -885,20 +933,27 @@ export default function LeadsListPage() {
         </span>
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline">Linhas:</span>
-          <Select
-            value={String(itemsPerPage)}
-            onValueChange={(value) => {
-              setItemsPerPage(Number(value))
-              setCurrentPage(1)
-            }}
-          >
-            <SelectTrigger className="w-[80px] h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[100px] h-9 justify-between">
+                <span>{itemsPerPage}</span>
+                <CaretDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[140px]">
+              <DropdownMenuRadioGroup
+                value={String(itemsPerPage)}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value))
+                  setCurrentPage(1)
+                }}
+              >
+                <DropdownMenuRadioItem value="10">10</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="20">20</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="50">50</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <div className="flex items-center gap-2">
