@@ -223,6 +223,9 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
     queryKey: ['leads-sales-view', params],
     queryFn: () => fetchSalesView(params),
     placeholderData: keepPreviousData,
-    enabled: options?.enabled ?? true
+    enabled: options?.enabled ?? true,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   })
 }
