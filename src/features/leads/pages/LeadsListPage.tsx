@@ -205,14 +205,17 @@ export default function LeadsListPage() {
 
   const { data: leads, isLoading } = useLeads(filters)
   const salesFilters = useMemo(() => ({
-    owner: salesOwnerMode === 'me' ? 'me' : undefined,
-    ownerIds: salesOwnerMode === 'custom' ? salesOwnerIds : undefined,
+    ownerIds: salesOwnerMode === 'me'
+      ? (profile?.id ? [profile.id] : undefined)
+      : salesOwnerMode === 'custom'
+        ? salesOwnerIds
+        : undefined,
     priority: salesPriority.length > 0 ? salesPriority : undefined,
     status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
     origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
     daysWithoutInteraction: salesDaysWithoutInteraction ?? undefined,
     orderBy: salesOrderBy
-  }), [salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
+  }), [profile?.id, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
   const salesViewQuery = useMemo(
     () => ({
       ...salesFilters,
@@ -658,7 +661,7 @@ export default function LeadsListPage() {
   )
 
   const resetSalesFilters = useCallback(() => {
-    setSalesOwnerMode('me')
+    setSalesOwnerMode('all')
     setSalesOwnerIds([])
     setSalesPriority([])
     setSalesStatusFilter([])
