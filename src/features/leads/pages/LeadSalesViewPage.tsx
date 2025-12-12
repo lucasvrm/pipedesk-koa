@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { ensureArray } from '@/lib/utils'
+import { ensureArray, safeString, safeStringOptional } from '@/lib/utils'
 import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
 import { SquaresFour, Kanban } from '@phosphor-icons/react'
 import { ApiError } from '@/lib/errors'
@@ -88,13 +88,34 @@ export default function LeadSalesViewPage() {
   const mapLeadToRow = (lead: LeadSalesViewItem) => {
     const priorityBucket = lead.priorityBucket ?? lead.priority_bucket ?? 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
-    const priorityDescription = lead.priorityDescription ?? lead.priority_description
-    const legalName = lead.legalName ?? lead.legal_name ?? 'Lead sem nome'
-    const tradeName = lead.tradeName ?? lead.trade_name
-    const primaryContact = lead.primaryContact ?? lead.primary_contact
+    const priorityDescription = safeStringOptional(lead.priorityDescription ?? lead.priority_description)
+    const legalName = safeString(lead.legalName ?? lead.legal_name, 'Lead sem nome')
+    const tradeName = safeStringOptional(lead.tradeName ?? lead.trade_name)
+    const primaryContactSource = lead.primaryContact ?? lead.primary_contact
+    const primaryContact =
+      primaryContactSource && typeof primaryContactSource === 'object'
+        ? {
+            ...primaryContactSource,
+            name: safeString((primaryContactSource as any).name, 'Contato não informado'),
+            role: safeStringOptional((primaryContactSource as any).role),
+            avatar: safeStringOptional((primaryContactSource as any).avatar)
+          }
+        : undefined
     const lastInteractionAt = lead.lastInteractionAt ?? lead.last_interaction_at
     const lastInteractionType = lead.lastInteractionType ?? lead.last_interaction_type
-    const nextAction = lead.nextAction ?? lead.next_action
+    const nextActionRaw = lead.nextAction ?? lead.next_action
+    const nextAction = (() => {
+      if (!nextActionRaw || typeof nextActionRaw !== 'object') return undefined
+
+      const safeLabel = safeStringOptional((nextActionRaw as any).label, '—') ?? '—'
+      const safeReason = safeStringOptional((nextActionRaw as any).reason)
+
+      return {
+        ...(nextActionRaw as any),
+        label: safeLabel,
+        reason: safeReason
+      }
+    })()
 
     return {
       ...lead,

@@ -66,14 +66,20 @@ export function LeadsSalesList({
     const priorityBucketRaw = lead.priorityBucket ?? lead.priority_bucket
     const priorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScore = lead.priorityScore ?? lead.priority_score
-    const priorityDescription = lead.priorityDescription ?? lead.priority_description
+    const priorityDescription = safeStringOptional(lead.priorityDescription ?? lead.priority_description)
     const legalName =
       safeStringOptional(lead.legalName ?? lead.legal_name ?? lead.lead?.legal_name, 'Lead sem nome') ?? 'Lead sem nome'
     const tradeName = safeStringOptional(lead.tradeName ?? lead.trade_name ?? lead.lead?.trade_name)
-    const primaryContactData = lead.primaryContact ?? lead.primary_contact
-    const primaryContact = primaryContactData
-      ? { ...primaryContactData, name: safeStringOptional(primaryContactData.name, 'Contato não informado') ?? 'Contato não informado' }
-      : undefined
+    const primaryContactSource = lead.primaryContact ?? lead.primary_contact
+    const primaryContact =
+      primaryContactSource && typeof primaryContactSource === 'object'
+        ? {
+            ...primaryContactSource,
+            name: safeStringOptional((primaryContactSource as any).name, 'Contato não informado') ?? 'Contato não informado',
+            role: safeStringOptional((primaryContactSource as any).role),
+            avatar: safeStringOptional((primaryContactSource as any).avatar)
+          }
+        : undefined
     // Mapped to use new metadata IDs
     const status = (lead as any).leadStatusId ?? (lead as any).lead_status_id ?? lead.status ?? lead.lead?.status ?? null
     const origin = (lead as any).leadOriginId ?? (lead as any).lead_origin_id ?? lead.origin ?? lead.lead?.origin ?? null
@@ -84,14 +90,19 @@ export function LeadsSalesList({
       ? lastInteractionTypeRaw
       : null
     const nextActionRaw = lead.nextAction ?? lead.next_action
-    const normalizedNextAction =
-      nextActionRaw && typeof nextActionRaw.label === 'string'
-        ? {
-            ...nextActionRaw,
-            label: safeStringOptional(nextActionRaw.label, '—') ?? '—',
-            reason: safeStringOptional(nextActionRaw.reason)
-          }
-        : undefined
+    const normalizedNextAction = (() => {
+      if (!nextActionRaw || typeof nextActionRaw !== 'object') return undefined
+
+      const safeLabel = safeStringOptional((nextActionRaw as any).label, '—') ?? '—'
+      const safeReason = safeStringOptional((nextActionRaw as any).reason)
+
+      return {
+        ...(nextActionRaw as any),
+        label: safeLabel,
+        reason: safeReason
+      }
+    })()
+
     const ownerData = lead.owner ??
       (lead.lead?.owner
         ? {
@@ -99,10 +110,11 @@ export function LeadsSalesList({
             avatar: lead.lead.owner.avatar_url ?? undefined
           }
         : undefined)
-    const owner = ownerData
+    const owner = ownerData && typeof ownerData === 'object'
       ? {
           ...ownerData,
-          name: safeStringOptional(ownerData.name, 'Responsável não informado') ?? 'Responsável não informado'
+          name: safeStringOptional((ownerData as any).name, 'Responsável não informado') ?? 'Responsável não informado',
+          avatar: safeStringOptional((ownerData as any).avatar)
         }
       : undefined
     const tags = Array.isArray(lead.tags)
