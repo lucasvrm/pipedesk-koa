@@ -370,26 +370,31 @@ export default function LeadsListPage() {
     setHasSalesShownErrorToast(true)
   }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess])
 
+  const sortedSalesOwnerIds = useMemo(() => [...salesOwnerIds].sort(), [salesOwnerIds])
+  const sortedSalesPriority = useMemo(() => [...salesPriority].sort(), [salesPriority])
+  const sortedSalesStatusFilter = useMemo(() => [...salesStatusFilter].sort(), [salesStatusFilter])
+  const sortedSalesOriginFilter = useMemo(() => [...salesOriginFilter].sort(), [salesOriginFilter])
+
   // Serialize Sales filters to make dependency changes content-aware (not just reference-aware)
   const serializedSalesFilters = useMemo(
     () =>
       JSON.stringify({
         ownerMode: salesOwnerMode,
-        owners: Array.from(salesOwnerIds).sort(),
-        priority: Array.from(salesPriority).sort(),
-        status: Array.from(salesStatusFilter).sort(),
-        origin: Array.from(salesOriginFilter).sort(),
+        owners: sortedSalesOwnerIds,
+        priority: sortedSalesPriority,
+        status: sortedSalesStatusFilter,
+        origin: sortedSalesOriginFilter,
         daysWithoutInteraction: salesDaysWithoutInteraction ?? null,
         orderBy: salesOrderBy
       }),
     [
       salesDaysWithoutInteraction,
-      salesOriginFilter,
       salesOrderBy,
-      salesOwnerIds,
       salesOwnerMode,
-      salesPriority,
-      salesStatusFilter
+      sortedSalesOriginFilter,
+      sortedSalesOwnerIds,
+      sortedSalesPriority,
+      sortedSalesStatusFilter
     ]
   )
 
