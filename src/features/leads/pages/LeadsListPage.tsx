@@ -50,6 +50,7 @@ import {
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
+const normalizeSearch = () => window.location.search.replace(/^\?/, '')
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -396,8 +397,6 @@ export default function LeadsListPage() {
   // Compares against both the serialized filters snapshot and the last written search string
   // to avoid update loops when array references change without a real content change.
   useEffect(() => {
-    const normalizeSearch = () => window.location.search.replace(/^\?/, '')
-
     // Keep refs aligned when Sales view is not active to prevent stale comparisons later
     if (viewMode !== 'sales') {
       lastSearchRef.current = normalizeSearch()
@@ -434,6 +433,7 @@ export default function LeadsListPage() {
     const currentSearch = normalizeSearch()
 
     if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) {
+      // Keep the serialized snapshot in sync even when URL already matches to avoid repeated comparisons
       lastSyncedSalesFilters.current = serializedSalesFilters
       return
     }
