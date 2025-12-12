@@ -642,11 +642,11 @@ export function Layout({ children }: LayoutProps) {
                       </Button>
                     </div>
                   </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
 
-            <div className="hidden lg:block">
-              <DropdownMenu>
+              <div className="hidden lg:block">
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -746,11 +746,11 @@ export function Layout({ children }: LayoutProps) {
                     Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       <main className="flex-1">{children}</main>
 
