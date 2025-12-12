@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { ensureArray } from '@/lib/utils'
@@ -47,6 +47,7 @@ import {
   recordSalesViewFailure,
   recordSalesViewSuccess
 } from '../utils/salesViewFailureTracker'
+import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
@@ -135,6 +136,7 @@ export default function LeadsListPage() {
   const [hasSalesShownErrorToast, setHasSalesShownErrorToast] = useState(false)
   const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
   const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
+  const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -311,13 +313,17 @@ export default function LeadsListPage() {
 
   // Handle Sales View errors with logging and user feedback
   useEffect(() => {
+    const currentErrorKey = isSalesError ? getSalesErrorKey(salesError) : null
+
     if (viewMode !== 'sales') {
+      salesErrorGuardRef.current = { key: null, count: 0 }
       // Reset flags when switching away from sales view
       if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
       if (hasSalesRecordedSuccess) setHasSalesRecordedSuccess(false)
       return
     }
     if (!isSalesError) {
+      salesErrorGuardRef.current = { key: null, count: 0 }
       // Reset the error flag when error is resolved
       if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
       // Record success to reset failure counter (only once per successful load)
@@ -327,6 +333,25 @@ export default function LeadsListPage() {
       }
       return
     }
+
+    if (currentErrorKey) {
+      const nextCount = salesErrorGuardRef.current.key === currentErrorKey
+        ? salesErrorGuardRef.current.count + 1
+        : 1
+
+      if (nextCount >= SALES_VIEW_ERROR_GUARD_LIMIT) {
+        if (!import.meta.env.PROD) {
+          console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error handler suppressed to prevent render loop`, {
+            currentErrorKey,
+            count: nextCount
+          })
+        }
+        return
+      }
+
+      salesErrorGuardRef.current = { key: currentErrorKey, count: nextCount }
+    }
+
     if (hasSalesShownErrorToast) return
     
     // Reset success flag when error occurs
@@ -376,7 +401,7 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess, hasAppliedPersistentFallback])
+  }, [hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, viewMode])
 
   useEffect(() => {
     if (viewMode !== 'sales' && hasAppliedPersistentFallback) {
