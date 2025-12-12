@@ -136,58 +136,71 @@ export function LeadsSalesFiltersBar({
   }, [onOriginsChange, origins, toggleItem])
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="rounded-xl border bg-card px-4 py-3 shadow-sm space-y-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Funnel size={16} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <p className="text-sm font-semibold text-foreground leading-none">Filtros inteligentes</p>
             <p className="text-xs text-muted-foreground leading-none">Refine a Sales View rapidamente.</p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClear} className="gap-1 self-start sm:self-center text-foreground">
-          <X size={14} />
-          Limpar filtros
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Ordenar por</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  role="combobox"
+                  className="h-8 w-[200px] justify-between gap-2 px-3 text-xs"
+                >
+                  <span className="truncate text-left">{orderByLabel}</span>
+                  <CaretDown size={12} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[240px]">
+                <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
+                  {ORDER_BY_OPTIONS.map(option => (
+                    <DropdownMenuRadioItem key={option.value} value={option.value} className="flex items-center gap-2">
+                      {option.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            className="h-8 gap-1 px-3 text-xs text-foreground"
+          >
+            <X size={14} />
+            Limpar filtros
+          </Button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">Ordenar por</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" role="combobox" className="h-9 w-[220px] justify-between gap-2">
-              <span className="truncate text-left">{orderByLabel}</span>
-              <CaretDown size={12} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[240px]">
-            <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
-              {ORDER_BY_OPTIONS.map(option => (
-                <DropdownMenuRadioItem key={option.value} value={option.value} className="flex items-center gap-2">
-                  {option.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-4">
+        <div className="flex flex-col gap-1">
           <div className="text-xs font-medium text-muted-foreground">Responsável</div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1">
             <Button
-              variant={ownerMode === 'me' ? 'secondary' : 'outline'}
+              variant={ownerMode === 'me' ? 'default' : 'outline'}
               size="sm"
+              className="h-8 px-3 text-xs"
               onClick={() => onOwnerModeChange('me')}
             >
               Meus leads
             </Button>
             <Button
-              variant={ownerMode === 'all' ? 'secondary' : 'outline'}
+              variant={ownerMode === 'all' ? 'default' : 'outline'}
               size="sm"
+              className="h-8 px-3 text-xs"
               onClick={() => onOwnerModeChange('all')}
             >
               Todos
@@ -195,9 +208,9 @@ export function LeadsSalesFiltersBar({
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant={ownerMode === 'custom' || selectedOwners.length > 0 ? 'secondary' : 'outline'}
+                  variant={ownerMode === 'custom' || selectedOwners.length > 0 ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="h-8 gap-2 px-3 text-xs"
                 >
                   <UserSwitch size={16} />
                   {ownerLabel}
@@ -244,70 +257,14 @@ export function LeadsSalesFiltersBar({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground">Bucket de prioridade</div>
-          <div className="flex flex-wrap gap-2">
-            {PRIORITY_OPTIONS.map(option => {
-              const isActive = priority.includes(option.value)
-              return (
-                <Button
-                  key={option.value}
-                  variant={isActive ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={() => handlePriorityToggle(option.value)}
-                >
-                  {safeString(option.label, option.value)}
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground">Status</div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant={statuses.length > 0 ? 'secondary' : 'outline'}
-                size="sm"
-                className="gap-2"
-              >
-                {statuses.length > 0 ? `Status (${statuses.length})` : 'Selecionar status'}
-                <CaretDown size={12} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              {safeLeadStatuses.map(status => (
-                <DropdownMenuCheckboxItem
-                  key={status.id}
-                  checked={status.id ? statuses.includes(status.id) : false}
-                  onCheckedChange={() => status.id && handleStatusToggle(status.id)}
-                >
-                  {safeString(status.label, status.code)}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <div className="flex flex-wrap gap-1">
-            {statuses.map(id => {
-              const status = safeLeadStatuses.find(s => s.id === id)
-              return (
-                <Badge key={id} variant="secondary" className="text-xs">
-                  {safeString(status?.label, id)}
-                </Badge>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-2">
+        <div className="flex flex-col gap-1">
           <div className="text-xs font-medium text-muted-foreground">Origem</div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant={origins.length > 0 ? 'secondary' : 'outline'}
+                variant={origins.length > 0 ? 'default' : 'outline'}
                 size="sm"
-                className="gap-2"
+                className="h-8 gap-2 px-3 text-xs"
               >
                 {origins.length > 0 ? `Origens (${origins.length})` : 'Selecionar origens'}
                 <CaretDown size={12} />
@@ -337,26 +294,86 @@ export function LeadsSalesFiltersBar({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground">Sem interação há</div>
-          <div className="flex flex-wrap gap-2">
-            {DAYS_PRESETS.map(days => (
+        <div className="flex flex-col gap-1">
+          <div className="text-xs font-medium text-muted-foreground">Status</div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                key={days}
-                variant={daysWithoutInteraction === days ? 'secondary' : 'outline'}
+                variant={statuses.length > 0 ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onDaysWithoutInteractionChange(days)}
+                className="h-8 gap-2 px-3 text-xs"
               >
-                {days} dias
+                {statuses.length > 0 ? `Status (${statuses.length})` : 'Selecionar status'}
+                <CaretDown size={12} />
               </Button>
-            ))}
-            <Button
-              variant={daysWithoutInteraction === null ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={() => onDaysWithoutInteractionChange(null)}
-            >
-              Todos
-            </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              {safeLeadStatuses.map(status => (
+                <DropdownMenuCheckboxItem
+                  key={status.id}
+                  checked={status.id ? statuses.includes(status.id) : false}
+                  onCheckedChange={() => status.id && handleStatusToggle(status.id)}
+                >
+                  {safeString(status.label, status.code)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex flex-wrap gap-1">
+            {statuses.map(id => {
+              const status = safeLeadStatuses.find(s => s.id === id)
+              return (
+                <Badge key={id} variant="secondary" className="text-xs">
+                  {safeString(status?.label, id)}
+                </Badge>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <div className="text-xs font-medium text-muted-foreground">Bucket de prioridade</div>
+            <div className="flex flex-wrap gap-1">
+              {PRIORITY_OPTIONS.map(option => {
+                const isActive = priority.includes(option.value)
+                return (
+                  <Button
+                    key={option.value}
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => handlePriorityToggle(option.value)}
+                  >
+                    {safeString(option.label, option.value)}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="text-xs font-medium text-muted-foreground">Sem interação há</div>
+            <div className="flex flex-wrap gap-1">
+              {DAYS_PRESETS.map(days => (
+                <Button
+                  key={days}
+                  variant={daysWithoutInteraction === days ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => onDaysWithoutInteractionChange(days)}
+                >
+                  {days} dias
+                </Button>
+              ))}
+              <Button
+                variant={daysWithoutInteraction === null ? 'default' : 'outline'}
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={() => onDaysWithoutInteractionChange(null)}
+              >
+                Todos
+              </Button>
+            </div>
           </div>
         </div>
       </div>
