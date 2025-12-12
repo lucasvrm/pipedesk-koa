@@ -374,10 +374,10 @@ export default function LeadsListPage() {
     () =>
       JSON.stringify({
         ownerMode: salesOwnerMode,
-        owners: [...salesOwnerIds].sort(),
-        priority: [...salesPriority].sort(),
-        status: [...salesStatusFilter].sort(),
-        origin: [...salesOriginFilter].sort(),
+        owners: Array.from(salesOwnerIds).sort(),
+        priority: Array.from(salesPriority).sort(),
+        status: Array.from(salesStatusFilter).sort(),
+        origin: Array.from(salesOriginFilter).sort(),
         daysWithoutInteraction: salesDaysWithoutInteraction ?? null,
         orderBy: salesOrderBy
       }),
@@ -413,6 +413,7 @@ export default function LeadsListPage() {
     }
 
     const params = new URLSearchParams()
+    const normalizeSearch = () => window.location.search.replace(/^\?/, '')
 
     // Reconstruct owner/owners params
     if (salesOwnerMode === 'me') {
@@ -429,11 +430,10 @@ export default function LeadsListPage() {
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const nextSearch = params.toString()
-    const currentSearch = window.location.search.replace(/^\?/, '')
+    const currentSearch = normalizeSearch()
 
     if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) {
       lastSyncedSalesFilters.current = serializedSalesFilters
-      lastSearchRef.current = nextSearch
       return
     }
 
@@ -442,19 +442,7 @@ export default function LeadsListPage() {
     if (currentSearch !== nextSearch) {
       setSearchParams(params, { replace: true })
     }
-  }, [
-    isSalesError,
-    salesDaysWithoutInteraction,
-    salesOriginFilter,
-    salesOrderBy,
-    salesOwnerIds,
-    salesOwnerMode,
-    salesPriority,
-    salesStatusFilter,
-    serializedSalesFilters,
-    setSearchParams,
-    viewMode
-  ])
+  }, [isSalesError, serializedSalesFilters, setSearchParams, viewMode])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
