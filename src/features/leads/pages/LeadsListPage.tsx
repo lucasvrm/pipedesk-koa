@@ -50,6 +50,7 @@ import {
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
+// Helper kept at module scope to avoid recreating inside render/effects
 const normalizeSearch = () => window.location.search.replace(/^\?/, '')
 
 export default function LeadsListPage() {
@@ -403,6 +404,7 @@ export default function LeadsListPage() {
   // to avoid update loops when array references change without a real content change.
   useEffect(() => {
     // Keep refs aligned when Sales view is not active to prevent stale comparisons later
+    // This avoids stale comparisons when the user returns to Sales view after navigating away.
     if (viewMode !== 'sales') {
       lastSearchRef.current = normalizeSearch()
       return
@@ -440,6 +442,7 @@ export default function LeadsListPage() {
     if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) {
       // Keep the serialized snapshot in sync even when URL already matches to avoid repeated comparisons
       lastSyncedSalesFilters.current = serializedSalesFilters
+      lastSearchRef.current = nextSearch
       return
     }
 
