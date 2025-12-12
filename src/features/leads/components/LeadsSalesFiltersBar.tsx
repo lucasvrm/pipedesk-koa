@@ -136,44 +136,45 @@ export function LeadsSalesFiltersBar({
   }, [onOriginsChange, origins, toggleItem])
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Funnel size={16} />
           </div>
-          <div>
+          <div className="space-y-1">
             <p className="text-sm font-semibold text-foreground leading-none">Filtros inteligentes</p>
-            <p className="text-xs text-muted-foreground leading-none mt-1">Refine a Sales View rapidamente.</p>
+            <p className="text-xs text-muted-foreground leading-none">Refine a Sales View rapidamente.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground">Ordenar por</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 w-[200px] justify-between gap-2">
-                <span className="truncate text-left">{orderByLabel}</span>
-                <CaretDown size={12} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[220px]">
-              <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
-                {ORDER_BY_OPTIONS.map(option => (
-                  <DropdownMenuRadioItem key={option.value} value={option.value} className="flex items-center gap-2">
-                    {option.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="ghost" size="sm" onClick={onClear} className="gap-1 text-foreground">
-            <X size={14} />
-            Limpar filtros
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={onClear} className="gap-1 self-start sm:self-center text-foreground">
+          <X size={14} />
+          Limpar filtros
+        </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Ordenar por</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" role="combobox" className="h-9 w-[220px] justify-between gap-2">
+              <span className="truncate text-left">{orderByLabel}</span>
+              <CaretDown size={12} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[240px]">
+            <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
+              {ORDER_BY_OPTIONS.map(option => (
+                <DropdownMenuRadioItem key={option.value} value={option.value} className="flex items-center gap-2">
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-2">
           <div className="text-xs font-medium text-muted-foreground">Responsável</div>
           <div className="flex flex-wrap gap-2">
@@ -308,7 +309,7 @@ export function LeadsSalesFiltersBar({
                 size="sm"
                 className="gap-2"
               >
-                {origins.length > 0 ? `Origem (${origins.length})` : 'Selecionar origens'}
+                {origins.length > 0 ? `Origens (${origins.length})` : 'Selecionar origens'}
                 <CaretDown size={12} />
               </Button>
             </DropdownMenuTrigger>
