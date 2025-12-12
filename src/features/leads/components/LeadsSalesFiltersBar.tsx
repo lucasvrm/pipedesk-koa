@@ -136,17 +136,22 @@ export function LeadsSalesFiltersBar({
   }, [onOriginsChange, origins, toggleItem])
 
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Funnel size={16} />
-          <span>Filtros inteligentes</span>
+    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Funnel size={16} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground leading-none">Filtros inteligentes</p>
+            <p className="text-xs text-muted-foreground leading-none mt-1">Refine a Sales View rapidamente.</p>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-muted-foreground">Ordenar por</span>
+          <span className="text-xs font-medium text-muted-foreground">Ordenar por</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 w-[180px] justify-between gap-2">
+              <Button variant="outline" size="sm" className="h-9 w-[200px] justify-between gap-2">
                 <span className="truncate text-left">{orderByLabel}</span>
                 <CaretDown size={12} />
               </Button>
@@ -161,26 +166,26 @@ export function LeadsSalesFiltersBar({
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="sm" onClick={onClear} className="gap-1">
+          <Button variant="ghost" size="sm" onClick={onClear} className="gap-1 text-foreground">
             <X size={14} />
             Limpar filtros
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="space-y-2">
           <div className="text-xs font-medium text-muted-foreground">Responsável</div>
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={ownerMode === 'me' ? 'default' : 'outline'}
+              variant={ownerMode === 'me' ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => onOwnerModeChange('me')}
             >
               Meus leads
             </Button>
             <Button
-              variant={ownerMode === 'all' ? 'default' : 'outline'}
+              variant={ownerMode === 'all' ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => onOwnerModeChange('all')}
             >
@@ -188,7 +193,11 @@ export function LeadsSalesFiltersBar({
             </Button>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant={ownerMode === 'custom' ? 'secondary' : 'outline'} size="sm" className="gap-2">
+                <Button
+                  variant={ownerMode === 'custom' || selectedOwners.length > 0 ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
                   <UserSwitch size={16} />
                   {ownerLabel}
                   <CaretDown size={12} />
@@ -242,7 +251,7 @@ export function LeadsSalesFiltersBar({
               return (
                 <Button
                   key={option.value}
-                  variant={isActive ? 'default' : 'outline'}
+                  variant={isActive ? 'secondary' : 'outline'}
                   size="sm"
                   onClick={() => handlePriorityToggle(option.value)}
                 >
@@ -257,8 +266,12 @@ export function LeadsSalesFiltersBar({
           <div className="text-xs font-medium text-muted-foreground">Status</div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                Selecionar status
+              <Button
+                variant={statuses.length > 0 ? 'secondary' : 'outline'}
+                size="sm"
+                className="gap-2"
+              >
+                {statuses.length > 0 ? `Status (${statuses.length})` : 'Selecionar status'}
                 <CaretDown size={12} />
               </Button>
             </DropdownMenuTrigger>
@@ -290,8 +303,12 @@ export function LeadsSalesFiltersBar({
           <div className="text-xs font-medium text-muted-foreground">Origem</div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                Selecionar origens
+              <Button
+                variant={origins.length > 0 ? 'secondary' : 'outline'}
+                size="sm"
+                className="gap-2"
+              >
+                {origins.length > 0 ? `Origem (${origins.length})` : 'Selecionar origens'}
                 <CaretDown size={12} />
               </Button>
             </DropdownMenuTrigger>
@@ -325,7 +342,7 @@ export function LeadsSalesFiltersBar({
             {DAYS_PRESETS.map(days => (
               <Button
                 key={days}
-                variant={daysWithoutInteraction === days ? 'default' : 'outline'}
+                variant={daysWithoutInteraction === days ? 'secondary' : 'outline'}
                 size="sm"
                 onClick={() => onDaysWithoutInteractionChange(days)}
               >
@@ -333,7 +350,7 @@ export function LeadsSalesFiltersBar({
               </Button>
             ))}
             <Button
-              variant={daysWithoutInteraction === null ? 'default' : 'outline'}
+              variant={daysWithoutInteraction === null ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => onDaysWithoutInteractionChange(null)}
             >

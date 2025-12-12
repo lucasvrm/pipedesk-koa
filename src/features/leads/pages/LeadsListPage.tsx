@@ -11,7 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretLeft, CaretRight, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -42,9 +42,10 @@ import { useTags } from '@/services/tagService'
 import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
+import { LeadsPaginationControls } from '../components/LeadsPaginationControls'
 import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
-import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
+import { SALES_VIEW_MESSAGES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
 import { ApiError } from '@/lib/errors'
 import {
   hasPersistentFailures,
@@ -106,12 +107,13 @@ export default function LeadsListPage() {
     return (saved as 'grid' | 'kanban' | 'sales') || 'sales'
   })
   
-  const normalizeSalesOrderBy = (
-    value: string | null
-  ): 'priority' | 'last_interaction' | 'created_at' => {
-    if (value === 'last_interaction' || value === 'created_at') return value
-    return 'priority'
-  }
+  const normalizeSalesOrderBy = useCallback(
+    (value: string | null): 'priority' | 'last_interaction' | 'created_at' => {
+      if (value === 'last_interaction' || value === 'created_at') return value
+      return 'priority'
+    },
+    []
+  )
 
   const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
@@ -210,18 +212,19 @@ export default function LeadsListPage() {
   }), [normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, search])
 
   const { data: leads, isLoading } = useLeads(filters)
-  const salesFilters = useMemo(() => ({
-    ownerIds: salesOwnerMode === 'me'
-      ? (profile?.id ? [profile.id] : undefined)
-      : salesOwnerMode === 'custom'
-        ? salesOwnerIds
-        : undefined,
-    priority: salesPriority.length > 0 ? salesPriority : undefined,
-    status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
-    origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
-    daysWithoutInteraction: salesDaysWithoutInteraction ?? undefined,
-    orderBy: salesOrderBy
-  }), [profile?.id, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
+  const salesFilters = useMemo(() => {
+    const ownerIds = salesOwnerMode === 'custom' ? salesOwnerIds.filter(Boolean) : undefined
+
+    return {
+      owner: salesOwnerMode === 'me' ? 'me' : undefined,
+      ownerIds: ownerIds && ownerIds.length > 0 ? ownerIds : undefined,
+      priority: salesPriority.length > 0 ? salesPriority : undefined,
+      status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
+      origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
+      daysWithoutInteraction: typeof salesDaysWithoutInteraction === 'number' ? salesDaysWithoutInteraction : undefined,
+      orderBy: salesOrderBy
+    }
+  }, [salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
   const salesViewQuery = useMemo(
     () => ({
       ...salesFilters,
@@ -287,11 +290,11 @@ export default function LeadsListPage() {
   useEffect(() => {
     if (viewMode !== 'sales') return
     setCurrentPage(1)
-  }, [salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, viewMode])
+  }, [salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy, viewMode])
 
   useEffect(() => {
     setSelectedIds([])
-  }, [viewMode, search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction])
+  }, [viewMode, search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy])
 
   useEffect(() => {
     const payload = {
@@ -674,6 +677,7 @@ export default function LeadsListPage() {
     setSalesOriginFilter([])
     setSalesDaysWithoutInteraction(null)
     setSalesOrderBy('priority')
+    setCurrentPage(1)
   }, [])
 
   const handleOwnerModeChange = useCallback((mode: 'me' | 'all' | 'custom') => {
@@ -681,21 +685,54 @@ export default function LeadsListPage() {
     if (mode !== 'custom') {
       setSalesOwnerIds([])
     }
+    setCurrentPage(1)
+  }, [])
+
+  const handleSelectedOwnersChange = useCallback((ids: string[]) => {
+    setSalesOwnerIds(ids)
+    setCurrentPage(1)
   }, [])
 
   const handlePriorityChange = useCallback((values: LeadPriorityBucket[]) => {
     setSalesPriority(values)
+    setCurrentPage(1)
+  }, [])
+
+  const handleStatusesChange = useCallback((values: string[]) => {
+    setSalesStatusFilter(values)
+    setCurrentPage(1)
+  }, [])
+
+  const handleOriginsChange = useCallback((values: string[]) => {
+    setSalesOriginFilter(values)
+    setCurrentPage(1)
+  }, [])
+
+  const handleDaysWithoutInteractionChange = useCallback((value: number | null) => {
+    setSalesDaysWithoutInteraction(value)
+    setCurrentPage(1)
   }, [])
 
   const handleOrderByChange = useCallback(
     (value: 'priority' | 'last_interaction' | 'created_at') => {
+      const normalized = normalizeSalesOrderBy(value)
       setSalesOrderBy(prev => {
-        const normalized = normalizeSalesOrderBy(value)
-        return prev === normalized ? prev : normalized
+        if (prev === normalized) return prev
+        setCurrentPage(1)
+        return normalized
       })
     },
-    []
+    [normalizeSalesOrderBy]
   )
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page)
+  }, [])
+
+  const handleItemsPerPageChange = useCallback((pageSize: number) => {
+    setItemsPerPage(pageSize)
+    setCurrentPage(1)
+  }, [])
 
   const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
   const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
@@ -710,15 +747,15 @@ export default function LeadsListPage() {
         ownerMode={salesOwnerMode}
         onOwnerModeChange={handleOwnerModeChange}
         selectedOwners={salesOwnerIds}
-        onSelectedOwnersChange={setSalesOwnerIds}
+        onSelectedOwnersChange={handleSelectedOwnersChange}
         priority={salesPriority}
         onPriorityChange={handlePriorityChange}
         statuses={salesStatusFilter}
-        onStatusesChange={setSalesStatusFilter}
+        onStatusesChange={handleStatusesChange}
         origins={salesOriginFilter}
-        onOriginsChange={setSalesOriginFilter}
+        onOriginsChange={handleOriginsChange}
         daysWithoutInteraction={salesDaysWithoutInteraction}
-        onDaysWithoutInteractionChange={setSalesDaysWithoutInteraction}
+        onDaysWithoutInteractionChange={handleDaysWithoutInteractionChange}
         orderBy={salesOrderBy}
         onOrderByChange={handleOrderByChange}
         users={users}
@@ -924,60 +961,16 @@ export default function LeadsListPage() {
     )
   }, [viewMode, isSalesError, salesError, setViewMode, refetchSalesView])
 
-  const pagination = totalLeads > 0 && (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
-      <div className="flex items-center gap-3 flex-wrap">
-        <span>
-          Mostrando {Math.min((currentPage - 1) * currentPageSize + 1, totalLeads)}–
-          {Math.min(currentPage * currentPageSize, totalLeads)} de {totalLeads} leads
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="hidden sm:inline">Linhas:</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[100px] h-9 justify-between">
-                <span>{itemsPerPage}</span>
-                <CaretDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[140px]">
-              <DropdownMenuRadioGroup
-                value={String(itemsPerPage)}
-                onValueChange={(value) => {
-                  setItemsPerPage(Number(value))
-                  setCurrentPage(1)
-                }}
-              >
-                <DropdownMenuRadioItem value="10">10</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="20">20</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="50">50</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-        >
-          <CaretLeft className="mr-2 h-4 w-4" />
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-        >
-          Próximo
-          <CaretRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  )
+  const showPagination = viewMode !== 'kanban' && totalLeads > 0
+  const paginationProps = {
+    currentPage,
+    totalPages,
+    currentPageSize,
+    totalLeads,
+    itemsPerPage,
+    onPageChange: handlePageChange,
+    onItemsPerPageChange: handleItemsPerPageChange
+  }
 
   return (
     <PageContainer>
@@ -985,16 +978,19 @@ export default function LeadsListPage() {
         title="Leads"
         description="Gerencie seus prospects e oportunidades."
         primaryAction={actions}
-        metrics={metrics}
-        filtersBar={activeFiltersBar}
-        emptyState={filtersEmptyState}
-        footer={viewMode === 'kanban' ? null : pagination}
-      >
-        {isActiveLoading ? (
-          <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
-        ) : salesErrorUI ? (
-          salesErrorUI
-        ) : paginatedLeads.length === 0 ? (
+         metrics={metrics}
+         filtersBar={activeFiltersBar}
+         emptyState={filtersEmptyState}
+         footer={showPagination ? <LeadsPaginationControls {...paginationProps} /> : null}
+       >
+         {showPagination && (
+           <LeadsPaginationControls {...paginationProps} />
+         )}
+         {isActiveLoading ? (
+           <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
+         ) : salesErrorUI ? (
+           salesErrorUI
+         ) : paginatedLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
             Nenhum lead encontrado.
             {hasFilters && (
