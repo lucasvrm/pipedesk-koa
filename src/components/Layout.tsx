@@ -5,7 +5,6 @@ import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { hasPermission } from '@/lib/permissions';
 import { getInitials } from '@/lib/helpers';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
-import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ChartBar,
   Kanban,
@@ -91,7 +90,6 @@ export function Layout({ children }: LayoutProps) {
   const [slaConfigOpen, setSlaConfigOpen] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   const currentUser = profile;
   const unreadCount = 0;
@@ -484,25 +482,30 @@ export function Layout({ children }: LayoutProps) {
               )}
             </Button>
 
-            {isMobile ? (
-              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Menu, gestão e configurações"
-                    aria-label="Menu, gestão e configurações"
-                  >
-                    <List weight="bold" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[90%] sm:max-w-sm overflow-y-auto">
-                  <SheetHeader className="text-left">
-                    <SheetTitle>Menu principal</SheetTitle>
-                    <SheetDescription>
-                      Atalhos pessoais, de gestão e das seções de Configurações.
-                    </SheetDescription>
-                  </SheetHeader>
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Menu, gestão e configurações"
+                  aria-label="Menu, gestão e configurações"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen(true)}
+                  className="lg:hidden"
+                >
+                  <List weight="bold" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="w-[90%] sm:max-w-sm overflow-y-auto lg:hidden"
+              >
+                <SheetHeader className="text-left">
+                  <SheetTitle>Menu principal</SheetTitle>
+                  <SheetDescription>
+                    Atalhos pessoais, de gestão e das seções de Configurações.
+                  </SheetDescription>
+                </SheetHeader>
 
                   <div className="flex items-center gap-3 py-3">
                     <Avatar className="h-10 w-10">
@@ -641,8 +644,9 @@ export function Layout({ children }: LayoutProps) {
                   </div>
                 </SheetContent>
               </Sheet>
-            ) : (
-              <DropdownMenu>
+
+              <div className="hidden lg:block">
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -742,11 +746,11 @@ export function Layout({ children }: LayoutProps) {
                     Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       <main className="flex-1">{children}</main>
 
