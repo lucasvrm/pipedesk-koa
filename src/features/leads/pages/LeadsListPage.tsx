@@ -50,7 +50,18 @@ import {
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
+// Allow a small number of consecutive error-handling runs before suppressing to avoid render loops
 const SALES_VIEW_ERROR_GUARD_LIMIT = 8
+function getSalesErrorKey(error: unknown): string | null {
+  if (!error) return null
+  if (error instanceof ApiError) return error.code ?? error.message ?? 'unknown-api-error'
+  if (error instanceof Error) return error.message ?? 'unknown-error'
+  try {
+    return String(error)
+  } catch {
+    return 'unknown-error'
+  }
+}
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
@@ -137,16 +148,6 @@ export default function LeadsListPage() {
   const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
   const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
   const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
-  const getSalesErrorKey = useCallback((error: unknown) => {
-    if (!error) return null
-    if (error instanceof ApiError) return error.code ?? error.message ?? 'unknown-api-error'
-    if (error instanceof Error) return error.message ?? 'unknown-error'
-    try {
-      return String(error)
-    } catch {
-      return 'unknown-error'
-    }
-  }, [])
   const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
@@ -351,7 +352,7 @@ export default function LeadsListPage() {
         salesErrorGuardRef.current = { key: currentErrorKey, count: 1 }
       }
 
-      if (salesErrorGuardRef.current.count > SALES_VIEW_ERROR_GUARD_LIMIT) {
+      if (salesErrorGuardRef.current.count >= SALES_VIEW_ERROR_GUARD_LIMIT) {
         if (!import.meta.env.PROD) {
           console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error handler suppressed to prevent render loop`, {
             currentErrorKey,
@@ -411,7 +412,7 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [getSalesErrorKey, hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, viewMode])
+  }, [hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, viewMode])
 
   useEffect(() => {
     if (viewMode !== 'sales' && hasAppliedPersistentFallback) {
