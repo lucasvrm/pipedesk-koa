@@ -274,6 +274,7 @@ export default function LeadDetailPage() {
   const safeAddressState = safeStringOptional(lead.addressState)
   const safeDescription = safeStringOptional(lead.description) ?? ''
   const safeOriginLabel = safeString(getLeadOriginById(lead.leadOriginId)?.label, lead.leadOriginId)
+  const defaultTagColor = '#3b82f6'
 
   const handleStatusChange = async (value: string) => { // value is ID now
     if (!lead) return
@@ -484,17 +485,17 @@ export default function LeadDetailPage() {
                   actions={getLeadQuickActions({
                     lead,
                     navigate,
-                    updateLead,
-                    deleteLead,
-                    profileId: profile?.id,
-                    onEdit: () => setEditOpen(true),
-                    onQualify: () => setQualifyOpen(true),
-                     onManageTags: () => setTagManagerOpen(true),
-                    statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
-                  })}
-                />
-              }
-            />
+                  updateLead,
+                  deleteLead,
+                  profileId: profile?.id,
+                  onEdit: () => setEditOpen(true),
+                  onQualify: () => setQualifyOpen(true),
+                  onManageTags: () => setTagManagerOpen(true),
+                  statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
+                })}
+              />
+            }
+          />
 
             {/* TAGS SECTION - Persistent in Sidebar */}
             <Card className="border-l-4 border-l-secondary shadow-sm">
@@ -517,10 +518,10 @@ export default function LeadDetailPage() {
                         className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
                       >
                         {(() => {
-                          const safeColor = safeStringOptional(tag.color, '#3b82f6')
+                          const safeColor = safeStringOptional(tag.color, defaultTagColor)
                           return (
                             <>
-                              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor || '#3b82f6' }} />
+                              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor || defaultTagColor }} />
                               <span className="font-medium max-w-[100px] truncate" style={{ color: safeColor || undefined }}>{safeString(tag.name, 'Tag')}</span>
                             </>
                           )
