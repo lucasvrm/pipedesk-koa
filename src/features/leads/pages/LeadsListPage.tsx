@@ -396,9 +396,11 @@ export default function LeadsListPage() {
   // Compares against both the serialized filters snapshot and the last written search string
   // to avoid update loops when array references change without a real content change.
   useEffect(() => {
+    const normalizeSearch = () => window.location.search.replace(/^\?/, '')
+
     // Keep refs aligned when Sales view is not active to prevent stale comparisons later
     if (viewMode !== 'sales') {
-      lastSearchRef.current = window.location.search.replace(/^\?/, '')
+      lastSearchRef.current = normalizeSearch()
       return
     }
     // Don't update URL during error state to prevent loops
@@ -413,7 +415,6 @@ export default function LeadsListPage() {
     }
 
     const params = new URLSearchParams()
-    const normalizeSearch = () => window.location.search.replace(/^\?/, '')
 
     // Reconstruct owner/owners params
     if (salesOwnerMode === 'me') {
