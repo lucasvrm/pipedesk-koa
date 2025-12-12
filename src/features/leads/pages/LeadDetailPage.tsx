@@ -77,6 +77,8 @@ import { useTracks } from '@/services/trackService'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
 
+const DEFAULT_TAG_COLOR = '#3b82f6'
+
 export default function LeadDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -274,7 +276,6 @@ export default function LeadDetailPage() {
   const safeAddressState = safeStringOptional(lead.addressState)
   const safeDescription = safeStringOptional(lead.description) ?? ''
   const safeOriginLabel = safeString(getLeadOriginById(lead.leadOriginId)?.label, lead.leadOriginId)
-  const defaultTagColor = '#3b82f6'
 
   const handleStatusChange = async (value: string) => { // value is ID now
     if (!lead) return
@@ -513,7 +514,7 @@ export default function LeadDetailPage() {
                 {leadTags && leadTags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {leadTags.map(tag => {
-                      const safeColor = safeStringOptional(tag.color) ?? defaultTagColor
+                      const safeColor = safeStringOptional(tag.color) ?? DEFAULT_TAG_COLOR
                       const safeTagName = safeString(tag.name, 'Tag')
 
                       return (
