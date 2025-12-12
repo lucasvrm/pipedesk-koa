@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Check, Buildings, ArrowRight, Spinner } from '@phosphor-icons/react'
-import { cn, safeString } from '@/lib/utils'
+import { cn, safeString, safeStringOptional } from '@/lib/utils'
 
 interface Props {
   open: boolean;
@@ -24,20 +24,22 @@ export function QualifyLeadDialog({ open, onOpenChange, lead, userId }: Props) {
   const navigate = useNavigate()
   const qualify = useQualifyLead()
   const { data: companies, isLoading: loadingCompanies } = useCompanies()
+  const safeLeadName = safeString(lead.legalName, '')
+  const safeLeadCnpj = safeStringOptional(lead.cnpj) ?? ''
 
   const [step, setStep] = useState<1 | 2>(1)
   const [mode, setMode] = useState<'existing' | 'new'>('new')
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
 
   // New Company Form State
-  const [newName, setNewName] = useState(lead.legalName)
-  const [newCnpj, setNewCnpj] = useState(lead.cnpj || '')
+  const [newName, setNewName] = useState(safeLeadName)
+  const [newCnpj, setNewCnpj] = useState(safeLeadCnpj)
   const [newType, setNewType] = useState('corporation')
 
   // Search matches
   const matches = companies?.filter(c =>
-    (lead.cnpj && c.cnpj === lead.cnpj) ||
-    c.name.toLowerCase().includes(lead.legalName.toLowerCase())
+    (safeLeadCnpj && c.cnpj === safeLeadCnpj) ||
+    safeString(c.name, '').toLowerCase().includes(safeLeadName.toLowerCase())
   )
 
   const handleNext = () => {

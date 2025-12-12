@@ -92,11 +92,22 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
           </div>
           {lead && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <StatusBadge
-                semanticStatus={leadStatusMap(getLeadStatusById(lead.leadStatusId)?.code as any)}
-                label={`Status: ${getLeadStatusById(lead.leadStatusId)?.label || lead.leadStatusId}`}
-              />
-              <Badge variant="secondary">Origem: {getLeadOriginById(lead.leadOriginId)?.label || lead.leadOriginId}</Badge>
+              {(() => {
+                const statusMeta = getLeadStatusById(lead.leadStatusId)
+                const statusLabel = safeString(statusMeta?.label, lead.leadStatusId)
+                const originMeta = getLeadOriginById(lead.leadOriginId)
+                const originLabel = safeString(originMeta?.label, lead.leadOriginId)
+                
+                return (
+                  <>
+                    <StatusBadge
+                      semanticStatus={leadStatusMap(getLeadStatusById(lead.leadStatusId)?.code as any)}
+                      label={`Status: ${statusLabel}`}
+                    />
+                    <Badge variant="secondary">Origem: {originLabel}</Badge>
+                  </>
+                )
+              })()}
             </div>
           )}
         </SheetHeader>

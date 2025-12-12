@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { cn, safeString, safeStringOptional } from '@/lib/utils'
 
 interface BuyingCommitteeCardProps {
   contact: Contact
@@ -54,7 +54,9 @@ const SENTIMENT_COLORS: Record<ContactSentiment, string> = {
 export function BuyingCommitteeCard({ contact, onEdit }: BuyingCommitteeCardProps) {
   const roleIcon = contact.buyingRole ? ROLE_ICONS[contact.buyingRole] : <Question className="text-muted-foreground" />
   const sentimentColor = contact.sentiment ? SENTIMENT_COLORS[contact.sentiment] : SENTIMENT_COLORS.unknown
-  const initials = contact.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+  const safeName = safeString(contact.name, 'Contato')
+  const safeRole = safeStringOptional(contact.role, 'Sem cargo') ?? 'Sem cargo'
+  const initials = safeName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group relative">
@@ -83,8 +85,8 @@ export function BuyingCommitteeCard({ contact, onEdit }: BuyingCommitteeCardProp
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate leading-none mb-1">{contact.name}</p>
-        <p className="text-xs text-muted-foreground truncate">{contact.role || 'Sem cargo'}</p>
+        <p className="text-sm font-medium truncate leading-none mb-1">{safeName}</p>
+        <p className="text-xs text-muted-foreground truncate">{safeRole}</p>
       </div>
 
       {/* Actions (Hover only) */}
