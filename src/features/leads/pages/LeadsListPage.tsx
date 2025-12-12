@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { ensureArray } from '@/lib/utils'
@@ -50,12 +50,10 @@ import {
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
-// Helper kept at module scope to avoid recreating inside render/effects
-const normalizeSearch = () => window.location.search.replace(/^\?/, '')
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const { profile } = useAuth()
   const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const { data: users = [] } = useUsers()
@@ -161,9 +159,6 @@ export default function LeadsListPage() {
       })
       .map(tag => tag.id)
   }, [tags])
-
-  const lastSearchRef = useRef<string>(searchParams.toString())
-  const lastSyncedSalesFilters = useRef<string>('')
 
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
@@ -370,88 +365,6 @@ export default function LeadsListPage() {
     )
     setHasSalesShownErrorToast(true)
   }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess])
-
-  const sortedSalesOwnerIds = useMemo(() => [...salesOwnerIds].sort(), [salesOwnerIds])
-  const sortedSalesPriority = useMemo(() => [...salesPriority].sort(), [salesPriority])
-  const sortedSalesStatusFilter = useMemo(() => [...salesStatusFilter].sort(), [salesStatusFilter])
-  const sortedSalesOriginFilter = useMemo(() => [...salesOriginFilter].sort(), [salesOriginFilter])
-
-  // Serialize Sales filters to make dependency changes content-aware (not just reference-aware)
-  const serializedSalesFilters = useMemo(
-    () =>
-      JSON.stringify({
-        ownerMode: salesOwnerMode,
-        owners: sortedSalesOwnerIds,
-        priority: sortedSalesPriority,
-        status: sortedSalesStatusFilter,
-        origin: sortedSalesOriginFilter,
-        daysWithoutInteraction: salesDaysWithoutInteraction ?? null,
-        orderBy: salesOrderBy
-      }),
-    [
-      salesDaysWithoutInteraction,
-      salesOrderBy,
-      salesOwnerMode,
-      sortedSalesOriginFilter,
-      sortedSalesOwnerIds,
-      sortedSalesPriority,
-      sortedSalesStatusFilter
-    ]
-  )
-
-  // Idempotent URL sync effect for Sales view filters.
-  // Compares against both the serialized filters snapshot and the last written search string
-  // to avoid update loops when array references change without a real content change.
-  useEffect(() => {
-    // Keep refs aligned when Sales view is not active to prevent stale comparisons later
-    // This avoids stale comparisons when the user returns to Sales view after navigating away.
-    if (viewMode !== 'sales') {
-      lastSearchRef.current = normalizeSearch()
-      return
-    }
-    // Don't update URL during error state to prevent loops
-    if (isSalesError) {
-      console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Skipping URL sync due to error state`)
-      return
-    }
-
-    // Avoid work when filters content hasn't changed
-    if (serializedSalesFilters === lastSyncedSalesFilters.current) {
-      return
-    }
-
-    const params = new URLSearchParams()
-
-    // Reconstruct owner/owners params
-    if (salesOwnerMode === 'me') {
-      params.set('owner', 'me')
-    } else if (salesOwnerMode === 'custom' && salesOwnerIds.length > 0) {
-      params.set('owners', salesOwnerIds.join(','))
-    }
-
-    // Apply filters
-    if (salesPriority.length > 0) params.set('priority', salesPriority.join(','))
-    if (salesStatusFilter.length > 0) params.set('status', salesStatusFilter.join(','))
-    if (salesOriginFilter.length > 0) params.set('origin', salesOriginFilter.join(','))
-    if (salesDaysWithoutInteraction) params.set('days_without_interaction', String(salesDaysWithoutInteraction))
-    if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
-
-    const nextSearch = params.toString()
-    const currentSearch = normalizeSearch()
-
-    if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) {
-      // Keep the serialized snapshot in sync even when URL already matches to avoid repeated comparisons
-      lastSyncedSalesFilters.current = serializedSalesFilters
-      lastSearchRef.current = nextSearch
-      return
-    }
-
-    lastSearchRef.current = nextSearch
-    lastSyncedSalesFilters.current = serializedSalesFilters
-    if (currentSearch !== nextSearch) {
-      setSearchParams(params, { replace: true })
-    }
-  }, [isSalesError, serializedSalesFilters, setSearchParams, viewMode])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
