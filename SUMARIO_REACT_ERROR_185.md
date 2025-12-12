@@ -75,6 +75,12 @@ const renderStatusBadge = (status: string) => {
 }
 ```
 
+### Atualização 2025-12-12 – Loop de sincronização de filtros (Sales View)
+
+- **Causa raiz**: o efeito que sincroniza os filtros da Sales View com a URL era disparado sempre que os arrays de filtros eram recriados (mesmo sem mudança real), o que podia acionar `setSearchParams` em ciclo e levar ao “Maximum update depth exceeded”.
+- **Correção aplicada**: os filtros são serializados de forma estável (ordenando arrays) e o efeito só roda quando o conteúdo efetivamente muda; refs guardam o último snapshot escrito na URL para evitar regravações redundantes.
+- **Resultado esperado**: `/leads` abre sem loop de renderização tanto em DEV quanto em produção, mantendo a sincronização da Sales View estável.
+
 ---
 
 ### Problema #2: Badges de Origem

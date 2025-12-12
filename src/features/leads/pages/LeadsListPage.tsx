@@ -161,6 +161,7 @@ export default function LeadsListPage() {
   }, [tags])
 
   const lastSearchRef = useRef<string>(searchParams.toString())
+  const lastSyncedSalesFilters = useRef<string>('')
 
   const normalizedStatusFilter = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
   const normalizedOriginFilter = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
@@ -368,16 +369,47 @@ export default function LeadsListPage() {
     setHasSalesShownErrorToast(true)
   }, [isSalesError, isSalesLoading, isSalesFetching, refetchSalesView, salesError, viewMode, hasSalesShownErrorToast, hasSalesRecordedSuccess])
 
+  // Serialize Sales filters to make dependency changes content-aware (not just reference-aware)
+  const serializedSalesFilters = useMemo(
+    () =>
+      JSON.stringify({
+        ownerMode: salesOwnerMode,
+        owners: [...salesOwnerIds].sort(),
+        priority: [...salesPriority].sort(),
+        status: [...salesStatusFilter].sort(),
+        origin: [...salesOriginFilter].sort(),
+        daysWithoutInteraction: salesDaysWithoutInteraction ?? null,
+        orderBy: salesOrderBy
+      }),
+    [
+      salesDaysWithoutInteraction,
+      salesOriginFilter,
+      salesOrderBy,
+      salesOwnerIds,
+      salesOwnerMode,
+      salesPriority,
+      salesStatusFilter
+    ]
+  )
+
   // Idempotent URL sync effect for Sales view filters.
-  // Compares only against lastSearchRef.current to prevent infinite loops (React Error #185).
-  // The ref stores the last written URL search string, avoiding re-reads of searchParams
-  // which would cause a stale reference and trigger unnecessary setSearchParams calls.
-  // Skip URL updates during error states to prevent potential loops.
+  // Compares against both the serialized filters snapshot and the last written search string
+  // to avoid update loops when array references change without a real content change.
   useEffect(() => {
-    if (viewMode !== 'sales') return
+    // Keep refs aligned when Sales view is not active to prevent stale comparisons later
+    if (viewMode !== 'sales') {
+      lastSyncedSalesFilters.current = serializedSalesFilters
+      lastSearchRef.current = window.location.search.replace(/^\?/, '')
+      return
+    }
     // Don't update URL during error state to prevent loops
     if (isSalesError) {
       console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Skipping URL sync due to error state`)
+      return
+    }
+
+    // Avoid work when filters content hasn't changed
+    if (serializedSalesFilters === lastSyncedSalesFilters.current) {
       return
     }
 
@@ -398,35 +430,30 @@ export default function LeadsListPage() {
     if (salesOrderBy && salesOrderBy !== 'priority') params.set('order_by', salesOrderBy)
 
     const nextSearch = params.toString()
-    // Use window.location.search to check current URL state without adding searchParams dependency
-    // This breaks the render loop caused by useSearchParams() returning a new object reference on every render
     const currentSearch = window.location.search.replace(/^\?/, '')
 
-    // Idempotent guard: Only proceed if state has changed
-    // Check both lastSearchRef (what we last wrote) and currentSearch (what browser has)
-    // This double-check prevents loops from both internal and external URL changes
-    if (lastSearchRef.current === nextSearch) {
-      // State hasn't changed from our perspective, but verify URL is in sync
-      if (currentSearch === nextSearch) return
+    if (lastSearchRef.current === nextSearch && currentSearch === nextSearch) {
+      lastSyncedSalesFilters.current = serializedSalesFilters
+      return
     }
 
-    // Update ref and URL atomically to maintain consistency
     lastSearchRef.current = nextSearch
+    lastSyncedSalesFilters.current = serializedSalesFilters
     if (currentSearch !== nextSearch) {
       setSearchParams(params, { replace: true })
     }
   }, [
-    viewMode,
-    salesOwnerMode,
+    isSalesError,
+    salesDaysWithoutInteraction,
+    salesOriginFilter,
+    salesOrderBy,
     salesOwnerIds,
+    salesOwnerMode,
     salesPriority,
     salesStatusFilter,
-    salesOriginFilter,
-    salesDaysWithoutInteraction,
-    salesOrderBy,
-    isSalesError
-    // searchParams deliberately omitted to prevent infinite loop
-    // setSearchParams is stable and does not need to be a dependency
+    serializedSalesFilters,
+    setSearchParams,
+    viewMode
   ])
 
   const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
