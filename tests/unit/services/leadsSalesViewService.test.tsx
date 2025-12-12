@@ -283,8 +283,10 @@ describe('leadsSalesViewService', () => {
             page: 2,
             pageSize: 20,
             owner: 'me',
+            ownerIds: ['user-1', 'user-2'],
             priority: ['hot', 'warm'],
             status: ['new', 'contacted'],
+            origin: ['referral'],
             daysWithoutInteraction: 7,
             orderBy: 'last_interaction',
           }),
@@ -297,9 +299,11 @@ describe('leadsSalesViewService', () => {
       expect(callUrl).toContain('page=2')
       expect(callUrl).toContain('pageSize=20')
       expect(callUrl).toContain('owner=me')
+      expect(callUrl).toMatch(/ownerIds=user-1[,%]2[Cc]user-2/)
       // Note: URLSearchParams encodes commas as %2C
       expect(callUrl).toMatch(/priority=hot[,%]2[Cc]warm/)
       expect(callUrl).toMatch(/status=new[,%]2[Cc]contacted/)
+      expect(callUrl).toContain('origin=referral')
       expect(callUrl).toContain('days_without_interaction=7')
       expect(callUrl).toContain('order_by=last_interaction')
     })

@@ -119,13 +119,14 @@ export default function LeadsListPage() {
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
   const [tagFilter, setTagFilter] = useState<string[]>(() => savedPreferences?.tagFilter || [])
+  const ownerIdsParam = searchParams.get('ownerIds') ?? searchParams.get('owners')
   const [salesOwnerMode, setSalesOwnerMode] = useState<'me' | 'all' | 'custom'>(() => {
     const ownerParam = searchParams.get('owner')
     if (ownerParam === 'me') return 'me'
-    if (searchParams.get('owners')) return 'custom'
+    if (ownerIdsParam) return 'custom'
     return 'all'
   })
-  const [salesOwnerIds, setSalesOwnerIds] = useState<string[]>(() => searchParams.get('owners')?.split(',').filter(Boolean) || [])
+  const [salesOwnerIds, setSalesOwnerIds] = useState<string[]>(() => ownerIdsParam?.split(',').filter(Boolean) || [])
   const [salesPriority, setSalesPriority] = useState<LeadPriorityBucket[]>(() =>
     (searchParams.get('priority')?.split(',').filter(Boolean) as LeadPriorityBucket[]) || []
   )
@@ -214,6 +215,7 @@ export default function LeadsListPage() {
   const { data: leads, isLoading } = useLeads(filters)
   const salesFilters = useMemo(() => {
     const ownerIds = salesOwnerMode === 'custom' ? salesOwnerIds.filter(Boolean) : undefined
+    const normalizedOrderBy = normalizeSalesOrderBy(salesOrderBy)
 
     return {
       owner: salesOwnerMode === 'me' ? 'me' : undefined,
@@ -222,9 +224,9 @@ export default function LeadsListPage() {
       status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
       origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
       daysWithoutInteraction: typeof salesDaysWithoutInteraction === 'number' ? salesDaysWithoutInteraction : undefined,
-      orderBy: salesOrderBy
+      orderBy: normalizedOrderBy
     }
-  }, [salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
+  }, [normalizeSalesOrderBy, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
   const salesViewQuery = useMemo(
     () => ({
       ...salesFilters,
@@ -286,11 +288,6 @@ export default function LeadsListPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter])
-
-  useEffect(() => {
-    if (viewMode !== 'sales') return
-    setCurrentPage(1)
-  }, [salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy, viewMode])
 
   useEffect(() => {
     setSelectedIds([])
