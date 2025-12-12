@@ -3,8 +3,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Funnel, UserSwitch, Check, CaretDown, X } from '@phosphor-icons/react'
 import { useMemo, useCallback } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
@@ -41,6 +47,12 @@ const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description:
   { value: 'hot', label: 'Hot', description: 'Score alto, lead muito quente' },
   { value: 'warm', label: 'Warm', description: 'Score moderado, lead engajado' },
   { value: 'cold', label: 'Cold', description: 'Score baixo, lead frio' }
+]
+
+const ORDER_BY_OPTIONS: { value: 'priority' | 'last_interaction' | 'created_at'; label: string }[] = [
+  { value: 'priority', label: 'Prioridade (padrão)' },
+  { value: 'last_interaction', label: 'Última interação' },
+  { value: 'created_at', label: 'Data de criação' }
 ]
 
 const DAYS_PRESETS = [3, 7, 14]
@@ -88,6 +100,11 @@ export function LeadsSalesFiltersBar({
       : 'Seleção manual'
   }, [ownerMode, selectedOwners])
 
+  const orderByLabel = useMemo(
+    () => ORDER_BY_OPTIONS.find(option => option.value === safeOrderBy)?.label ?? 'Prioridade (padrão)',
+    [safeOrderBy]
+  )
+
   // Defensive: ensure arrays are valid to prevent React Error #185
   const safeUsers = ensureArray<User>(users)
   const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
@@ -127,16 +144,23 @@ export function LeadsSalesFiltersBar({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground">Ordenar por</span>
-          <Select value={safeOrderBy} onValueChange={handleOrderByChange}>
-            <SelectTrigger className="h-9 w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="priority">Prioridade (padrão)</SelectItem>
-              <SelectItem value="last_interaction">Última interação</SelectItem>
-              <SelectItem value="created_at">Data de criação</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 w-[180px] justify-between gap-2">
+                <span className="truncate text-left">{orderByLabel}</span>
+                <CaretDown size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[220px]">
+              <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
+                {ORDER_BY_OPTIONS.map(option => (
+                  <DropdownMenuRadioItem key={option.value} value={option.value} className="flex items-center gap-2">
+                    {option.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="sm" onClick={onClear} className="gap-1">
             <X size={14} />
             Limpar filtros
