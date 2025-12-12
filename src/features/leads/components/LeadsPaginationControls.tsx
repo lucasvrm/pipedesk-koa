@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { CaretDown, CaretLeft, CaretRight } from '@phosphor-icons/react'
 
-interface LeadsPaginationControlsProps {
+export interface LeadsPaginationControlsProps {
   currentPage: number
   totalPages: number
   currentPageSize: number
