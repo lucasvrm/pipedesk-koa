@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { UnifiedTimeline } from '@/components/UnifiedTimeline'
-import { safeString } from '@/lib/utils'
+import { safeString, safeStringOptional } from '@/lib/utils'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -76,6 +76,8 @@ import { useDeals } from '@/services/dealService'
 import { useTracks } from '@/services/trackService'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
+
+const DEFAULT_TAG_COLOR = '#3b82f6'
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -178,7 +180,7 @@ export default function LeadDetailPage() {
     // Add lead node (always present)
     nodes.push({
       id: lead.id,
-      label: lead.legalName,
+      label: safeString(lead.legalName, 'Lead'),
       type: 'lead'
     })
 
@@ -186,7 +188,7 @@ export default function LeadDetailPage() {
     if (lead.qualifiedCompanyId && company) {
       nodes.push({
         id: company.id,
-        label: company.name,
+        label: safeString(company.name, 'Empresa'),
         type: 'company'
       })
       edges.push({
@@ -201,7 +203,7 @@ export default function LeadDetailPage() {
       companyDeals.forEach(deal => {
         nodes.push({
           id: deal.id,
-          label: deal.clientName,
+          label: safeString(deal.clientName, 'Negócio'),
           type: 'deal'
         })
         edges.push({
@@ -216,7 +218,7 @@ export default function LeadDetailPage() {
             addedPlayerIds.add(track.playerId)
             nodes.push({
               id: track.playerId,
-              label: track.playerName,
+              label: safeString(track.playerName, 'Player'),
               type: 'player'
             })
           }
@@ -263,6 +265,17 @@ export default function LeadDetailPage() {
     </PageContainer>
   )
   if (!lead) return <div className="p-8">Lead não encontrado.</div>
+
+  const safeLeadName = safeString(lead.legalName, 'Lead sem nome')
+  const safeTradeName = safeStringOptional(lead.tradeName)
+  const safeCnpj = safeStringOptional(lead.cnpj) ?? ''
+  const safeSegment = safeStringOptional(lead.segment) ?? ''
+  const safeWebsite = safeStringOptional(lead.website) ?? ''
+  const safeOperationType = safeStringOptional(lead.operationType) ?? ''
+  const safeAddressCity = safeStringOptional(lead.addressCity)
+  const safeAddressState = safeStringOptional(lead.addressState)
+  const safeDescription = safeStringOptional(lead.description) ?? ''
+  const safeOriginLabel = safeString(getLeadOriginById(lead.leadOriginId)?.label, lead.leadOriginId)
 
   const handleStatusChange = async (value: string) => { // value is ID now
     if (!lead) return
@@ -409,19 +422,19 @@ export default function LeadDetailPage() {
   }
 
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
-  const cityState = lead.addressCity && lead.addressState ? `${lead.addressCity} - ${lead.addressState}` : lead.addressCity || lead.addressState || ''
+  const cityState = safeAddressCity && safeAddressState ? `${safeAddressCity} - ${safeAddressState}` : safeAddressCity || safeAddressState || ''
 
   const PIPELINE_STAGES = leadStatuses
     .filter(s => s.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(s => ({
       id: s.id,
-      label: s.label,
+      label: safeString(s.label, s.code),
       color: 'bg-primary' // TODO: Use s.color if available or map code to color
     }))
 
   const SIDEBAR_METRICS = [
-    { label: 'Origem', value: getLeadOriginById(lead.leadOriginId)?.label || lead.leadOriginId, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
+    { label: 'Origem', value: safeOriginLabel, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
@@ -439,7 +452,7 @@ export default function LeadDetailPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{lead.legalName}</BreadcrumbPage>
+            <BreadcrumbPage>{safeLeadName}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -457,12 +470,12 @@ export default function LeadDetailPage() {
             <KeyMetricsSidebar
               title={
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span>{lead.legalName}</span>
+                  <span>{safeLeadName}</span>
                   {renderNewBadge(lead.createdAt)}
                   {renderUpdatedTodayBadge(lead.updatedAt)}
                 </div>
               }
-              subtitle={lead.tradeName}
+              subtitle={safeTradeName}
               statusBadge={statusBadge}
               metrics={SIDEBAR_METRICS}
               actions={
@@ -473,17 +486,17 @@ export default function LeadDetailPage() {
                   actions={getLeadQuickActions({
                     lead,
                     navigate,
-                    updateLead,
-                    deleteLead,
-                    profileId: profile?.id,
-                    onEdit: () => setEditOpen(true),
-                    onQualify: () => setQualifyOpen(true),
-                    onManageTags: () => setTagManagerOpen(true),
-                    statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: s.label, code: s.code }))
-                  })}
-                />
-              }
-            />
+                  updateLead,
+                  deleteLead,
+                  profileId: profile?.id,
+                  onEdit: () => setEditOpen(true),
+                  onQualify: () => setQualifyOpen(true),
+                  onManageTags: () => setTagManagerOpen(true),
+                  statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
+                })}
+              />
+            }
+          />
 
             {/* TAGS SECTION - Persistent in Sidebar */}
             <Card className="border-l-4 border-l-secondary shadow-sm">
@@ -500,24 +513,29 @@ export default function LeadDetailPage() {
               <CardContent className="px-4 pb-4 pt-0">
                 {leadTags && leadTags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {leadTags.map(tag => (
-                      <div
-                        key={tag.id}
-                        className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }} />
-                        <span className="font-medium max-w-[100px] truncate" style={{ color: tag.color }}>{safeString(tag.name, 'Tag')}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleUnassignTag(tag.id)}
-                          title="Remover"
+                    {leadTags.map(tag => {
+                      const safeColor = safeStringOptional(tag.color) ?? DEFAULT_TAG_COLOR
+                      const safeTagName = safeString(tag.name, 'Tag')
+
+                      return (
+                        <div
+                          key={tag.id}
+                          className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor }} />
+                          <span className="font-medium max-w-[100px] truncate" style={{ color: safeColor }}>{safeTagName}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleUnassignTag(tag.id)}
+                            title="Remover"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div
@@ -557,27 +575,27 @@ export default function LeadDetailPage() {
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Razão Social</Label>
-                      <Input value={lead.legalName} disabled />
+                      <Input value={safeLeadName} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>Nome Fantasia</Label>
-                      <Input value={lead.tradeName || ''} disabled />
+                      <Input value={safeTradeName ?? ''} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>CNPJ</Label>
-                      <Input value={lead.cnpj || ''} disabled />
+                      <Input value={safeCnpj} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>Segmento</Label>
-                      <Input value={lead.segment || ''} disabled />
+                      <Input value={safeSegment} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>Website</Label>
-                      <Input value={lead.website || ''} disabled />
+                      <Input value={safeWebsite} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>Tipo de Operação</Label>
-                      <Select value={lead.operationType || ''} onValueChange={handleOperationTypeChange}>
+                      <Select value={safeOperationType} onValueChange={handleOperationTypeChange}>
                         <SelectTrigger className="bg-background/60">
                           <SelectValue placeholder="Selecione um tipo" />
                         </SelectTrigger>
@@ -597,13 +615,13 @@ export default function LeadDetailPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Descrição</CardTitle>
-                    <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
-                  </CardHeader>
-                  <CardContent>
-                    <Textarea value={lead.description || ''} disabled className="min-h-[110px]" />
-                  </CardContent>
-                </Card>
+                  <CardTitle>Descrição</CardTitle>
+                  <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea value={safeDescription} disabled className="min-h-[110px]" />
+                </CardContent>
+              </Card>
 
                 {/* Relationship Map - Show only if we have relationships beyond the current entity */}
                 {relationshipData.nodes.length > 1 && (
@@ -689,10 +707,10 @@ export default function LeadDetailPage() {
                           <div key={member.userId} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
-                                {member.user?.name?.charAt(0) || 'U'}
+                                {safeStringOptional(member.user?.name)?.charAt(0) || 'U'}
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-medium leading-tight">{member.user?.name || 'Usuário'}</p>
+                                <p className="text-sm font-medium leading-tight">{safeString(member.user?.name, 'Usuário')}</p>
                                 <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                               </div>
                             </div>
@@ -717,7 +735,7 @@ export default function LeadDetailPage() {
             </TabsContent>
 
             <TabsContent value="documents">
-              <DriveSection entityType="lead" entityId={lead.id} entityName={lead.legalName} />
+              <DriveSection entityType="lead" entityId={lead.id} entityName={safeLeadName} />
             </TabsContent>
 
             <TabsContent value="timeline" className="space-y-4">
