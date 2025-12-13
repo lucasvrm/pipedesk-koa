@@ -25,6 +25,19 @@ export class ApiError extends Error {
 }
 
 /**
+ * Converts HeadersInit to a plain Record<string, string>.
+ */
+function headersToRecord(headers: HeadersInit): Record<string, string> {
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return headers as Record<string, string>;
+}
+
+/**
  * Generic fetch function for making authenticated API requests.
  * Always fetches a fresh token from Supabase Auth to prevent 401 errors.
  * 
@@ -43,17 +56,18 @@ export async function apiFetch<T>(
 
   // Build headers object with proper defaults
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'x-user-role': 'manager', // MVP hardcoded
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
   };
 
+  // Set Content-Type to application/json only when body is present and is likely JSON
+  if (options.body && typeof options.body === 'string') {
+    headers['Content-Type'] = 'application/json';
+  }
+
   // Merge with any custom headers from options
   if (options.headers) {
-    const customHeaders = options.headers instanceof Headers
-      ? Object.fromEntries(options.headers.entries())
-      : (options.headers as Record<string, string>);
-    Object.assign(headers, customHeaders);
+    Object.assign(headers, headersToRecord(options.headers));
   }
 
   const url = `${API_BASE_URL}${endpoint}`;

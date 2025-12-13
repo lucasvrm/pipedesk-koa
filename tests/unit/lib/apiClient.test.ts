@@ -45,11 +45,14 @@ describe('apiClient', () => {
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-token-123',
-            'Content-Type': 'application/json',
             'x-user-role': 'manager',
           }),
         })
       );
+
+      // GET requests without body should not have Content-Type set
+      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
+      expect(calledHeaders['Content-Type']).toBeUndefined();
 
       expect(result).toEqual({ data: 'test' });
     });
@@ -182,6 +185,48 @@ describe('apiClient', () => {
       const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
       expect(calledHeaders['X-Custom-Header']).toBe('custom-value');
       expect(calledHeaders['Authorization']).toBe('Bearer token');
+    });
+
+    it('should handle Headers object as custom headers', async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: { access_token: 'token' } },
+      });
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve({}),
+      });
+
+      const customHeaders = new Headers();
+      customHeaders.set('X-Custom-Header', 'from-headers-object');
+
+      await apiFetch('/test', {
+        headers: customHeaders,
+      });
+
+      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
+      // Headers object normalizes header names to lowercase
+      expect(calledHeaders['x-custom-header']).toBe('from-headers-object');
+    });
+
+    it('should handle array tuple headers', async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: { access_token: 'token' } },
+      });
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve({}),
+      });
+
+      await apiFetch('/test', {
+        headers: [['X-Array-Header', 'from-array']],
+      });
+
+      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
+      expect(calledHeaders['X-Array-Header']).toBe('from-array');
     });
   });
 });
