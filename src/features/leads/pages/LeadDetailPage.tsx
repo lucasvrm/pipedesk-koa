@@ -738,7 +738,7 @@ export default function LeadDetailPage() {
               <DriveSection entityType="lead" entityId={lead.id} entityName={safeLeadName} />
             </TabsContent>
 
-            <TabsContent value="timeline" className="space-y-4">
+            <TabsContent value="timeline" className="min-h-[500px]">
               <UnifiedTimeline entityId={lead.id} entityType="lead" />
             </TabsContent>
           </Tabs>

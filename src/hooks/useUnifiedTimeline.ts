@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useComments } from '@/services/commentService'
 import { useActivities } from '@/services/activityService'
+import { fetchTimeline } from '@/services/timelineService'
+import { TimelineEntry, EntityType } from '@/types/integration'
 import { Comment } from '@/lib/types'
 
-export type TimelineItemType = 'comment' | 'activity' | 'system'
+export type TimelineItemType = 'comment' | 'activity' | 'system' | 'meeting' | 'email' | 'audit'
 
 export interface TimelineItem {
   id: string
@@ -14,11 +17,29 @@ export interface TimelineItem {
     avatar?: string
   }
   content: string
-  metadata?: Record<string, any>
+  title?: string
+  metadata?: Record<string, unknown>
 }
 
+/**
+ * Hook to fetch unified timeline data from the API.
+ * Combines data from the new timeline API (meetings, emails, audits) with legacy data (comments, activities).
+ */
 export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead' | 'company') {
-  // Fetch data
+  // Fetch timeline from API (meetings, emails, audits)
+  const {
+    data: timelineResponse,
+    isLoading: timelineLoading,
+    error: timelineError,
+    refetch: refetchTimeline
+  } = useQuery({
+    queryKey: ['timeline', entityType, entityId],
+    queryFn: () => fetchTimeline(entityType as EntityType, entityId),
+    enabled: !!entityId,
+    refetchInterval: 30000 // Refetch every 30 seconds
+  })
+
+  // Also fetch legacy comments and activities for backwards compatibility
   const { 
     data: comments, 
     isLoading: commentsLoading, 
@@ -35,10 +56,45 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
 
   const timelineItems = useMemo(() => {
     const items: TimelineItem[] = []
+    const seenIds = new Set<string>()
 
-    // Process Comments
+    // Process timeline entries from API (meetings, emails, audits)
+    if (timelineResponse?.entries) {
+      // Map API type to internal type
+      const typeMapping: Record<string, TimelineItemType> = {
+        meeting: 'meeting',
+        email: 'email',
+        audit: 'audit'
+      }
+
+      timelineResponse.entries.forEach(entry => {
+        if (seenIds.has(entry.id)) return
+        seenIds.add(entry.id)
+
+        const itemType = typeMapping[entry.type.toLowerCase()] || 'system'
+
+        items.push({
+          id: entry.id,
+          type: itemType,
+          date: entry.createdAt,
+          title: entry.title,
+          author: {
+            name: entry.createdBy?.name || 'Sistema',
+            avatar: entry.createdBy?.avatar
+          },
+          content: entry.description || entry.title,
+          metadata: entry.metadata
+        })
+      })
+    }
+
+    // Process legacy comments
     if (comments) {
       comments.forEach(c => {
+        if (seenIds.has(c.id)) return
+        seenIds.add(c.id)
+
+        // Use createdAt or fallback to created_at
         const timestamp = c.createdAt || c.created_at
         if (!timestamp) {
           console.warn('Comment missing timestamp:', c.id)
@@ -47,7 +103,7 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
         items.push({
           id: c.id,
           type: 'comment',
-          date: timestamp || new Date(0).toISOString(), // Use epoch time for missing timestamps
+          date: timestamp || new Date(0).toISOString(),
           author: {
             name: c.author?.name || 'Usuário',
             avatar: c.author?.avatar
@@ -57,9 +113,12 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
       })
     }
 
-    // Process Activities
+    // Process legacy activities
     if (activities) {
       activities.forEach(a => {
+        if (seenIds.has(a.id)) return
+        seenIds.add(a.id)
+
         // Formata o conteúdo da atividade
         let content = a.action;
         if (a.changes && Object.keys(a.changes).length > 0) {
@@ -72,7 +131,7 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
 
         items.push({
           id: a.id,
-          type: 'system', // Mapeia tudo que vem de activities como 'system' para o filtro funcionar
+          type: 'system',
           date: a.created_at,
           author: {
             name: a.user?.name || 'Sistema',
@@ -86,16 +145,17 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
 
     // Sort by date desc
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [comments, activities])
+  }, [timelineResponse, comments, activities])
 
-  const refetch = async () => {
-    await Promise.all([refetchComments(), refetchActivities()])
-  }
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchTimeline(), refetchComments(), refetchActivities()])
+  }, [refetchTimeline, refetchComments, refetchActivities])
 
   return {
     items: timelineItems,
-    isLoading: commentsLoading || activitiesLoading,
-    error: commentsError || activitiesError,
+    data: timelineItems, // Alias for consistency
+    isLoading: timelineLoading || commentsLoading || activitiesLoading,
+    error: timelineError || commentsError || activitiesError,
     refetch
   }
 }

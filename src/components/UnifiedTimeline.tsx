@@ -22,7 +22,12 @@ import {
   XCircle,
   WarningCircle,
   Sparkle,
-  ArrowsDownUp
+  ArrowsDownUp,
+  CalendarBlank,
+  Envelope,
+  GitCommit,
+  Info,
+  VideoCamera
 } from '@phosphor-icons/react'
 import { format, formatDistanceToNow, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -33,6 +38,47 @@ import { toast } from 'sonner'
 interface UnifiedTimelineProps {
   entityId: string
   entityType: 'deal' | 'lead' | 'company'
+}
+
+// Type-safe metadata extraction helpers
+interface MeetingMetadata {
+  meetLink?: string
+  status?: string
+}
+
+interface EmailMetadata {
+  from?: string
+  to?: string
+  subject?: string
+}
+
+interface AuditMetadata {
+  field?: string
+  oldValue?: string
+  newValue?: string
+}
+
+function getMeetingMetadata(metadata?: Record<string, unknown>): MeetingMetadata {
+  return {
+    meetLink: typeof metadata?.meetLink === 'string' ? metadata.meetLink : undefined,
+    status: typeof metadata?.status === 'string' ? metadata.status : undefined
+  }
+}
+
+function getEmailMetadata(metadata?: Record<string, unknown>): EmailMetadata {
+  return {
+    from: typeof metadata?.from === 'string' ? metadata.from : undefined,
+    to: typeof metadata?.to === 'string' ? metadata.to : undefined,
+    subject: typeof metadata?.subject === 'string' ? metadata.subject : undefined
+  }
+}
+
+function getAuditMetadata(metadata?: Record<string, unknown>): AuditMetadata {
+  return {
+    field: typeof metadata?.field === 'string' ? metadata.field : undefined,
+    oldValue: typeof metadata?.oldValue === 'string' ? metadata.oldValue : undefined,
+    newValue: typeof metadata?.newValue === 'string' ? metadata.newValue : undefined
+  }
 }
 
 // Group items by date
@@ -84,7 +130,17 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
       
       let icon, color
       
-      if (item.type === 'comment') {
+      // Handle new timeline types first
+      if (item.type === 'meeting') {
+        icon = <CalendarBlank className="h-4 w-4" weight="fill" />
+        color = 'bg-violet-500 text-white'
+      } else if (item.type === 'email') {
+        icon = <Envelope className="h-4 w-4" weight="fill" />
+        color = 'bg-cyan-500 text-white'
+      } else if (item.type === 'audit') {
+        icon = <GitCommit className="h-4 w-4" weight="bold" />
+        color = 'bg-orange-500 text-white'
+      } else if (item.type === 'comment') {
         icon = <ChatCircle className="h-4 w-4" weight="fill" />
         color = 'bg-blue-500 text-white'
       } else if (lowerContent.includes('status') || lowerContent.includes('fase') || lowerContent.includes('stage')) {
@@ -258,7 +314,7 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <ClockCounterClockwise className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-foreground mb-1">Nenhuma atividade registrada ainda</p>
+            <p className="text-sm font-medium text-foreground mb-1">Nenhum histórico recente</p>
             <p className="text-xs text-muted-foreground">
               Comece adicionando um comentário ou realize alguma ação.
             </p>
@@ -284,6 +340,11 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                     const isExpanded = expandedItems.has(item.id)
                     const displayContent = isExpanded || !isTruncated ? item.content : truncatedContent
 
+                    // Extract metadata safely using type-safe helpers
+                    const meetingMeta = item.type === 'meeting' ? getMeetingMetadata(item.metadata) : null
+                    const emailMeta = item.type === 'email' ? getEmailMetadata(item.metadata) : null
+                    const auditMeta = item.type === 'audit' ? getAuditMetadata(item.metadata) : null
+
                     return (
                       <div key={item.id} className="relative pl-12 group">
                         {/* Timeline Icon */}
@@ -300,6 +361,12 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                           "rounded-lg border transition-all",
                           item.type === 'comment' 
                             ? "bg-muted/30 border-muted-foreground/20 p-3" 
+                            : item.type === 'meeting'
+                            ? "bg-violet-50/50 dark:bg-violet-950/20 border-violet-200/50 dark:border-violet-800/30 p-3"
+                            : item.type === 'email'
+                            ? "bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/50 dark:border-cyan-800/30 p-3"
+                            : item.type === 'audit'
+                            ? "bg-orange-50/50 dark:bg-orange-950/20 border-orange-200/50 dark:border-orange-800/30 p-3"
                             : "bg-card border-border/50 p-3 hover:border-primary/20"
                         )}>
                           {/* Header: Author, Type, Time */}
@@ -320,6 +387,21 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                                     comentário
                                   </Badge>
                                 )}
+                                {item.type === 'meeting' && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-violet-300 text-violet-600 dark:text-violet-400">
+                                    reunião
+                                  </Badge>
+                                )}
+                                {item.type === 'email' && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-cyan-300 text-cyan-600 dark:text-cyan-400">
+                                    email
+                                  </Badge>
+                                )}
+                                {item.type === 'audit' && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-orange-300 text-orange-600 dark:text-orange-400">
+                                    alteração
+                                  </Badge>
+                                )}
                                 {isImportant && (
                                   <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500">
                                     <Sparkle className="h-2.5 w-2.5 mr-0.5" weight="fill" />
@@ -333,29 +415,104 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                             </span>
                           </div>
 
-                          {/* Main Content */}
+                          {/* Main Content - Specific rendering by type */}
                           <div className="space-y-2">
-                            <p className={cn(
-                              "text-sm leading-relaxed",
-                              item.type === 'comment' ? "text-foreground" : "text-muted-foreground"
-                            )}>
-                              {displayContent}
-                            </p>
-
-                            {/* Show more/less button */}
-                            {isTruncated && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs text-primary hover:text-primary"
-                                onClick={() => toggleExpanded(item.id)}
-                              >
-                                {isExpanded ? 'ver menos' : 'ver mais'}
-                              </Button>
+                            {/* Meeting specific rendering */}
+                            {item.type === 'meeting' && (
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium text-foreground">
+                                  {item.title || item.content}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <CalendarBlank className="h-3 w-3" />
+                                    {format(new Date(item.date), "PPP 'às' p", { locale: ptBR })}
+                                  </span>
+                                  {meetingMeta?.status && (
+                                    <Badge variant="secondary" className="text-[10px] capitalize">
+                                      {meetingMeta.status}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {meetingMeta?.meetLink && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs mt-2"
+                                    onClick={() => window.open(meetingMeta.meetLink, '_blank')}
+                                  >
+                                    <VideoCamera className="h-3 w-3 mr-1.5" />
+                                    Entrar na Reunião
+                                  </Button>
+                                )}
+                              </div>
                             )}
 
-                            {/* Metadata - show if exists */}
-                            {item.metadata && Object.keys(item.metadata).length > 0 && (
+                            {/* Email specific rendering */}
+                            {item.type === 'email' && (
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium text-foreground">
+                                  {emailMeta?.subject || item.title || item.content}
+                                </p>
+                                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                  {emailMeta?.from && (
+                                    <span className="flex items-center gap-1">
+                                      <span className="font-medium">De:</span> {emailMeta.from}
+                                    </span>
+                                  )}
+                                  {emailMeta?.to && (
+                                    <span className="flex items-center gap-1">
+                                      <span className="font-medium">Para:</span> {emailMeta.to}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Audit specific rendering */}
+                            {item.type === 'audit' && (
+                              <div className="space-y-1">
+                                {auditMeta?.field ? (
+                                  <p className="text-sm text-foreground">
+                                    <span className="font-medium capitalize">{auditMeta.field.replace(/_/g, ' ')}</span>
+                                    {' alterado de '}
+                                    <span className="text-muted-foreground line-through">{auditMeta.oldValue || '(vazio)'}</span>
+                                    {' para '}
+                                    <span className="font-medium text-primary">{auditMeta.newValue || '(vazio)'}</span>
+                                  </p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">{displayContent}</p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Default content for comment and system types */}
+                            {(item.type === 'comment' || item.type === 'system') && (
+                              <>
+                                <p className={cn(
+                                  "text-sm leading-relaxed",
+                                  item.type === 'comment' ? "text-foreground" : "text-muted-foreground"
+                                )}>
+                                  {displayContent}
+                                </p>
+
+                                {/* Show more/less button */}
+                                {isTruncated && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-primary hover:text-primary"
+                                    onClick={() => toggleExpanded(item.id)}
+                                  >
+                                    {isExpanded ? 'ver menos' : 'ver mais'}
+                                  </Button>
+                                )}
+                              </>
+                            )}
+
+                            {/* Metadata - show if exists and not a typed event */}
+                            {item.metadata && Object.keys(item.metadata).length > 0 && 
+                             item.type !== 'meeting' && item.type !== 'email' && item.type !== 'audit' && (
                               <div className="mt-2 p-2 rounded bg-muted/50 border border-border/50 space-y-1">
                                 {Object.entries(item.metadata)
                                   .filter(([key, value]) => value && key !== 'updated_at')
