@@ -50,7 +50,7 @@ Compact, popover-based filter component adapted from LeadsSalesFiltersBar:
 - Tests cover: rendering, interactions, state management, edge cases
 
 ### 4. Documentation
-- **Usage guide** (`docs/COMMAND_CENTER_COMPONENTS.md`): Complete with examples and API reference
+- **Usage guide** (`docs/archive/plans/COMMAND_CENTER_COMPONENTS.md` - legado): Complete with examples e histórico de requisitos
 - **Demo component** (`src/components/DataToolbarDemo.tsx`): Visual verification and testing
 - **Code comments**: Inline documentation for key functions
 

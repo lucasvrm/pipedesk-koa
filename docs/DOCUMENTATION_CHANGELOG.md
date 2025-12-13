@@ -1,5 +1,13 @@
 # Documentation Refactoring Changelog
 
+## February 2026 - Arquivamento e limpeza de referências
+
+- Movidos planos desatualizados para `docs/archive/plans/` (backend, fase 1 e command center) para evitar confusão com o estado atual do código.
+- Pacote de Quick Actions arquivado em `docs/archive/features/quick-actions/` por ausência de implementação ativa em `src/features`.
+- `docs/status/CURRENT_STATUS.md` reescrito com o panorama real das pastas de features e da stack descrita em `package.json`.
+- Índice (`docs/README.md`) ajustado para apontar somente para documentos ativos e sinalizar o material legado.
+- Auditoria atualizada em `docs/DOCUMENTATION_AUDIT.md` com números de ativos/arquivados e próximos passos.
+
 ## December 2025 - Complete Documentation Overhaul
 
 ### Latest Updates

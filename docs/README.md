@@ -1,212 +1,92 @@
 # PipeDesk Documentation
 
-Welcome to the PipeDesk documentation! This guide will help you understand, set up, and use PipeDesk effectively.
+PipeDesk é uma plataforma moderna de Deal Flow Management para bancos de investimento e profissionais de M&A, com foco em governança, colaboração e segurança (RBAC + RLS). Esta documentação centraliza guias, planos e relatórios para instalar, operar e evoluir o produto.
 
-## 📖 What is PipeDesk?
-
-PipeDesk is a modern Deal Flow Management Platform designed for investment banking and financial deal management. It provides a comprehensive solution for managing complex multi-party financial deals with strict privacy controls, role-based access, and collaborative features.
-
-## 🚀 Quick Links
-
-- **New to PipeDesk?** Start with [Installation Guide](getting-started/installation.md)
-- **What's implemented?** See [Features Status](FEATURES_STATUS.md)
-- **What's planned?** Check [Roadmap](ROADMAP.md)
-- **Want to contribute?** Read [Contributing Guidelines](CONTRIBUTING.md)
-- **Security concerns?** Check [Security Policy](SECURITY.md)
-- **Testing the app?** See [Testing Guide](TESTING.md)
-
-## 📚 Documentation Structure
-
-### Getting Started
-- [Installation & Setup](getting-started/installation.md) - Install dependencies and configure the application
-- [Quick Start Guide](getting-started/quick-start.md) - Get up and running in minutes
-- [Configuration](getting-started/configuration.md) - Environment variables and Supabase setup
-
-### Features
-Core features of PipeDesk:
-- [Deals Management](features/deals.md) - Master Deals and Player Tracks
-- [Companies & Contacts](features/companies-contacts.md) - Relationship management
-- [Leads](features/leads.md) - Lead capture and qualification
-- [Tasks](features/tasks.md) - Task management with dependencies
-- [Analytics](features/analytics.md) - Dashboard and reporting
-- [RBAC & Permissions](features/rbac.md) - Role-based access control
-- [Google Integration](features/google-integration.md) - Google Workspace sync
-- [Cross-Tagging](features/cross-tagging.md) - Organizational tagging system
-- [Audit Log](features/audit-log.md) - Activity tracking and compliance
-- [UI Components](features/ui-components.md) - Shared UI components and patterns
-
-### Development
-For developers and contributors:
-- [Testing Guide](TESTING.md) - Testing strategy and guidelines
-- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
-- [Security Policy](SECURITY.md) - Security guidelines
-- [Frontend logging & source maps](frontend/logging.md) - Coleta de logs em produção
-- Architecture - ❌ Precisa criar `development/architecture.md`
-- Database Schema - ❌ Precisa criar `development/database-schema.md`
-- Troubleshooting - ❌ Precisa criar `development/troubleshooting.md`
-
-### API Reference
-- Supabase API - ❌ Precisa criar `api/supabase-api.md`
-
-## 🎯 Key Features
-
-### ✅ Core Features (Implementadas)
-
-**Deal Flow Management:**
-- Master Deal Management - Negócios principais com volume, tipo, deadline
-- Player Track System - Negociações individuais com probability tracking
-- Multi-View Workspace - Kanban, List, Gantt, Calendar views
-- Master Matrix View - Grid visualization de deals x players
-
-**CRM:**
-- Companies Management - Gestão de empresas com types e relationship levels
-- Contacts Management - Gestão de contatos com linking para companies
-- Leads Management - Pipeline de qualificação de leads
-- Lead Qualification - Workflow de lead → company + deal
-
-**Task & Project Management:**
-- Task Management System - Tasks com dependências e milestones
-- Cross-Tagging (Multi-Homing) - Organização flexível com folders
-- Phase Validation - Regras configuráveis bloqueando transitions
-- Bulk Operations - ❌ **Não implementado** (documentado incorretamente no PRD)
-
-**Analytics & Reporting:**
-- Analytics Dashboard - Métricas em tempo real
-- Pipeline Metrics - Volume, conversion rates, weighted forecasts
-- Time Tracking - Time-in-stage e SLA monitoring
-- Team Analytics - Workload distribution
-
-**Security & Governance:**
-- RBAC (Role-Based Access Control) - 4 níveis de permissão
-- RLS Policies - Row-level security no Supabase
-- Player Anonymization - Proteção de dados para clientes
-- Audit Trail - Log completo de atividades
-
-**Collaboration:**
-- Comments System - Comentários com @mentions
-- Notifications - In-app notification center
-- Email Digest - ❌ **Não implementado**
-- Q&A System - 🔒 **Schema existe, UI não implementada**
-
-**Administration:**
-- User Management - CRUD de usuários e roles
-- Custom Fields - Campos customizáveis por entity type
-- Pipeline Settings - Configuração de stages
-- Tag Settings - Gestão de tags organizacionais
-
-### ⚠️ Features Parcialmente Implementadas
-
-1. **Google Workspace Integration** - OAuth e schema existem, funcionalidades completas incertas
-2. **AI-Powered Intelligence** - Componente existe, integração LLM não clara
-3. **Document Management** - DataRoom existe, funcionalidades completas incertas
-
-### ❌ Features Não Implementadas (mas documentadas como implementadas)
-
-1. **Global Search** - Não encontrado no código
-2. **Bulk Operations** - Não encontrado no código
-3. **File Upload Completo** - Parcialmente implementado
-4. **Email Notifications** - Inbox existe, email sending não
-
-**Ver lista completa:** [FEATURES_STATUS.md](FEATURES_STATUS.md)
-
-## 🏗️ Technical Stack
-
-- **Frontend**: React 19 + TypeScript
-- **Styling**: Tailwind CSS v4
-- **Components**: shadcn/ui v4
-- **Icons**: Phosphor Icons
-- **Charts**: D3.js, Recharts
-- **State**: React hooks + TanStack Query
-- **Backend**: Supabase (PostgreSQL, Auth, Storage, Realtime)
-- **Build**: Vite 6.4.1
-- **Testing**: Vitest 4.0.12 + Playwright
-
-## 📦 Quick Start
+## 🚀 Quick Start
 
 ```bash
-# Clone the repository
+# Clone o repositório
 git clone https://github.com/lucasvrm/pipedesk-koa.git
 cd pipedesk-koa
 
-# Install dependencies
+# Instale dependências
 npm install --legacy-peer-deps
 
-# Set up environment
+# Configure o ambiente
 cp .env.example .env
-# Edit .env with your Supabase credentials
+# Edite .env com suas credenciais Supabase
 
-# Start development server
+# Inicie o servidor de desenvolvimento
 npm run dev
-
-# Run tests
-npm run test:run
 ```
 
-For detailed instructions, see the [Installation Guide](getting-started/installation.md).
+- Acesse: http://localhost:5173
+- O repositório inclui `.npmrc` com `legacy-peer-deps=true`; execute `npm install` e `npm ci` com essa flag até todas as dependências suportarem React 19.
+- Guia completo de instalação: [`getting-started/installation.md`](getting-started/installation.md)
 
-## 🔐 Security
+## 📚 Mapa da Documentação
 
-PipeDesk takes security seriously:
-- Secure magic link authentication
-- Row-level security (RLS) in Supabase
-- Role-based access control
-- Player name anonymization for external clients
-- Audit logging for compliance
+### Visão Geral
+- Visão executiva: [`overview/EXECUTIVE_SUMMARY.md`](overview/EXECUTIVE_SUMMARY.md)
+- Produto e requisitos: [`overview/PRD.md`](overview/PRD.md)
+- Roteiro macro: [`overview/ROADMAP.md`](overview/ROADMAP.md)
+- Referências visuais: [`overview/DASHBOARD_TEMPLATES.md`](overview/DASHBOARD_TEMPLATES.md)
 
-See [Security Policy](SECURITY.md) for more details.
+### Status e Progresso
+- Estado atual: [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md)
+- Lista de features: [`status/FEATURES_STATUS.md`](status/FEATURES_STATUS.md)
 
-## 🧪 Testing
+### Planejamento
+- Plano de ação ativo: [`plans/ACTION_PLAN.md`](plans/ACTION_PLAN.md)
+- Planos legados movidos para arquivo: [`archive/plans/`](archive/plans/)
 
-PipeDesk uses Vitest for unit tests and Playwright for E2E tests:
+### Guias Operacionais
+- Cross-tagging: [`guides/CROSS_TAGGING_GUIDE.md`](guides/CROSS_TAGGING_GUIDE.md)
+- Gestão de tarefas: [`guides/TASK_MANAGEMENT_GUIDE.md`](guides/TASK_MANAGEMENT_GUIDE.md)
+- Quick Actions (correções): [`guides/QUICK_ACTIONS_FIX.md`](guides/QUICK_ACTIONS_FIX.md)
+- Audit log (VDR): [`guides/VDR_AUDIT_LOG_GUIDE.md`](guides/VDR_AUDIT_LOG_GUIDE.md)
 
-```bash
-npm run test:run        # Run unit tests
-npm run test:coverage   # Run with coverage
-npm run test:e2e        # Run E2E tests
-```
+### Segurança e Governança
+- Política de segurança: [`security/SECURITY.md`](security/SECURITY.md)
+- Resumo de segurança (fase 1): [`security/SECURITY_SUMMARY_PHASE1.md`](security/SECURITY_SUMMARY_PHASE1.md)
+- Metadados de papéis: [`security/ROLE_METADATA_REFACTORING.md`](security/ROLE_METADATA_REFACTORING.md)
+- Expansão de SystemMetadataContext: [`security/SystemMetadataContext-Expansion.md`](security/SystemMetadataContext-Expansion.md)
 
-See [Testing Guide](development/testing.md) for more information.
+### Operações e Integrações
+- Refatoração de analytics: [`operations/analytics-service-refactoring.md`](operations/analytics-service-refactoring.md)
+- Busca no Drive: [`operations/DRIVE_SEARCH_FEATURES.md`](operations/DRIVE_SEARCH_FEATURES.md)
+- Uso do serviço Drive: [`operations/DRIVE_SERVICE_USAGE.md`](operations/DRIVE_SERVICE_USAGE.md)
+- Hierarquia de pastas do Google Drive: [`operations/google-drive-folder-hierarchy.md`](operations/google-drive-folder-hierarchy.md)
 
-## 📊 Project Status
+### Dados e Configuração
+- Configurações de dados sintéticos: [`data/SYNTHETIC_DATA_SETTINGS.md`](data/SYNTHETIC_DATA_SETTINGS.md)
+- Sumário de implementação de dados sintéticos: [`data/IMPLEMENTATION_SUMMARY_SYNTHETIC_SETTINGS.md`](data/IMPLEMENTATION_SUMMARY_SYNTHETIC_SETTINGS.md)
+- Esquema de leads: [`data/leads-schema.md`](data/leads-schema.md)
+- Guia do SettingsService: [`data/settingsService-Guide.md`](data/settingsService-Guide.md)
 
-**Current Version**: 0.3.0  
-**Features Status:**
-- ✅ Implementadas: 22/30 (73%)
-- ⚠️ Parciais: 3/30 (10%)
-- ❌ Não Implementadas: 5/30 (17%)
+### Desenvolvimento
+- Guia de contribuição: [`development/CONTRIBUTING.md`](development/CONTRIBUTING.md)
+- Guia de testes: [`development/TESTING.md`](development/TESTING.md)
 
-**Documentação:**
-- ✅ Documentos Corretos: 8/19 (42%)
-- ⚠️ Documentos Desatualizados: 6/19 (32%)
-- ❌ Features sem Docs: 12 features
+### Funcionalidades
+- Deals: [`features/deals.md`](features/deals.md)
+- Companies & Contacts: [`features/companies-contacts.md`](features/companies-contacts.md)
+- RBAC: [`features/rbac.md`](features/rbac.md)
+- UI Components: [`features/ui-components.md`](features/ui-components.md)
+- Quick Actions (arquivado por obsolescência): [`archive/features/quick-actions/`](archive/features/quick-actions/)
 
-**Ver detalhes:**
-- [FEATURES_STATUS.md](FEATURES_STATUS.md) - Status detalhado de cada feature
-- [ROADMAP.md](ROADMAP.md) - Roadmap de features planejadas
-- [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md) - Auditoria completa
+### Incidentes e Pós-Mortems
+- React Error 185 (diagnóstico): [`incidents/react-error-185/diagnostics/`](incidents/react-error-185/diagnostics/)
+- React Error 185 (correções): [`incidents/react-error-185/fixes/`](incidents/react-error-185/fixes/)
+- Sales View (análises): [`incidents/sales-view/analysis/`](incidents/sales-view/analysis/)
+- Sales View (resiliência): [`incidents/sales-view/resilience/`](incidents/sales-view/resilience/)
+- Data Toolbar: [`incidents/data-toolbar/DATATOOLBAR_FIX_EXPLANATION.md`](incidents/data-toolbar/DATATOOLBAR_FIX_EXPLANATION.md)
 
-## 🤝 Contributing
-
-We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Support
-
-- **Documentation**: This documentation
-- **Issues**: [GitHub Issues](https://github.com/lucasvrm/pipedesk-koa/issues)
-- **Archive**: Historical documentation is in [/docs/archive](archive/)
-
-## 🗂️ Archive
-
-Historical documentation (migration guides, phase reports, audits) has been moved to `/docs/archive` for reference:
-- `archive/migrations/` - Database and system migration guides
-- `archive/phases/` - Phase implementation summaries
-- `archive/reports/` - QA reports and audit results
+### Relatórios e Arquivo
+- Implementações: [`reports/implementations/`](reports/implementations/)
+- Histórico e reports legados: [`archive/`](archive/)
 
 ---
 
-**Last Updated**: December 2025  
-**Maintained by**: PipeDesk Team
+- Auditoria da documentação: [`DOCUMENTATION_AUDIT.md`](DOCUMENTATION_AUDIT.md)
+- Changelog da documentação: [`DOCUMENTATION_CHANGELOG.md`](DOCUMENTATION_CHANGELOG.md)
