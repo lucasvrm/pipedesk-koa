@@ -40,6 +40,47 @@ interface UnifiedTimelineProps {
   entityType: 'deal' | 'lead' | 'company'
 }
 
+// Type-safe metadata extraction helpers
+interface MeetingMetadata {
+  meetLink?: string
+  status?: string
+}
+
+interface EmailMetadata {
+  from?: string
+  to?: string
+  subject?: string
+}
+
+interface AuditMetadata {
+  field?: string
+  oldValue?: string
+  newValue?: string
+}
+
+function getMeetingMetadata(metadata?: Record<string, unknown>): MeetingMetadata {
+  return {
+    meetLink: typeof metadata?.meetLink === 'string' ? metadata.meetLink : undefined,
+    status: typeof metadata?.status === 'string' ? metadata.status : undefined
+  }
+}
+
+function getEmailMetadata(metadata?: Record<string, unknown>): EmailMetadata {
+  return {
+    from: typeof metadata?.from === 'string' ? metadata.from : undefined,
+    to: typeof metadata?.to === 'string' ? metadata.to : undefined,
+    subject: typeof metadata?.subject === 'string' ? metadata.subject : undefined
+  }
+}
+
+function getAuditMetadata(metadata?: Record<string, unknown>): AuditMetadata {
+  return {
+    field: typeof metadata?.field === 'string' ? metadata.field : undefined,
+    oldValue: typeof metadata?.oldValue === 'string' ? metadata.oldValue : undefined,
+    newValue: typeof metadata?.newValue === 'string' ? metadata.newValue : undefined
+  }
+}
+
 // Group items by date
 function groupItemsByDate(items: TimelineItem[]): Map<string, TimelineItem[]> {
   const groups = new Map<string, TimelineItem[]>()
@@ -299,15 +340,10 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                     const isExpanded = expandedItems.has(item.id)
                     const displayContent = isExpanded || !isTruncated ? item.content : truncatedContent
 
-                    // Extract metadata safely
-                    const meetLink = item.metadata?.meetLink as string | undefined
-                    const meetingStatus = item.metadata?.status as string | undefined
-                    const emailFrom = item.metadata?.from as string | undefined
-                    const emailTo = item.metadata?.to as string | undefined
-                    const emailSubject = item.metadata?.subject as string | undefined
-                    const auditField = item.metadata?.field as string | undefined
-                    const auditOldValue = item.metadata?.oldValue as string | undefined
-                    const auditNewValue = item.metadata?.newValue as string | undefined
+                    // Extract metadata safely using type-safe helpers
+                    const meetingMeta = item.type === 'meeting' ? getMeetingMetadata(item.metadata) : null
+                    const emailMeta = item.type === 'email' ? getEmailMetadata(item.metadata) : null
+                    const auditMeta = item.type === 'audit' ? getAuditMetadata(item.metadata) : null
 
                     return (
                       <div key={item.id} className="relative pl-12 group">
@@ -392,18 +428,18 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                                     <CalendarBlank className="h-3 w-3" />
                                     {format(new Date(item.date), "PPP 'às' p", { locale: ptBR })}
                                   </span>
-                                  {meetingStatus && (
+                                  {meetingMeta?.status && (
                                     <Badge variant="secondary" className="text-[10px] capitalize">
-                                      {meetingStatus}
+                                      {meetingMeta.status}
                                     </Badge>
                                   )}
                                 </div>
-                                {meetLink && (
+                                {meetingMeta?.meetLink && (
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     className="h-7 text-xs mt-2"
-                                    onClick={() => window.open(meetLink, '_blank')}
+                                    onClick={() => window.open(meetingMeta.meetLink, '_blank')}
                                   >
                                     <VideoCamera className="h-3 w-3 mr-1.5" />
                                     Entrar na Reunião
@@ -416,17 +452,17 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                             {item.type === 'email' && (
                               <div className="space-y-2">
                                 <p className="text-sm font-medium text-foreground">
-                                  {emailSubject || item.title || item.content}
+                                  {emailMeta?.subject || item.title || item.content}
                                 </p>
                                 <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                                  {emailFrom && (
+                                  {emailMeta?.from && (
                                     <span className="flex items-center gap-1">
-                                      <span className="font-medium">De:</span> {emailFrom}
+                                      <span className="font-medium">De:</span> {emailMeta.from}
                                     </span>
                                   )}
-                                  {emailTo && (
+                                  {emailMeta?.to && (
                                     <span className="flex items-center gap-1">
-                                      <span className="font-medium">Para:</span> {emailTo}
+                                      <span className="font-medium">Para:</span> {emailMeta.to}
                                     </span>
                                   )}
                                 </div>
@@ -436,13 +472,13 @@ export function UnifiedTimeline({ entityId, entityType }: UnifiedTimelineProps) 
                             {/* Audit specific rendering */}
                             {item.type === 'audit' && (
                               <div className="space-y-1">
-                                {auditField ? (
+                                {auditMeta?.field ? (
                                   <p className="text-sm text-foreground">
-                                    <span className="font-medium capitalize">{auditField.replace(/_/g, ' ')}</span>
+                                    <span className="font-medium capitalize">{auditMeta.field.replace(/_/g, ' ')}</span>
                                     {' alterado de '}
-                                    <span className="text-muted-foreground line-through">{auditOldValue || '(vazio)'}</span>
+                                    <span className="text-muted-foreground line-through">{auditMeta.oldValue || '(vazio)'}</span>
                                     {' para '}
-                                    <span className="font-medium text-primary">{auditNewValue || '(vazio)'}</span>
+                                    <span className="font-medium text-primary">{auditMeta.newValue || '(vazio)'}</span>
                                   </p>
                                 ) : (
                                   <p className="text-sm text-muted-foreground">{displayContent}</p>

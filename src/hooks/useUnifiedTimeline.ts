@@ -60,20 +60,18 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
 
     // Process timeline entries from API (meetings, emails, audits)
     if (timelineResponse?.entries) {
+      // Map API type to internal type
+      const typeMapping: Record<string, TimelineItemType> = {
+        meeting: 'meeting',
+        email: 'email',
+        audit: 'audit'
+      }
+
       timelineResponse.entries.forEach(entry => {
         if (seenIds.has(entry.id)) return
         seenIds.add(entry.id)
 
-        // Map API type to internal type
-        let itemType: TimelineItemType = 'system'
-        const entryTypeLower = entry.type.toLowerCase()
-        if (entryTypeLower === 'meeting') {
-          itemType = 'meeting'
-        } else if (entryTypeLower === 'email') {
-          itemType = 'email'
-        } else if (entryTypeLower === 'audit') {
-          itemType = 'audit'
-        }
+        const itemType = typeMapping[entry.type.toLowerCase()] || 'system'
 
         items.push({
           id: entry.id,
@@ -96,7 +94,8 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
         if (seenIds.has(c.id)) return
         seenIds.add(c.id)
 
-        const timestamp = c.createdAt || (c as unknown as { created_at?: string }).created_at
+        // Use createdAt or fallback to created_at
+        const timestamp = c.createdAt || c.created_at
         if (!timestamp) {
           console.warn('Comment missing timestamp:', c.id)
         }
