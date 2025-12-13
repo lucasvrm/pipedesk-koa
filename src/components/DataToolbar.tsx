@@ -92,8 +92,8 @@ export function DataToolbar({
             {/* FIXED: Removed outer TooltipProvider - each Tooltip component already includes its own provider */}
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* FIXED: Wrapper div to prevent Radix UI ref loop with rapid re-renders */}
-                <div className="flex">
+                {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
+                <span className="inline-block">
                   <Button
                     variant={currentView === 'list' ? 'secondary' : 'ghost'}
                     size="icon"
@@ -103,15 +103,15 @@ export function DataToolbar({
                   >
                     <AlignJustify className="h-4 w-4" />
                   </Button>
-                </div>
+                </span>
               </TooltipTrigger>
               <TooltipContent>Lista</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* FIXED: Wrapper div to prevent Radix UI ref loop with rapid re-renders */}
-                <div className="flex">
+                {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
+                <span className="inline-block">
                   <Button
                     variant={currentView === 'cards' ? 'secondary' : 'ghost'}
                     size="icon"
@@ -121,15 +121,15 @@ export function DataToolbar({
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </Button>
-                </div>
+                </span>
               </TooltipTrigger>
               <TooltipContent>Cards</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* FIXED: Wrapper div to prevent Radix UI ref loop with rapid re-renders */}
-                <div className="flex">
+                {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
+                <span className="inline-block">
                   <Button
                     variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
                     size="icon"
@@ -139,7 +139,7 @@ export function DataToolbar({
                   >
                     <Kanban className="h-4 w-4" />
                   </Button>
-                </div>
+                </span>
               </TooltipTrigger>
               <TooltipContent>Kanban</TooltipContent>
             </Tooltip>
