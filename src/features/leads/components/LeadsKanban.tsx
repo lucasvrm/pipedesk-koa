@@ -188,10 +188,10 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
             </div>
 
             {/* Footer with quick actions and stagnation indicator */}
-            <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <div className="flex items-center gap-1">
-                {isStagnant && (
-                  <TooltipProvider delayDuration={200}>
+            <TooltipProvider delayDuration={200}>
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="flex items-center gap-1">
+                  {isStagnant && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
@@ -203,11 +203,9 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
                         <p>Sem atividade há {daysSinceUpdate} dias</p>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
+                  )}
+                </div>
 
-              <TooltipProvider delayDuration={200}>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -231,8 +229,8 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-              </TooltipProvider>
-            </div>
+              </div>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </div>
