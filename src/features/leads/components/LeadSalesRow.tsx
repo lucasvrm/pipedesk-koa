@@ -182,7 +182,7 @@ export function LeadSalesRow({
         } else {
           throw new Error('execCommand failed')
         }
-      } catch (error) {
+      } catch {
         toast.error('Erro ao copiar', {
           description: 'Não foi possível copiar o ID para a área de transferência'
         })
