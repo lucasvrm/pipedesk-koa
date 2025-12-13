@@ -1,7 +1,7 @@
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
-import { MessageCircle, Phone, Video, Calendar } from 'lucide-react'
+import { MessageCircle, Mail, Copy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -113,6 +113,97 @@ export function LeadSalesRow({
     }
   }
 
+  // Quick Action Handlers
+  const handleWhatsApp = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const phone = primaryContact?.phone
+    if (!phone) {
+      toast.error('Telefone não disponível', {
+        description: 'O contato principal não possui telefone cadastrado'
+      })
+      return
+    }
+    
+    // Remove all non-numeric characters
+    const cleanPhone = phone.replace(/\D/g, '')
+    if (!cleanPhone) {
+      toast.error('Telefone inválido', {
+        description: 'O número de telefone não contém dígitos válidos'
+      })
+      return
+    }
+    
+    // Open WhatsApp in a new tab
+    window.open(`https://wa.me/${cleanPhone}`, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleEmail = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const email = primaryContact?.email
+    if (!email) {
+      toast.error('E-mail não disponível', {
+        description: 'O contato principal não possui e-mail cadastrado'
+      })
+      return
+    }
+    
+    // Create temporary anchor element and click it programmatically
+    const mailtoLink = document.createElement('a')
+    mailtoLink.href = `mailto:${encodeURIComponent(email)}`
+    mailtoLink.click()
+  }
+
+  const handleCopyId = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!actualLeadId) {
+      toast.error('ID não disponível', {
+        description: 'Não foi possível copiar o ID do lead'
+      })
+      return
+    }
+    
+    // Check if Clipboard API is available
+    if (!navigator.clipboard) {
+      // Fallback for browsers without Clipboard API
+      try {
+        const textArea = document.createElement('textarea')
+        textArea.value = actualLeadId
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-9999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        const successful = document.execCommand('copy')
+        document.body.removeChild(textArea)
+        
+        if (successful) {
+          toast.success('ID copiado!', {
+            description: 'O ID do lead foi copiado para a área de transferência'
+          })
+        } else {
+          throw new Error('execCommand failed')
+        }
+      } catch {
+        toast.error('Erro ao copiar', {
+          description: 'Não foi possível copiar o ID para a área de transferência'
+        })
+      }
+      return
+    }
+    
+    // Copy to clipboard using modern API
+    navigator.clipboard.writeText(actualLeadId)
+      .then(() => {
+        toast.success('ID copiado!', {
+          description: 'O ID do lead foi copiado para a área de transferência'
+        })
+      })
+      .catch(() => {
+        toast.error('Erro ao copiar', {
+          description: 'Não foi possível copiar o ID para a área de transferência'
+        })
+      })
+  }
+
   // Map status codes to badge variants
   const getStatusVariant = (code: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (code.toLowerCase()) {
@@ -133,6 +224,7 @@ export function LeadSalesRow({
     }
   }
 
+  const safePriorityBucket: LeadPriorityBucket = priorityBucket ?? 'cold'
   const safeLegalName = safeString(legalName, 'Lead sem nome')
   const safeTradeName = safeStringOptional(tradeName)
   const safePriorityDescription = safeStringOptional(priorityDescription)
@@ -168,13 +260,13 @@ export function LeadSalesRow({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[priorityBucket]}`}
+                  className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[safePriorityBucket]}`}
                 >
                   <FireSimple size={18} />
                 </div>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs text-left space-y-1">
-                <div className="font-semibold text-primary-foreground">{PRIORITY_LABELS[priorityBucket]}</div>
+                <div className="font-semibold text-primary-foreground">{PRIORITY_LABELS[safePriorityBucket]}</div>
                 {priorityScore !== undefined && priorityScore !== null && (
                   <div className="text-primary-foreground/80">Score: {priorityScore}</div>
                 )}
@@ -333,45 +425,49 @@ export function LeadSalesRow({
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleWhatsApp}
+                >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>WhatsApp - Em breve</p>
+                <p>WhatsApp</p>
               </TooltipContent>
             </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                  <Phone className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleEmail}
+                >
+                  <Mail className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Ligar - Em breve</p>
+                <p>Enviar E-mail</p>
               </TooltipContent>
             </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                  <Video className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleCopyId}
+                >
+                  <Copy className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Meet - Em breve</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                  <Calendar className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Agendar - Em breve</p>
+                <p>Copiar ID</p>
               </TooltipContent>
             </Tooltip>
           </div>
