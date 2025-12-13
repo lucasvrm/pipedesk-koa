@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { AlignJustify, LayoutGrid, Kanban, Search } from 'lucide-react'
+import { AlignJustify, LayoutGrid, Kanban, Search, type LucideIcon } from 'lucide-react'
 
 export type DataToolbarView = 'list' | 'cards' | 'kanban'
 
@@ -18,19 +18,13 @@ interface DataToolbarProps {
   className?: string
 }
 
-const VIEW_ICONS = {
-  list: AlignJustify,
-  cards: LayoutGrid,
-  kanban: Kanban
-}
-
 const VIEW_LABELS: Record<DataToolbarView, string> = {
   list: 'Lista',
   cards: 'Cards',
   kanban: 'Kanban'
 }
 
-const VIEW_ENTRIES: Array<[DataToolbarView, typeof AlignJustify]> = [
+const VIEW_ENTRIES: Array<[DataToolbarView, LucideIcon]> = [
   ['list', AlignJustify],
   ['cards', LayoutGrid],
   ['kanban', Kanban]
