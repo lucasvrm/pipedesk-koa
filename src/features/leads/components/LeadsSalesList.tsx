@@ -211,6 +211,7 @@ export function LeadsSalesList({
             <TableHead className="w-[18%]">Interações</TableHead>
             <TableHead className="w-[18%]">Próxima ação</TableHead>
             <TableHead className="w-[12%]">Tags</TableHead>
+            <TableHead className="w-[10%]">Status</TableHead>
             <TableHead className="w-[10%]">Responsável</TableHead>
             <TableHead className="w-[40px]" />
           </TableRow>
@@ -227,7 +228,7 @@ export function LeadsSalesList({
 
           {!isLoading && safeLeads.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="py-10">
+              <TableCell colSpan={9} className="py-10">
                 <div className="flex flex-col items-center justify-center gap-3 text-center">
                   <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
                     <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -245,7 +246,7 @@ export function LeadsSalesList({
 
           {!isLoading && safeLeads.length > 0 && validLeads.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="py-10">
+              <TableCell colSpan={9} className="py-10">
                 <div className="flex flex-col items-center justify-center gap-3 text-center">
                   <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
                     <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,7 +281,7 @@ export function LeadsSalesList({
 
           {!isLoading && invalidLeadCount > 0 && validLeads.length > 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="py-4 text-xs text-muted-foreground">
+              <TableCell colSpan={9} className="py-4 text-xs text-muted-foreground">
                 Alguns registros retornados pelo servidor foram ignorados por estarem sem identificador.
               </TableCell>
             </TableRow>

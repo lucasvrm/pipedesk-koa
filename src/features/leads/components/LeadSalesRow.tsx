@@ -9,10 +9,17 @@ import { Button } from '@/components/ui/button'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from '@/components/ui/dropdown-menu'
 import { QuickAction, QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
+import { useUpdateLead } from '@/services/leadService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -42,6 +49,9 @@ function getInitials(name?: string) {
 }
 
 export function LeadSalesRow({
+  id,
+  leadId,
+  lead_id,
   selected,
   onSelectChange,
   onClick,
@@ -57,11 +67,59 @@ export function LeadSalesRow({
   nextAction,
   owner,
   tags,
-  actions
+  actions,
+  status
 }: LeadSalesRowProps) {
-  const { getLeadStatusById, getLeadOriginById } = useSystemMetadata()
+  const { getLeadStatusById, leadStatuses } = useSystemMetadata()
+  const updateLeadMutation = useUpdateLead()
   const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
+
+  // Get the actual lead ID from various possible fields
+  const actualLeadId = id ?? leadId ?? lead_id
+
+  // Get current status information
+  const currentStatus = status ? getLeadStatusById(status) : null
+  const statusLabel = currentStatus?.label ?? 'Sem status'
+  const statusColor = currentStatus?.code ?? 'default'
+
+  // Handler for status change
+  const handleStatusChange = async (newStatusId: string) => {
+    if (!actualLeadId) {
+      console.error('Cannot update status: Lead ID is missing')
+      return
+    }
+
+    try {
+      await updateLeadMutation.mutateAsync({
+        id: actualLeadId,
+        data: { leadStatusId: newStatusId }
+      })
+      console.log(`Status updated successfully for lead ${actualLeadId} to ${newStatusId}`)
+    } catch (error) {
+      console.error('Failed to update lead status:', error)
+    }
+  }
+
+  // Map status codes to badge variants
+  const getStatusVariant = (code: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    switch (code.toLowerCase()) {
+      case 'new':
+        return 'default'
+      case 'contacted':
+        return 'secondary'
+      case 'qualified':
+        return 'default'
+      case 'proposal':
+        return 'default'
+      case 'won':
+        return 'default'
+      case 'lost':
+        return 'destructive'
+      default:
+        return 'outline'
+    }
+  }
 
   const safeLegalName = safeString(legalName, 'Lead sem nome')
   const safeTradeName = safeStringOptional(tradeName)
@@ -215,6 +273,35 @@ export function LeadSalesRow({
         </div>
       </TableCell>
 
+      <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Badge
+              variant={getStatusVariant(statusColor)}
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              {statusLabel}
+            </Badge>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+            {leadStatuses
+              .filter((s) => s.isActive)
+              .map((statusOption) => (
+                <DropdownMenuItem
+                  key={statusOption.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleStatusChange(statusOption.id)
+                  }}
+                  className={status === statusOption.id ? 'bg-accent' : ''}
+                >
+                  {statusOption.label}
+                </DropdownMenuItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+
       <TableCell className="w-[10%]">
         {owner ? (
           <div className="flex items-center gap-2">
@@ -306,6 +393,7 @@ export function LeadSalesRowSkeleton() {
       <TableCell className="w-[18%]"><Skeleton className="h-10 w-full" /></TableCell>
       <TableCell className="w-[18%]"><Skeleton className="h-12 w-full" /></TableCell>
       <TableCell className="w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[10%]"><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[120px]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>

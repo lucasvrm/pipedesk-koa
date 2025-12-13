@@ -127,7 +127,8 @@ export default function LeadSalesViewPage() {
       primaryContact,
       lastInteractionAt,
       lastInteractionType,
-      nextAction
+      nextAction,
+      status: (lead as any).leadStatusId ?? (lead as any).lead_status_id ?? lead.status ?? lead.lead?.status ?? null
     }
   }
 
@@ -245,7 +246,7 @@ export default function LeadSalesViewPage() {
     
     return (
       <TableRow>
-        <TableCell colSpan={8} className="py-12">
+        <TableCell colSpan={9} className="py-12">
           <div className="flex flex-col items-center justify-center gap-6 text-center">
             <div className="h-20 w-20 rounded-full bg-destructive/10 flex items-center justify-center ring-4 ring-destructive/10">
               <svg className="h-10 w-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -320,6 +321,7 @@ export default function LeadSalesViewPage() {
               <TableHead className="w-[18%]">Interações</TableHead>
               <TableHead className="w-[18%]">Próxima ação</TableHead>
               <TableHead className="w-[12%]">Tags</TableHead>
+              <TableHead className="w-[10%]">Status</TableHead>
               <TableHead className="w-[10%]">Responsável</TableHead>
               <TableHead className="w-[40px]" />
             </TableRow>
@@ -338,7 +340,7 @@ export default function LeadSalesViewPage() {
 
             {!isLoading && !isError && leads.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-12">
+                <TableCell colSpan={9} className="py-12">
                   <div className="flex flex-col items-center justify-center gap-3 text-center">
                     <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
                       <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,7 +385,7 @@ export default function LeadSalesViewPage() {
 
             {isFetching && !isLoading && !isError && (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={9}>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                     <Skeleton className="h-4 w-4" /> Atualizando dados...
                   </div>
