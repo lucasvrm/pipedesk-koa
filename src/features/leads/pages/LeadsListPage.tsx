@@ -1273,7 +1273,7 @@ export default function LeadsListPage() {
 
       {leadToSchedule && (
         <ScheduleMeetingDialog 
-          open={!!leadToSchedule} 
+          open={true} 
           onOpenChange={(open) => !open && setLeadToSchedule(null)}
           lead={leadToSchedule}
         />

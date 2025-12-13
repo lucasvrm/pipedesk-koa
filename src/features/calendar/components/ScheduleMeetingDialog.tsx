@@ -34,6 +34,11 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
       return
     }
 
+    if (!lead.id) {
+      toast.error('ID do lead não encontrado')
+      return
+    }
+
     // Validate that end time is after start time
     const start = new Date(startTime)
     const end = new Date(endTime)
@@ -58,7 +63,8 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
       success: () => {
         setIsSubmitting(false)
         onOpenChange(false)
-        // Reset form to empty state
+        // Reset form to default state
+        setTitle(getDefaultTitle(lead))
         setStartTime('')
         setEndTime('')
         return 'Reunião criada com sucesso!'
