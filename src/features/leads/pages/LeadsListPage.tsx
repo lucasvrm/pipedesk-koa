@@ -509,13 +509,13 @@ export default function LeadsListPage() {
     }
   }
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearch('')
     setStatusFilter('all')
     setOriginFilter('all')
     setTagFilter([])
     setCurrentPage(1)
-  }
+  }, [])
 
   const handleResetPreferences = () => {
     clearFilters()
@@ -898,6 +898,7 @@ export default function LeadsListPage() {
   }, [
     activeLeadOrigins,
     activeLeadStatuses,
+    clearFilters,
     dataToolbarView,
     handleDataToolbarViewChange,
     handleDaysWithoutInteractionChange,
@@ -908,8 +909,6 @@ export default function LeadsListPage() {
     handleSelectedOwnersChange,
     handleStatusesChange,
     hasFilters,
-    leadOrigins,
-    leadStatuses,
     originFilter,
     resetSalesFilters,
     salesDaysWithoutInteraction,
