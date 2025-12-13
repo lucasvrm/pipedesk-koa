@@ -147,8 +147,10 @@ export function LeadSalesRow({
       return
     }
     
-    // Open default email client with encoded email
-    window.location.href = `mailto:${encodeURIComponent(email)}`
+    // Create temporary anchor element and click it programmatically
+    const mailtoLink = document.createElement('a')
+    mailtoLink.href = `mailto:${encodeURIComponent(email)}`
+    mailtoLink.click()
   }
 
   const handleCopyId = (e: React.MouseEvent) => {
@@ -170,11 +172,16 @@ export function LeadSalesRow({
         textArea.style.left = '-9999px'
         document.body.appendChild(textArea)
         textArea.select()
-        document.execCommand('copy')
+        const successful = document.execCommand('copy')
         document.body.removeChild(textArea)
-        toast.success('ID copiado!', {
-          description: 'O ID do lead foi copiado para a área de transferência'
-        })
+        
+        if (successful) {
+          toast.success('ID copiado!', {
+            description: 'O ID do lead foi copiado para a área de transferência'
+          })
+        } else {
+          throw new Error('execCommand failed')
+        }
       } catch (error) {
         toast.error('Erro ao copiar', {
           description: 'Não foi possível copiar o ID para a área de transferência'
