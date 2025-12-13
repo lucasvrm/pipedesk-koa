@@ -67,7 +67,7 @@ export function DataToolbar({
 
         {children && (
           <div className="flex items-center gap-2">
-            <Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />
+            {onSearchChange && <Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />}
             {children}
           </div>
         )}
@@ -111,7 +111,9 @@ export function DataToolbar({
           </div>
         )}
 
-        <Separator orientation="vertical" className="h-6 hidden sm:block" />
+        {onViewChange && actions && (
+          <Separator orientation="vertical" className="h-6 hidden sm:block" />
+        )}
 
         {actions ?? (
           <Button size="sm" className="gap-2 shadow-sm">
