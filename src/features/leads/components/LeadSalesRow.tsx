@@ -20,6 +20,7 @@ import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesView
 import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { useUpdateLead } from '@/services/leadService'
+import { toast } from 'sonner'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -86,18 +87,29 @@ export function LeadSalesRow({
   // Handler for status change
   const handleStatusChange = async (newStatusId: string) => {
     if (!actualLeadId) {
-      console.error('Cannot update status: Lead ID is missing')
+      toast.error('Não foi possível atualizar o status', {
+        description: 'ID do lead não encontrado'
+      })
       return
     }
+
+    // Get the new status label for user feedback
+    const newStatus = getLeadStatusById(newStatusId)
+    const newStatusLabel = newStatus?.label ?? 'Novo status'
 
     try {
       await updateLeadMutation.mutateAsync({
         id: actualLeadId,
         data: { leadStatusId: newStatusId }
       })
-      console.log(`Status updated successfully for lead ${actualLeadId} to ${newStatusId}`)
+      
+      toast.success('Status atualizado com sucesso', {
+        description: `Status alterado para: ${newStatusLabel}`
+      })
     } catch (error) {
-      console.error('Failed to update lead status:', error)
+      toast.error('Erro ao atualizar status', {
+        description: error instanceof Error ? error.message : 'Tente novamente mais tarde'
+      })
     }
   }
 
