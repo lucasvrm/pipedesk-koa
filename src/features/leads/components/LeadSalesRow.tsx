@@ -194,6 +194,7 @@ export function LeadSalesRow({
     }
   }
 
+  const safePriorityBucket: LeadPriorityBucket = priorityBucket ?? 'cold'
   const safeLegalName = safeString(legalName, 'Lead sem nome')
   const safeTradeName = safeStringOptional(tradeName)
   const safePriorityDescription = safeStringOptional(priorityDescription)
@@ -229,13 +230,13 @@ export function LeadSalesRow({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[priorityBucket]}`}
+                  className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[safePriorityBucket]}`}
                 >
                   <FireSimple size={18} />
                 </div>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs text-left space-y-1">
-                <div className="font-semibold text-primary-foreground">{PRIORITY_LABELS[priorityBucket]}</div>
+                <div className="font-semibold text-primary-foreground">{PRIORITY_LABELS[safePriorityBucket]}</div>
                 {priorityScore !== undefined && priorityScore !== null && (
                   <div className="text-primary-foreground/80">Score: {priorityScore}</div>
                 )}

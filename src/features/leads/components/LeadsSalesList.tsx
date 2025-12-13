@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { LeadSalesRow, LeadSalesRowSkeleton } from './LeadSalesRow'
-import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
+import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 import { QuickAction } from '@/components/QuickActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -64,7 +64,7 @@ export function LeadsSalesList({
 
   const toRowData = (lead: LeadSalesViewItem) => {
     const priorityBucketRaw = lead.priorityBucket ?? lead.priority_bucket
-    const priorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
+    const priorityBucket: LeadPriorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScoreRaw = lead.priorityScore ?? lead.priority_score
     const priorityScore = typeof priorityScoreRaw === 'number' && Number.isFinite(priorityScoreRaw) ? priorityScoreRaw : null
     const priorityDescription = safeStringOptional(lead.priorityDescription ?? lead.priority_description)
@@ -78,7 +78,9 @@ export function LeadsSalesList({
             ...primaryContactSource,
             name: safeStringOptional((primaryContactSource as any).name, 'Contato não informado') ?? 'Contato não informado',
             role: safeStringOptional((primaryContactSource as any).role),
-            avatar: safeStringOptional((primaryContactSource as any).avatar)
+            avatar: safeStringOptional((primaryContactSource as any).avatar),
+            email: safeStringOptional((primaryContactSource as any).email),
+            phone: safeStringOptional((primaryContactSource as any).phone)
           }
         : undefined
     // Mapped to use new metadata IDs
