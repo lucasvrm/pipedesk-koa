@@ -54,11 +54,11 @@ import {
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 import { DataToolbar } from '@/components/DataToolbar'
+import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
 
 // View types used by DataToolbar and internal view management
 type DataToolbarView = 'list' | 'cards' | 'kanban'
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
-import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
