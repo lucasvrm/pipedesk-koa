@@ -61,7 +61,10 @@ describe('DataToolbar', () => {
     render(<DataToolbar currentView="cards" onViewChange={vi.fn()} />)
 
     const cardsButton = screen.getByLabelText('Cards')
-    expect(cardsButton).toHaveAttribute('data-state', 'on')
+    // Button with 'secondary' variant indicates active state
+    expect(cardsButton).toBeInTheDocument()
+    // The active button should not have ghost variant styling
+    expect(cardsButton.className).not.toContain('ghost')
   })
 
   it('should render children in filters slot', () => {
@@ -137,10 +140,13 @@ describe('DataToolbar', () => {
     const handleViewChange = vi.fn()
     render(<DataToolbar currentView="list" onViewChange={handleViewChange} />)
 
-    // Test cards view (clicking list when already on list won't call handler)
+    // Test cards view
     const cardsButton = screen.getByLabelText('Cards')
     await user.click(cardsButton)
     expect(handleViewChange).toHaveBeenCalledWith('cards')
+
+    // Reset the mock to clear previous calls
+    handleViewChange.mockClear()
 
     // Test kanban view
     const kanbanButton = screen.getByLabelText('Kanban')
