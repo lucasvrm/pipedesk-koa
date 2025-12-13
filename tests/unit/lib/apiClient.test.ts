@@ -43,13 +43,14 @@ describe('apiClient', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/test',
         expect.objectContaining({
-          headers: expect.any(Headers),
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer test-token-123',
+            'Content-Type': 'application/json',
+            'x-user-role': 'manager',
+          }),
         })
       );
 
-      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
-      expect(calledHeaders.get('Authorization')).toBe('Bearer test-token-123');
-      expect(calledHeaders.get('x-user-role')).toBe('manager');
       expect(result).toEqual({ data: 'test' });
     });
 
@@ -66,9 +67,9 @@ describe('apiClient', () => {
 
       await apiFetch('/test');
 
-      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
-      expect(calledHeaders.get('Authorization')).toBeNull();
-      expect(calledHeaders.get('x-user-role')).toBe('manager');
+      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
+      expect(calledHeaders['Authorization']).toBeUndefined();
+      expect(calledHeaders['x-user-role']).toBe('manager');
     });
 
     it('should set Content-Type for requests with body', async () => {
@@ -87,8 +88,8 @@ describe('apiClient', () => {
         body: JSON.stringify({ name: 'test' }),
       });
 
-      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
-      expect(calledHeaders.get('Content-Type')).toBe('application/json');
+      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
+      expect(calledHeaders['Content-Type']).toBe('application/json');
     });
 
     it('should throw ApiError with descriptive message for 401', async () => {
@@ -178,9 +179,9 @@ describe('apiClient', () => {
         headers: { 'X-Custom-Header': 'custom-value' },
       });
 
-      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
-      expect(calledHeaders.get('X-Custom-Header')).toBe('custom-value');
-      expect(calledHeaders.get('Authorization')).toBe('Bearer token');
+      const calledHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers as Record<string, string>;
+      expect(calledHeaders['X-Custom-Header']).toBe('custom-value');
+      expect(calledHeaders['Authorization']).toBe('Bearer token');
     });
   });
 });
