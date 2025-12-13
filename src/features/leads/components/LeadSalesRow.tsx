@@ -23,7 +23,7 @@ import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { useUpdateLead } from '@/services/leadService'
 import { toast } from 'sonner'
-import { getGmailComposeUrl } from '@/utils/googleLinks'
+import { getGmailComposeUrl, cleanPhoneNumber } from '@/utils/googleLinks'
 import { getDriveItems } from '@/services/driveService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
@@ -134,9 +134,8 @@ export function LeadSalesRow({
       return
     }
     
-    // Remove all non-numeric characters
-    const cleanPhone = phone.replace(/\D/g, '')
-    if (!cleanPhone) {
+    const { cleanPhone, isValid } = cleanPhoneNumber(phone)
+    if (!isValid) {
       toast.error('Telefone inválido', {
         description: 'O número de telefone não contém dígitos válidos'
       })
@@ -173,9 +172,8 @@ export function LeadSalesRow({
       return
     }
     
-    // Remove all non-numeric characters
-    const cleanPhone = phone.replace(/\D/g, '')
-    if (!cleanPhone) {
+    const { cleanPhone, isValid } = cleanPhoneNumber(phone)
+    if (!isValid) {
       toast.error('Telefone inválido', {
         description: 'O número de telefone não contém dígitos válidos'
       })

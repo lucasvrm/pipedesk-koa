@@ -16,10 +16,16 @@
  * window.open(url, '_blank', 'width=800,height=600')
  */
 export function getGmailComposeUrl(to: string, subject: string): string {
+  // Basic email validation - ensure the email has a reasonable format
+  const sanitizedTo = to.trim()
+  if (!sanitizedTo || !sanitizedTo.includes('@')) {
+    console.warn('[googleLinks] Invalid email address provided:', to)
+  }
+  
   const params = new URLSearchParams({
     view: 'cm',
     fs: '1',
-    to,
+    to: sanitizedTo,
     su: subject,
   })
   return `https://mail.google.com/mail/?${params.toString()}`
@@ -41,4 +47,26 @@ export function getGoogleCalendarDayUrl(date: Date): string {
   const month = date.getMonth() + 1 // getMonth() is 0-indexed
   const day = date.getDate()
   return `https://calendar.google.com/calendar/u/0/r/day/${year}/${month}/${day}`
+}
+
+/**
+ * Clean and validate a phone number for use with tel: protocol.
+ * Removes all non-numeric characters and returns the clean number.
+ * 
+ * @param phone - Phone number string (may contain formatting characters)
+ * @returns Object with cleaned phone number and validation status
+ * 
+ * @example
+ * const { cleanPhone, isValid } = cleanPhoneNumber('+55 (11) 99999-8888')
+ * // Returns: { cleanPhone: '5511999998888', isValid: true }
+ */
+export function cleanPhoneNumber(phone: string): { cleanPhone: string; isValid: boolean } {
+  const cleanPhone = phone.replace(/\D/g, '')
+  const isValid = cleanPhone.length >= 8 // Minimum length for a valid phone number
+  
+  if (!isValid) {
+    console.warn('[googleLinks] Invalid phone number provided:', phone)
+  }
+  
+  return { cleanPhone, isValid }
 }
