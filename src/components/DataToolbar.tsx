@@ -30,9 +30,7 @@ export function DataToolbar({
   }, [onSearchChange]);
 
   const handleViewClick = useCallback((view: string) => {
-    if (onViewChange) {
-      onViewChange(view);
-    }
+    onViewChange?.(view);
   }, [onViewChange]);
 
   return (
@@ -56,7 +54,7 @@ export function DataToolbar({
               <button 
                 type="button"
                 onClick={handleClearSearch}
-                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                 aria-label="Limpar busca"
               >
                 <X className="h-4 w-4" />
