@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { List, SquaresFour, Kanban, MagnifyingGlass } from '@phosphor-icons/react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { AlignJustify, LayoutGrid, Kanban, Search } from 'lucide-react'
 
 export type DataToolbarView = 'list' | 'cards' | 'kanban'
 
@@ -18,8 +19,8 @@ interface DataToolbarProps {
 }
 
 const VIEW_ICONS = {
-  list: List,
-  cards: SquaresFour,
+  list: AlignJustify,
+  cards: LayoutGrid,
   kanban: Kanban
 }
 
@@ -29,9 +30,9 @@ const VIEW_LABELS: Record<DataToolbarView, string> = {
   kanban: 'Kanban'
 }
 
-const VIEW_ENTRIES: Array<[DataToolbarView, typeof List]> = [
-  ['list', List],
-  ['cards', SquaresFour],
+const VIEW_ENTRIES: Array<[DataToolbarView, typeof AlignJustify]> = [
+  ['list', AlignJustify],
+  ['cards', LayoutGrid],
   ['kanban', Kanban]
 ]
 
@@ -75,7 +76,7 @@ export function DataToolbar({
         {/* Search Input */}
         {onSearchChange && (
           <div className="relative flex-1 min-w-0 max-w-md">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               type="search"
               placeholder="Buscar..."
@@ -114,14 +115,20 @@ export function DataToolbar({
             className="border bg-muted/30"
           >
             {VIEW_ENTRIES.map(([view, Icon]) => (
-              <ToggleGroupItem
-                key={view}
-                value={view}
-                aria-label={VIEW_LABELS[view]}
-                className="h-9 w-9 p-0"
-              >
-                <Icon className="h-4 w-4" />
-              </ToggleGroupItem>
+              <Tooltip key={view}>
+                <TooltipTrigger asChild>
+                  <ToggleGroupItem
+                    value={view}
+                    aria-label={VIEW_LABELS[view]}
+                    className="h-9 w-9 p-0"
+                  >
+                    <Icon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{VIEW_LABELS[view]}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </ToggleGroup>
         )}
