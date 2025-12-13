@@ -92,48 +92,54 @@ export function DataToolbar({
             {/* FIXED: Removed outer TooltipProvider - each Tooltip component already includes its own provider */}
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* FIXED: Added aria-label for accessibility and test compatibility */}
-                <Button
-                  variant={currentView === 'list' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label="Lista"
-                  onClick={() => handleViewChange('list')}
-                >
-                  <AlignJustify className="h-4 w-4" />
-                </Button>
+                {/* FIXED: Wrapper div to prevent Radix UI ref loop with rapid re-renders */}
+                <div className="flex">
+                  <Button
+                    variant={currentView === 'list' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Lista"
+                    onClick={() => handleViewChange('list')}
+                  >
+                    <AlignJustify className="h-4 w-4" />
+                  </Button>
+                </div>
               </TooltipTrigger>
               <TooltipContent>Lista</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* FIXED: Added aria-label for accessibility and test compatibility */}
-                <Button
-                  variant={currentView === 'cards' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label="Cards"
-                  onClick={() => handleViewChange('cards')}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
+                {/* FIXED: Wrapper div to prevent Radix UI ref loop with rapid re-renders */}
+                <div className="flex">
+                  <Button
+                    variant={currentView === 'cards' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Cards"
+                    onClick={() => handleViewChange('cards')}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                </div>
               </TooltipTrigger>
               <TooltipContent>Cards</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* FIXED: Added aria-label for accessibility and test compatibility */}
-                <Button
-                  variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label="Kanban"
-                  onClick={() => handleViewChange('kanban')}
-                >
-                  <Kanban className="h-4 w-4" />
-                </Button>
+                {/* FIXED: Wrapper div to prevent Radix UI ref loop with rapid re-renders */}
+                <div className="flex">
+                  <Button
+                    variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Kanban"
+                    onClick={() => handleViewChange('kanban')}
+                  >
+                    <Kanban className="h-4 w-4" />
+                  </Button>
+                </div>
               </TooltipTrigger>
               <TooltipContent>Kanban</TooltipContent>
             </Tooltip>

@@ -1024,18 +1024,17 @@ export default function LeadsListPage() {
 
   return (
     <PageContainer>
+      {/* DataToolbar is now a direct child of PageContainer, not wrapped in CardHeader */}
+      {unifiedToolbar}
       <SharedListLayout
         title="Leads"
         description="Gerencie seus prospects e oportunidades."
         primaryAction={null}
          metrics={metrics}
-         filtersBar={unifiedToolbar}
+         filtersBar={null}
          emptyState={filtersEmptyState}
          footer={showPagination ? <LeadsPaginationControls {...paginationProps} /> : null}
        >
-         {showPagination && (
-           <LeadsPaginationControls {...paginationProps} />
-         )}
          {isActiveLoading ? (
            <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
          ) : salesErrorUI ? (
