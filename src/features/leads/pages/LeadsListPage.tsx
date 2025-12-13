@@ -1023,213 +1023,246 @@ export default function LeadsListPage() {
   }
 
   return (
-    <PageContainer>
-      {/* DataToolbar is now a direct child of PageContainer, not wrapped in CardHeader */}
-      {unifiedToolbar}
-      <SharedListLayout
-        title="Leads"
-        description="Gerencie seus prospects e oportunidades."
-        primaryAction={null}
-         metrics={metrics}
-         filtersBar={null}
-         emptyState={filtersEmptyState}
-         footer={showPagination ? <LeadsPaginationControls {...paginationProps} /> : null}
-       >
-         {isActiveLoading ? (
-           <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
-         ) : salesErrorUI ? (
-           salesErrorUI
-         ) : paginatedLeads.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
-            Nenhum lead encontrado.
-            {hasFilters && (
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Limpar filtros
-                </Button>
-                {currentView !== 'grid' && (
-                  <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
-                    Ir para grade
-                  </Button>
+    <div className="p-6 min-h-screen bg-background space-y-6">
+      
+      {/* Header da Página (Título) */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
+          <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
+        </div>
+      </div>
+
+      {/* Metrics Section */}
+      {metrics}
+
+      {/* FIXED: O Container Unificado (Card Principal) */}
+      <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
+        
+        {/* Toolbar no topo do Card */}
+        {unifiedToolbar}
+
+        {/* Conteúdo da Lista dentro do Card */}
+        <div className="flex-1 min-h-[500px]"> 
+          {isActiveLoading ? (
+            <div className="p-6 space-y-4">
+              <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
+            </div>
+          ) : salesErrorUI ? (
+            <div className="p-6">
+              {salesErrorUI}
+            </div>
+          ) : filtersEmptyState ? (
+            <div className="p-12">
+              {filtersEmptyState}
+            </div>
+          ) : paginatedLeads.length === 0 ? (
+            <div className="p-12">
+              <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
+                Nenhum lead encontrado.
+                {hasFilters && (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      Limpar filtros
+                    </Button>
+                    {currentView !== 'grid' && (
+                      <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
+                        Ir para grade
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        ) : currentView === 'sales' ? (
-          <LeadsSalesList
-            leads={paginatedLeads as LeadSalesViewItem[]}
-            isLoading={isActiveLoading}
-            orderBy={salesOrderBy}
-            selectedIds={selectedIds}
-            onSelectAll={toggleSelectAll}
-            onSelectOne={toggleSelectOne}
-            onNavigate={(id) => navigate(`/leads/${id}`)}
-            getLeadActions={(lead): QuickAction[] => {
-              const id = lead.leadId ?? lead.lead_id ?? lead.id
-              if (!id) return []
-
-              // Return actions that conform to the QuickAction type.
-              // IMPORTANT: Each action MUST have 'id' (string) and 'label' (string).
-              // Never return the entire object or pass non-string values as label.
-              return [
-                {
-                  id: 'view',
-                  label: 'Ver detalhes do lead',
-                  onClick: () => navigate(`/leads/${id}`)
-                }
-              ]
-            }}
-          />
-        ) : currentView === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginatedLeads.map(lead => {
-              const contact = getPrimaryContact(lead)
-              const owner = (lead as any).owner
-              const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
-              return (
-                <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
-                  <CardHeader className="pb-2 space-y-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg line-clamp-1" title={safeLegalName}>{safeLegalName}</CardTitle>
-                        {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
-                      </div>
-                      <div onClick={e => e.stopPropagation()} className="flex gap-1">
-                        <QuickActionsMenu
-                          actions={getLeadQuickActions({
-                            lead,
-                            navigate,
-                            updateLead: updateLeadAdapter,
-                            deleteLead,
-                            profileId: profile?.id,
-                            onEdit: () => openEdit(lead),
-                            getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
-                            statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
-                          })}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {renderStatusBadge(lead.leadStatusId)}
-                      {renderOriginBadge(lead.leadOriginId)}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-3 text-sm space-y-3">
-                    <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
-                      <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
-                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
-                      </div>
-                      <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                      <div>
-                        <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
-                        {contact ? (
-                          <div
-                            className="font-medium truncate hover:text-primary hover:underline"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              navigate(`/contacts/${contact.id}`)
-                            }}
-                          >
-                            {safeString(contact.name, 'Contato')}
-                          </div>
-                        ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
-                        {owner ? (
-                          <div className="flex items-center gap-1.5">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={owner.avatar} />
-                              <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
-                            </Avatar>
-                            <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
-                          </div>
-                        ) : <span>-</span>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        ) : (
-          <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
-        )}
-
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Lead</DialogTitle>
-              <DialogDescription>Comece adicionando o nome da empresa.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Razão Social / Nome</Label>
-                <Input value={newLeadName} onChange={(e) => setNewLeadName(e.target.value)} placeholder="Ex: Acme Corp Ltda" />
-              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-              <Button onClick={handleCreate} disabled={!newLeadName}>Criar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          ) : (
+            <div className="animate-in fade-in duration-300">
+              {currentView === 'sales' ? (
+                <LeadsSalesList
+                  leads={paginatedLeads as LeadSalesViewItem[]}
+                  isLoading={isActiveLoading}
+                  orderBy={salesOrderBy}
+                  selectedIds={selectedIds}
+                  onSelectAll={toggleSelectAll}
+                  onSelectOne={toggleSelectOne}
+                  onNavigate={(id) => navigate(`/leads/${id}`)}
+                  getLeadActions={(lead): QuickAction[] => {
+                    const id = lead.leadId ?? lead.lead_id ?? lead.id
+                    if (!id) return []
 
-        <LeadEditSheet
-          lead={editingLead}
-          open={isEditOpen}
-          onOpenChange={setIsEditOpen}
-        />
+                    return [
+                      {
+                        id: 'view',
+                        label: 'Ver detalhes do lead',
+                        onClick: () => navigate(`/leads/${id}`)
+                      }
+                    ]
+                  }}
+                />
+              ) : currentView === 'kanban' ? (
+                <div className="p-4">
+                  <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
+                </div>
+              ) : (
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {paginatedLeads.map(lead => {
+                      const contact = getPrimaryContact(lead)
+                      const owner = (lead as any).owner
+                      const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
+                      return (
+                        <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
+                          <CardHeader className="pb-2 space-y-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="space-y-1">
+                                <CardTitle className="text-lg line-clamp-1" title={safeLegalName}>{safeLegalName}</CardTitle>
+                                {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
+                              </div>
+                              <div onClick={e => e.stopPropagation()} className="flex gap-1">
+                                <QuickActionsMenu
+                                  actions={getLeadQuickActions({
+                                    lead,
+                                    navigate,
+                                    updateLead: updateLeadAdapter,
+                                    deleteLead,
+                                    profileId: profile?.id,
+                                    onEdit: () => openEdit(lead),
+                                    getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
+                                    statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
+                                  })}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {renderStatusBadge(lead.leadStatusId)}
+                              {renderOriginBadge(lead.leadOriginId)}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-3 text-sm space-y-3">
+                            <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
+                              <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
+                            </div>
 
-        <LeadDeleteDialog
-          lead={deletingLead}
-          open={isDeleteOpen}
-          onOpenChange={setIsDeleteOpen}
-          onConfirm={handleDelete}
-          isDeleting={deleteLead.isPending}
-        />
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
+                                <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
+                              </div>
+                              <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
+                            </div>
 
-        <AlertDialog open={showPreferencesResetPrompt} onOpenChange={setShowPreferencesResetPrompt}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Filtros podem estar desatualizados</AlertDialogTitle>
-              <AlertDialogDescription>
-                Não encontramos leads com as preferências salvas. Deseja limpar filtros e redefinir suas preferências para ver
-                resultados novamente?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Manter filtros</AlertDialogCancel>
-              <AlertDialogAction onClick={handleResetPreferences}>Limpar filtros e preferências</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                              <div>
+                                <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
+                                {contact ? (
+                                  <div
+                                    className="font-medium truncate hover:text-primary hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      navigate(`/contacts/${contact.id}`)
+                                    }}
+                                  >
+                                    {safeString(contact.name, 'Contato')}
+                                  </div>
+                                ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
+                                {owner ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarImage src={owner.avatar} />
+                                      <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
+                                  </div>
+                                ) : <span>-</span>}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir {selectedIds.length} leads?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação removerá todos os leads selecionados e não poderá ser desfeita.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </SharedListLayout>
-    </PageContainer>
+        {/* Footer with pagination */}
+        {showPagination && (
+          <div className="border-t p-4">
+            <LeadsPaginationControls {...paginationProps} />
+          </div>
+        )}
+      </div>
+
+      {/* Dialogs - Outside the card container */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Lead</DialogTitle>
+            <DialogDescription>Comece adicionando o nome da empresa.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Razão Social / Nome</Label>
+              <Input value={newLeadName} onChange={(e) => setNewLeadName(e.target.value)} placeholder="Ex: Acme Corp Ltda" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={!newLeadName}>Criar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <LeadEditSheet
+        lead={editingLead}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+      />
+
+      <LeadDeleteDialog
+        lead={deletingLead}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={handleDelete}
+        isDeleting={deleteLead.isPending}
+      />
+
+      <AlertDialog open={showPreferencesResetPrompt} onOpenChange={setShowPreferencesResetPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Filtros podem estar desatualizados</AlertDialogTitle>
+            <AlertDialogDescription>
+              Não encontramos leads com as preferências salvas. Deseja limpar filtros e redefinir suas preferências para ver
+              resultados novamente?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter filtros</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetPreferences}>Limpar filtros e preferências</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedIds.length} leads?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá todos os leads selecionados e não poderá ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   )
 }

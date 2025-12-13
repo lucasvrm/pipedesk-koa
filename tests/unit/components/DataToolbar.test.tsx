@@ -8,7 +8,7 @@ describe('DataToolbar', () => {
   it('should render without any props', () => {
     render(<DataToolbar />)
     // Should render without errors
-    expect(document.querySelector('.backdrop-blur-md')).toBeInTheDocument()
+    expect(document.querySelector('.bg-card')).toBeInTheDocument()
   })
 
   it('should render search input when onSearchChange is provided', () => {
@@ -41,9 +41,9 @@ describe('DataToolbar', () => {
   it('should render view toggle when onViewChange is provided', () => {
     render(<DataToolbar currentView="list" onViewChange={vi.fn()} />)
 
-    expect(screen.getByTitle('Visualização em Lista')).toBeInTheDocument()
-    expect(screen.getByTitle('Visualização em Cards')).toBeInTheDocument()
-    expect(screen.getByTitle('Visualização Kanban')).toBeInTheDocument()
+    expect(screen.getByTitle('Lista')).toBeInTheDocument()
+    expect(screen.getByTitle('Cards')).toBeInTheDocument()
+    expect(screen.getByTitle('Kanban')).toBeInTheDocument()
   })
 
   it('should call onViewChange when view is changed', async () => {
@@ -51,7 +51,7 @@ describe('DataToolbar', () => {
     const handleViewChange = vi.fn()
     render(<DataToolbar currentView="list" onViewChange={handleViewChange} />)
 
-    const cardsButton = screen.getByTitle('Visualização em Cards')
+    const cardsButton = screen.getByTitle('Cards')
     await user.click(cardsButton)
 
     expect(handleViewChange).toHaveBeenCalledWith('cards')
@@ -60,7 +60,7 @@ describe('DataToolbar', () => {
   it('should highlight current view', () => {
     render(<DataToolbar currentView="cards" onViewChange={vi.fn()} />)
 
-    const cardsButton = screen.getByTitle('Visualização em Cards')
+    const cardsButton = screen.getByTitle('Cards')
     // Button with 'secondary' variant indicates active state
     expect(cardsButton).toBeInTheDocument()
     // The active button should not have ghost variant styling
@@ -127,12 +127,12 @@ describe('DataToolbar', () => {
     expect(toolbar).toBeInTheDocument()
   })
 
-  it('should apply glassmorphism styles', () => {
+  it('should apply card styles', () => {
     const { container } = render(<DataToolbar />)
     
-    const toolbar = container.querySelector('.backdrop-blur-md')
+    const toolbar = container.querySelector('.bg-card')
     expect(toolbar).toBeInTheDocument()
-    expect(toolbar).toHaveClass('bg-background/80')
+    expect(toolbar).toHaveClass('border-b')
   })
 
   it('should handle all view types correctly', async () => {
@@ -141,7 +141,7 @@ describe('DataToolbar', () => {
     render(<DataToolbar currentView="list" onViewChange={handleViewChange} />)
 
     // Test cards view
-    const cardsButton = screen.getByTitle('Visualização em Cards')
+    const cardsButton = screen.getByTitle('Cards')
     await user.click(cardsButton)
     expect(handleViewChange).toHaveBeenCalledWith('cards')
 
@@ -150,7 +150,7 @@ describe('DataToolbar', () => {
     handleViewChange.mockClear()
 
     // Test kanban view
-    const kanbanButton = screen.getByTitle('Visualização Kanban')
+    const kanbanButton = screen.getByTitle('Kanban')
     await user.click(kanbanButton)
     expect(handleViewChange).toHaveBeenCalledWith('kanban')
   })
@@ -164,9 +164,9 @@ describe('DataToolbar', () => {
   it('should not render view toggle when onViewChange is not provided', () => {
     render(<DataToolbar />)
 
-    expect(screen.queryByTitle('Visualização em Lista')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Visualização em Cards')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Visualização Kanban')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Lista')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Cards')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Kanban')).not.toBeInTheDocument()
   })
 
   it('should render with all features enabled', () => {
@@ -185,6 +185,6 @@ describe('DataToolbar', () => {
     expect(screen.getByPlaceholderText('Buscar leads...')).toBeInTheDocument()
     expect(screen.getByText('Filter')).toBeInTheDocument()
     expect(screen.getByText('New Lead')).toBeInTheDocument()
-    expect(screen.getByTitle('Visualização em Lista')).toBeInTheDocument()
+    expect(screen.getByTitle('Lista')).toBeInTheDocument()
   })
 })

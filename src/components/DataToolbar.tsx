@@ -35,7 +35,8 @@ export function DataToolbar({
 
   return (
     <div className={cn(
-      "sticky top-0 z-20 w-full backdrop-blur-md bg-background/80 border-b px-4 sm:px-6 py-3 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-200", 
+      // FIXED: Layout estático, sem sticky, integrado ao card
+      "w-full bg-card border-b p-4 flex flex-col sm:flex-row items-center justify-between gap-4", 
       className
     )}>
       
@@ -48,7 +49,7 @@ export function DataToolbar({
               placeholder="Buscar leads..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 h-9 bg-background/50 border-muted focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
+              className="pl-9 h-9 bg-background border-input focus-visible:ring-1 transition-all"
             />
             {searchTerm.length > 0 && (
               <button 
@@ -65,7 +66,7 @@ export function DataToolbar({
 
         {children && (
           <div className="flex items-center gap-2">
-            {onSearchChange && <Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />}
+            <Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />
             {children}
           </div>
         )}
@@ -75,14 +76,13 @@ export function DataToolbar({
       <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
         
         {onViewChange && (
-          <div className="flex items-center p-1 bg-muted/50 rounded-lg border border-border/40">
-            {/* SAFE MODE: Usando title nativo para evitar crash de Ref do Tooltip */}
+          <div className="flex items-center p-1 bg-muted rounded-md border">
             <Button
               variant={currentView === 'list' ? 'secondary' : 'ghost'}
               size="icon"
               className="h-8 w-8"
               onClick={() => handleViewClick('list')}
-              title="Visualização em Lista"
+              title="Lista"
             >
               <AlignJustify className="h-4 w-4" />
             </Button>
@@ -92,7 +92,7 @@ export function DataToolbar({
               size="icon"
               className="h-8 w-8"
               onClick={() => handleViewClick('cards')}
-              title="Visualização em Cards"
+              title="Cards"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -102,19 +102,17 @@ export function DataToolbar({
               size="icon"
               className="h-8 w-8"
               onClick={() => handleViewClick('kanban')}
-              title="Visualização Kanban"
+              title="Kanban"
             >
               <Kanban className="h-4 w-4" />
             </Button>
           </div>
         )}
 
-        {onViewChange && actions && (
-          <Separator orientation="vertical" className="h-6 hidden sm:block" />
-        )}
+        {actions && <Separator orientation="vertical" className="h-6 hidden sm:block" />}
 
         {actions ?? (
-          <Button size="sm" className="gap-2 shadow-sm">
+          <Button size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
             New Lead
           </Button>
