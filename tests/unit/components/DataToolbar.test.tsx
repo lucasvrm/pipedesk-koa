@@ -8,14 +8,14 @@ describe('DataToolbar', () => {
   it('should render without any props', () => {
     render(<DataToolbar />)
     // Should render without errors
-    expect(document.querySelector('.backdrop-blur-sm')).toBeInTheDocument()
+    expect(document.querySelector('.backdrop-blur-md')).toBeInTheDocument()
   })
 
   it('should render search input when onSearchChange is provided', () => {
     const handleSearchChange = vi.fn()
     render(<DataToolbar searchTerm="" onSearchChange={handleSearchChange} />)
 
-    const searchInput = screen.getByPlaceholderText('Buscar...')
+    const searchInput = screen.getByPlaceholderText('Buscar leads...')
     expect(searchInput).toBeInTheDocument()
   })
 
@@ -24,7 +24,7 @@ describe('DataToolbar', () => {
     const handleSearchChange = vi.fn()
     render(<DataToolbar searchTerm="" onSearchChange={handleSearchChange} />)
 
-    const searchInput = screen.getByPlaceholderText('Buscar...')
+    const searchInput = screen.getByPlaceholderText('Buscar leads...')
     await user.type(searchInput, 't')
 
     expect(handleSearchChange).toHaveBeenCalled()
@@ -34,16 +34,16 @@ describe('DataToolbar', () => {
   it('should display search term value', () => {
     render(<DataToolbar searchTerm="my search" onSearchChange={vi.fn()} />)
 
-    const searchInput = screen.getByPlaceholderText('Buscar...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Buscar leads...') as HTMLInputElement
     expect(searchInput.value).toBe('my search')
   })
 
   it('should render view toggle when onViewChange is provided', () => {
     render(<DataToolbar currentView="list" onViewChange={vi.fn()} />)
 
-    expect(screen.getByLabelText('Lista')).toBeInTheDocument()
-    expect(screen.getByLabelText('Cards')).toBeInTheDocument()
-    expect(screen.getByLabelText('Kanban')).toBeInTheDocument()
+    expect(screen.getByTitle('Visualização em Lista')).toBeInTheDocument()
+    expect(screen.getByTitle('Visualização em Cards')).toBeInTheDocument()
+    expect(screen.getByTitle('Visualização Kanban')).toBeInTheDocument()
   })
 
   it('should call onViewChange when view is changed', async () => {
@@ -51,7 +51,7 @@ describe('DataToolbar', () => {
     const handleViewChange = vi.fn()
     render(<DataToolbar currentView="list" onViewChange={handleViewChange} />)
 
-    const cardsButton = screen.getByLabelText('Cards')
+    const cardsButton = screen.getByTitle('Visualização em Cards')
     await user.click(cardsButton)
 
     expect(handleViewChange).toHaveBeenCalledWith('cards')
@@ -60,7 +60,7 @@ describe('DataToolbar', () => {
   it('should highlight current view', () => {
     render(<DataToolbar currentView="cards" onViewChange={vi.fn()} />)
 
-    const cardsButton = screen.getByLabelText('Cards')
+    const cardsButton = screen.getByTitle('Visualização em Cards')
     // Button with 'secondary' variant indicates active state
     expect(cardsButton).toBeInTheDocument()
     // The active button should not have ghost variant styling
@@ -130,7 +130,7 @@ describe('DataToolbar', () => {
   it('should apply glassmorphism styles', () => {
     const { container } = render(<DataToolbar />)
     
-    const toolbar = container.querySelector('.backdrop-blur-sm')
+    const toolbar = container.querySelector('.backdrop-blur-md')
     expect(toolbar).toBeInTheDocument()
     expect(toolbar).toHaveClass('bg-background/80')
   })
@@ -141,7 +141,7 @@ describe('DataToolbar', () => {
     render(<DataToolbar currentView="list" onViewChange={handleViewChange} />)
 
     // Test cards view
-    const cardsButton = screen.getByLabelText('Cards')
+    const cardsButton = screen.getByTitle('Visualização em Cards')
     await user.click(cardsButton)
     expect(handleViewChange).toHaveBeenCalledWith('cards')
 
@@ -150,7 +150,7 @@ describe('DataToolbar', () => {
     handleViewChange.mockClear()
 
     // Test kanban view
-    const kanbanButton = screen.getByLabelText('Kanban')
+    const kanbanButton = screen.getByTitle('Visualização Kanban')
     await user.click(kanbanButton)
     expect(handleViewChange).toHaveBeenCalledWith('kanban')
   })
@@ -158,15 +158,15 @@ describe('DataToolbar', () => {
   it('should not render search input when onSearchChange is not provided', () => {
     render(<DataToolbar />)
 
-    expect(screen.queryByPlaceholderText('Buscar...')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Buscar leads...')).not.toBeInTheDocument()
   })
 
   it('should not render view toggle when onViewChange is not provided', () => {
     render(<DataToolbar />)
 
-    expect(screen.queryByLabelText('Lista')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Cards')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Kanban')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Visualização em Lista')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Visualização em Cards')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Visualização Kanban')).not.toBeInTheDocument()
   })
 
   it('should render with all features enabled', () => {
@@ -182,9 +182,9 @@ describe('DataToolbar', () => {
       </DataToolbar>
     )
 
-    expect(screen.getByPlaceholderText('Buscar...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar leads...')).toBeInTheDocument()
     expect(screen.getByText('Filter')).toBeInTheDocument()
     expect(screen.getByText('New Lead')).toBeInTheDocument()
-    expect(screen.getByLabelText('Lista')).toBeInTheDocument()
+    expect(screen.getByTitle('Visualização em Lista')).toBeInTheDocument()
   })
 })
