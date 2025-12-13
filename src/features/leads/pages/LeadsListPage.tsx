@@ -55,6 +55,8 @@ import {
   recordSalesViewSuccess
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
+import { DataToolbar, DataToolbarView } from '@/components/DataToolbar'
+import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
 const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
@@ -558,6 +560,19 @@ export default function LeadsListPage() {
     );
   }
 
+  // Map internal viewMode to DataToolbar's expected values
+  const dataToolbarView: DataToolbarView = useMemo(() => {
+    if (viewMode === 'sales') return 'list'
+    if (viewMode === 'grid') return 'cards'
+    return 'kanban'
+  }, [viewMode])
+
+  const handleDataToolbarViewChange = useCallback((view: DataToolbarView) => {
+    if (view === 'list') setViewMode('sales')
+    else if (view === 'cards') setViewMode('grid')
+    else if (view === 'kanban') setViewMode('kanban')
+  }, [setViewMode])
+
   // --- Layout Sections ---
 
   const actions = (
@@ -628,52 +643,14 @@ export default function LeadsListPage() {
     </div>
   )
 
-  const viewToggleControl = (
-    <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/20">
-      <Button
-        variant={viewMode === 'sales' ? 'secondary' : 'ghost'}
-        size="icon"
-        className="h-8 w-8"
-        onClick={() => setViewMode('sales')}
-        title="Visualização Sales"
-      >
-        <Target />
-      </Button>
-      <Button
-        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-        size="icon"
-        className="h-8 w-8"
-        onClick={() => setViewMode('grid')}
-        title="Grade"
-      >
-        <SquaresFour />
-      </Button>
-      <Button
-        variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-        size="icon"
-        className="h-8 w-8"
-        onClick={() => setViewMode('kanban')}
-        title="Kanban"
-      >
-        <Kanban />
-      </Button>
-    </div>
-  )
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page)
+  }, [])
 
-  const bulkActions = selectedIds.length > 0 && (
-    <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
-      <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
-    </Button>
-  )
-
-  const viewActionsBar = (
-    <div className="flex items-center justify-between gap-2 flex-wrap">
-      <div className="flex items-center gap-2">
-        {viewToggleControl}
-      </div>
-      {bulkActions}
-    </div>
-  )
+  const handleItemsPerPageChange = useCallback((pageSize: number) => {
+    setItemsPerPage(pageSize)
+    setCurrentPage(1)
+  }, [])
 
   const resetSalesFilters = useCallback(() => {
     setSalesOwnerMode('all')
@@ -731,180 +708,226 @@ export default function LeadsListPage() {
     [normalizeSalesOrderBy]
   )
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page)
-  }, [])
-
-  const handleItemsPerPageChange = useCallback((pageSize: number) => {
-    setItemsPerPage(pageSize)
-    setCurrentPage(1)
-  }, [])
-
   const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
   const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
 
-  const salesFiltersBar = (
-    <div className="space-y-3">
-      {viewActionsBar}
-      <LeadsSalesFiltersBar
-        ownerMode={salesOwnerMode}
-        onOwnerModeChange={handleOwnerModeChange}
-        selectedOwners={salesOwnerIds}
-        onSelectedOwnersChange={handleSelectedOwnersChange}
-        priority={salesPriority}
-        onPriorityChange={handlePriorityChange}
-        statuses={salesStatusFilter}
-        onStatusesChange={handleStatusesChange}
-        origins={salesOriginFilter}
-        onOriginsChange={handleOriginsChange}
-        daysWithoutInteraction={salesDaysWithoutInteraction}
-        onDaysWithoutInteractionChange={handleDaysWithoutInteractionChange}
-        orderBy={salesOrderBy}
-        onOrderByChange={handleOrderByChange}
-        users={users}
-        leadStatuses={activeLeadStatuses}
-        leadOrigins={activeLeadOrigins}
-        onClear={resetSalesFilters}
-      />
-    </div>
-  )
+  // Unified DataToolbar for all views
+  const unifiedToolbar = useMemo(() => {
+    const newLeadButton = (
+      <RequirePermission permission="leads.create">
+        <Button onClick={() => setIsCreateOpen(true)} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Lead
+        </Button>
+      </RequirePermission>
+    )
 
-  const filtersBar = (
-    <div className="space-y-3">
-      {viewActionsBar}
-      <SharedListToolbar
-        searchField={
-          <div className="relative w-full sm:w-64">
-            <MagnifyingGlass className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar leads..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+    const bulkDeleteButton = selectedIds.length > 0 ? (
+      <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
+        <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
+      </Button>
+    ) : null
+
+    // For Sales view, use LeadsSmartFilters
+    if (viewMode === 'sales') {
+      return (
+        <DataToolbar
+          searchTerm={search}
+          onSearchChange={setSearch}
+          currentView={dataToolbarView}
+          onViewChange={handleDataToolbarViewChange}
+          actions={
+            <>
+              {bulkDeleteButton}
+              {newLeadButton}
+            </>
+          }
+        >
+          <LeadsSmartFilters
+            ownerMode={salesOwnerMode}
+            onOwnerModeChange={handleOwnerModeChange}
+            selectedOwners={salesOwnerIds}
+            onSelectedOwnersChange={handleSelectedOwnersChange}
+            priority={salesPriority}
+            onPriorityChange={handlePriorityChange}
+            statuses={salesStatusFilter}
+            onStatusesChange={handleStatusesChange}
+            origins={salesOriginFilter}
+            onOriginsChange={handleOriginsChange}
+            daysWithoutInteraction={salesDaysWithoutInteraction}
+            onDaysWithoutInteractionChange={handleDaysWithoutInteractionChange}
+            orderBy={salesOrderBy}
+            onOrderByChange={handleOrderByChange}
+            users={users}
+            leadStatuses={activeLeadStatuses}
+            leadOrigins={activeLeadOrigins}
+            onClear={resetSalesFilters}
+          />
+        </DataToolbar>
+      )
+    }
+
+    // For Grid/Kanban views, use standard filters
+    return (
+      <DataToolbar
+        searchTerm={search}
+        onSearchChange={setSearch}
+        currentView={dataToolbarView}
+        onViewChange={handleDataToolbarViewChange}
+        actions={
+          <>
+            {bulkDeleteButton}
+            {newLeadButton}
+          </>
         }
-        filters={
-          <div className="flex flex-wrap items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-[150px] justify-between">
-                  <span className="truncate">
-                    {statusFilter === 'all'
-                      ? 'Todos Status'
-                      : safeString(
-                          leadStatuses.find(s => s.id === statusFilter)?.label,
-                          'Status'
-                        )}
-                  </span>
-                  <CaretDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[200px]">
-                <DropdownMenuRadioGroup
-                  value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value)}
-                >
-                  <DropdownMenuRadioItem value="all">
-                    Todos Status
-                  </DropdownMenuRadioItem>
-                  {leadStatuses
-                    .filter(s => s.isActive)
-                    .map((status) => (
-                      <DropdownMenuRadioItem key={status.id} value={status.id}>
-                        {safeString(status.label, status.code)}
-                      </DropdownMenuRadioItem>
-                    ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-[150px] justify-between">
-                  <span className="truncate">
-                    {originFilter === 'all'
-                      ? 'Todas Origens'
-                      : safeString(
-                          leadOrigins.find(o => o.id === originFilter)?.label,
-                          'Origem'
-                        )}
-                  </span>
-                  <CaretDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[220px]">
-                <DropdownMenuRadioGroup
-                  value={originFilter}
-                  onValueChange={(value) => setOriginFilter(value)}
-                >
-                  <DropdownMenuRadioItem value="all">
-                    Todas Origens
-                  </DropdownMenuRadioItem>
-                  {leadOrigins
-                    .filter(o => o.isActive)
-                    .map((origin) => (
-                      <DropdownMenuRadioItem key={origin.id} value={origin.id}>
-                        {safeString(origin.label, origin.code)}
-                      </DropdownMenuRadioItem>
-                    ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {tagsEnabled && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
-                    <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
-                    <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
-                      {tags.map(tag => {
-                        const safeColor = safeString(tag.color, '#888')
-                        return (
-                          <Badge
-                            key={tag.id}
-                            variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
-                            className="cursor-pointer hover:opacity-80"
-                            onClick={() => {
-                              const newTags = tagFilter.includes(tag.id)
-                                ? tagFilter.filter(t => t !== tag.id)
-                                : [...tagFilter, tag.id];
-                              setTagFilter(newTags);
-                              setCurrentPage(1);
-                            }}
-                            style={tagFilter.includes(tag.id) ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
-                          >
-                            {safeString(tag.name, 'Tag')}
-                          </Badge>
-                        )
-                      })}
-                      {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
-                    </div>
-                    {tagFilter.length > 0 && (
-                      <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setCurrentPage(1); }}>
-                        Limpar Tags
-                      </Button>
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <span className="truncate">
+                {statusFilter === 'all'
+                  ? 'Todos Status'
+                  : safeString(
+                      leadStatuses.find(s => s.id === statusFilter)?.label,
+                      'Status'
                     )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+              </span>
+              <CaretDown className="ml-1 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[200px]">
+            <DropdownMenuRadioGroup
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value)}
+            >
+              <DropdownMenuRadioItem value="all">
+                Todos Status
+              </DropdownMenuRadioItem>
+              {leadStatuses
+                .filter(s => s.isActive)
+                .map((status) => (
+                  <DropdownMenuRadioItem key={status.id} value={status.id}>
+                    {safeString(status.label, status.code)}
+                  </DropdownMenuRadioItem>
+                ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-            {hasFilters && (
-              <Button variant="ghost" onClick={clearFilters}>Limpar</Button>
-            )}
-          </div>
-        }
-      />
-    </div>
-  )
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <span className="truncate">
+                {originFilter === 'all'
+                  ? 'Todas Origens'
+                  : safeString(
+                      leadOrigins.find(o => o.id === originFilter)?.label,
+                      'Origem'
+                    )}
+              </span>
+              <CaretDown className="ml-1 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[220px]">
+            <DropdownMenuRadioGroup
+              value={originFilter}
+              onValueChange={(value) => setOriginFilter(value)}
+            >
+              <DropdownMenuRadioItem value="all">
+                Todas Origens
+              </DropdownMenuRadioItem>
+              {leadOrigins
+                .filter(o => o.isActive)
+                .map((origin) => (
+                  <DropdownMenuRadioItem key={origin.id} value={origin.id}>
+                    {safeString(origin.label, origin.code)}
+                  </DropdownMenuRadioItem>
+                ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-  const activeFiltersBar = viewMode === 'sales' ? salesFiltersBar : filtersBar
+        {tagsEnabled && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
+                <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
+                <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
+                  {tags.map(tag => {
+                    const safeColor = safeString(tag.color, '#888')
+                    return (
+                      <Badge
+                        key={tag.id}
+                        variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
+                        className="cursor-pointer hover:opacity-80"
+                        onClick={() => {
+                          const newTags = tagFilter.includes(tag.id)
+                            ? tagFilter.filter(t => t !== tag.id)
+                            : [...tagFilter, tag.id];
+                          setTagFilter(newTags);
+                          setCurrentPage(1);
+                        }}
+                        style={tagFilter.includes(tag.id) ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
+                      >
+                        {safeString(tag.name, 'Tag')}
+                      </Badge>
+                    )
+                  })}
+                  {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
+                </div>
+                {tagFilter.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setCurrentPage(1); }}>
+                    Limpar Tags
+                  </Button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>Limpar</Button>
+        )}
+      </DataToolbar>
+    )
+  }, [
+    activeLeadOrigins,
+    activeLeadStatuses,
+    dataToolbarView,
+    handleDataToolbarViewChange,
+    handleDaysWithoutInteractionChange,
+    handleOrderByChange,
+    handleOriginsChange,
+    handleOwnerModeChange,
+    handlePriorityChange,
+    handleSelectedOwnersChange,
+    handleStatusesChange,
+    hasFilters,
+    leadOrigins,
+    leadStatuses,
+    originFilter,
+    resetSalesFilters,
+    salesDaysWithoutInteraction,
+    salesOrderBy,
+    salesOriginFilter,
+    salesOwnerIds,
+    salesOwnerMode,
+    salesPriority,
+    salesStatusFilter,
+    search,
+    selectedIds.length,
+    statusFilter,
+    tagFilter,
+    tags,
+    tagsEnabled,
+    users,
+    viewMode
+  ])
 
   // Compute error UI for Sales View
   const salesErrorUI = useMemo(() => {
@@ -977,9 +1000,9 @@ export default function LeadsListPage() {
       <SharedListLayout
         title="Leads"
         description="Gerencie seus prospects e oportunidades."
-        primaryAction={actions}
+        primaryAction={null}
          metrics={metrics}
-         filtersBar={activeFiltersBar}
+         filtersBar={unifiedToolbar}
          emptyState={filtersEmptyState}
          footer={showPagination ? <LeadsPaginationControls {...paginationProps} /> : null}
        >
