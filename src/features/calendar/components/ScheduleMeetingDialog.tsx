@@ -3,9 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Lead } from '@/lib/types'
 import { createEvent } from '@/services/calendarService'
 import { toast } from 'sonner'
+import { getGoogleCalendarDayUrl } from '@/utils/googleLinks'
+import { ExternalLink } from 'lucide-react'
 
 interface ScheduleMeetingDialogProps {
   open: boolean
@@ -19,6 +22,7 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
   const [title, setTitle] = useState(getDefaultTitle(lead))
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [addMeetLink, setAddMeetLink] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Update title when lead changes
@@ -55,7 +59,8 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
       startTime: start.toISOString(),
       endTime: end.toISOString(),
       entityType: 'lead',
-      entityId: lead.id
+      entityId: lead.id,
+      addMeetLink
     })
 
     toast.promise(promise, {
@@ -99,7 +104,24 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="startTime">Data e Hora de Início *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="startTime">Data e Hora de Início *</Label>
+              {startTime && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
+                  onClick={() => {
+                    const date = new Date(startTime)
+                    window.open(getGoogleCalendarDayUrl(date), '_blank', 'noopener,noreferrer')
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Ver Disponibilidade
+                </Button>
+              )}
+            </div>
             <Input
               id="startTime"
               type="datetime-local"
@@ -118,6 +140,20 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
               onChange={(e) => setEndTime(e.target.value)}
               required
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="addMeetLink"
+              checked={addMeetLink}
+              onCheckedChange={(checked) => setAddMeetLink(checked === true)}
+            />
+            <Label
+              htmlFor="addMeetLink"
+              className="text-sm font-normal cursor-pointer"
+            >
+              Adicionar link do Google Meet
+            </Label>
           </div>
 
           <DialogFooter>

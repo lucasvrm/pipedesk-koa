@@ -54,6 +54,7 @@ export interface EventCreate {
   entityType?: EntityType;
   entityId?: string;
   attendees?: string[];
+  addMeetLink?: boolean;
 }
 
 /**
