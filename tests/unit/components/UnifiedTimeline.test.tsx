@@ -59,9 +59,10 @@ describe('UnifiedTimeline', () => {
   it('should render loading state with skeletons', () => {
     vi.mocked(useUnifiedTimeline).mockReturnValue({
       items: [],
+      data: [],
       isLoading: true,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -82,9 +83,10 @@ describe('UnifiedTimeline', () => {
   it('should render empty state when no items exist', () => {
     vi.mocked(useUnifiedTimeline).mockReturnValue({
       items: [],
+      data: [],
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -97,13 +99,14 @@ describe('UnifiedTimeline', () => {
       { wrapper }
     )
 
-    expect(screen.getByText('Nenhuma atividade registrada ainda')).toBeInTheDocument()
+    expect(screen.getByText('Nenhum histórico recente')).toBeInTheDocument()
   })
 
   it('should render error state with retry button', async () => {
-    const refetchMock = vi.fn()
+    const refetchMock = vi.fn() as unknown as () => Promise<void>
     vi.mocked(useUnifiedTimeline).mockReturnValue({
       items: [],
+      data: [],
       isLoading: false,
       error: new Error('Test error'),
       refetch: refetchMock
@@ -134,33 +137,36 @@ describe('UnifiedTimeline', () => {
     const weekAgo = new Date(today)
     weekAgo.setDate(weekAgo.getDate() - 7)
 
+    const items = [
+      {
+        id: '1',
+        type: 'comment' as const,
+        date: today.toISOString(),
+        author: { name: 'User 1', avatar: '' },
+        content: 'Comment today'
+      },
+      {
+        id: '2',
+        type: 'system' as const,
+        date: yesterday.toISOString(),
+        author: { name: 'System', avatar: '' },
+        content: 'Activity yesterday'
+      },
+      {
+        id: '3',
+        type: 'system' as const,
+        date: weekAgo.toISOString(),
+        author: { name: 'System', avatar: '' },
+        content: 'Activity last week'
+      }
+    ]
+
     vi.mocked(useUnifiedTimeline).mockReturnValue({
-      items: [
-        {
-          id: '1',
-          type: 'comment',
-          date: today.toISOString(),
-          author: { name: 'User 1', avatar: '' },
-          content: 'Comment today'
-        },
-        {
-          id: '2',
-          type: 'system',
-          date: yesterday.toISOString(),
-          author: { name: 'System', avatar: '' },
-          content: 'Activity yesterday'
-        },
-        {
-          id: '3',
-          type: 'system',
-          date: weekAgo.toISOString(),
-          author: { name: 'System', avatar: '' },
-          content: 'Activity last week'
-        }
-      ],
+      items,
+      data: items,
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -184,26 +190,29 @@ describe('UnifiedTimeline', () => {
   })
 
   it('should display filter buttons and allow filtering', async () => {
+    const items = [
+      {
+        id: '1',
+        type: 'comment' as const,
+        date: new Date().toISOString(),
+        author: { name: 'User 1', avatar: '' },
+        content: 'This is a comment'
+      },
+      {
+        id: '2',
+        type: 'system' as const,
+        date: new Date().toISOString(),
+        author: { name: 'System', avatar: '' },
+        content: 'This is a system event'
+      }
+    ]
+
     vi.mocked(useUnifiedTimeline).mockReturnValue({
-      items: [
-        {
-          id: '1',
-          type: 'comment',
-          date: new Date().toISOString(),
-          author: { name: 'User 1', avatar: '' },
-          content: 'This is a comment'
-        },
-        {
-          id: '2',
-          type: 'system',
-          date: new Date().toISOString(),
-          author: { name: 'System', avatar: '' },
-          content: 'This is a system event'
-        }
-      ],
+      items,
+      data: items,
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -238,19 +247,22 @@ describe('UnifiedTimeline', () => {
   })
 
   it('should highlight important activities', () => {
+    const items = [
+      {
+        id: '1',
+        type: 'system' as const,
+        date: new Date().toISOString(),
+        author: { name: 'Sistema', avatar: '' },
+        content: 'Lead qualificou para negócio'
+      }
+    ]
+
     vi.mocked(useUnifiedTimeline).mockReturnValue({
-      items: [
-        {
-          id: '1',
-          type: 'system',
-          date: new Date().toISOString(),
-          author: { name: 'Sistema', avatar: '' },
-          content: 'Lead qualificou para negócio'
-        }
-      ],
+      items,
+      data: items,
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -272,19 +284,22 @@ describe('UnifiedTimeline', () => {
   })
 
   it('should show author avatars and names', () => {
+    const items = [
+      {
+        id: '1',
+        type: 'comment' as const,
+        date: new Date().toISOString(),
+        author: { name: 'John Doe', avatar: 'http://example.com/avatar.jpg' },
+        content: 'Test comment'
+      }
+    ]
+
     vi.mocked(useUnifiedTimeline).mockReturnValue({
-      items: [
-        {
-          id: '1',
-          type: 'comment',
-          date: new Date().toISOString(),
-          author: { name: 'John Doe', avatar: 'http://example.com/avatar.jpg' },
-          content: 'Test comment'
-        }
-      ],
+      items,
+      data: items,
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -302,20 +317,22 @@ describe('UnifiedTimeline', () => {
 
   it('should truncate long text and show "ver mais" button', async () => {
     const longText = 'A'.repeat(300)
-    
+    const items = [
+      {
+        id: '1',
+        type: 'comment' as const,
+        date: new Date().toISOString(),
+        author: { name: 'User', avatar: '' },
+        content: longText
+      }
+    ]
+
     vi.mocked(useUnifiedTimeline).mockReturnValue({
-      items: [
-        {
-          id: '1',
-          type: 'comment',
-          date: new Date().toISOString(),
-          author: { name: 'User', avatar: '' },
-          content: longText
-        }
-      ],
+      items,
+      data: items,
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -347,9 +364,10 @@ describe('UnifiedTimeline', () => {
     
     vi.mocked(useUnifiedTimeline).mockReturnValue({
       items: [],
+      data: [],
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
@@ -383,9 +401,10 @@ describe('UnifiedTimeline', () => {
     
     vi.mocked(useUnifiedTimeline).mockReturnValue({
       items: [],
+      data: [],
       isLoading: false,
       error: null,
-      refetch: vi.fn()
+      refetch: vi.fn() as unknown as () => Promise<void>
     })
 
     vi.mocked(useCreateComment).mockReturnValue({
