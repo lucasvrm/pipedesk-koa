@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
-import { MessageCircle, Mail, Copy, Calendar } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -22,6 +23,8 @@ import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { useUpdateLead } from '@/services/leadService'
 import { toast } from 'sonner'
+import { getGmailComposeUrl, cleanPhoneNumber } from '@/utils/googleLinks'
+import { getDriveItems } from '@/services/driveService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -79,6 +82,7 @@ export function LeadSalesRow({
 }: LeadSalesRowProps) {
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
+  const [isDriveLoading, setIsDriveLoading] = useState(false)
   const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
@@ -130,9 +134,8 @@ export function LeadSalesRow({
       return
     }
     
-    // Remove all non-numeric characters
-    const cleanPhone = phone.replace(/\D/g, '')
-    if (!cleanPhone) {
+    const { cleanPhone, isValid } = cleanPhoneNumber(phone)
+    if (!isValid) {
       toast.error('Telefone inválido', {
         description: 'O número de telefone não contém dígitos válidos'
       })
@@ -153,10 +156,68 @@ export function LeadSalesRow({
       return
     }
     
-    // Create temporary anchor element and click it programmatically
-    const mailtoLink = document.createElement('a')
-    mailtoLink.href = `mailto:${encodeURIComponent(email)}`
-    mailtoLink.click()
+    // Open Gmail compose as a popup window
+    const subject = `Contato - ${safeString(legalName, 'Lead')}`
+    const gmailUrl = getGmailComposeUrl(email, subject)
+    window.open(gmailUrl, '_blank', 'width=800,height=600,noopener,noreferrer')
+  }
+
+  const handlePhone = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const phone = primaryContact?.phone
+    if (!phone) {
+      toast.error('Telefone não disponível', {
+        description: 'O contato principal não possui telefone cadastrado'
+      })
+      return
+    }
+    
+    const { cleanPhone, isValid } = cleanPhoneNumber(phone)
+    if (!isValid) {
+      toast.error('Telefone inválido', {
+        description: 'O número de telefone não contém dígitos válidos'
+      })
+      return
+    }
+    
+    // Use tel: protocol to trigger system dialer / Google Voice
+    window.open(`tel:${cleanPhone}`)
+  }
+
+  const handleOpenDriveFolder = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!actualLeadId) {
+      toast.error('ID do lead não encontrado', {
+        description: 'Não foi possível abrir a pasta do Drive'
+      })
+      return
+    }
+
+    setIsDriveLoading(true)
+    try {
+      const response = await getDriveItems('lead', actualLeadId)
+      
+      // Try to find the folder with webViewLink or construct a reasonable fallback
+      const folder = response.items.find(item => item.type === 'folder')
+      if (folder?.url) {
+        window.open(folder.url, '_blank', 'noopener,noreferrer')
+      } else if (response.items.length > 0 && response.items[0].url) {
+        // Fallback to first item's URL
+        window.open(response.items[0].url, '_blank', 'noopener,noreferrer')
+      } else {
+        // No items yet, just inform the user
+        toast.info('Pasta do Drive', {
+          description: 'A pasta ainda não contém arquivos. Envie o primeiro documento.'
+        })
+      }
+    } catch (error) {
+      console.error('[LeadSalesRow] Error opening Drive folder:', error)
+      toast.error('Erro ao acessar pasta do Drive', {
+        description: 'Não foi possível abrir a pasta. Tente novamente.'
+      })
+    } finally {
+      setIsDriveLoading(false)
+    }
   }
 
   const handleCopyId = (e: React.MouseEvent) => {
@@ -453,7 +514,7 @@ export function LeadSalesRow({
         )}
       </TableCell>
 
-      <TableCell className="w-[120px]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="w-[160px]" onClick={(e) => e.stopPropagation()}>
         <TooltipProvider delayDuration={200}>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
@@ -484,7 +545,44 @@ export function LeadSalesRow({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Enviar E-mail</p>
+                <p>Gmail</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handlePhone}
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ligar</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleOpenDriveFolder}
+                  disabled={isDriveLoading}
+                >
+                  {isDriveLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <HardDrive className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Google Drive</p>
               </TooltipContent>
             </Tooltip>
             
@@ -552,7 +650,7 @@ export function LeadSalesRowSkeleton() {
       <TableCell className="w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[10%]"><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[120px]"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[160px]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
     </TableRow>
   )
