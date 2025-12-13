@@ -141,9 +141,13 @@ export function LeadsSmartFilters({
 
   const handlePriorityToggle = useCallback(
     (bucket: LeadPriorityBucket) => {
-      toggleItem(priority, bucket, values => onPriorityChange(values as LeadPriorityBucket[]))
+      if (priority.includes(bucket)) {
+        onPriorityChange(priority.filter(item => item !== bucket))
+      } else {
+        onPriorityChange([...priority, bucket])
+      }
     },
-    [onPriorityChange, priority, toggleItem]
+    [onPriorityChange, priority]
   )
 
   const handleStatusToggle = useCallback(
@@ -277,18 +281,14 @@ export function LeadsSmartFilters({
               <div className="flex bg-muted p-1 rounded-md gap-0.5">
                 {PRIORITY_OPTIONS.map(option => {
                   const isActive = priority.includes(option.value)
+                  const buttonClass = isActive
+                    ? 'flex-1 px-3 py-1.5 text-xs font-medium rounded-sm transition-all bg-background text-foreground shadow-sm'
+                    : 'flex-1 px-3 py-1.5 text-xs font-medium rounded-sm transition-all text-muted-foreground hover:bg-background/50 hover:text-foreground'
                   return (
                     <button
                       key={option.value}
                       onClick={() => handlePriorityToggle(option.value)}
-                      className={`
-                        flex-1 px-3 py-1.5 text-xs font-medium rounded-sm transition-all
-                        ${
-                          isActive
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
-                        }
-                      `}
+                      className={buttonClass}
                     >
                       {safeString(option.label, option.value)}
                     </button>

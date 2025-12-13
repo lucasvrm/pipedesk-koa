@@ -29,6 +29,12 @@ const VIEW_LABELS: Record<DataToolbarView, string> = {
   kanban: 'Kanban'
 }
 
+const VIEW_ENTRIES: Array<[DataToolbarView, typeof List]> = [
+  ['list', List],
+  ['cards', SquaresFour],
+  ['kanban', Kanban]
+]
+
 /**
  * DataToolbar - Command Center Component
  * 
@@ -107,18 +113,16 @@ export function DataToolbar({
             onValueChange={handleViewChange}
             className="border bg-muted/30"
           >
-            {(Object.entries(VIEW_ICONS) as [DataToolbarView, typeof List][]).map(
-              ([view, Icon]) => (
-                <ToggleGroupItem
-                  key={view}
-                  value={view}
-                  aria-label={VIEW_LABELS[view]}
-                  className="h-9 w-9 p-0"
-                >
-                  <Icon className="h-4 w-4" />
-                </ToggleGroupItem>
-              )
-            )}
+            {VIEW_ENTRIES.map(([view, Icon]) => (
+              <ToggleGroupItem
+                key={view}
+                value={view}
+                aria-label={VIEW_LABELS[view]}
+                className="h-9 w-9 p-0"
+              >
+                <Icon className="h-4 w-4" />
+              </ToggleGroupItem>
+            ))}
           </ToggleGroup>
         )}
       </div>
