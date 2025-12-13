@@ -34,11 +34,15 @@ export interface LeadSalesViewItem {
     name: string
     role?: string | null
     avatar?: string | null
+    email?: string | null
+    phone?: string | null
   }
   primary_contact?: {
     name: string
     role?: string | null
     avatar?: string | null
+    email?: string | null
+    phone?: string | null
   }
   status?: string | null
   origin?: string | null

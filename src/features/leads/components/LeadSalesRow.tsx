@@ -1,7 +1,7 @@
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
-import { MessageCircle, Phone, Video, Calendar } from 'lucide-react'
+import { MessageCircle, Phone, Video, Calendar, Mail, Copy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -111,6 +111,67 @@ export function LeadSalesRow({
         description: error instanceof Error ? error.message : 'Tente novamente mais tarde'
       })
     }
+  }
+
+  // Quick Action Handlers
+  const handleWhatsApp = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const phone = primaryContact?.phone
+    if (!phone) {
+      toast.error('Telefone não disponível', {
+        description: 'O contato principal não possui telefone cadastrado'
+      })
+      return
+    }
+    
+    // Remove all non-numeric characters
+    const cleanPhone = phone.replace(/\D/g, '')
+    if (!cleanPhone) {
+      toast.error('Telefone inválido', {
+        description: 'O número de telefone não contém dígitos válidos'
+      })
+      return
+    }
+    
+    // Open WhatsApp in a new tab
+    window.open(`https://wa.me/${cleanPhone}`, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleEmail = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const email = primaryContact?.email
+    if (!email) {
+      toast.error('E-mail não disponível', {
+        description: 'O contato principal não possui e-mail cadastrado'
+      })
+      return
+    }
+    
+    // Open default email client
+    window.location.href = `mailto:${email}`
+  }
+
+  const handleCopyId = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!actualLeadId) {
+      toast.error('ID não disponível', {
+        description: 'Não foi possível copiar o ID do lead'
+      })
+      return
+    }
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(actualLeadId)
+      .then(() => {
+        toast.success('ID copiado!', {
+          description: 'O ID do lead foi copiado para a área de transferência'
+        })
+      })
+      .catch(() => {
+        toast.error('Erro ao copiar', {
+          description: 'Não foi possível copiar o ID para a área de transferência'
+        })
+      })
   }
 
   // Map status codes to badge variants
@@ -333,45 +394,49 @@ export function LeadSalesRow({
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleWhatsApp}
+                >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>WhatsApp - Em breve</p>
+                <p>WhatsApp</p>
               </TooltipContent>
             </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                  <Phone className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleEmail}
+                >
+                  <Mail className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Ligar - Em breve</p>
+                <p>Enviar E-mail</p>
               </TooltipContent>
             </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                  <Video className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleCopyId}
+                >
+                  <Copy className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Meet - Em breve</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                  <Calendar className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Agendar - Em breve</p>
+                <p>Copiar ID</p>
               </TooltipContent>
             </Tooltip>
           </div>
