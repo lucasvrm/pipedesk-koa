@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DataToolbar } from '@/components/DataToolbar'
 import { LeadsSmartFilters } from '@/features/leads/components/LeadsSmartFilters'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus } from '@phosphor-icons/react'
 import { LeadPriorityBucket, User } from '@/lib/types'
 
 /**
@@ -74,7 +74,7 @@ export function DataToolbarDemo() {
           onViewChange={setView}
           actions={
             <Button>
-              <Plus className="h-4 w-4" />
+              <Plus size={16} />
               Novo Lead
             </Button>
           }
@@ -143,7 +143,7 @@ export function DataToolbarDemo() {
             <>
               <Button variant="outline">Exportar</Button>
               <Button>
-                <Plus className="h-4 w-4" />
+                <Plus size={16} />
                 Novo
               </Button>
             </>

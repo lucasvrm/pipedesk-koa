@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { AlignJustify, LayoutGrid, Kanban, Search } from 'lucide-react'
+import { List, SquaresFour, Kanban, MagnifyingGlass } from '@phosphor-icons/react'
 
 export type DataToolbarView = 'list' | 'cards' | 'kanban'
 
@@ -17,9 +17,9 @@ interface DataToolbarProps {
   className?: string
 }
 
-const VIEW_ICONS: Record<DataToolbarView, typeof AlignJustify> = {
-  list: AlignJustify,
-  cards: LayoutGrid,
+const VIEW_ICONS = {
+  list: List,
+  cards: SquaresFour,
   kanban: Kanban
 }
 
@@ -69,7 +69,7 @@ export function DataToolbar({
         {/* Search Input */}
         {onSearchChange && (
           <div className="relative flex-1 min-w-0 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               type="search"
               placeholder="Buscar..."
@@ -107,7 +107,7 @@ export function DataToolbar({
             onValueChange={handleViewChange}
             className="border bg-muted/30"
           >
-            {(Object.entries(VIEW_ICONS) as [DataToolbarView, typeof AlignJustify][]).map(
+            {(Object.entries(VIEW_ICONS) as [DataToolbarView, typeof List][]).map(
               ([view, Icon]) => (
                 <ToggleGroupItem
                   key={view}

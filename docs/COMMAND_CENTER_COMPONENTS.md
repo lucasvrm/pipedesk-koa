@@ -59,7 +59,7 @@ function MyPage() {
 import { DataToolbar } from '@/components/DataToolbar'
 import { LeadsSmartFilters } from '@/features/leads/components/LeadsSmartFilters'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus } from '@phosphor-icons/react'
 
 function LeadsPage() {
   const [search, setSearch] = useState('')
@@ -81,7 +81,7 @@ function LeadsPage() {
         onViewChange={setView}
         actions={
           <Button>
-            <Plus className="h-4 w-4" />
+            <Plus size={16} />
             Novo Lead
           </Button>
         }
@@ -222,7 +222,7 @@ Para integrar esses componentes na página principal:
 
 ## Notas Técnicas
 
-- Os componentes usam lucide-react para ícones (em vez de phosphor-icons)
+- Os componentes usam @phosphor-icons/react para ícones (padrão do projeto)
 - Compatível com todos os componentes de UI existentes do shadcn/ui
 - Não há alterações na lógica de negócio dos filtros
 - Todos os tipos são fortemente tipados com TypeScript
