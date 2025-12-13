@@ -1,122 +1,128 @@
-import { ReactNode } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { AlignJustify, LayoutGrid, Kanban, Search, type LucideIcon } from 'lucide-react'
-
-export type DataToolbarView = 'list' | 'cards' | 'kanban'
+import { Search, X, AlignJustify, LayoutGrid, Kanban, Plus, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { ReactNode } from "react";
 
 interface DataToolbarProps {
-  searchTerm?: string
-  onSearchChange?: (value: string) => void
-  currentView?: DataToolbarView
-  onViewChange?: (view: DataToolbarView) => void
-  children?: ReactNode
-  actions?: ReactNode
-  className?: string
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  children?: ReactNode; // Slot para filtros
+  actions?: ReactNode; // Botão New Lead
 }
 
-const VIEW_LABELS: Record<DataToolbarView, string> = {
-  list: 'Lista',
-  cards: 'Cards',
-  kanban: 'Kanban'
-}
-
-const VIEW_ENTRIES: Array<[DataToolbarView, LucideIcon]> = [
-  ['list', AlignJustify],
-  ['cards', LayoutGrid],
-  ['kanban', Kanban]
-]
-
-/**
- * DataToolbar - Command Center Component
- * 
- * A horizontal toolbar with glassmorphism styling for search, filters, and view switching.
- * Designed for high information density and vertical rhythm.
- */
 export function DataToolbar({
-  searchTerm = '',
+  searchTerm,
   onSearchChange,
-  currentView = 'list',
+  currentView,
   onViewChange,
   children,
-  actions,
-  className = ''
+  actions
 }: DataToolbarProps) {
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onSearchChange?.(e.target.value)
-  }
+  
+  const hasActiveFilters = searchTerm.length > 0;
 
   return (
-    <div
-      className={`
-        flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 
-        px-4 py-3 rounded-lg border
-        bg-background/80 backdrop-blur-sm
-        shadow-sm
-        ${className}
-      `}
-    >
-      {/* Left side: Search + Filters */}
-      <div className="flex flex-1 items-center gap-3 min-w-0">
-        {/* Search Input */}
-        {onSearchChange && (
-          <div className="relative flex-1 min-w-0 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="search"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-9 h-9 bg-transparent border-border/50 focus-visible:bg-background/50"
-            />
-          </div>
-        )}
+    <div className="sticky top-0 z-20 w-full backdrop-blur-md bg-background/80 border-b px-6 py-3 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-200">
+      
+      {/* Esquerda: Busca e Filtros */}
+      <div className="flex items-center flex-1 gap-3 w-full sm:w-auto">
+        <div className="relative w-full max-w-[320px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar leads, empresas..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 h-9 bg-background/50 border-muted focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => onSearchChange("")}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
 
-        {/* Filters Slot */}
+        {/* Slot para Filtros (Children) */}
         {children && (
-          <>
-            {onSearchChange && <Separator orientation="vertical" className="h-6" />}
-            <div className="flex items-center gap-2 flex-wrap">{children}</div>
-          </>
+          <div className="flex items-center gap-2">
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            {children}
+          </div>
         )}
       </div>
 
-      {/* Right side: View Toggle + Actions */}
+      {/* Direita: View Toggles e Ações */}
       <div className="flex items-center gap-3">
-        {/* Actions Slot */}
-        {actions && (
-          <>
-            <div className="flex items-center gap-2">{actions}</div>
-            {onViewChange && <Separator orientation="vertical" className="h-6" />}
-          </>
-        )}
+        {/* View Toggles - Implementação Manual Segura (Sem ToggleGroup para evitar erro de Ref) */}
+        <div className="flex items-center p-1 bg-muted/50 rounded-lg border border-border/40">
+          <TooltipProvider delayDuration={300}>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={currentView === 'list' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onViewChange('list')}
+                >
+                  <AlignJustify className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Lista</TooltipContent>
+            </Tooltip>
 
-        {/* View Toggle */}
-        {onViewChange && (
-          <div className="flex items-center border bg-muted/30 rounded-md">
-            {VIEW_ENTRIES.map(([view, Icon]) => (
-              <Tooltip key={view}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={currentView === view ? 'secondary' : 'ghost'}
-                    size="icon"
-                    aria-label={VIEW_LABELS[view]}
-                    onClick={() => onViewChange(view)}
-                    className="h-9 w-9 rounded-none first:rounded-l-md last:rounded-r-md"
-                  >
-                    <Icon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{VIEW_LABELS[view]}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={currentView === 'cards' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onViewChange('cards')}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Cards</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onViewChange('kanban')}
+                >
+                  <Kanban className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Kanban</TooltipContent>
+            </Tooltip>
+
+          </TooltipProvider>
+        </div>
+
+        <Separator orientation="vertical" className="h-6 hidden sm:block" />
+
+        {/* Ações Principais */}
+        {actions ?? (
+          <Button size="sm" className="gap-2 shadow-sm">
+            <Plus className="h-4 w-4" />
+            New Lead
+          </Button>
         )}
       </div>
     </div>
-  )
+  );
 }
