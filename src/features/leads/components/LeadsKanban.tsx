@@ -10,7 +10,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 import { Kanban } from '@phosphor-icons/react'
+import { MessageCircle, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, safeString, safeStringOptional } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
@@ -31,7 +34,7 @@ const statusColors: Record<string, string> = {
 export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { leadStatuses, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
+  const { leadStatuses, getLeadStatusById, getLeadStatusByCode, getLeadOriginById } = useSystemMetadata()
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -111,6 +114,13 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
     const ownerAvatar = safeStringOptional(owner?.avatar)
     const ownerInitials = ownerName.substring(0, 2).toUpperCase()
 
+    // Calculate days since last update for stagnation indicator
+    const updatedAt = lead.updatedAt || lead.createdAt
+    const daysSinceUpdate = updatedAt 
+      ? Math.floor((Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 0
+    const isStagnant = daysSinceUpdate > 3
+
     // Legacy progress support (optional)
     const progress = statusMeta?.code ? LEAD_STATUS_PROGRESS[statusMeta.code as any] ?? 0 : 0
     const colorClass = statusMeta?.code ? LEAD_STATUS_COLORS[statusMeta.code as any] ?? 'bg-gray-500' : 'bg-gray-500'
@@ -176,6 +186,51 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
                 </div>
               ) : <span>—</span>}
             </div>
+
+            {/* Footer with quick actions and stagnation indicator */}
+            <TooltipProvider delayDuration={200}>
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="flex items-center gap-1">
+                  {isStagnant && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                          <div className="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
+                          <span className="text-[10px] font-medium">{daysSinceUpdate} dias</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Sem atividade há {daysSinceUpdate} dias</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled>
+                        <MessageCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>WhatsApp - Em breve</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled>
+                        <Mail className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Email - Em breve</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,7 @@
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
+import { MessageCircle, Phone, Video, Calendar } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -228,6 +229,56 @@ export function LeadSalesRow({
         )}
       </TableCell>
 
+      <TableCell className="w-[120px]" onClick={(e) => e.stopPropagation()}>
+        <TooltipProvider delayDuration={200}>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>WhatsApp - Em breve</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                  <Phone className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ligar - Em breve</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                  <Video className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Meet - Em breve</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Agendar - Em breve</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
+      </TableCell>
+
       <TableCell className="w-[40px] text-right" onClick={(e) => e.stopPropagation()}>
         {actions && actions.length > 0 ? (
           <QuickActionsMenu
@@ -255,6 +306,8 @@ export function LeadSalesRowSkeleton() {
       <TableCell className="w-[18%]"><Skeleton className="h-10 w-full" /></TableCell>
       <TableCell className="w-[18%]"><Skeleton className="h-12 w-full" /></TableCell>
       <TableCell className="w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[120px]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
     </TableRow>
   )
