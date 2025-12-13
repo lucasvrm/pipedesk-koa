@@ -72,6 +72,9 @@ export function LeadSalesRow({
   tags,
   actions,
   status,
+  origin,
+  createdAt,
+  created_at,
   onScheduleClick
 }: LeadSalesRowProps) {
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
@@ -216,8 +219,8 @@ export function LeadSalesRow({
         legalName: legalName ?? '',
         tradeName: tradeName,
         leadStatusId: status ?? '',
-        leadOriginId: '',
-        createdAt: '',
+        leadOriginId: origin ?? '',
+        createdAt: createdAt ?? created_at ?? '',
         updatedAt: '',
         createdBy: '',
         priorityBucket: priorityBucket,
