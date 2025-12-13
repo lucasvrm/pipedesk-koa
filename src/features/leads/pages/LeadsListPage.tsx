@@ -1,21 +1,13 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { ensureArray } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Plus, SquaresFour, Globe, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Tag as TagIcon } from '@phosphor-icons/react'
-import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
+import { Plus, Globe, ChartBar, CalendarBlank, Funnel, Trash, Kanban, SquaresFour } from '@phosphor-icons/react'
+import { Lead, LeadPriorityBucket, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,100 +24,94 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { LeadsSalesList } from '../components/LeadsSalesList'
-import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
+import { LeadSalesViewItem, LeadSalesViewQuery, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Progress } from '@/components/ui/progress'
 import { QuickActionsMenu, QuickAction } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { useTags } from '@/services/tagService'
-import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { LeadsPaginationControls } from '../components/LeadsPaginationControls'
-import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
 import { SALES_VIEW_MESSAGES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
 import { ApiError } from '@/lib/errors'
-import {
-  hasPersistentFailures,
-  getPreferredFallback,
-  setPreferredFallback,
-  recordSalesViewFailure,
-  recordSalesViewSuccess
-} from '../utils/salesViewFailureTracker'
-import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
+import { LeadsPrimitiveFilters } from '../components/LeadsPrimitiveFilters'
 
 // View types used by DataToolbar and internal view management
 type DataToolbarView = 'list' | 'cards' | 'kanban'
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
-
-const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
-const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((value, index) => value === b[index])
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { profile } = useAuth()
   const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
-  const { data: users = [] } = useUsers()
 
-  const savedPreferences = useMemo(() => {
-    const saved = localStorage.getItem('leads-list-preferences')
-    if (!saved) return null
-    try {
-      return JSON.parse(saved)
-    } catch (error) {
-      console.error('Erro ao carregar preferências de leads', error)
-      return null
-    }
-  }, [])
-
-  // URL-first state management: viewMode is derived from URL params
+  // ========================================
+  // URL-DRIVEN STATE (No useState for filters)
+  // All filter values are derived directly from searchParams
+  // ========================================
+  
+  // View mode - derived from URL
   const currentView = useMemo((): InternalViewMode => {
     const viewParam = searchParams.get('view')
-    const validViews = ['grid', 'kanban', 'sales', 'list'] as const
-    if (viewParam && validViews.includes(viewParam as any)) {
-      // Map 'list' to 'sales' for backward compatibility
-      if (viewParam === 'list') return 'sales'
-      return viewParam as InternalViewMode
-    }
-    
-    const saved = savedPreferences?.viewMode
-    // Force 'sales' if 'list' was saved previously
-    if (saved === 'list') {
-      // Check if Sales View has been failing persistently
-      if (hasPersistentFailures()) {
-        const fallback = getPreferredFallback()
-        console.log(`[SalesView] Persistent failures detected, falling back to: ${fallback}`)
-        return fallback
-      }
-      return 'sales'
-    }
-    
-    // If user explicitly chose sales view but it's failing persistently, use fallback
-    if (saved === 'sales' && hasPersistentFailures()) {
-      const fallback = getPreferredFallback()
-      console.log(`[SalesView] Persistent failures detected, falling back to: ${fallback}`)
-      return fallback
-    }
-    
-    return (saved as InternalViewMode) || 'sales'
-  }, [searchParams, savedPreferences])
+    if (viewParam === 'grid' || viewParam === 'cards') return 'grid'
+    if (viewParam === 'kanban') return 'kanban'
+    if (viewParam === 'list' || viewParam === 'sales') return 'sales'
+    return 'sales' // default
+  }, [searchParams])
 
-  // Handler to update view in URL
+  // Search term - derived from URL
+  const searchTerm = searchParams.get('q') || ''
+
+  // Status filter - derived from URL
+  const statusFilter = searchParams.get('status') || 'all'
+
+  // Origin filter - derived from URL
+  const originFilter = searchParams.get('origin') || 'all'
+
+  // Priority filter - derived from URL (for sales view)
+  const priorityParam = searchParams.get('priority')
+  const priorityFilter: LeadPriorityBucket | 'all' = 
+    priorityParam === 'hot' || priorityParam === 'warm' || priorityParam === 'cold' 
+      ? priorityParam 
+      : 'all'
+
+  // Order by - derived from URL
+  const orderByParam = searchParams.get('order_by')
+  const salesOrderBy: 'priority' | 'last_interaction' | 'created_at' = 
+    orderByParam === 'last_interaction' || orderByParam === 'created_at' 
+      ? orderByParam 
+      : 'priority'
+
+  // Owner mode - derived from URL
+  const ownerModeParam = searchParams.get('owner')
+  const salesOwnerMode: 'me' | 'all' = ownerModeParam === 'me' ? 'me' : 'all'
+
+  // Page - derived from URL
+  const pageParam = searchParams.get('page')
+  const currentPage = pageParam ? parseInt(pageParam, 10) : 1
+
+  // Items per page - local state (not critical for render loop)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  // Selection state - local state (ephemeral UI state)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
+
+  // ========================================
+  // SIMPLE HANDLERS - Only update URL
+  // ========================================
+  
   const handleViewChange = useCallback((view: InternalViewMode) => {
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev)
       newParams.set('view', view)
+      newParams.delete('page') // Reset page on view change
       return newParams
     }, { replace: true })
   }, [setSearchParams])
 
-  // URL-first state management: search is derived from URL params
-  const searchTerm = searchParams.get('q') || ''
-
-  // Handler to update search in URL
   const handleSearchChange = useCallback((value: string) => {
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev)
@@ -134,157 +120,151 @@ export default function LeadsListPage() {
       } else {
         newParams.delete('q')
       }
+      newParams.delete('page') // Reset page on search
       return newParams
     }, { replace: true })
   }, [setSearchParams])
-  
-  const normalizeSalesOrderBy = useCallback(
-    (value: string | null): 'priority' | 'last_interaction' | 'created_at' => {
-      if (value === 'last_interaction' || value === 'created_at') return value
-      return 'priority'
-    },
-    []
-  )
 
-  const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
-  const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
-  const [tagFilter, setTagFilter] = useState<string[]>(() => savedPreferences?.tagFilter || [])
-  const ownerIdsParam = searchParams.get('ownerIds') ?? searchParams.get('owners')
-  const [salesOwnerMode, setSalesOwnerMode] = useState<'me' | 'all' | 'custom'>(() => {
-    const ownerParam = searchParams.get('owner')
-    if (ownerParam === 'me') return 'me'
-    if (ownerIdsParam) return 'custom'
-    return 'all'
-  })
-  const [salesOwnerIds, setSalesOwnerIds] = useState<string[]>(() => ownerIdsParam?.split(',').filter(Boolean) || [])
-  const [salesPriority, setSalesPriority] = useState<LeadPriorityBucket[]>(() =>
-    (searchParams.get('priority')?.split(',').filter(Boolean) as LeadPriorityBucket[]) || []
-  )
-  const [salesStatusFilter, setSalesStatusFilter] = useState<string[]>(() => searchParams.get('status')?.split(',').filter(Boolean) || [])
-  const [salesOriginFilter, setSalesOriginFilter] = useState<string[]>(() => searchParams.get('origin')?.split(',').filter(Boolean) || [])
-  const [salesDaysWithoutInteraction, setSalesDaysWithoutInteraction] = useState<number | null>(() => {
-    const value = searchParams.get('days_without_interaction')
-    return value ? Number(value) : null
-  })
-  const [salesOrderBy, setSalesOrderBy] = useState<'priority' | 'last_interaction' | 'created_at'>(() =>
-    normalizeSalesOrderBy(searchParams.get('order_by'))
-  )
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(() => savedPreferences?.itemsPerPage || 10)
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [hasSalesShownErrorToast, setHasSalesShownErrorToast] = useState(false)
-  const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
-  const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
-  const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
-  const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
+  const handleStatusChange = useCallback((value: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (value && value !== 'all') {
+        newParams.set('status', value)
+      } else {
+        newParams.delete('status')
+      }
+      newParams.delete('page')
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-  const { data: tags = [] } = useTags('lead')
-  const { data: settings } = useSettings()
+  const handleOriginChange = useCallback((value: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (value && value !== 'all') {
+        newParams.set('origin', value)
+      } else {
+        newParams.delete('origin')
+      }
+      newParams.delete('page')
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-  const activeStatusIds = useMemo(
-    () => leadStatuses.filter(status => status.isActive).map(status => status.id),
-    [leadStatuses]
-  )
+  const handlePriorityChange = useCallback((value: LeadPriorityBucket | 'all') => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (value && value !== 'all') {
+        newParams.set('priority', value)
+      } else {
+        newParams.delete('priority')
+      }
+      newParams.delete('page')
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-  const activeOriginIds = useMemo(
-    () => leadOrigins.filter(origin => origin.isActive).map(origin => origin.id),
-    [leadOrigins]
-  )
+  const handleOrderByChange = useCallback((value: 'priority' | 'last_interaction' | 'created_at') => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (value && value !== 'priority') {
+        newParams.set('order_by', value)
+      } else {
+        newParams.delete('order_by')
+      }
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-  const activeTagIds = useMemo(() => {
-    return tags
-      .filter(tag => {
-        const anyTag = tag as any
-        if (typeof anyTag.isActive === 'boolean') return anyTag.isActive
-        if (typeof anyTag.is_active === 'boolean') return anyTag.is_active
-        return true
-      })
-      .map(tag => tag.id)
-  }, [tags])
+  const handleOwnerModeChange = useCallback((value: 'me' | 'all') => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (value === 'me') {
+        newParams.set('owner', 'me')
+      } else {
+        newParams.delete('owner')
+      }
+      newParams.delete('page')
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-  const normalizedStatusFilter = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
-  const normalizedOriginFilter = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
-  const normalizedTagFilter = useMemo(
-    () => tagFilter.filter(tagId => activeTagIds.includes(tagId)),
-    [activeTagIds, tagFilter]
-  )
+  const handlePageChange = useCallback((page: number) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (page > 1) {
+        newParams.set('page', String(page))
+      } else {
+        newParams.delete('page')
+      }
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-  // Validate filters against metadata only when metadata loads or changes
-  // This prevents feedback loops where setting state triggers re-validation infinitely
-  useEffect(() => {
-    if (leadStatuses.length === 0 && leadOrigins.length === 0) return
+  const handleItemsPerPageChange = useCallback((pageSize: number) => {
+    setItemsPerPage(pageSize)
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      newParams.delete('page') // Reset to first page
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-    // Standard view validation
-    const validStatus = statusFilter !== 'all' && activeStatusIds.includes(statusFilter) ? statusFilter : 'all'
-    const validOrigin = originFilter !== 'all' && activeOriginIds.includes(originFilter) ? originFilter : 'all'
+  const clearFilters = useCallback(() => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams()
+      // Keep only the view
+      const view = prev.get('view')
+      if (view) newParams.set('view', view)
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
-    if (validStatus !== statusFilter) setStatusFilter(validStatus)
-    if (validOrigin !== originFilter) setOriginFilter(validOrigin)
+  // ========================================
+  // DATA FETCHING
+  // ========================================
 
-    // Sales view validation
-    const validSalesStatus = salesStatusFilter.filter(id => activeStatusIds.includes(id))
-    const validSalesOrigin = salesOriginFilter.filter(id => activeOriginIds.includes(id))
+  const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
+  const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
 
-    if (!arraysEqual(validSalesStatus, salesStatusFilter)) setSalesStatusFilter(validSalesStatus)
-    if (!arraysEqual(validSalesOrigin, salesOriginFilter)) setSalesOriginFilter(validSalesOrigin)
-
-  }, [leadStatuses.length, leadOrigins.length, activeStatusIds, activeOriginIds])
-  // Intentionally omitting 'statusFilter', 'originFilter', etc. from dependency array to avoid cycles.
-  // We only want to re-validate if the METADATA changes (e.g. initial load), not if user changes selection.
-
-  const [hasCheckedEmptyInitial, setHasCheckedEmptyInitial] = useState(false)
-  const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
-
+  // Filters for standard leads API
   const filters = useMemo<LeadFilters>(() => ({
     search: searchTerm || undefined,
-    status: normalizedStatusFilter !== 'all' ? [normalizedStatusFilter] : undefined,
-    origin: normalizedOriginFilter !== 'all' ? [normalizedOriginFilter] : undefined,
-    tags: normalizedTagFilter.length > 0 ? normalizedTagFilter : undefined
-  }), [normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, searchTerm])
+    status: statusFilter !== 'all' ? [statusFilter] : undefined,
+    origin: originFilter !== 'all' ? [originFilter] : undefined,
+  }), [searchTerm, statusFilter, originFilter])
 
   const { data: leads, isLoading } = useLeads(filters)
-  const salesFilters = useMemo(() => {
-    const ownerIds = salesOwnerMode === 'custom' ? salesOwnerIds.filter(Boolean) : undefined
-    const normalizedOrderBy = normalizeSalesOrderBy(salesOrderBy)
 
-    return {
-      owner: salesOwnerMode === 'me' ? 'me' : undefined,
-      ownerIds: ownerIds && ownerIds.length > 0 ? ownerIds : undefined,
-      priority: salesPriority.length > 0 ? salesPriority : undefined,
-      status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
-      origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
-      daysWithoutInteraction: typeof salesDaysWithoutInteraction === 'number' ? salesDaysWithoutInteraction : undefined,
-      orderBy: normalizedOrderBy
-    }
-  }, [normalizeSalesOrderBy, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
-  const salesViewQuery = useMemo(
-    () => ({
-      ...salesFilters,
-      page: currentPage,
-      pageSize: itemsPerPage
-    }),
-    [currentPage, itemsPerPage, salesFilters]
-  )
-  const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError, refetch: refetchSalesView } = useLeadsSalesView(salesViewQuery, {
+  // Filters for sales view API
+  const salesFilters = useMemo((): Partial<LeadSalesViewQuery> => ({
+    owner: salesOwnerMode === 'me' ? 'me' : undefined,
+    priority: priorityFilter !== 'all' ? [priorityFilter] : undefined,
+    status: statusFilter !== 'all' ? [statusFilter] : undefined,
+    origin: originFilter !== 'all' ? [originFilter] : undefined,
+    orderBy: salesOrderBy
+  }), [salesOwnerMode, priorityFilter, statusFilter, originFilter, salesOrderBy])
+
+  const salesViewQuery = useMemo((): LeadSalesViewQuery => ({
+    ...salesFilters,
+    page: currentPage,
+    pageSize: itemsPerPage
+  }), [currentPage, itemsPerPage, salesFilters])
+
+  const { 
+    data: salesViewData, 
+    isLoading: isSalesLoading, 
+    isFetching: isSalesFetching, 
+    isError: isSalesError, 
+    error: salesError, 
+    refetch: refetchSalesView 
+  } = useLeadsSalesView(salesViewQuery, {
     enabled: currentView === 'sales'
   })
 
-  // Wrapper to track preferred fallback when user switches views during Sales View errors
-  const setViewMode = useCallback((mode: InternalViewMode) => {
-    // If switching away from sales while it's in error, save this as preferred fallback
-    if (currentView === 'sales' && isSalesError && (mode === 'grid' || mode === 'kanban')) {
-      setPreferredFallback(mode)
-      console.log(`[SalesView] User switched to ${mode} during error, saving as preferred fallback`)
-    }
-    handleViewChange(mode)
-  }, [currentView, isSalesError, handleViewChange])
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
-
-  // Feature Flag Logic
-  const tagsConfig = settings?.find(s => s.key === 'tags_config')?.value;
-  const tagsEnabled = tagsConfig?.global && tagsConfig?.modules?.leads !== false;
 
   // Adapter for quick actions type compatibility
   const updateLeadAdapter = {
@@ -306,147 +286,23 @@ export default function LeadsListPage() {
     }
 
     const dataset = (leads || []) as Lead[]
-    const openLeads = dataset.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
+    // Get status codes for qualified and disqualified
+    const qualifiedStatus = leadStatuses.find(s => s.code === 'qualified')
+    const disqualifiedStatus = leadStatuses.find(s => s.code === 'disqualified')
+    const closedStatusIds = [qualifiedStatus?.id, disqualifiedStatus?.id].filter(Boolean)
+    
+    const openLeads = dataset.filter(l => !closedStatusIds.includes(l.leadStatusId)).length || 0
     const createdThisMonth = dataset.filter(l => new Date(l.createdAt) >= monthStart).length || 0
     const qualifiedThisMonth = dataset.filter(
-      l => l.status === 'qualified' && l.qualifiedAt && new Date(l.qualifiedAt) >= monthStart
+      l => l.leadStatusId === qualifiedStatus?.id && l.qualifiedAt && new Date(l.qualifiedAt) >= monthStart
     ).length || 0
 
     return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [leads, monthStart, salesLeads.length, salesViewData?.pagination.total, currentView])
+  }, [leads, monthStart, salesLeads.length, salesViewData?.pagination?.total, currentView, leadStatuses])
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter])
-
-  useEffect(() => {
-    setSelectedIds([])
-  }, [currentView, searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy])
-
-  useEffect(() => {
-    const payload = {
-      viewMode: currentView,
-      search: searchTerm,
-      statusFilter: normalizedStatusFilter !== 'all' ? normalizedStatusFilter : 'all',
-      originFilter: normalizedOriginFilter !== 'all' ? normalizedOriginFilter : 'all',
-      tagFilter: normalizedTagFilter,
-      itemsPerPage
-    }
-    localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
-  }, [itemsPerPage, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, searchTerm, currentView])
-
-  useEffect(() => {
-    if (currentView === 'sales') return
-    if (isLoading || hasCheckedEmptyInitial) return
-
-    setHasCheckedEmptyInitial(true)
-
-    if ((leads?.length || 0) === 0 && (searchTerm || normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || normalizedTagFilter.length > 0)) {
-      if (savedPreferences) {
-        setShowPreferencesResetPrompt(true)
-      } else {
-        clearFilters()
-      }
-    }
-  }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, searchTerm, currentView])
-
-  // Handle Sales View errors with logging and user feedback
-  useEffect(() => {
-    const currentErrorKey = isSalesError ? getSalesErrorKey(salesError) : null
-
-    if (currentView !== 'sales') {
-      salesErrorGuardRef.current = { key: null, count: 0 }
-      // Reset flags when switching away from sales view
-      if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
-      if (hasSalesRecordedSuccess) setHasSalesRecordedSuccess(false)
-      return
-    }
-    if (!isSalesError) {
-      salesErrorGuardRef.current = { key: null, count: 0 }
-      // Reset the error flag when error is resolved
-      if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
-      // Record success to reset failure counter (only once per successful load)
-      if (!isSalesLoading && !isSalesFetching && !hasSalesRecordedSuccess) {
-        recordSalesViewSuccess()
-        setHasSalesRecordedSuccess(true)
-      }
-      return
-    }
-
-    if (currentErrorKey) {
-      const nextCount = salesErrorGuardRef.current.key === currentErrorKey
-        ? salesErrorGuardRef.current.count + 1
-        : 1
-
-      if (nextCount >= SALES_VIEW_ERROR_GUARD_LIMIT) {
-        if (!import.meta.env.PROD) {
-          console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error handler suppressed to prevent render loop`, {
-            currentErrorKey,
-            count: nextCount
-          })
-        }
-        return
-      }
-
-      salesErrorGuardRef.current = { key: currentErrorKey, count: nextCount }
-    }
-
-    if (hasSalesShownErrorToast) return
-    
-    // Reset success flag when error occurs
-    if (hasSalesRecordedSuccess) setHasSalesRecordedSuccess(false)
-    
-    // Record this failure for tracking persistent issues
-    recordSalesViewFailure()
-    if (!hasAppliedPersistentFallback && hasPersistentFailures()) {
-      const fallback = getPreferredFallback()
-      console.warn(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Persistent failures detected, auto-switching to ${fallback}`)
-      setHasAppliedPersistentFallback(true)
-      setViewMode(fallback)
-      // Avoid triggering downstream toast/error UI when we immediately move to a fallback view
-      return
-    }
-    
-    // Get error code from ApiError if available
-    const errorCode = salesError instanceof ApiError ? salesError.code : undefined
-    const errorDetails = salesError instanceof ApiError ? salesError.details : undefined
-    
-    console.error(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error state detected in LeadsListPage:`, {
-      error: salesError,
-      code: errorCode,
-      details: errorDetails
-    })
-    
-    // Log details to console for debugging (without exposing to user)
-    if (errorDetails) {
-      console.debug(`${SALES_VIEW_MESSAGES.LOG_PREFIX} Error details:`, errorDetails)
-    }
-    
-    // Get appropriate error messages based on code
-    const errorMessages = getSalesViewErrorMessages(errorCode)
-    
-    toast.error(
-      errorMessages.toast,
-      {
-        duration: 5000,
-        action: {
-          label: SALES_VIEW_MESSAGES.BUTTON_RETRY,
-          onClick: () => {
-            console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from toast in LeadsListPage`)
-            setHasSalesShownErrorToast(false)
-            refetchSalesView()
-          }
-        }
-      }
-    )
-    setHasSalesShownErrorToast(true)
-  }, [hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, currentView])
-
-  useEffect(() => {
-    if (currentView !== 'sales' && hasAppliedPersistentFallback) {
-      setHasAppliedPersistentFallback(false)
-    }
-  }, [hasAppliedPersistentFallback, currentView])
+  // ========================================
+  // PAGINATION
+  // ========================================
 
   const totalLeads = currentView === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
@@ -461,7 +317,12 @@ export default function LeadsListPage() {
     const start = (currentPage - 1) * itemsPerPage
     return activeLeads.slice(start, start + itemsPerPage)
   }, [activeLeads, currentPage, itemsPerPage, salesLeads, currentView])
+
   const currentLeads = paginatedLeads as Array<Lead | LeadSalesViewItem>
+
+  // ========================================
+  // DIALOG STATES (Local UI state - safe)
+  // ========================================
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newLeadName, setNewLeadName] = useState('')
@@ -537,21 +398,6 @@ export default function LeadsListPage() {
     }
   }
 
-  const clearFilters = useCallback(() => {
-    handleSearchChange('')
-    setStatusFilter('all')
-    setOriginFilter('all')
-    setTagFilter([])
-    setCurrentPage(1)
-  }, [handleSearchChange])
-
-  const handleResetPreferences = () => {
-    clearFilters()
-    localStorage.removeItem('leads-list-preferences')
-    setShowPreferencesResetPrompt(false)
-    toast.info('Filtros e preferências foram limpos para mostrar resultados.')
-  }
-
   const getPrimaryContact = (lead: Lead) => {
     return lead.contacts?.find(c => c.isPrimary) || lead.contacts?.[0]
   }
@@ -561,11 +407,6 @@ export default function LeadsListPage() {
   const openEdit = (lead: Lead) => {
     setEditingLead(lead)
     setIsEditOpen(true)
-  }
-
-  const openDelete = (lead: Lead) => {
-    setDeletingLead(lead)
-    setIsDeleteOpen(true)
   }
 
   const renderStatusBadge = (statusId: string) => {
@@ -603,16 +444,7 @@ export default function LeadsListPage() {
 
   // --- Layout Sections ---
 
-  const actions = (
-    <RequirePermission permission="leads.create">
-      <Button onClick={() => setIsCreateOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" />
-        Novo Lead
-      </Button>
-    </RequirePermission>
-  )
-
-  const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || searchTerm || normalizedTagFilter.length > 0
+  const hasFilters = statusFilter !== 'all' || originFilter !== 'all' || Boolean(searchTerm) || priorityFilter !== 'all'
 
   const showFiltersEmptyState =
     currentView !== 'kanban' && hasFilters && !isActiveLoading && activeLeads.length === 0
@@ -671,75 +503,7 @@ export default function LeadsListPage() {
     </div>
   )
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page)
-  }, [])
-
-  const handleItemsPerPageChange = useCallback((pageSize: number) => {
-    setItemsPerPage(pageSize)
-    setCurrentPage(1)
-  }, [])
-
-  const resetSalesFilters = useCallback(() => {
-    setSalesOwnerMode('all')
-    setSalesOwnerIds([])
-    setSalesPriority([])
-    setSalesStatusFilter([])
-    setSalesOriginFilter([])
-    setSalesDaysWithoutInteraction(null)
-    setSalesOrderBy('priority')
-    setCurrentPage(1)
-  }, [])
-
-  const handleOwnerModeChange = useCallback((mode: 'me' | 'all' | 'custom') => {
-    setSalesOwnerMode(mode)
-    if (mode !== 'custom') {
-      setSalesOwnerIds([])
-    }
-    setCurrentPage(1)
-  }, [])
-
-  const handleSelectedOwnersChange = useCallback((ids: string[]) => {
-    setSalesOwnerIds(ids)
-    setCurrentPage(1)
-  }, [])
-
-  const handlePriorityChange = useCallback((values: LeadPriorityBucket[]) => {
-    setSalesPriority(values)
-    setCurrentPage(1)
-  }, [])
-
-  const handleStatusesChange = useCallback((values: string[]) => {
-    setSalesStatusFilter(values)
-    setCurrentPage(1)
-  }, [])
-
-  const handleOriginsChange = useCallback((values: string[]) => {
-    setSalesOriginFilter(values)
-    setCurrentPage(1)
-  }, [])
-
-  const handleDaysWithoutInteractionChange = useCallback((value: number | null) => {
-    setSalesDaysWithoutInteraction(value)
-    setCurrentPage(1)
-  }, [])
-
-  const handleOrderByChange = useCallback(
-    (value: 'priority' | 'last_interaction' | 'created_at') => {
-      const normalized = normalizeSalesOrderBy(value)
-      setSalesOrderBy(prev => {
-        if (prev === normalized) return prev
-        setCurrentPage(1)
-        return normalized
-      })
-    },
-    [normalizeSalesOrderBy]
-  )
-
-  const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
-  const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
-
-  // Unified DataToolbar for all views
+  // Unified toolbar with primitive filters (no Radix/Shadcn components to avoid render loops)
   const unifiedToolbar = useMemo(() => {
     const newLeadButton = (
       <RequirePermission permission="leads.create">
@@ -756,46 +520,6 @@ export default function LeadsListPage() {
       </Button>
     ) : null
 
-    // For Sales view, use LeadsSmartFilters
-    if (currentView === 'sales') {
-      return (
-        <DataToolbar
-          searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
-          currentView={dataToolbarView}
-          onViewChange={handleDataToolbarViewChange}
-          actions={
-            <>
-              {bulkDeleteButton}
-              {newLeadButton}
-            </>
-          }
-        >
-          <LeadsSmartFilters
-            ownerMode={salesOwnerMode}
-            onOwnerModeChange={handleOwnerModeChange}
-            selectedOwners={salesOwnerIds}
-            onSelectedOwnersChange={handleSelectedOwnersChange}
-            priority={salesPriority}
-            onPriorityChange={handlePriorityChange}
-            statuses={salesStatusFilter}
-            onStatusesChange={handleStatusesChange}
-            origins={salesOriginFilter}
-            onOriginsChange={handleOriginsChange}
-            daysWithoutInteraction={salesDaysWithoutInteraction}
-            onDaysWithoutInteractionChange={handleDaysWithoutInteractionChange}
-            orderBy={salesOrderBy}
-            onOrderByChange={handleOrderByChange}
-            users={users}
-            leadStatuses={activeLeadStatuses}
-            leadOrigins={activeLeadOrigins}
-            onClear={resetSalesFilters}
-          />
-        </DataToolbar>
-      )
-    }
-
-    // For Grid/Kanban views, use standard filters
     return (
       <DataToolbar
         searchTerm={searchTerm}
@@ -809,154 +533,50 @@ export default function LeadsListPage() {
           </>
         }
       >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9">
-              <span className="truncate">
-                {statusFilter === 'all'
-                  ? 'Todos Status'
-                  : safeString(
-                      leadStatuses.find(s => s.id === statusFilter)?.label,
-                      'Status'
-                    )}
-              </span>
-              <CaretDown className="ml-1 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[200px]">
-            <DropdownMenuRadioGroup
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value)}
-            >
-              <DropdownMenuRadioItem value="all">
-                Todos Status
-              </DropdownMenuRadioItem>
-              {leadStatuses
-                .filter(s => s.isActive)
-                .map((status) => (
-                  <DropdownMenuRadioItem key={status.id} value={status.id}>
-                    {safeString(status.label, status.code)}
-                  </DropdownMenuRadioItem>
-                ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9">
-              <span className="truncate">
-                {originFilter === 'all'
-                  ? 'Todas Origens'
-                  : safeString(
-                      leadOrigins.find(o => o.id === originFilter)?.label,
-                      'Origem'
-                    )}
-              </span>
-              <CaretDown className="ml-1 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[220px]">
-            <DropdownMenuRadioGroup
-              value={originFilter}
-              onValueChange={(value) => setOriginFilter(value)}
-            >
-              <DropdownMenuRadioItem value="all">
-                Todas Origens
-              </DropdownMenuRadioItem>
-              {leadOrigins
-                .filter(o => o.isActive)
-                .map((origin) => (
-                  <DropdownMenuRadioItem key={origin.id} value={origin.id}>
-                    {safeString(origin.label, origin.code)}
-                  </DropdownMenuRadioItem>
-                ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {tagsEnabled && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
-                <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
-                <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
-                  {tags.map(tag => {
-                    const safeColor = safeString(tag.color, '#888')
-                    return (
-                      <Badge
-                        key={tag.id}
-                        variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
-                        className="cursor-pointer hover:opacity-80"
-                        onClick={() => {
-                          const newTags = tagFilter.includes(tag.id)
-                            ? tagFilter.filter(t => t !== tag.id)
-                            : [...tagFilter, tag.id];
-                          setTagFilter(newTags);
-                          setCurrentPage(1);
-                        }}
-                        style={tagFilter.includes(tag.id) ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
-                      >
-                        {safeString(tag.name, 'Tag')}
-                      </Badge>
-                    )
-                  })}
-                  {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
-                </div>
-                {tagFilter.length > 0 && (
-                  <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setCurrentPage(1); }}>
-                    Limpar Tags
-                  </Button>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>Limpar</Button>
-        )}
+        <LeadsPrimitiveFilters
+          currentSearch={searchTerm}
+          onSearchChange={handleSearchChange}
+          currentStatus={statusFilter}
+          onStatusChange={handleStatusChange}
+          leadStatuses={activeLeadStatuses.map(s => ({ id: s.id, code: s.code, label: s.label }))}
+          currentOrigin={originFilter}
+          onOriginChange={handleOriginChange}
+          leadOrigins={activeLeadOrigins.map(o => ({ id: o.id, code: o.code, label: o.label }))}
+          currentPriority={currentView === 'sales' ? priorityFilter : undefined}
+          onPriorityChange={currentView === 'sales' ? handlePriorityChange : undefined}
+          currentOrderBy={currentView === 'sales' ? salesOrderBy : undefined}
+          onOrderByChange={currentView === 'sales' ? handleOrderByChange : undefined}
+          currentOwnerMode={currentView === 'sales' ? salesOwnerMode : undefined}
+          onOwnerModeChange={currentView === 'sales' ? handleOwnerModeChange : undefined}
+          onClear={clearFilters}
+          hasActiveFilters={hasFilters}
+        />
       </DataToolbar>
     )
   }, [
-    activeLeadOrigins,
-    activeLeadStatuses,
-    clearFilters,
+    searchTerm,
+    handleSearchChange,
     dataToolbarView,
     handleDataToolbarViewChange,
-    handleDaysWithoutInteractionChange,
-    handleOrderByChange,
-    handleOriginsChange,
-    handleOwnerModeChange,
-    handlePriorityChange,
-    handleSelectedOwnersChange,
-    handleStatusesChange,
-    hasFilters,
-    originFilter,
-    resetSalesFilters,
-    salesDaysWithoutInteraction,
-    salesOrderBy,
-    salesOriginFilter,
-    salesOwnerIds,
-    salesOwnerMode,
-    salesPriority,
-    salesStatusFilter,
-    searchTerm,
     selectedIds.length,
     statusFilter,
-    tagFilter,
-    tags,
-    tagsEnabled,
-    users,
-    currentView
+    handleStatusChange,
+    activeLeadStatuses,
+    originFilter,
+    handleOriginChange,
+    activeLeadOrigins,
+    currentView,
+    priorityFilter,
+    handlePriorityChange,
+    salesOrderBy,
+    handleOrderByChange,
+    salesOwnerMode,
+    handleOwnerModeChange,
+    clearFilters,
+    hasFilters
   ])
 
-  // Compute error UI for Sales View
+  // Simple error UI for Sales View (no complex retry/fallback logic)
   const salesErrorUI = useMemo(() => {
     if (currentView !== 'sales' || !isSalesError) return null
     
@@ -980,7 +600,7 @@ export default function LeadsListPage() {
           <Button 
             variant="default" 
             size="lg"
-            onClick={() => setViewMode('grid')} 
+            onClick={() => handleViewChange('grid')} 
             className="flex-1 text-base font-semibold"
           >
             <SquaresFour className="mr-2 h-5 w-5" />
@@ -989,7 +609,7 @@ export default function LeadsListPage() {
           <Button 
             variant="default" 
             size="lg"
-            onClick={() => setViewMode('kanban')} 
+            onClick={() => handleViewChange('kanban')} 
             className="flex-1 text-base font-semibold"
           >
             <Kanban className="mr-2 h-5 w-5" />
@@ -999,17 +619,14 @@ export default function LeadsListPage() {
         <Button 
           variant="outline"
           size="sm"
-          onClick={() => {
-            console.log(`${SALES_VIEW_MESSAGES.LOG_PREFIX} User initiated retry from error UI in LeadsListPage`)
-            refetchSalesView()
-          }} 
+          onClick={() => refetchSalesView()} 
           className="text-sm"
         >
           {SALES_VIEW_MESSAGES.BUTTON_RETRY}
         </Button>
       </div>
     )
-  }, [currentView, isSalesError, salesError, setViewMode, refetchSalesView])
+  }, [currentView, isSalesError, salesError, handleViewChange, refetchSalesView])
 
   const showPagination = currentView !== 'kanban' && totalLeads > 0
   const paginationProps = {
@@ -1049,7 +666,7 @@ export default function LeadsListPage() {
                   Limpar filtros
                 </Button>
                 {currentView !== 'grid' && (
-                  <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
+                  <Button variant="ghost" size="sm" onClick={() => handleViewChange('grid')}>
                     Ir para grade
                   </Button>
                 )}
@@ -1083,9 +700,9 @@ export default function LeadsListPage() {
           />
         ) : currentView === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginatedLeads.map(lead => {
+            {(paginatedLeads as Lead[]).map(lead => {
               const contact = getPrimaryContact(lead)
-              const owner = (lead as any).owner
+              const owner = lead.owner
               const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
               return (
                 <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
@@ -1123,9 +740,9 @@ export default function LeadsListPage() {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
-                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
+                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_PROGRESS] || 0}%</span>
                       </div>
-                      <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
+                      <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_PROGRESS] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-500'} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t">
@@ -1197,22 +814,6 @@ export default function LeadsListPage() {
           onConfirm={handleDelete}
           isDeleting={deleteLead.isPending}
         />
-
-        <AlertDialog open={showPreferencesResetPrompt} onOpenChange={setShowPreferencesResetPrompt}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Filtros podem estar desatualizados</AlertDialogTitle>
-              <AlertDialogDescription>
-                Não encontramos leads com as preferências salvas. Deseja limpar filtros e redefinir suas preferências para ver
-                resultados novamente?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Manter filtros</AlertDialogCancel>
-              <AlertDialogAction onClick={handleResetPreferences}>Limpar filtros e preferências</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
         <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
           <AlertDialogContent>
