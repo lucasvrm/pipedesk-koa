@@ -1076,136 +1076,114 @@ export default function LeadsListPage() {
             </div>
           ) : (
             <div className="animate-in fade-in duration-300">
-              {currentView === 'list' && <LeadsSalesList
-                leads={paginatedLeads as LeadSalesViewItem[]}
-                isLoading={isActiveLoading}
-                orderBy={salesOrderBy}
-                selectedIds={selectedIds}
-                onSelectAll={toggleSelectAll}
-                onSelectOne={toggleSelectOne}
-                onNavigate={(id) => navigate(`/leads/${id}`)}
-                getLeadActions={(lead): QuickAction[] => {
-                  const id = lead.leadId ?? lead.lead_id ?? lead.id
-                  if (!id) return []
+              {currentView === 'sales' ? (
+                <LeadsSalesList
+                  leads={paginatedLeads as LeadSalesViewItem[]}
+                  isLoading={isActiveLoading}
+                  orderBy={salesOrderBy}
+                  selectedIds={selectedIds}
+                  onSelectAll={toggleSelectAll}
+                  onSelectOne={toggleSelectOne}
+                  onNavigate={(id) => navigate(`/leads/${id}`)}
+                  getLeadActions={(lead): QuickAction[] => {
+                    const id = lead.leadId ?? lead.lead_id ?? lead.id
+                    if (!id) return []
 
-                  return [
-                    {
-                      id: 'view',
-                      label: 'Ver detalhes do lead',
-                      onClick: () => navigate(`/leads/${id}`)
-                    }
-                  ]
-                }}
-              />}
-              
-              {/* Kanban e Cards podem precisar de um padding extra pois não são tabelas full-width */}
-              {currentView !== 'list' && currentView === 'sales' && <LeadsSalesList
-                leads={paginatedLeads as LeadSalesViewItem[]}
-                isLoading={isActiveLoading}
-                orderBy={salesOrderBy}
-                selectedIds={selectedIds}
-                onSelectAll={toggleSelectAll}
-                onSelectOne={toggleSelectOne}
-                onNavigate={(id) => navigate(`/leads/${id}`)}
-                getLeadActions={(lead): QuickAction[] => {
-                  const id = lead.leadId ?? lead.lead_id ?? lead.id
-                  if (!id) return []
+                    return [
+                      {
+                        id: 'view',
+                        label: 'Ver detalhes do lead',
+                        onClick: () => navigate(`/leads/${id}`)
+                      }
+                    ]
+                  }}
+                />
+              ) : currentView === 'kanban' ? (
+                <div className="p-4">
+                  <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
+                </div>
+              ) : (
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {paginatedLeads.map(lead => {
+                      const contact = getPrimaryContact(lead)
+                      const owner = (lead as any).owner
+                      const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
+                      return (
+                        <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
+                          <CardHeader className="pb-2 space-y-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="space-y-1">
+                                <CardTitle className="text-lg line-clamp-1" title={safeLegalName}>{safeLegalName}</CardTitle>
+                                {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
+                              </div>
+                              <div onClick={e => e.stopPropagation()} className="flex gap-1">
+                                <QuickActionsMenu
+                                  actions={getLeadQuickActions({
+                                    lead,
+                                    navigate,
+                                    updateLead: updateLeadAdapter,
+                                    deleteLead,
+                                    profileId: profile?.id,
+                                    onEdit: () => openEdit(lead),
+                                    getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
+                                    statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
+                                  })}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {renderStatusBadge(lead.leadStatusId)}
+                              {renderOriginBadge(lead.leadOriginId)}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-3 text-sm space-y-3">
+                            <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
+                              <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
+                            </div>
 
-                  return [
-                    {
-                      id: 'view',
-                      label: 'Ver detalhes do lead',
-                      onClick: () => navigate(`/leads/${id}`)
-                    }
-                  ]
-                }}
-              />}
-              
-              {currentView !== 'list' && currentView !== 'sales' && (
-                  <div className="p-4">
-                      {currentView === 'kanban' && <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />}
-                      {currentView === 'grid' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {paginatedLeads.map(lead => {
-                              const contact = getPrimaryContact(lead)
-                              const owner = (lead as any).owner
-                              const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
-                              return (
-                                <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
-                                  <CardHeader className="pb-2 space-y-0">
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div className="space-y-1">
-                                        <CardTitle className="text-lg line-clamp-1" title={safeLegalName}>{safeLegalName}</CardTitle>
-                                        {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
-                                      </div>
-                                      <div onClick={e => e.stopPropagation()} className="flex gap-1">
-                                        <QuickActionsMenu
-                                          actions={getLeadQuickActions({
-                                            lead,
-                                            navigate,
-                                            updateLead: updateLeadAdapter,
-                                            deleteLead,
-                                            profileId: profile?.id,
-                                            onEdit: () => openEdit(lead),
-                                            getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
-                                            statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
-                                          })}
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {renderStatusBadge(lead.leadStatusId)}
-                                      {renderOriginBadge(lead.leadOriginId)}
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent className="pb-3 text-sm space-y-3">
-                                    <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
-                                      <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
-                                    </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
+                                <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
+                              </div>
+                              <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
+                            </div>
 
-                                    <div className="space-y-1">
-                                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                        <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
-                                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
-                                      </div>
-                                      <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                                      <div>
-                                        <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
-                                        {contact ? (
-                                          <div
-                                            className="font-medium truncate hover:text-primary hover:underline"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              navigate(`/contacts/${contact.id}`)
-                                            }}
-                                          >
-                                            {safeString(contact.name, 'Contato')}
-                                          </div>
-                                        ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
-                                      </div>
-                                      <div>
-                                        <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
-                                        {owner ? (
-                                          <div className="flex items-center gap-1.5">
-                                            <Avatar className="h-5 w-5">
-                                              <AvatarImage src={owner.avatar} />
-                                              <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
-                                          </div>
-                                        ) : <span>-</span>}
-                                      </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              )
-                            })}
-                        </div>
-                      )}
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                              <div>
+                                <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
+                                {contact ? (
+                                  <div
+                                    className="font-medium truncate hover:text-primary hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      navigate(`/contacts/${contact.id}`)
+                                    }}
+                                  >
+                                    {safeString(contact.name, 'Contato')}
+                                  </div>
+                                ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
+                                {owner ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarImage src={owner.avatar} />
+                                      <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
+                                  </div>
+                                ) : <span>-</span>}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
                   </div>
+                </div>
               )}
             </div>
           )}
