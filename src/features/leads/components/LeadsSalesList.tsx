@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowsDownUp } from '@phosphor-icons/react'
 import { safeStringOptional, ensureArray } from '@/lib/utils'
+import { Lead } from '@/lib/types'
 
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
@@ -16,6 +17,7 @@ interface LeadsSalesListProps {
   onSelectAll: () => void
   onSelectOne: (id: string, selected: boolean) => void
   onNavigate: (leadId: string) => void
+  onScheduleClick?: (lead: Lead) => void
   getLeadActions?: (lead: LeadSalesViewItem) => QuickAction[] | undefined
 }
 
@@ -27,6 +29,7 @@ export function LeadsSalesList({
   onSelectAll,
   onSelectOne,
   onNavigate,
+  onScheduleClick,
   getLeadActions
 }: LeadsSalesListProps) {
   // Ensure leads is always an array to prevent React Error #185
@@ -179,6 +182,7 @@ export function LeadsSalesList({
           onSelectChange={(checked) => handleSelectChange(lead, checked)}
           onClick={() => onNavigate(id)}
           onMenuClick={() => onNavigate(id)}
+          onScheduleClick={onScheduleClick}
           actions={actions}
         />
       )

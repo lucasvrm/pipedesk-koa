@@ -55,6 +55,7 @@ import {
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 import { DataToolbar } from '@/components/DataToolbar'
 import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
+import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
 
 // View types used by DataToolbar and internal view management
 type DataToolbarView = 'list' | 'cards' | 'kanban'
@@ -471,10 +472,15 @@ export default function LeadsListPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
+  const [leadToSchedule, setLeadToSchedule] = useState<Lead | null>(null)
 
   const getLeadId = (lead: Lead | LeadSalesViewItem) => {
     const raw = lead as any
     return raw.leadId ?? raw.lead_id ?? raw.id ?? raw.lead?.id
+  }
+
+  const handleScheduleClick = (lead: Lead) => {
+    setLeadToSchedule(lead)
   }
 
   const handleCreate = async () => {
@@ -1085,6 +1091,7 @@ export default function LeadsListPage() {
                   onSelectAll={toggleSelectAll}
                   onSelectOne={toggleSelectOne}
                   onNavigate={(id) => navigate(`/leads/${id}`)}
+                  onScheduleClick={handleScheduleClick}
                   getLeadActions={(lead): QuickAction[] => {
                     const id = lead.leadId ?? lead.lead_id ?? lead.id
                     if (!id) return []
@@ -1263,6 +1270,14 @@ export default function LeadsListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {leadToSchedule && (
+        <ScheduleMeetingDialog 
+          open={true} 
+          onOpenChange={(open) => !open && setLeadToSchedule(null)}
+          lead={leadToSchedule}
+        />
+      )}
     </div>
   )
 }
