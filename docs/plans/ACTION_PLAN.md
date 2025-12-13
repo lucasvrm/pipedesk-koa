@@ -3,16 +3,22 @@
 ## Objetivo
 Refatorar completamente a documentação do PipeDesk encontrada em `/docs`, removendo informações obsoletas, consolidando documentos duplicados e criando uma documentação robusta que reflete o estado atual da aplicação.
 
+## Atualização (28/02/2026)
+- Planos legados movidos para `docs/archive/plans/`.
+- Pacote de Quick Actions movido para `docs/archive/features/quick-actions/`.
+- `docs/status/CURRENT_STATUS.md`, `docs/README.md` e `docs/DOCUMENTATION_AUDIT.md` revisados para refletir o estado real do código.
+
 ## Estado Atual (Baseline)
-- **Total de arquivos**: 39 arquivos .md em /docs
-- **Problemas identificados**:
-  - Informações obsoletas sobre features não implementadas
-  - Documentação de fases/migrações já concluídas
-  - Duplicação de informação (ex: 3 documentos sobre RBAC)
-  - Estrutura plana dificulta navegação
-  - Mix de documentação de usuário, desenvolvedor e histórico
+- **Total de arquivos ativos**: 55 arquivos .md em /docs
+- **Total de arquivos arquivados**: 37 arquivos .md em /docs/archive
+- **Problemas identificados (atualizados)**:
+  - Planos e guias legados misturados com o material ativo
+  - Features documentadas sem correspondência no código (ex.: Quick Actions)
+  - Documentos de status com versões antigas ou métricas sem fonte
 
 ## Fases do Plano
+
+> As fases abaixo refletem o plano original e serão reordenadas após a consolidação das próximas entregas. A limpeza de planos legados e Quick Actions foi priorizada nesta iteração.
 
 ### ✅ Fase 1: Análise e Inventário (COMPLETA)
 **Duração**: 1 dia  

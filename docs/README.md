@@ -37,10 +37,8 @@ npm run dev
 - Lista de features: [`status/FEATURES_STATUS.md`](status/FEATURES_STATUS.md)
 
 ### Planejamento
-- Plano de ação: [`plans/ACTION_PLAN.md`](plans/ACTION_PLAN.md)
-- Integração backend: [`plans/BACKEND_INTEGRATION_PLAN.md`](plans/BACKEND_INTEGRATION_PLAN.md)
-- Componentes (fase 1): [`plans/ROADMAP_PHASE1_COMPONENTS.md`](plans/ROADMAP_PHASE1_COMPONENTS.md)
-- Command Center: [`plans/COMMAND_CENTER_COMPONENTS.md`](plans/COMMAND_CENTER_COMPONENTS.md)
+- Plano de ação ativo: [`plans/ACTION_PLAN.md`](plans/ACTION_PLAN.md)
+- Planos legados movidos para arquivo: [`archive/plans/`](archive/plans/)
 
 ### Guias Operacionais
 - Cross-tagging: [`guides/CROSS_TAGGING_GUIDE.md`](guides/CROSS_TAGGING_GUIDE.md)
@@ -75,7 +73,7 @@ npm run dev
 - Companies & Contacts: [`features/companies-contacts.md`](features/companies-contacts.md)
 - RBAC: [`features/rbac.md`](features/rbac.md)
 - UI Components: [`features/ui-components.md`](features/ui-components.md)
-- Quick Actions: [`features/quick-actions/quick-actions.md`](features/quick-actions/quick-actions.md), [`quick-actions-business-analysis.md`](features/quick-actions/quick-actions-business-analysis.md), [`QUICK_ACTIONS_SUMMARY.md`](features/quick-actions/QUICK_ACTIONS_SUMMARY.md)
+- Quick Actions (arquivado por obsolescência): [`archive/features/quick-actions/`](archive/features/quick-actions/)
 
 ### Incidentes e Pós-Mortems
 - React Error 185 (diagnóstico): [`incidents/react-error-185/diagnostics/`](incidents/react-error-185/diagnostics/)
