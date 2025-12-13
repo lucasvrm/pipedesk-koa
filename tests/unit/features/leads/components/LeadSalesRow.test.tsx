@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { LeadSalesRow } from '@/features/leads/components/LeadSalesRow'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
@@ -81,5 +82,67 @@ describe('LeadSalesRow', () => {
     )
 
     expect(screen.getByText('Sem status')).toBeInTheDocument()
+  })
+
+  it('calls onScheduleClick when calendar button is clicked', async () => {
+    const onScheduleClick = vi.fn()
+    const user = userEvent.setup()
+    
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />
+      </QueryClientProvider>
+    )
+
+    // Find the row and hover to make action buttons visible
+    const row = screen.getByText('Empresa Teste').closest('tr')
+    expect(row).toBeInTheDocument()
+    
+    if (row) {
+      await user.hover(row)
+    }
+
+    // Find the calendar button by its orange styling (third button in the actions cell)
+    const actionButtons = screen.getAllByRole('button')
+    // Find the button with the orange color class
+    const calendarButton = actionButtons.find(btn => 
+      btn.className.includes('text-orange-600')
+    )
+    
+    expect(calendarButton).toBeInTheDocument()
+    if (calendarButton) {
+      await user.click(calendarButton)
+    }
+
+    expect(onScheduleClick).toHaveBeenCalledTimes(1)
+    expect(onScheduleClick).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'lead-1',
+        legalName: 'Empresa Teste'
+      })
+    )
+  })
+
+  it('renders calendar button', async () => {
+    const user = userEvent.setup()
+    
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LeadSalesRow {...baseLead} />
+      </QueryClientProvider>
+    )
+
+    const row = screen.getByText('Empresa Teste').closest('tr')
+    if (row) {
+      await user.hover(row)
+    }
+    
+    // Check that a button with orange styling exists (calendar button)
+    const actionButtons = screen.getAllByRole('button')
+    const calendarButton = actionButtons.find(btn => 
+      btn.className.includes('text-orange-600')
+    )
+    
+    expect(calendarButton).toBeInTheDocument()
   })
 })

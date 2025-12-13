@@ -1,7 +1,7 @@
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
-import { MessageCircle, Mail, Copy } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { QuickAction, QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
+import { Lead } from '@/lib/types'
 import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { useUpdateLead } from '@/services/leadService'
@@ -28,6 +29,7 @@ interface LeadSalesRowProps extends LeadSalesViewItem {
   onClick?: () => void
   onMenuClick?: () => void
   actions?: QuickAction[]
+  onScheduleClick?: (lead: Lead) => void
 }
 
 const PRIORITY_COLORS: Record<LeadPriorityBucket, string> = {
@@ -69,7 +71,8 @@ export function LeadSalesRow({
   owner,
   tags,
   actions,
-  status
+  status,
+  onScheduleClick
 }: LeadSalesRowProps) {
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
@@ -202,6 +205,33 @@ export function LeadSalesRow({
           description: 'Não foi possível copiar o ID para a área de transferência'
         })
       })
+  }
+
+  const handleSchedule = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onScheduleClick) {
+      // Create a Lead object from the current row data
+      const lead: Lead = {
+        id: actualLeadId!,
+        legalName: legalName ?? '',
+        tradeName: tradeName,
+        leadStatusId: status ?? '',
+        leadOriginId: '',
+        createdAt: '',
+        updatedAt: '',
+        createdBy: '',
+        priorityBucket: priorityBucket,
+        priorityScore: priorityScore,
+        priorityDescription: priorityDescription,
+        lastInteractionAt: lastInteractionAt,
+        nextAction: nextAction,
+        owner: owner
+      }
+      onScheduleClick(lead)
+    } else {
+      // Fallback temporário
+      toast.info('Integração de calendário em breve')
+    }
   }
 
   // Map status codes to badge variants
@@ -452,6 +482,22 @@ export function LeadSalesRow({
               </TooltipTrigger>
               <TooltipContent>
                 <p>Enviar E-mail</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  onClick={handleSchedule}
+                >
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Agendar Reunião</p>
               </TooltipContent>
             </Tooltip>
             
