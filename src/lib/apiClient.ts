@@ -46,6 +46,13 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const token = await getAuthToken();
 
+  // Debug log for API requests
+  console.log('API Request:', endpoint, 'Token exists:', !!token);
+
+  if (!token) {
+    console.warn("apiFetch: Sem token de sessão.");
+  }
+
   const headers = new Headers(options.headers);
 
   // Inject Authorization header if token is available
