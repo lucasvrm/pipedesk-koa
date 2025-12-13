@@ -287,7 +287,7 @@ export function LeadSalesRow({
 
       <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuTrigger asChild>
             <Badge
               variant={getStatusVariant(statusColor)}
               className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -295,7 +295,7 @@ export function LeadSalesRow({
               {statusLabel}
             </Badge>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuContent align="start">
             {leadStatuses
               .filter((s) => s.isActive)
               .map((statusOption) => (
