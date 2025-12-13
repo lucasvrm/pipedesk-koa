@@ -1,7 +1,7 @@
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
-import { MessageCircle, Phone, Video, Calendar, Mail, Copy } from 'lucide-react'
+import { MessageCircle, Mail, Copy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -147,8 +147,8 @@ export function LeadSalesRow({
       return
     }
     
-    // Open default email client
-    window.location.href = `mailto:${email}`
+    // Open default email client with encoded email
+    window.location.href = `mailto:${encodeURIComponent(email)}`
   }
 
   const handleCopyId = (e: React.MouseEvent) => {
@@ -160,7 +160,30 @@ export function LeadSalesRow({
       return
     }
     
-    // Copy to clipboard
+    // Check if Clipboard API is available
+    if (!navigator.clipboard) {
+      // Fallback for browsers without Clipboard API
+      try {
+        const textArea = document.createElement('textarea')
+        textArea.value = actualLeadId
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-9999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        toast.success('ID copiado!', {
+          description: 'O ID do lead foi copiado para a área de transferência'
+        })
+      } catch (error) {
+        toast.error('Erro ao copiar', {
+          description: 'Não foi possível copiar o ID para a área de transferência'
+        })
+      }
+      return
+    }
+    
+    // Copy to clipboard using modern API
     navigator.clipboard.writeText(actualLeadId)
       .then(() => {
         toast.success('ID copiado!', {
