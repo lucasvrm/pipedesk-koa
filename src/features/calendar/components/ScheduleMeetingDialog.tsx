@@ -14,8 +14,10 @@ interface ScheduleMeetingDialogProps {
   lead: Lead
 }
 
+const getDefaultTitle = (lead: Lead) => `Reunião com ${lead.legalName}`
+
 export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeetingDialogProps) {
-  const [title, setTitle] = useState(`Reunião com ${lead.legalName}`)
+  const [title, setTitle] = useState(getDefaultTitle(lead))
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [generateMeetLink, setGenerateMeetLink] = useState(true)
@@ -45,8 +47,7 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
       startTime: start.toISOString(),
       endTime: end.toISOString(),
       entityType: 'lead',
-      entityId: lead.id,
-      description: generateMeetLink ? 'Google Meet será criado automaticamente' : undefined
+      entityId: lead.id
     })
 
     toast.promise(promise, {
@@ -55,7 +56,7 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
         setIsSubmitting(false)
         onOpenChange(false)
         // Reset form
-        setTitle(`Reunião com ${lead.legalName}`)
+        setTitle(getDefaultTitle(lead))
         setStartTime('')
         setEndTime('')
         setGenerateMeetLink(true)
