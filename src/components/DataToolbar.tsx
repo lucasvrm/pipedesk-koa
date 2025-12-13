@@ -2,7 +2,6 @@ import { ReactNode } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AlignJustify, LayoutGrid, Kanban, Search, type LucideIcon } from 'lucide-react'
 
@@ -47,12 +46,6 @@ export function DataToolbar({
 }: DataToolbarProps) {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onSearchChange?.(e.target.value)
-  }
-
-  const handleViewChange = (value: string) => {
-    if (value && (value === 'list' || value === 'cards' || value === 'kanban')) {
-      onViewChange?.(value as DataToolbarView)
-    }
   }
 
   return (
@@ -102,29 +95,26 @@ export function DataToolbar({
 
         {/* View Toggle */}
         {onViewChange && (
-          <ToggleGroup
-            type="single"
-            value={currentView}
-            onValueChange={handleViewChange}
-            className="border bg-muted/30"
-          >
+          <div className="flex items-center border bg-muted/30 rounded-md">
             {VIEW_ENTRIES.map(([view, Icon]) => (
               <Tooltip key={view}>
                 <TooltipTrigger asChild>
-                  <ToggleGroupItem
-                    value={view}
+                  <Button
+                    variant={currentView === view ? 'secondary' : 'ghost'}
+                    size="icon"
                     aria-label={VIEW_LABELS[view]}
-                    className="h-9 w-9 p-0"
+                    onClick={() => onViewChange(view)}
+                    className="h-9 w-9 rounded-none first:rounded-l-md last:rounded-r-md"
                   >
                     <Icon className="h-4 w-4" />
-                  </ToggleGroupItem>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{VIEW_LABELS[view]}</p>
                 </TooltipContent>
               </Tooltip>
             ))}
-          </ToggleGroup>
+          </div>
         )}
       </div>
     </div>
