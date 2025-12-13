@@ -2,23 +2,17 @@ import { Search, X, AlignJustify, LayoutGrid, Kanban, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipTrigger 
-} from "@/components/ui/tooltip";
 import { ReactNode, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
-// FIXED: Made all props optional to prevent crashes when component is rendered without props
 interface DataToolbarProps {
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
   currentView?: string;
   onViewChange?: (view: string) => void;
-  children?: ReactNode; // Slot para filtros
-  actions?: ReactNode; // Botão New Lead
-  className?: string; // FIXED: Added className support for custom styling
+  children?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
 }
 
 export function DataToolbar({
@@ -31,43 +25,39 @@ export function DataToolbar({
   className
 }: DataToolbarProps) {
   
-  // FIXED: Stabilized event handlers with useCallback to prevent unnecessary re-renders
-  const handleSearchChange = useCallback((value: string) => {
-    onSearchChange?.(value);
+  const handleClearSearch = useCallback(() => {
+    onSearchChange?.("");
   }, [onSearchChange]);
 
-  const handleViewChange = useCallback((view: string) => {
-    onViewChange?.(view);
+  const handleViewClick = useCallback((view: string) => {
+    if (onViewChange) {
+      onViewChange(view);
+    }
   }, [onViewChange]);
-
-  // FIXED: Only show search if onSearchChange is provided
-  const showSearch = !!onSearchChange;
-  // FIXED: Only show view toggle if onViewChange is provided
-  const showViewToggle = !!onViewChange;
 
   return (
     <div className={cn(
-      "sticky top-0 z-20 w-full backdrop-blur-sm bg-background/80 border-b px-6 py-3 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-200",
+      "sticky top-0 z-20 w-full backdrop-blur-md bg-background/80 border-b px-4 sm:px-6 py-3 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-200", 
       className
     )}>
       
       {/* Esquerda: Busca e Filtros */}
       <div className="flex items-center flex-1 gap-3 w-full sm:w-auto">
-        {/* FIXED: Conditionally render search input only when onSearchChange is provided */}
-        {showSearch && (
+        {onSearchChange && (
           <div className="relative w-full max-w-[320px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Buscar..."
+              placeholder="Buscar leads..."
               value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => onSearchChange(e.target.value)}
               className="pl-9 h-9 bg-background/50 border-muted focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
             />
-            {searchTerm && (
+            {searchTerm.length > 0 && (
               <button 
-                onClick={() => handleSearchChange("")}
-                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                 type="button"
+                onClick={handleClearSearch}
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                aria-label="Limpar busca"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -75,83 +65,54 @@ export function DataToolbar({
           </div>
         )}
 
-        {/* Slot para Filtros (Children) - FIXED: Show separator only when search is visible */}
         {children && (
           <div className="flex items-center gap-2">
-            {showSearch && <Separator orientation="vertical" className="h-6 mx-1" />}
+            <Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />
             {children}
           </div>
         )}
       </div>
 
       {/* Direita: View Toggles e Ações */}
-      <div className="flex items-center gap-3">
-        {/* FIXED: Conditionally render view toggles only when onViewChange is provided */}
-        {showViewToggle && (
+      <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        
+        {onViewChange && (
           <div className="flex items-center p-1 bg-muted/50 rounded-lg border border-border/40">
-            {/* FIXED: Removed outer TooltipProvider - each Tooltip component already includes its own provider */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
-                <span className="inline-block">
-                  <Button
-                    variant={currentView === 'list' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Lista"
-                    onClick={() => handleViewChange('list')}
-                  >
-                    <AlignJustify className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Lista</TooltipContent>
-            </Tooltip>
+            {/* SAFE MODE: Usando title nativo para evitar crash de Ref do Tooltip */}
+            <Button
+              variant={currentView === 'list' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleViewClick('list')}
+              title="Visualização em Lista"
+            >
+              <AlignJustify className="h-4 w-4" />
+            </Button>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
-                <span className="inline-block">
-                  <Button
-                    variant={currentView === 'cards' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Cards"
-                    onClick={() => handleViewChange('cards')}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Cards</TooltipContent>
-            </Tooltip>
+            <Button
+              variant={currentView === 'cards' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleViewClick('cards')}
+              title="Visualização em Cards"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
-                <span className="inline-block">
-                  <Button
-                    variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Kanban"
-                    onClick={() => handleViewChange('kanban')}
-                  >
-                    <Kanban className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Kanban</TooltipContent>
-            </Tooltip>
+            <Button
+              variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleViewClick('kanban')}
+              title="Visualização Kanban"
+            >
+              <Kanban className="h-4 w-4" />
+            </Button>
           </div>
         )}
 
-        {/* FIXED: Show separator only when view toggle is visible */}
-        {showViewToggle && actions && (
-          <Separator orientation="vertical" className="h-6 hidden sm:block" />
-        )}
+        <Separator orientation="vertical" className="h-6 hidden sm:block" />
 
-        {/* Ações Principais */}
         {actions ?? (
           <Button size="sm" className="gap-2 shadow-sm">
             <Plus className="h-4 w-4" />
