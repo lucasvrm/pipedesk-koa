@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Lead } from '@/lib/types'
 import { createEvent } from '@/services/calendarService'
 import { toast } from 'sonner'
@@ -20,8 +19,12 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
   const [title, setTitle] = useState(getDefaultTitle(lead))
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
-  const [generateMeetLink, setGenerateMeetLink] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Update title when lead changes
+  useEffect(() => {
+    setTitle(getDefaultTitle(lead))
+  }, [lead])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,11 +58,9 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
       success: () => {
         setIsSubmitting(false)
         onOpenChange(false)
-        // Reset form
-        setTitle(getDefaultTitle(lead))
+        // Reset form to empty state
         setStartTime('')
         setEndTime('')
-        setGenerateMeetLink(true)
         return 'Reunião criada com sucesso!'
       },
       error: (err) => {
@@ -111,17 +112,6 @@ export function ScheduleMeetingDialog({ open, onOpenChange, lead }: ScheduleMeet
               onChange={(e) => setEndTime(e.target.value)}
               required
             />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="generateMeetLink"
-              checked={generateMeetLink}
-              onCheckedChange={(checked) => setGenerateMeetLink(Boolean(checked))}
-            />
-            <Label htmlFor="generateMeetLink" className="cursor-pointer">
-              Gerar Link Google Meet
-            </Label>
           </div>
 
           <DialogFooter>
