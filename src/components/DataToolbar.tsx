@@ -93,7 +93,7 @@ export function DataToolbar({
             <Tooltip>
               <TooltipTrigger asChild>
                 {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
-                <span tabIndex={0} className="inline-block outline-none">
+                <span className="inline-block">
                   <Button
                     variant={currentView === 'list' ? 'secondary' : 'ghost'}
                     size="icon"
@@ -111,7 +111,7 @@ export function DataToolbar({
             <Tooltip>
               <TooltipTrigger asChild>
                 {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
-                <span tabIndex={0} className="inline-block outline-none">
+                <span className="inline-block">
                   <Button
                     variant={currentView === 'cards' ? 'secondary' : 'ghost'}
                     size="icon"
@@ -129,7 +129,7 @@ export function DataToolbar({
             <Tooltip>
               <TooltipTrigger asChild>
                 {/* FIXED: Span wrapper receives the Tooltip ref, isolating the Button from nested button issues */}
-                <span tabIndex={0} className="inline-block outline-none">
+                <span className="inline-block">
                   <Button
                     variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
                     size="icon"
