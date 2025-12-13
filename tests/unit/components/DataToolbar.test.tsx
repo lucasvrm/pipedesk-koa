@@ -145,7 +145,8 @@ describe('DataToolbar', () => {
     await user.click(cardsButton)
     expect(handleViewChange).toHaveBeenCalledWith('cards')
 
-    // Reset the mock to clear previous calls
+    // Clear mock to isolate the next assertion - needed because we're testing
+    // sequential clicks in the same render, not separate test scenarios
     handleViewChange.mockClear()
 
     // Test kanban view
