@@ -41,9 +41,9 @@ export function DataToolbar({
   }, [onViewChange]);
 
   // FIXED: Only show search if onSearchChange is provided
-  const showSearch = typeof onSearchChange === 'function';
+  const showSearch = !!onSearchChange;
   // FIXED: Only show view toggle if onViewChange is provided
-  const showViewToggle = typeof onViewChange === 'function';
+  const showViewToggle = !!onViewChange;
 
   return (
     <div className={cn(
