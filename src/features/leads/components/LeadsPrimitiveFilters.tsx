@@ -93,11 +93,14 @@ export function LeadsPrimitiveFilters({
         onChange={e => onStatusChange(e.target.value)}
       >
         <option value="all">Todos os Status</option>
-        {leadStatuses.map(status => (
-          <option key={status.id || status.code} value={status.id || status.code}>
-            {safeString(status.label, status.code)}
-          </option>
-        ))}
+        {leadStatuses.map(status => {
+          const optionValue = status.id || status.code
+          return (
+            <option key={optionValue} value={optionValue}>
+              {safeString(status.label, status.code)}
+            </option>
+          )
+        })}
       </select>
 
       {/* Origin Select */}
@@ -107,11 +110,14 @@ export function LeadsPrimitiveFilters({
         onChange={e => onOriginChange(e.target.value)}
       >
         <option value="all">Todas as Origens</option>
-        {leadOrigins.map(origin => (
-          <option key={origin.id || origin.code} value={origin.id || origin.code}>
-            {safeString(origin.label, origin.code)}
-          </option>
-        ))}
+        {leadOrigins.map(origin => {
+          const optionValue = origin.id || origin.code
+          return (
+            <option key={optionValue} value={optionValue}>
+              {safeString(origin.label, origin.code)}
+            </option>
+          )
+        })}
       </select>
 
       {/* Priority Select (Sales View only) */}

@@ -738,11 +738,20 @@ export default function LeadsListPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
-                        <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_PROGRESS] || 0}%</span>
-                      </div>
-                      <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_PROGRESS] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-500'} />
+                      {(() => {
+                        const statusCode = getLeadStatusById(lead.leadStatusId)?.code as keyof typeof LEAD_STATUS_PROGRESS
+                        const progressValue = LEAD_STATUS_PROGRESS[statusCode] || 0
+                        const colorClass = LEAD_STATUS_COLORS[statusCode as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-500'
+                        return (
+                          <>
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                              <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
+                              <span className="font-semibold text-foreground">{progressValue}%</span>
+                            </div>
+                            <Progress value={progressValue} indicatorClassName={colorClass} />
+                          </>
+                        )
+                      })()}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t">
