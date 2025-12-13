@@ -11,7 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, MagnifyingGlass, SquaresFour, Globe, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Target, Tag as TagIcon } from '@phosphor-icons/react'
+import { Plus, SquaresFour, Globe, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Tag as TagIcon } from '@phosphor-icons/react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -27,7 +27,6 @@ import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector'
 import { PageContainer } from '@/components/PageContainer'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
-import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/contexts/AuthContext'
@@ -41,7 +40,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useTags } from '@/services/tagService'
 import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
-import { LeadsSalesFiltersBar } from '../components/LeadsSalesFiltersBar'
 import { LeadsPaginationControls } from '../components/LeadsPaginationControls'
 import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
@@ -55,7 +53,11 @@ import {
   recordSalesViewSuccess
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
-import { DataToolbar, DataToolbarView } from '@/components/DataToolbar'
+import { DataToolbar } from '@/components/DataToolbar'
+
+// View types used by DataToolbar and internal view management
+type DataToolbarView = 'list' | 'cards' | 'kanban'
+type InternalViewMode = 'grid' | 'kanban' | 'sales'
 import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
@@ -63,7 +65,7 @@ const arraysEqual = <T,>(a: T[], b: T[]) => a.length === b.length && a.every((va
 
 export default function LeadsListPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { profile } = useAuth()
   const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const { data: users = [] } = useUsers()
@@ -79,12 +81,14 @@ export default function LeadsListPage() {
     }
   }, [])
 
-  const [viewMode, setViewModeInternal] = useState<'grid' | 'kanban' | 'sales'>(() => {
-    // Check URL params first for explicit view selection
+  // URL-first state management: viewMode is derived from URL params
+  const currentView = useMemo((): InternalViewMode => {
     const viewParam = searchParams.get('view')
-    const validViews = ['grid', 'kanban', 'sales'] as const
+    const validViews = ['grid', 'kanban', 'sales', 'list'] as const
     if (viewParam && validViews.includes(viewParam as any)) {
-      return viewParam as 'grid' | 'kanban' | 'sales'
+      // Map 'list' to 'sales' for backward compatibility
+      if (viewParam === 'list') return 'sales'
+      return viewParam as InternalViewMode
     }
     
     const saved = savedPreferences?.viewMode
@@ -106,8 +110,33 @@ export default function LeadsListPage() {
       return fallback
     }
     
-    return (saved as 'grid' | 'kanban' | 'sales') || 'sales'
-  })
+    return (saved as InternalViewMode) || 'sales'
+  }, [searchParams, savedPreferences])
+
+  // Handler to update view in URL
+  const handleViewChange = useCallback((view: InternalViewMode) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      newParams.set('view', view)
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
+
+  // URL-first state management: search is derived from URL params
+  const searchTerm = searchParams.get('q') || ''
+
+  // Handler to update search in URL
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (value) {
+        newParams.set('q', value)
+      } else {
+        newParams.delete('q')
+      }
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
   
   const normalizeSalesOrderBy = useCallback(
     (value: string | null): 'priority' | 'last_interaction' | 'created_at' => {
@@ -117,7 +146,6 @@ export default function LeadsListPage() {
     []
   )
 
-  const [search, setSearch] = useState(() => savedPreferences?.search || '')
   const [statusFilter, setStatusFilter] = useState<string>(() => savedPreferences?.statusFilter || 'all')
   const [originFilter, setOriginFilter] = useState<string>(() => savedPreferences?.originFilter || 'all')
   const [tagFilter, setTagFilter] = useState<string[]>(() => savedPreferences?.tagFilter || [])
@@ -208,11 +236,11 @@ export default function LeadsListPage() {
   const [showPreferencesResetPrompt, setShowPreferencesResetPrompt] = useState(false)
 
   const filters = useMemo<LeadFilters>(() => ({
-    search: search || undefined,
+    search: searchTerm || undefined,
     status: normalizedStatusFilter !== 'all' ? [normalizedStatusFilter] : undefined,
     origin: normalizedOriginFilter !== 'all' ? [normalizedOriginFilter] : undefined,
     tags: normalizedTagFilter.length > 0 ? normalizedTagFilter : undefined
-  }), [normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, search])
+  }), [normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, searchTerm])
 
   const { data: leads, isLoading } = useLeads(filters)
   const salesFilters = useMemo(() => {
@@ -238,18 +266,18 @@ export default function LeadsListPage() {
     [currentPage, itemsPerPage, salesFilters]
   )
   const { data: salesViewData, isLoading: isSalesLoading, isFetching: isSalesFetching, isError: isSalesError, error: salesError, refetch: refetchSalesView } = useLeadsSalesView(salesViewQuery, {
-    enabled: viewMode === 'sales'
+    enabled: currentView === 'sales'
   })
 
   // Wrapper to track preferred fallback when user switches views during Sales View errors
-  const setViewMode = useCallback((mode: 'grid' | 'kanban' | 'sales') => {
+  const setViewMode = useCallback((mode: InternalViewMode) => {
     // If switching away from sales while it's in error, save this as preferred fallback
-    if (viewMode === 'sales' && isSalesError && (mode === 'grid' || mode === 'kanban')) {
+    if (currentView === 'sales' && isSalesError && (mode === 'grid' || mode === 'kanban')) {
       setPreferredFallback(mode)
       console.log(`[SalesView] User switched to ${mode} during error, saving as preferred fallback`)
     }
-    setViewModeInternal(mode)
-  }, [viewMode, isSalesError])
+    handleViewChange(mode)
+  }, [currentView, isSalesError, handleViewChange])
   const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
@@ -268,11 +296,11 @@ export default function LeadsListPage() {
 
   // Ensure salesLeads is always an array, even on error
   const salesLeads = ensureArray<LeadSalesViewItem>(salesViewData?.data)
-  const activeLeads = (viewMode === 'sales' ? salesLeads : leads) || []
-  const isActiveLoading = viewMode === 'sales' ? isSalesLoading || isSalesFetching : isLoading
+  const activeLeads = (currentView === 'sales' ? salesLeads : leads) || []
+  const isActiveLoading = currentView === 'sales' ? isSalesLoading || isSalesFetching : isLoading
 
   const leadMetrics = useMemo(() => {
-    if (viewMode === 'sales') {
+    if (currentView === 'sales') {
       const total = salesViewData?.pagination?.total ?? salesLeads.length
       return { openLeads: total, createdThisMonth: 0, qualifiedThisMonth: 0 }
     }
@@ -285,48 +313,48 @@ export default function LeadsListPage() {
     ).length || 0
 
     return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [leads, monthStart, salesLeads.length, salesViewData?.pagination.total, viewMode])
+  }, [leads, monthStart, salesLeads.length, salesViewData?.pagination.total, currentView])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter])
+  }, [searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter])
 
   useEffect(() => {
     setSelectedIds([])
-  }, [viewMode, search, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy])
+  }, [currentView, searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy])
 
   useEffect(() => {
     const payload = {
-      viewMode,
-      search,
+      viewMode: currentView,
+      search: searchTerm,
       statusFilter: normalizedStatusFilter !== 'all' ? normalizedStatusFilter : 'all',
       originFilter: normalizedOriginFilter !== 'all' ? normalizedOriginFilter : 'all',
       tagFilter: normalizedTagFilter,
       itemsPerPage
     }
     localStorage.setItem('leads-list-preferences', JSON.stringify(payload))
-  }, [itemsPerPage, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, search, viewMode])
+  }, [itemsPerPage, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter, searchTerm, currentView])
 
   useEffect(() => {
-    if (viewMode === 'sales') return
+    if (currentView === 'sales') return
     if (isLoading || hasCheckedEmptyInitial) return
 
     setHasCheckedEmptyInitial(true)
 
-    if ((leads?.length || 0) === 0 && (search || normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || normalizedTagFilter.length > 0)) {
+    if ((leads?.length || 0) === 0 && (searchTerm || normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || normalizedTagFilter.length > 0)) {
       if (savedPreferences) {
         setShowPreferencesResetPrompt(true)
       } else {
         clearFilters()
       }
     }
-  }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, search, viewMode])
+  }, [hasCheckedEmptyInitial, isLoading, leads?.length, normalizedOriginFilter, normalizedStatusFilter, normalizedTagFilter.length, savedPreferences, searchTerm, currentView])
 
   // Handle Sales View errors with logging and user feedback
   useEffect(() => {
     const currentErrorKey = isSalesError ? getSalesErrorKey(salesError) : null
 
-    if (viewMode !== 'sales') {
+    if (currentView !== 'sales') {
       salesErrorGuardRef.current = { key: null, count: 0 }
       // Reset flags when switching away from sales view
       if (hasSalesShownErrorToast) setHasSalesShownErrorToast(false)
@@ -412,27 +440,27 @@ export default function LeadsListPage() {
       }
     )
     setHasSalesShownErrorToast(true)
-  }, [hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, viewMode])
+  }, [hasAppliedPersistentFallback, hasSalesRecordedSuccess, hasSalesShownErrorToast, isSalesError, isSalesFetching, isSalesLoading, refetchSalesView, salesError, currentView])
 
   useEffect(() => {
-    if (viewMode !== 'sales' && hasAppliedPersistentFallback) {
+    if (currentView !== 'sales' && hasAppliedPersistentFallback) {
       setHasAppliedPersistentFallback(false)
     }
-  }, [hasAppliedPersistentFallback, viewMode])
+  }, [hasAppliedPersistentFallback, currentView])
 
-  const totalLeads = viewMode === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
+  const totalLeads = currentView === 'sales' ? salesViewData?.pagination?.total ?? 0 : activeLeads.length
   const totalPages = Math.max(
     1,
-    Math.ceil(totalLeads / (viewMode === 'sales' ? salesViewData?.pagination?.perPage || itemsPerPage : itemsPerPage))
+    Math.ceil(totalLeads / (currentView === 'sales' ? salesViewData?.pagination?.perPage || itemsPerPage : itemsPerPage))
   )
-  const currentPageSize = viewMode === 'sales' ? salesViewData?.pagination?.perPage || itemsPerPage : itemsPerPage
+  const currentPageSize = currentView === 'sales' ? salesViewData?.pagination?.perPage || itemsPerPage : itemsPerPage
 
   const paginatedLeads = useMemo<Lead[] | LeadSalesViewItem[]>(() => {
-    if (viewMode === 'sales') return salesLeads
+    if (currentView === 'sales') return salesLeads
     if (!activeLeads) return []
     const start = (currentPage - 1) * itemsPerPage
     return activeLeads.slice(start, start + itemsPerPage)
-  }, [activeLeads, currentPage, itemsPerPage, salesLeads, viewMode])
+  }, [activeLeads, currentPage, itemsPerPage, salesLeads, currentView])
   const currentLeads = paginatedLeads as Array<Lead | LeadSalesViewItem>
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -510,12 +538,12 @@ export default function LeadsListPage() {
   }
 
   const clearFilters = useCallback(() => {
-    setSearch('')
+    handleSearchChange('')
     setStatusFilter('all')
     setOriginFilter('all')
     setTagFilter([])
     setCurrentPage(1)
-  }, [])
+  }, [handleSearchChange])
 
   const handleResetPreferences = () => {
     clearFilters()
@@ -562,16 +590,16 @@ export default function LeadsListPage() {
 
   // Map internal viewMode to DataToolbar's expected values
   const dataToolbarView: DataToolbarView = useMemo(() => {
-    if (viewMode === 'sales') return 'list'
-    if (viewMode === 'grid') return 'cards'
+    if (currentView === 'sales') return 'list'
+    if (currentView === 'grid') return 'cards'
     return 'kanban'
-  }, [viewMode])
+  }, [currentView])
 
-  const handleDataToolbarViewChange = useCallback((view: DataToolbarView) => {
-    if (view === 'list') setViewMode('sales')
-    else if (view === 'cards') setViewMode('grid')
-    else if (view === 'kanban') setViewMode('kanban')
-  }, [setViewMode])
+  const handleDataToolbarViewChange = useCallback((view: string) => {
+    if (view === 'list') handleViewChange('sales')
+    else if (view === 'cards') handleViewChange('grid')
+    else if (view === 'kanban') handleViewChange('kanban')
+  }, [handleViewChange])
 
   // --- Layout Sections ---
 
@@ -584,10 +612,10 @@ export default function LeadsListPage() {
     </RequirePermission>
   )
 
-  const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || search || normalizedTagFilter.length > 0
+  const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || searchTerm || normalizedTagFilter.length > 0
 
   const showFiltersEmptyState =
-    viewMode !== 'kanban' && hasFilters && !isActiveLoading && activeLeads.length === 0
+    currentView !== 'kanban' && hasFilters && !isActiveLoading && activeLeads.length === 0
 
   const filtersEmptyState = showFiltersEmptyState ? (
     <div className="flex flex-col items-center gap-3 text-center py-10 border border-dashed rounded-lg bg-muted/30">
@@ -729,11 +757,11 @@ export default function LeadsListPage() {
     ) : null
 
     // For Sales view, use LeadsSmartFilters
-    if (viewMode === 'sales') {
+    if (currentView === 'sales') {
       return (
         <DataToolbar
-          searchTerm={search}
-          onSearchChange={setSearch}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
           currentView={dataToolbarView}
           onViewChange={handleDataToolbarViewChange}
           actions={
@@ -770,8 +798,8 @@ export default function LeadsListPage() {
     // For Grid/Kanban views, use standard filters
     return (
       <DataToolbar
-        searchTerm={search}
-        onSearchChange={setSearch}
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
         currentView={dataToolbarView}
         onViewChange={handleDataToolbarViewChange}
         actions={
@@ -918,19 +946,19 @@ export default function LeadsListPage() {
     salesOwnerMode,
     salesPriority,
     salesStatusFilter,
-    search,
+    searchTerm,
     selectedIds.length,
     statusFilter,
     tagFilter,
     tags,
     tagsEnabled,
     users,
-    viewMode
+    currentView
   ])
 
   // Compute error UI for Sales View
   const salesErrorUI = useMemo(() => {
-    if (viewMode !== 'sales' || !isSalesError) return null
+    if (currentView !== 'sales' || !isSalesError) return null
     
     const errorCode = salesError instanceof ApiError ? salesError.code : undefined
     const errorMessages = getSalesViewErrorMessages(errorCode)
@@ -981,9 +1009,9 @@ export default function LeadsListPage() {
         </Button>
       </div>
     )
-  }, [viewMode, isSalesError, salesError, setViewMode, refetchSalesView])
+  }, [currentView, isSalesError, salesError, setViewMode, refetchSalesView])
 
-  const showPagination = viewMode !== 'kanban' && totalLeads > 0
+  const showPagination = currentView !== 'kanban' && totalLeads > 0
   const paginationProps = {
     currentPage,
     totalPages,
@@ -1020,7 +1048,7 @@ export default function LeadsListPage() {
                 <Button variant="outline" size="sm" onClick={clearFilters}>
                   Limpar filtros
                 </Button>
-                {viewMode !== 'grid' && (
+                {currentView !== 'grid' && (
                   <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
                     Ir para grade
                   </Button>
@@ -1028,7 +1056,7 @@ export default function LeadsListPage() {
               </div>
             )}
           </div>
-        ) : viewMode === 'sales' ? (
+        ) : currentView === 'sales' ? (
           <LeadsSalesList
             leads={paginatedLeads as LeadSalesViewItem[]}
             isLoading={isActiveLoading}
@@ -1053,7 +1081,7 @@ export default function LeadsListPage() {
               ]
             }}
           />
-        ) : viewMode === 'grid' ? (
+        ) : currentView === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedLeads.map(lead => {
               const contact = getPrimaryContact(lead)
