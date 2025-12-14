@@ -12,7 +12,7 @@ import { Lead } from '@/lib/types'
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
   isLoading: boolean
-  orderBy?: 'priority' | 'last_interaction' | 'created_at'
+  orderBy?: 'priority' | 'last_interaction' | 'created_at' | 'status' | 'next_action' | 'owner'
   selectedIds: string[]
   onSelectAll: () => void
   onSelectOne: (id: string, selected: boolean) => void
@@ -161,9 +161,21 @@ export function LeadsSalesList({
   }
 
   const orderLabel = useMemo(() => {
-    if (orderBy === 'last_interaction') return 'Última interação'
-    if (orderBy === 'created_at') return 'Data de criação'
-    return 'Prioridade'
+    switch (orderBy) {
+      case 'last_interaction':
+        return 'Última interação'
+      case 'created_at':
+        return 'Data de criação'
+      case 'status':
+        return 'Status'
+      case 'next_action':
+        return 'Próxima ação'
+      case 'owner':
+        return 'Responsável'
+      case 'priority':
+      default:
+        return 'Prioridade'
+    }
   }, [orderBy])
 
   const renderLeadRowSafely = (lead: LeadSalesViewItem) => {
