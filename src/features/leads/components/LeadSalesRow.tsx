@@ -353,7 +353,8 @@ export function LeadSalesRow({
         <Checkbox checked={selected} onCheckedChange={(value) => onSelectChange?.(Boolean(value))} />
       </TableCell>
 
-      <TableCell className="w-[22%]">
+      {/* Empresa - navigates to Lead Detail */}
+      <TableCell className="w-[20%]">
         <TooltipProvider delayDuration={200}>
           <div className="flex items-start gap-3">
             <Tooltip>
@@ -389,7 +390,8 @@ export function LeadSalesRow({
         </TooltipProvider>
       </TableCell>
 
-      <TableCell className="w-[18%]" onClick={(e) => e.stopPropagation()}>
+      {/* Contato principal - does NOT navigate to Lead Detail */}
+      <TableCell className="w-[14%]" onClick={(e) => e.stopPropagation()}>
         {primaryContact ? (
           <div 
             className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
@@ -409,79 +411,7 @@ export function LeadSalesRow({
         )}
       </TableCell>
 
-      <TableCell className="w-[18%]">
-        <div className="space-y-1">
-          <div className="text-xs text-muted-foreground">Última interação</div>
-          {parsedLastInteractionDate ? (
-            <div className="flex items-center gap-2 text-sm text-foreground">
-              {interactionType === 'email' && <EnvelopeSimple size={16} />}
-              {interactionType === 'event' && <CalendarBlank size={16} />}
-              <span>
-                {formatDistanceToNow(parsedLastInteractionDate, { addSuffix: true, locale: ptBR })}
-              </span>
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">Nenhuma interação</div>
-          )}
-        </div>
-      </TableCell>
-
-      <TableCell className="w-[18%]">
-        {safeNextAction ? (
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Próxima ação</span>
-                  <span className="text-sm font-semibold text-foreground">{safeNextActionLabel}</span>
-                  {safeNextActionReason && (
-                    <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
-                  )}
-                </Badge>
-              </TooltipTrigger>
-              {safeNextActionReason && (
-                <TooltipContent className="max-w-xs text-left">
-                  <div className="text-primary-foreground text-sm font-semibold">Motivo</div>
-                  <div className="text-primary-foreground/80 text-xs leading-relaxed">{safeNextActionReason}</div>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <span className="text-sm text-muted-foreground">Sem próxima ação</span>
-        )}
-      </TableCell>
-
-      <TableCell className="w-[12%]" onClick={(e) => e.stopPropagation()}>
-        <div 
-          className="space-y-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
-          onClick={() => actualLeadId && setIsTagsModalOpen(true)}
-        >
-          {safeTags.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {safeTags.slice(0, 3).map((tag) => {
-                const safeColor = safeStringOptional(tag.color)
-                return (
-                  <Badge
-                    key={tag.id ?? tag.name}
-                    variant="outline"
-                    className="text-[10px] px-2 py-0 h-5 border-muted-foreground/40"
-                    style={safeColor ? { backgroundColor: `${safeColor}20`, color: safeColor } : undefined}
-                  >
-                    {safeString(tag.name, '—')}
-                  </Badge>
-                )
-              })}
-              {safeTags.length > 3 && (
-                <span className="text-[11px] text-muted-foreground">+{safeTags.length - 3}</span>
-              )}
-            </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">—</span>
-          )}
-        </div>
-      </TableCell>
-
+      {/* Status - does NOT navigate to Lead Detail */}
       <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -511,6 +441,83 @@ export function LeadSalesRow({
         </DropdownMenu>
       </TableCell>
 
+      {/* Interações - navigates to Lead Detail */}
+      <TableCell className="w-[14%]">
+        <div className="space-y-1">
+          <div className="text-xs text-muted-foreground">Última interação</div>
+          {parsedLastInteractionDate ? (
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              {interactionType === 'email' && <EnvelopeSimple size={16} />}
+              {interactionType === 'event' && <CalendarBlank size={16} />}
+              <span>
+                {formatDistanceToNow(parsedLastInteractionDate, { addSuffix: true, locale: ptBR })}
+              </span>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">Nenhuma interação</div>
+          )}
+        </div>
+      </TableCell>
+
+      {/* Próxima ação - navigates to Lead Detail, text in red */}
+      <TableCell className="w-[16%]">
+        {safeNextAction ? (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Próxima ação</span>
+                  <span className="text-sm font-semibold text-destructive">{safeNextActionLabel}</span>
+                  {safeNextActionReason && (
+                    <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
+                  )}
+                </Badge>
+              </TooltipTrigger>
+              {safeNextActionReason && (
+                <TooltipContent className="max-w-xs text-left">
+                  <div className="text-primary-foreground text-sm font-semibold">Motivo</div>
+                  <div className="text-primary-foreground/80 text-xs leading-relaxed">{safeNextActionReason}</div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <span className="text-sm text-muted-foreground">Sem próxima ação</span>
+        )}
+      </TableCell>
+
+      {/* Tags - does NOT navigate to Lead Detail */}
+      <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="space-y-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
+          onClick={() => actualLeadId && setIsTagsModalOpen(true)}
+        >
+          {safeTags.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {safeTags.slice(0, 3).map((tag) => {
+                const safeColor = safeStringOptional(tag.color)
+                return (
+                  <Badge
+                    key={tag.id ?? tag.name}
+                    variant="outline"
+                    className="text-[10px] px-2 py-0 h-5 border-muted-foreground/40"
+                    style={safeColor ? { backgroundColor: `${safeColor}20`, color: safeColor } : undefined}
+                  >
+                    {safeString(tag.name, '—')}
+                  </Badge>
+                )
+              })}
+              {safeTags.length > 3 && (
+                <span className="text-[11px] text-muted-foreground">+{safeTags.length - 3}</span>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">—</span>
+          )}
+        </div>
+      </TableCell>
+
+      {/* Responsável - does NOT navigate to Lead Detail */}
       <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: owner.id, name: owner.name, avatar: owner.avatar } : null}>
@@ -707,12 +714,12 @@ export function LeadSalesRowSkeleton() {
   return (
     <TableRow>
       <TableCell className="w-[40px]"><Skeleton className="h-4 w-4" /></TableCell>
-      <TableCell className="w-[22%]"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="w-[18%]"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="w-[18%]"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="w-[18%]"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[20%]"><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell className="w-[14%]"><Skeleton className="h-10 w-full" /></TableCell>
       <TableCell className="w-[10%]"><Skeleton className="h-6 w-20" /></TableCell>
+      <TableCell className="w-[14%]"><Skeleton className="h-10 w-full" /></TableCell>
+      <TableCell className="w-[16%]"><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[160px]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>

@@ -212,12 +212,12 @@ export function LeadsSalesList({
             <TableHead className="w-[40px]">
               <Checkbox checked={allSelected} onCheckedChange={() => onSelectAll()} disabled={isLoading || safeLeads.length === 0} />
             </TableHead>
-            <TableHead className="w-[22%]">Empresa</TableHead>
-            <TableHead className="w-[18%]">Contato principal</TableHead>
-            <TableHead className="w-[18%]">Interações</TableHead>
-            <TableHead className="w-[18%]">Próxima ação</TableHead>
-            <TableHead className="w-[12%]">Tags</TableHead>
+            <TableHead className="w-[20%]">Empresa</TableHead>
+            <TableHead className="w-[14%]">Contato principal</TableHead>
             <TableHead className="w-[10%]">Status</TableHead>
+            <TableHead className="w-[14%]">Interações</TableHead>
+            <TableHead className="w-[16%]">Próxima ação</TableHead>
+            <TableHead className="w-[10%]">Tags</TableHead>
             <TableHead className="w-[10%]">Responsável</TableHead>
             <TableHead className="w-[40px]" />
           </TableRow>

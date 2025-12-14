@@ -1116,7 +1116,7 @@ export default function LeadsListPage() {
                     return [
                       {
                         id: 'view',
-                        label: 'Ver detalhes do lead',
+                        label: 'Detalhes',
                         onClick: () => navigate(`/leads/${id}`)
                       }
                     ]
