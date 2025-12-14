@@ -36,8 +36,6 @@ describe('LeadsSmartFilters', () => {
     onOriginsChange: vi.fn(),
     daysWithoutInteraction: null,
     onDaysWithoutInteractionChange: vi.fn(),
-    orderBy: 'priority' as const,
-    onOrderByChange: vi.fn(),
     users: mockUsers,
     leadStatuses: mockLeadStatuses,
     leadOrigins: mockLeadOrigins,
@@ -97,7 +95,7 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByText('Prioridade')).toBeInTheDocument()
     expect(screen.getByText('Características')).toBeInTheDocument()
     expect(screen.getByText('Dias sem interação')).toBeInTheDocument()
-    expect(screen.getByText('Ordenação')).toBeInTheDocument()
+    // Ordenação was moved out of the filters popover to a separate dropdown
   })
 
   it('should call onClear when clear button is clicked', async () => {
@@ -180,16 +178,6 @@ describe('LeadsSmartFilters', () => {
     expect(() => render(<LeadsSmartFilters {...props} />)).not.toThrow()
   })
 
-  it('should default orderBy to priority if invalid value is provided', () => {
-    const props = {
-      ...defaultProps,
-      orderBy: 'invalid' as any
-    }
-
-    // Should not throw error and should use default
-    expect(() => render(<LeadsSmartFilters {...props} />)).not.toThrow()
-  })
-
   it('should show correct owner label for "me" mode', () => {
     render(<LeadsSmartFilters {...defaultProps} ownerMode="me" />)
 
@@ -219,20 +207,20 @@ describe('LeadsSmartFilters', () => {
       statuses: ['status-1', 'status-2'], // +1
       origins: ['origin-1'], // +1
       daysWithoutInteraction: 7, // +1
-      orderBy: 'last_interaction' as const // +1
+      // orderBy is no longer counted as a filter
     }
 
     render(<LeadsSmartFilters {...props} />)
 
-    // Total: 6 active filters
-    expect(screen.getByText('6')).toBeInTheDocument()
+    // Total: 5 active filters (orderBy no longer counts)
+    expect(screen.getByText('5')).toBeInTheDocument()
   })
 
   it('should not count default values as active filters', () => {
     const props = {
       ...defaultProps,
       ownerMode: 'me' as const, // default, doesn't count
-      orderBy: 'priority' as const // default, doesn't count
+      // orderBy is now separate, not counted as filter
     }
 
     render(<LeadsSmartFilters {...props} />)

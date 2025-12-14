@@ -14,8 +14,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
@@ -46,8 +44,6 @@ interface LeadsSmartFiltersProps {
   onOriginsChange: (ids: string[]) => void
   daysWithoutInteraction: number | null
   onDaysWithoutInteractionChange: (value: number | null) => void
-  orderBy: LeadOrderBy
-  onOrderByChange: (value: LeadOrderBy) => void
   users: User[]
   leadStatuses: OptionItem[]
   leadOrigins: OptionItem[]
@@ -94,8 +90,6 @@ export function LeadsSmartFilters({
   onOriginsChange,
   daysWithoutInteraction,
   onDaysWithoutInteractionChange,
-  orderBy,
-  onOrderByChange,
   users,
   leadStatuses,
   leadOrigins,
@@ -104,23 +98,6 @@ export function LeadsSmartFilters({
   selectedTags = [],
   onTagsChange
 }: LeadsSmartFiltersProps) {
-  // Defensive: Ensure orderBy is always a valid value
-  const safeOrderBy: LeadOrderBy =
-    orderBy === 'priority' || orderBy === 'last_interaction' || orderBy === 'created_at' || 
-    orderBy === 'status' || orderBy === 'next_action' || orderBy === 'owner'
-      ? orderBy
-      : 'priority'
-
-  const handleOrderByChange = useCallback(
-    (value: string) => {
-      if (value === 'priority' || value === 'last_interaction' || value === 'created_at' ||
-          value === 'status' || value === 'next_action' || value === 'owner') {
-        onOrderByChange(value)
-      }
-    },
-    [onOrderByChange]
-  )
-
   const ownerLabel = useMemo(() => {
     if (ownerMode === 'me') return 'Meus leads'
     if (ownerMode === 'all') return 'Todos'
@@ -128,11 +105,6 @@ export function LeadsSmartFilters({
       ? `${selectedOwners.length} selecionado${selectedOwners.length > 1 ? 's' : ''}`
       : 'Responsável'
   }, [ownerMode, selectedOwners])
-
-  const orderByLabel = useMemo(
-    () => ORDER_BY_OPTIONS.find(option => option.value === safeOrderBy)?.label ?? 'Prioridade',
-    [safeOrderBy]
-  )
 
   // Defensive: ensure arrays are valid
   const safeUsers = ensureArray<User>(users)
@@ -180,7 +152,7 @@ export function LeadsSmartFilters({
     [onOriginsChange, origins, toggleItem]
   )
 
-  // Calculate active filters count
+  // Calculate active filters count (orderBy is now separate, not counted as filter)
   const activeFiltersCount = useMemo(() => {
     let count = 0
     if (ownerMode !== 'me') count++
@@ -188,10 +160,9 @@ export function LeadsSmartFilters({
     if (statuses.length > 0) count++
     if (origins.length > 0) count++
     if (daysWithoutInteraction !== null) count++
-    if (orderBy !== 'priority') count++
     if (selectedTags.length > 0) count++
     return count
-  }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, orderBy, selectedTags])
+  }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, selectedTags])
 
   // Handler for toggling tags
   const handleTagToggle = useCallback(
@@ -484,37 +455,6 @@ export function LeadsSmartFilters({
                   Qualquer
                 </Button>
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Ordenação */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Ordenação
-              </label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    role="combobox"
-                    className="h-8 w-full justify-between gap-2 px-3 text-xs font-normal"
-                  >
-                    <span className="truncate text-left">{orderByLabel}</span>
-                    <ChevronDown className="h-2.5 w-2.5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[240px]">
-                  <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
-                    {ORDER_BY_OPTIONS.map(option => (
-                      <DropdownMenuRadioItem key={option.value} value={option.value}>
-                        {option.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         </PopoverContent>

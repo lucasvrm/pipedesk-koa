@@ -54,7 +54,9 @@ import {
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsSmartFilters, LeadOrderBy } from '../components/LeadsSmartFilters'
+import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
+import { LeadOrderBy } from '../components/LeadsSmartFilters'
+import { LeadsOrderByDropdown } from '../components/LeadsOrderByDropdown'
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
 
 // View types used by DataToolbar and internal view management
@@ -802,8 +804,6 @@ export default function LeadsListPage() {
             onOriginsChange={handleOriginsChange}
             daysWithoutInteraction={salesDaysWithoutInteraction}
             onDaysWithoutInteractionChange={handleDaysWithoutInteractionChange}
-            orderBy={salesOrderBy}
-            onOrderByChange={handleOrderByChange}
             users={users}
             leadStatuses={activeLeadStatuses}
             leadOrigins={activeLeadOrigins}
@@ -811,6 +811,10 @@ export default function LeadsListPage() {
             availableTags={tags}
             selectedTags={salesTagFilter}
             onTagsChange={handleTagsChange}
+          />
+          <LeadsOrderByDropdown
+            orderBy={salesOrderBy}
+            onOrderByChange={handleOrderByChange}
           />
         </DataToolbar>
       )
