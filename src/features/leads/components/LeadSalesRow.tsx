@@ -130,62 +130,83 @@ export function LeadSalesRow({
   // Quick Action Handlers
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const phone = primaryContact?.phone
-    if (!phone) {
-      toast.error('Telefone não disponível', {
-        description: 'O contato principal não possui telefone cadastrado'
+    try {
+      const phone = primaryContact?.phone
+      if (!phone) {
+        toast.error('Telefone não disponível', {
+          description: 'O contato principal não possui telefone cadastrado'
+        })
+        return
+      }
+      
+      const { cleanPhone, isValid } = cleanPhoneNumber(phone)
+      if (!isValid) {
+        toast.error('Telefone inválido', {
+          description: 'O número de telefone não contém dígitos válidos'
+        })
+        return
+      }
+      
+      // Open WhatsApp in a new tab
+      window.open(`https://wa.me/${cleanPhone}`, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      console.error('[LeadSalesRow] Error opening WhatsApp:', error)
+      toast.error('Erro ao abrir WhatsApp', {
+        description: 'Não foi possível abrir o WhatsApp. Tente novamente.'
       })
-      return
     }
-    
-    const { cleanPhone, isValid } = cleanPhoneNumber(phone)
-    if (!isValid) {
-      toast.error('Telefone inválido', {
-        description: 'O número de telefone não contém dígitos válidos'
-      })
-      return
-    }
-    
-    // Open WhatsApp in a new tab
-    window.open(`https://wa.me/${cleanPhone}`, '_blank', 'noopener,noreferrer')
   }
 
   const handleEmail = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const email = primaryContact?.email
-    if (!email) {
-      toast.error('E-mail não disponível', {
-        description: 'O contato principal não possui e-mail cadastrado'
+    try {
+      const email = primaryContact?.email
+      if (!email) {
+        toast.error('E-mail não disponível', {
+          description: 'O contato principal não possui e-mail cadastrado'
+        })
+        return
+      }
+      
+      // Open Gmail compose as a popup window
+      const subject = `Contato - ${safeString(legalName, 'Lead')}`
+      const gmailUrl = getGmailComposeUrl(email, subject)
+      window.open(gmailUrl, '_blank', 'width=800,height=600,noopener,noreferrer')
+    } catch (error) {
+      console.error('[LeadSalesRow] Error opening Gmail:', error)
+      toast.error('Erro ao abrir e-mail', {
+        description: 'Não foi possível abrir o e-mail. Tente novamente.'
       })
-      return
     }
-    
-    // Open Gmail compose as a popup window
-    const subject = `Contato - ${safeString(legalName, 'Lead')}`
-    const gmailUrl = getGmailComposeUrl(email, subject)
-    window.open(gmailUrl, '_blank', 'width=800,height=600,noopener,noreferrer')
   }
 
   const handlePhone = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const phone = primaryContact?.phone
-    if (!phone) {
-      toast.error('Telefone não disponível', {
-        description: 'O contato principal não possui telefone cadastrado'
+    try {
+      const phone = primaryContact?.phone
+      if (!phone) {
+        toast.error('Telefone não disponível', {
+          description: 'O contato principal não possui telefone cadastrado'
+        })
+        return
+      }
+      
+      const { cleanPhone, isValid } = cleanPhoneNumber(phone)
+      if (!isValid) {
+        toast.error('Telefone inválido', {
+          description: 'O número de telefone não contém dígitos válidos'
+        })
+        return
+      }
+      
+      // Use tel: protocol to trigger system dialer / Google Voice
+      window.open(`tel:${cleanPhone}`)
+    } catch (error) {
+      console.error('[LeadSalesRow] Error opening phone dialer:', error)
+      toast.error('Erro ao ligar', {
+        description: 'Não foi possível iniciar a ligação. Tente novamente.'
       })
-      return
     }
-    
-    const { cleanPhone, isValid } = cleanPhoneNumber(phone)
-    if (!isValid) {
-      toast.error('Telefone inválido', {
-        description: 'O número de telefone não contém dígitos válidos'
-      })
-      return
-    }
-    
-    // Use tel: protocol to trigger system dialer / Google Voice
-    window.open(`tel:${cleanPhone}`)
   }
 
   const handleOpenDriveFolder = async (e: React.MouseEvent) => {
@@ -216,9 +237,21 @@ export function LeadSalesRow({
       }
     } catch (error) {
       console.error('[LeadSalesRow] Error opening Drive folder:', error)
-      toast.error('Erro ao acessar pasta do Drive', {
-        description: 'Não foi possível abrir a pasta. Tente novamente.'
-      })
+      
+      // Categorize error for user-friendly message
+      const isNetworkError = error instanceof TypeError && 
+        (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))
+      const isCorsError = error instanceof TypeError && error.message.includes('CORS')
+      
+      if (isNetworkError || isCorsError) {
+        toast.error('Integração Google indisponível', {
+          description: 'Não foi possível conectar ao Google Drive. Verifique sua conexão ou tente novamente mais tarde.'
+        })
+      } else {
+        toast.error('Erro ao acessar pasta do Drive', {
+          description: 'Não foi possível abrir a pasta. Tente novamente.'
+        })
+      }
     } finally {
       setIsDriveLoading(false)
     }
@@ -277,28 +310,35 @@ export function LeadSalesRow({
 
   const handleSchedule = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onScheduleClick) {
-      // Create a Lead object from the current row data
-      const lead: Lead = {
-        id: actualLeadId!,
-        legalName: legalName ?? '',
-        tradeName: tradeName,
-        leadStatusId: status ?? '',
-        leadOriginId: origin ?? '',
-        createdAt: createdAt ?? created_at ?? '',
-        updatedAt: '',
-        createdBy: '',
-        priorityBucket: priorityBucket,
-        priorityScore: priorityScore,
-        priorityDescription: priorityDescription,
-        lastInteractionAt: lastInteractionAt,
-        nextAction: nextAction,
-        owner: owner
+    try {
+      if (onScheduleClick) {
+        // Create a Lead object from the current row data
+        const lead: Lead = {
+          id: actualLeadId!,
+          legalName: legalName ?? '',
+          tradeName: tradeName,
+          leadStatusId: status ?? '',
+          leadOriginId: origin ?? '',
+          createdAt: createdAt ?? created_at ?? '',
+          updatedAt: '',
+          createdBy: '',
+          priorityBucket: priorityBucket,
+          priorityScore: priorityScore,
+          priorityDescription: priorityDescription,
+          lastInteractionAt: lastInteractionAt,
+          nextAction: nextAction,
+          owner: owner
+        }
+        onScheduleClick(lead)
+      } else {
+        // Fallback temporário
+        toast.info('Integração de calendário em breve')
       }
-      onScheduleClick(lead)
-    } else {
-      // Fallback temporário
-      toast.info('Integração de calendário em breve')
+    } catch (error) {
+      console.error('[LeadSalesRow] Error in schedule handler:', error)
+      toast.error('Erro ao abrir agendamento', {
+        description: 'Não foi possível abrir o calendário. Tente novamente.'
+      })
     }
   }
 

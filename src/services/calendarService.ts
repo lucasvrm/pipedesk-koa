@@ -2,7 +2,7 @@
  * Service for interacting with the Calendar API.
  */
 
-import { apiFetch } from '@/lib/apiClient';
+import { apiFetch, ApiError } from '@/lib/apiClient';
 import { CalendarEventsResponse, CalendarEventResponse, EventCreate } from '@/types/integration';
 
 /**
@@ -40,6 +40,8 @@ export async function fetchEvents(
 
 /**
  * Create a new calendar event.
+ * Sends data in both camelCase (startTime/endTime) and snake_case (start_time/end_time)
+ * to ensure compatibility with different backend API versions.
  * 
  * @param event - The event data to create
  * @returns Promise resolving to the created calendar event
@@ -47,8 +49,48 @@ export async function fetchEvents(
 export async function createEvent(
   event: EventCreate
 ): Promise<CalendarEventResponse> {
-  return apiFetch<CalendarEventResponse>('/calendar/events', {
-    method: 'POST',
-    body: JSON.stringify(event),
-  });
+  // Build payload with both naming conventions to ensure compatibility
+  // Backend may expect 'summary' instead of 'title', and snake_case for time fields
+  const payload = {
+    // Standard fields (camelCase)
+    title: event.title,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    // Alternative fields (snake_case / different naming)
+    summary: event.title,
+    start_time: event.startTime,
+    end_time: event.endTime,
+    // Optional fields
+    ...(event.description && { description: event.description }),
+    ...(event.entityType && { entityType: event.entityType, entity_type: event.entityType }),
+    ...(event.entityId && { entityId: event.entityId, entity_id: event.entityId }),
+    ...(event.attendees && { attendees: event.attendees }),
+    ...(event.addMeetLink !== undefined && { addMeetLink: event.addMeetLink, add_meet_link: event.addMeetLink }),
+  };
+
+  try {
+    return await apiFetch<CalendarEventResponse>('/calendar/events', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    // Log detailed error for 422 validation errors without exposing tokens
+    if (error instanceof ApiError && error.status === 422) {
+      console.error('[CalendarService] Validation error (422) creating event:', {
+        sentPayload: {
+          title: payload.title,
+          summary: payload.summary,
+          startTime: payload.startTime,
+          endTime: payload.endTime,
+          start_time: payload.start_time,
+          end_time: payload.end_time,
+          entityType: payload.entityType,
+          entityId: payload.entityId ? '[REDACTED]' : undefined,
+          addMeetLink: payload.addMeetLink,
+        },
+        error: error.message,
+      });
+    }
+    throw error;
+  }
 }
