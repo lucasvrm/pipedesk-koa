@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { DotsThreeVertical, EnvelopeSimple, CalendarBlank, FireSimple } from '@phosphor-icons/react'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2 } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, Flame, CalendarDays } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -362,7 +361,7 @@ export function LeadSalesRow({
                 <div
                   className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[safePriorityBucket]}`}
                 >
-                  <FireSimple size={18} />
+                  <Flame className="h-[18px] w-[18px]" />
                 </div>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs text-left space-y-1">
@@ -447,8 +446,8 @@ export function LeadSalesRow({
           <div className="text-xs text-muted-foreground">Última interação</div>
           {parsedLastInteractionDate ? (
             <div className="flex items-center gap-2 text-sm text-foreground">
-              {interactionType === 'email' && <EnvelopeSimple size={16} className="shrink-0" />}
-              {interactionType === 'event' && <CalendarBlank size={16} className="shrink-0" />}
+              {interactionType === 'email' && <Mail className="h-4 w-4 shrink-0" />}
+              {interactionType === 'event' && <CalendarDays className="h-4 w-4 shrink-0" />}
               <span className="truncate">
                 {formatDistanceToNow(parsedLastInteractionDate, { addSuffix: true, locale: ptBR })}
               </span>
@@ -555,9 +554,9 @@ export function LeadSalesRow({
 
       {/* Ações - quick actions + kebab menu in a single cell */}
       <TableCell className="w-[200px] shrink-0 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center gap-1">
           <TooltipProvider delayDuration={200}>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="flex">
@@ -677,13 +676,13 @@ export function LeadSalesRow({
           {actions && actions.length > 0 ? (
             <QuickActionsMenu
               actions={actions}
-              triggerIcon={<DotsThreeVertical size={18} />}
+              triggerIcon={<MoreVertical className="h-[18px] w-[18px]" />}
               triggerVariant="ghost"
               triggerSize="icon"
             />
           ) : (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMenuClick}>
-              <DotsThreeVertical size={18} />
+              <MoreVertical className="h-[18px] w-[18px]" />
             </Button>
           )}
         </div>

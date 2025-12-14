@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react'
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { Lead } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 
@@ -22,13 +22,13 @@ export function LeadActionMenu({ lead, onEdit, onDelete }: LeadActionMenuProps) 
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
           <span className="sr-only">Abrir menu</span>
-          <DotsThreeVertical className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <RequirePermission permission="leads.update">
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(lead) }}>
-            <PencilSimple className="mr-2 h-4 w-4" />
+            <Pencil className="mr-2 h-4 w-4" />
             Editar
           </DropdownMenuItem>
         </RequirePermission>
@@ -38,7 +38,7 @@ export function LeadActionMenu({ lead, onEdit, onDelete }: LeadActionMenuProps) 
                 onClick={(e) => { e.stopPropagation(); onDelete(lead) }}
                 className="text-destructive focus:text-destructive"
             >
-                <Trash className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
             </DropdownMenuItem>
         </RequirePermission>
