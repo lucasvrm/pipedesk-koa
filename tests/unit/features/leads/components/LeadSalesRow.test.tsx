@@ -200,18 +200,6 @@ describe('LeadSalesRow', () => {
     expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
   })
 
-  it('renders "Sem próxima ação" fallback when nextAction is null', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} nextAction={undefined} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
-
-    expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
-  })
-
   it('renders nextAction with reason when provided', () => {
     render(
       <MemoryRouter>
