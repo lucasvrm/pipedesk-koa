@@ -127,8 +127,11 @@ function validateSalesViewResponse(data: unknown): void {
 
 async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
   try {
-    const normalizedOrderBy =
-      filters.orderBy === 'last_interaction' || filters.orderBy === 'created_at' ? filters.orderBy : 'priority'
+    // Valid order_by values - fallback to 'priority' only if invalid
+    const validOrderByValues = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner'] as const
+    const normalizedOrderBy = filters.orderBy && validOrderByValues.includes(filters.orderBy as typeof validOrderByValues[number])
+      ? filters.orderBy
+      : 'priority'
 
     const searchParams = new URLSearchParams({
       page: String(page),

@@ -45,7 +45,7 @@ export interface SalesViewFilters {
   status?: string[];
   origin?: string[];
   daysWithoutInteraction?: number;
-  orderBy?: 'priority' | 'last_interaction' | 'created_at';
+  orderBy?: 'priority' | 'last_interaction' | 'created_at' | 'status' | 'next_action' | 'owner';
   search?: string;
   tags?: string[];
 }
