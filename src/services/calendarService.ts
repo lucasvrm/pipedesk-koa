@@ -49,14 +49,16 @@ export async function fetchEvents(
 export async function createEvent(
   event: EventCreate
 ): Promise<CalendarEventResponse> {
-  // Build payload with both naming conventions to ensure compatibility
-  // Backend may expect 'summary' instead of 'title', and snake_case for time fields
+  // Build payload with both naming conventions to ensure compatibility with different backend versions
+  // This is intentional: the backend may expect either camelCase or snake_case field names,
+  // and may use 'summary' (Google Calendar standard) or 'title' (common CRM convention).
+  // Sending both allows the backend to pick whichever it expects without requiring version detection.
   const payload = {
     // Standard fields (camelCase)
     title: event.title,
     startTime: event.startTime,
     endTime: event.endTime,
-    // Alternative fields (snake_case / different naming)
+    // Alternative fields (snake_case / Google Calendar naming)
     summary: event.title,
     start_time: event.startTime,
     end_time: event.endTime,
@@ -85,7 +87,7 @@ export async function createEvent(
           start_time: payload.start_time,
           end_time: payload.end_time,
           entityType: payload.entityType,
-          entityId: payload.entityId ? '[REDACTED]' : undefined,
+          entityId: payload.entityId !== undefined ? '[REDACTED]' : undefined,
           addMeetLink: payload.addMeetLink,
         },
         error: error.message,

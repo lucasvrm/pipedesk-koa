@@ -24,6 +24,7 @@ import { useUpdateLead } from '@/services/leadService'
 import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber } from '@/utils/googleLinks'
 import { getDriveItems } from '@/services/driveService'
+import { DriveApiError } from '@/lib/driveClient'
 import { LeadTagsModal } from './LeadTagsModal'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
@@ -239,13 +240,22 @@ export function LeadSalesRow({
       console.error('[LeadSalesRow] Error opening Drive folder:', error)
       
       // Categorize error for user-friendly message
-      const isNetworkError = error instanceof TypeError && 
-        (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))
-      const isCorsError = error instanceof TypeError && error.message.includes('CORS')
+      // Check for DriveApiError with specific status codes first (most reliable)
+      const isDriveApiError = error instanceof DriveApiError
+      const isServiceUnavailable = isDriveApiError && error.statusCode && error.statusCode >= 500
+      const isAuthError = isDriveApiError && (error.statusCode === 401 || error.statusCode === 403)
       
-      if (isNetworkError || isCorsError) {
+      // Fallback to network error detection for non-API errors (browser-level failures)
+      const isNetworkError = error instanceof TypeError && 
+        (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('CORS'))
+      
+      if (isNetworkError || isServiceUnavailable) {
         toast.error('Integração Google indisponível', {
           description: 'Não foi possível conectar ao Google Drive. Verifique sua conexão ou tente novamente mais tarde.'
+        })
+      } else if (isAuthError) {
+        toast.error('Acesso negado ao Drive', {
+          description: 'Verifique se sua conta Google está conectada corretamente.'
         })
       } else {
         toast.error('Erro ao acessar pasta do Drive', {
