@@ -465,7 +465,7 @@ export function LeadSalesRow({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="w-4/5 flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                <Badge variant="secondary" className="w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left">
                   <div className="flex items-baseline gap-1 max-w-full">
                     <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
                     <span className="text-sm font-semibold text-destructive truncate">{safeNextActionLabel}</span>
