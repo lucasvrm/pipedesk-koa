@@ -1,4 +1,4 @@
-import { User } from '@/lib/types'
+import { User, Tag } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -18,7 +18,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Funnel, UserSwitch, Check, CaretDown, X } from '@phosphor-icons/react'
+import { Funnel, UserSwitch, Check, CaretDown, X, Tag as TagIcon } from '@phosphor-icons/react'
 import { useMemo, useCallback } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
@@ -48,6 +48,10 @@ interface LeadsSmartFiltersProps {
   leadStatuses: OptionItem[]
   leadOrigins: OptionItem[]
   onClear: () => void
+  // Tags support
+  availableTags?: Tag[]
+  selectedTags?: string[]
+  onTagsChange?: (ids: string[]) => void
 }
 
 const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description: string }[] = [
@@ -88,7 +92,10 @@ export function LeadsSmartFilters({
   users,
   leadStatuses,
   leadOrigins,
-  onClear
+  onClear,
+  availableTags = [],
+  selectedTags = [],
+  onTagsChange
 }: LeadsSmartFiltersProps) {
   // Defensive: Ensure orderBy is always a valid value
   const safeOrderBy: 'priority' | 'last_interaction' | 'created_at' =
@@ -173,8 +180,22 @@ export function LeadsSmartFilters({
     if (origins.length > 0) count++
     if (daysWithoutInteraction !== null) count++
     if (orderBy !== 'priority') count++
+    if (selectedTags.length > 0) count++
     return count
-  }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, orderBy])
+  }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, orderBy, selectedTags])
+
+  // Handler for toggling tags
+  const handleTagToggle = useCallback(
+    (tagId: string) => {
+      if (!onTagsChange) return
+      if (selectedTags.includes(tagId)) {
+        onTagsChange(selectedTags.filter(id => id !== tagId))
+      } else {
+        onTagsChange([...selectedTags, tagId])
+      }
+    },
+    [onTagsChange, selectedTags]
+  )
 
   return (
     <>
@@ -357,6 +378,32 @@ export function LeadsSmartFilters({
               </div>
             </div>
 
+            {/* Tags */}
+            {availableTags.length > 0 && onTagsChange && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                  {availableTags.map(tag => {
+                    const safeColor = safeString(tag.color, '#888')
+                    const isSelected = selectedTags.includes(tag.id)
+                    return (
+                      <Badge
+                        key={tag.id}
+                        variant={isSelected ? 'default' : 'outline'}
+                        className="cursor-pointer hover:opacity-80 text-xs"
+                        onClick={() => handleTagToggle(tag.id)}
+                        style={isSelected ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
+                      >
+                        {safeString(tag.name, 'Tag')}
+                      </Badge>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Dias sem interação */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -443,6 +490,12 @@ export function LeadsSmartFilters({
           {daysWithoutInteraction !== null && (
             <Badge variant="secondary" className="h-7 gap-1 px-2 text-xs">
               {daysWithoutInteraction} dias
+            </Badge>
+          )}
+          {selectedTags.length > 0 && (
+            <Badge variant="secondary" className="h-7 gap-1 px-2 text-xs">
+              <TagIcon size={12} />
+              {selectedTags.length} tag{selectedTags.length > 1 ? 's' : ''}
             </Badge>
           )}
         </div>

@@ -138,6 +138,8 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
     if (filters.status?.length) searchParams.set('status', filters.status.join(','))
     if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
     if (typeof filters.daysWithoutInteraction === 'number') searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
+    if (filters.search) searchParams.set('search', filters.search)
+    if (filters.tags?.length) searchParams.set('tags', filters.tags.join(','))
     
     const url = `/api/leads/sales-view?${searchParams.toString()}`
     const response = await fetch(url)
