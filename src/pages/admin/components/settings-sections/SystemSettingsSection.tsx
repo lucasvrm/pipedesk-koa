@@ -80,11 +80,26 @@ export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettings
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Move internalTab state before any conditional returns to comply with React's Rules of Hooks
+  const [internalTab, setInternalTab] = useState<SystemSettingsTab>('defaults');
+
+  const currentTab = useMemo<SystemSettingsTab>(
+    () => activeTab ?? internalTab,
+    [activeTab, internalTab]
+  );
 
   // Load current settings on mount
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Sync internal tab with active tab prop
+  useEffect(() => {
+    if (activeTab) {
+      setInternalTab(activeTab);
+    }
+  }, [activeTab]);
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -209,6 +224,13 @@ export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettings
     }
   };
 
+  const handleTabChange = (value: SystemSettingsTab) => {
+    if (!activeTab) {
+      setInternalTab(value);
+    }
+    onTabChange?.(value);
+  };
+
   if (isLoading || metadataLoading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -219,26 +241,6 @@ export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettings
       </div>
     );
   }
-
-  const [internalTab, setInternalTab] = useState<SystemSettingsTab>('defaults');
-
-  const currentTab = useMemo<SystemSettingsTab>(
-    () => activeTab ?? internalTab,
-    [activeTab, internalTab]
-  );
-
-  useEffect(() => {
-    if (activeTab) {
-      setInternalTab(activeTab);
-    }
-  }, [activeTab]);
-
-  const handleTabChange = (value: SystemSettingsTab) => {
-    if (!activeTab) {
-      setInternalTab(value);
-    }
-    onTabChange?.(value);
-  };
 
   return (
     <Tabs
