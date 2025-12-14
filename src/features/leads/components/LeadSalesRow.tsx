@@ -465,17 +465,22 @@ export function LeadSalesRow({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left max-w-full">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Próxima ação</span>
-                  <span className="text-sm font-semibold text-destructive truncate max-w-full">{safeNextActionLabel}</span>
+                <Badge variant="secondary" className="w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                  <div className="flex items-baseline gap-1 max-w-full">
+                    <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
+                    <span className="text-sm font-semibold text-destructive truncate">{safeNextActionLabel}</span>
+                  </div>
                   {safeNextActionReason && (
-                    <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
+                    <div className="flex items-baseline gap-1 max-w-full">
+                      <span className="text-xs text-muted-foreground shrink-0">Descrição:</span>
+                      <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
+                    </div>
                   )}
                 </Badge>
               </TooltipTrigger>
               {safeNextActionReason && (
                 <TooltipContent className="max-w-xs text-left">
-                  <div className="text-primary-foreground text-sm font-semibold">Motivo</div>
+                  <div className="text-primary-foreground text-sm font-semibold">Descrição</div>
                   <div className="text-primary-foreground/80 text-xs leading-relaxed">{safeNextActionReason}</div>
                 </TooltipContent>
               )}
