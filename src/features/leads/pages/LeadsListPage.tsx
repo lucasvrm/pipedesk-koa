@@ -54,8 +54,7 @@ import {
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
-import { LeadOrderBy } from '../components/LeadsSmartFilters'
+import { LeadsSmartFilters, LeadOrderBy } from '../components/LeadsSmartFilters'
 import { LeadsOrderByDropdown } from '../components/LeadsOrderByDropdown'
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
 

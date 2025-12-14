@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsSmartFilters } from '@/features/leads/components/LeadsSmartFilters'
-import { LeadOrderBy } from '@/features/leads/components/LeadsSmartFilters'
+import { LeadsSmartFilters, LeadOrderBy } from '@/features/leads/components/LeadsSmartFilters'
 import { LeadsOrderByDropdown } from '@/features/leads/components/LeadsOrderByDropdown'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
