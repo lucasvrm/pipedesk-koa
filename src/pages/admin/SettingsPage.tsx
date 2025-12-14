@@ -178,14 +178,8 @@ export default function NewSettingsPage() {
       setIntegrationsSection(getInitialSection('integrations', integrationsSection));
     }
 
-    const anchorId = getSectionId(
-      categoryFromParams,
-      sectionFromParams || defaultSectionByCategory[categoryFromParams]
-    );
-    requestAnimationFrame(() => {
-      const sectionElement = document.getElementById(anchorId);
-      sectionElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    // Always scroll to top for consistent UX
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
