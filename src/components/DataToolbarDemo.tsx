@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DataToolbar } from '@/components/DataToolbar'
 import { LeadsSmartFilters, LeadOrderBy } from '@/features/leads/components/LeadsSmartFilters'
+import { LeadsOrderByDropdown } from '@/features/leads/components/LeadsOrderByDropdown'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { LeadPriorityBucket, User } from '@/lib/types'
@@ -92,12 +93,14 @@ export function DataToolbarDemo() {
             onOriginsChange={setOrigins}
             daysWithoutInteraction={daysWithoutInteraction}
             onDaysWithoutInteractionChange={setDaysWithoutInteraction}
-            orderBy={orderBy}
-            onOrderByChange={setOrderBy}
             users={mockUsers}
             leadStatuses={mockLeadStatuses}
             leadOrigins={mockLeadOrigins}
             onClear={handleClearFilters}
+          />
+          <LeadsOrderByDropdown
+            orderBy={orderBy}
+            onOrderByChange={setOrderBy}
           />
         </DataToolbar>
 
