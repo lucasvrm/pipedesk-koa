@@ -1126,9 +1126,7 @@ export default function LeadsListPage() {
                   }}
                 />
               ) : currentView === 'kanban' ? (
-                <div className="p-4">
-                  <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
-                </div>
+                <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
               ) : (
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
