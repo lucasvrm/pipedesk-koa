@@ -468,6 +468,7 @@ export function useCreateLead() {
     mutationFn: ({ data, userId }: { data: LeadInput, userId: string }) => createLead(data, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
     }
   });
 }
@@ -479,6 +480,7 @@ export function useUpdateLead() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['leads', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
     }
   });
 }
@@ -487,7 +489,10 @@ export function useDeleteLead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteLead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+    }
   });
 }
 
@@ -497,6 +502,7 @@ export function useQualifyLead() {
     mutationFn: qualifyLead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['deals'] });
     }

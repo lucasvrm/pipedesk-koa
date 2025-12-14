@@ -213,6 +213,7 @@ export function useTagOperations() {
       }
     } else if (entityType === 'lead') {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
       if (entityId) {
         queryClient.invalidateQueries({ queryKey: ['leads', entityId] });
         queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'lead', entityId] });
