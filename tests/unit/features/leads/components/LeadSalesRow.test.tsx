@@ -172,4 +172,51 @@ describe('LeadSalesRow', () => {
     
     expect(calendarButton).toBeInTheDocument()
   })
+
+  it('renders nextAction.label correctly from backend', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow
+            {...baseLead}
+            nextAction={{ code: 'presentation', label: 'Apresentação' }}
+          />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Apresentação')).toBeInTheDocument()
+  })
+
+  it('renders "Sem próxima ação" fallback when nextAction is undefined', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} nextAction={undefined} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
+  })
+
+  it('renders nextAction with reason when provided', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow
+            {...baseLead}
+            nextAction={{
+              code: 'follow_up',
+              label: 'Follow-up',
+              reason: 'Cliente solicitou mais informações'
+            }}
+          />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Follow-up')).toBeInTheDocument()
+    expect(screen.getByText('Cliente solicitou mais informações')).toBeInTheDocument()
+  })
 })
