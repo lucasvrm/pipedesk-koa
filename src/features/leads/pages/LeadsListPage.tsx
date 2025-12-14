@@ -163,6 +163,7 @@ export default function LeadsListPage() {
   )
   const [salesStatusFilter, setSalesStatusFilter] = useState<string[]>(() => searchParams.get('status')?.split(',').filter(Boolean) || [])
   const [salesOriginFilter, setSalesOriginFilter] = useState<string[]>(() => searchParams.get('origin')?.split(',').filter(Boolean) || [])
+  const [salesTagFilter, setSalesTagFilter] = useState<string[]>(() => searchParams.get('tags')?.split(',').filter(Boolean) || [])
   const [salesDaysWithoutInteraction, setSalesDaysWithoutInteraction] = useState<number | null>(() => {
     const value = searchParams.get('days_without_interaction')
     return value ? Number(value) : null
@@ -225,11 +226,13 @@ export default function LeadsListPage() {
     // Sales view validation
     const validSalesStatus = salesStatusFilter.filter(id => activeStatusIds.includes(id))
     const validSalesOrigin = salesOriginFilter.filter(id => activeOriginIds.includes(id))
+    const validSalesTags = salesTagFilter.filter(id => activeTagIds.includes(id))
 
     if (!arraysEqual(validSalesStatus, salesStatusFilter)) setSalesStatusFilter(validSalesStatus)
     if (!arraysEqual(validSalesOrigin, salesOriginFilter)) setSalesOriginFilter(validSalesOrigin)
+    if (!arraysEqual(validSalesTags, salesTagFilter)) setSalesTagFilter(validSalesTags)
 
-  }, [leadStatuses.length, leadOrigins.length, activeStatusIds, activeOriginIds])
+  }, [leadStatuses.length, leadOrigins.length, activeStatusIds, activeOriginIds, activeTagIds])
   // Intentionally omitting 'statusFilter', 'originFilter', etc. from dependency array to avoid cycles.
   // We only want to re-validate if the METADATA changes (e.g. initial load), not if user changes selection.
 
@@ -255,9 +258,11 @@ export default function LeadsListPage() {
       status: salesStatusFilter.length > 0 ? salesStatusFilter : undefined,
       origin: salesOriginFilter.length > 0 ? salesOriginFilter : undefined,
       daysWithoutInteraction: typeof salesDaysWithoutInteraction === 'number' ? salesDaysWithoutInteraction : undefined,
-      orderBy: normalizedOrderBy
+      orderBy: normalizedOrderBy,
+      search: searchTerm || undefined,
+      tags: salesTagFilter.length > 0 ? salesTagFilter : undefined
     }
-  }, [normalizeSalesOrderBy, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter])
+  }, [normalizeSalesOrderBy, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, searchTerm, salesTagFilter])
   const salesViewQuery = useMemo(
     () => ({
       ...salesFilters,
@@ -318,11 +323,11 @@ export default function LeadsListPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter])
+  }, [searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, salesTagFilter])
 
   useEffect(() => {
     setSelectedIds([])
-  }, [currentView, searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesDaysWithoutInteraction, salesOrderBy])
+  }, [currentView, searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesTagFilter, salesDaysWithoutInteraction, salesOrderBy])
 
   useEffect(() => {
     const payload = {
@@ -692,6 +697,7 @@ export default function LeadsListPage() {
     setSalesPriority([])
     setSalesStatusFilter([])
     setSalesOriginFilter([])
+    setSalesTagFilter([])
     setSalesDaysWithoutInteraction(null)
     setSalesOrderBy('priority')
     setCurrentPage(1)
@@ -722,6 +728,11 @@ export default function LeadsListPage() {
 
   const handleOriginsChange = useCallback((values: string[]) => {
     setSalesOriginFilter(values)
+    setCurrentPage(1)
+  }, [])
+
+  const handleTagsChange = useCallback((values: string[]) => {
+    setSalesTagFilter(values)
     setCurrentPage(1)
   }, [])
 
@@ -796,6 +807,9 @@ export default function LeadsListPage() {
             leadStatuses={activeLeadStatuses}
             leadOrigins={activeLeadOrigins}
             onClear={resetSalesFilters}
+            availableTags={tags}
+            selectedTags={salesTagFilter}
+            onTagsChange={handleTagsChange}
           />
         </DataToolbar>
       )
@@ -942,6 +956,7 @@ export default function LeadsListPage() {
     handlePriorityChange,
     handleSelectedOwnersChange,
     handleStatusesChange,
+    handleTagsChange,
     hasFilters,
     originFilter,
     resetSalesFilters,
@@ -952,6 +967,7 @@ export default function LeadsListPage() {
     salesOwnerMode,
     salesPriority,
     salesStatusFilter,
+    salesTagFilter,
     searchTerm,
     selectedIds.length,
     statusFilter,

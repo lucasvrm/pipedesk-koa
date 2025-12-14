@@ -46,6 +46,8 @@ export interface SalesViewFilters {
   origin?: string[];
   daysWithoutInteraction?: number;
   orderBy?: 'priority' | 'last_interaction' | 'created_at';
+  search?: string;
+  tags?: string[];
 }
 
 export interface QualifyLeadInput {
