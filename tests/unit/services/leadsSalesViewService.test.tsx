@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useLeadsSalesView } from '@/services/leadsSalesViewService'
+import { useLeadsSalesView, LeadSalesViewQuery } from '@/services/leadsSalesViewService'
 import { ApiError } from '@/lib/errors'
 import React from 'react'
+
+// Valid orderBy values from the API
+type ValidOrderBy = NonNullable<LeadSalesViewQuery['orderBy']>
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -306,6 +309,72 @@ describe('leadsSalesViewService', () => {
       expect(callUrl).toContain('origin=referral')
       expect(callUrl).toContain('days_without_interaction=7')
       expect(callUrl).toContain('order_by=last_interaction')
+    })
+
+    it('should pass order_by=status parameter correctly', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            orderBy: 'status',
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).toContain('order_by=status')
+    })
+
+    it('should pass all orderBy options correctly', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      const orderByValues: ValidOrderBy[] = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner']
+
+      for (const orderBy of orderByValues) {
+        // Clear mock before each iteration to track calls explicitly
+        mockFetch.mockClear()
+        
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => mockData,
+        })
+
+        const { unmount } = renderHook(
+          () =>
+            useLeadsSalesView({
+              page: 1,
+              pageSize: 10,
+              orderBy,
+            }),
+          { wrapper: createWrapper() }
+        )
+
+        await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+        // After clearing, the first call is the one we want
+        const callUrl = mockFetch.mock.calls[0][0]
+        expect(callUrl).toContain(`order_by=${orderBy}`)
+
+        unmount()
+      }
     })
   })
 })
