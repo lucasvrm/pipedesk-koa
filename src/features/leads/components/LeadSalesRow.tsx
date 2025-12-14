@@ -516,17 +516,19 @@ export function LeadSalesRow({
 
       <TableCell className="w-[160px]" onClick={(e) => e.stopPropagation()}>
         <TooltipProvider delayDuration={200}>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="grid grid-cols-3 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={handleWhatsApp}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                </Button>
+                <span className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={handleWhatsApp}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>WhatsApp</p>
@@ -535,14 +537,16 @@ export function LeadSalesRow({
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={handleEmail}
-                >
-                  <Mail className="h-4 w-4" />
-                </Button>
+                <span className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={handleEmail}
+                  >
+                    <Mail className="h-4 w-4" />
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Gmail</p>
@@ -551,14 +555,16 @@ export function LeadSalesRow({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={handlePhone}
-                >
-                  <Phone className="h-4 w-4" />
-                </Button>
+                <span className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={handlePhone}
+                  >
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Ligar</p>
@@ -567,19 +573,21 @@ export function LeadSalesRow({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={handleOpenDriveFolder}
-                  disabled={isDriveLoading}
-                >
-                  {isDriveLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <HardDrive className="h-4 w-4" />
-                  )}
-                </Button>
+                <span className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={handleOpenDriveFolder}
+                    disabled={isDriveLoading}
+                  >
+                    {isDriveLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <HardDrive className="h-4 w-4" />
+                    )}
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Google Drive</p>
@@ -588,14 +596,16 @@ export function LeadSalesRow({
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                  onClick={handleSchedule}
-                >
-                  <Calendar className="h-4 w-4" />
-                </Button>
+                <span className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    onClick={handleSchedule}
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Agendar Reunião</p>
@@ -604,14 +614,16 @@ export function LeadSalesRow({
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={handleCopyId}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+                <span className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={handleCopyId}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Copiar ID</p>
