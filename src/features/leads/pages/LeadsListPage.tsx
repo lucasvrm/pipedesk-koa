@@ -11,7 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, SquaresFour, Globe, CaretDown, ChartBar, CalendarBlank, Funnel, Trash, Kanban, Tag as TagIcon } from '@phosphor-icons/react'
+import { Plus, LayoutGrid, Globe, ChevronDown, BarChart3, Calendar, Filter, Trash2, Columns3, Tag as TagIcon } from 'lucide-react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -54,7 +54,7 @@ import {
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
 import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsSmartFilters } from '../components/LeadsSmartFilters'
+import { LeadsSmartFilters, LeadOrderBy } from '../components/LeadsSmartFilters'
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
 
 // View types used by DataToolbar and internal view management
@@ -140,8 +140,9 @@ export default function LeadsListPage() {
   }, [setSearchParams])
   
   const normalizeSalesOrderBy = useCallback(
-    (value: string | null): 'priority' | 'last_interaction' | 'created_at' => {
-      if (value === 'last_interaction' || value === 'created_at') return value
+    (value: string | null): LeadOrderBy => {
+      if (value === 'last_interaction' || value === 'created_at' || 
+          value === 'status' || value === 'next_action' || value === 'owner') return value
       return 'priority'
     },
     []
@@ -168,7 +169,7 @@ export default function LeadsListPage() {
     const value = searchParams.get('days_without_interaction')
     return value ? Number(value) : null
   })
-  const [salesOrderBy, setSalesOrderBy] = useState<'priority' | 'last_interaction' | 'created_at'>(() =>
+  const [salesOrderBy, setSalesOrderBy] = useState<LeadOrderBy>(() =>
     normalizeSalesOrderBy(searchParams.get('order_by'))
   )
   const [currentPage, setCurrentPage] = useState(1)
@@ -651,7 +652,7 @@ export default function LeadsListPage() {
             <p className="text-2xl font-bold">{leadMetrics.openLeads}</p>
           </div>
           <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-            <Funnel size={32} weight="duotone" />
+            <Filter className="h-8 w-8" />
           </div>
         </CardContent>
       </Card>
@@ -663,7 +664,7 @@ export default function LeadsListPage() {
             <p className="text-2xl font-bold">{leadMetrics.createdThisMonth}</p>
           </div>
           <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-600">
-            <CalendarBlank size={32} weight="duotone" />
+            <Calendar className="h-8 w-8" />
           </div>
         </CardContent>
       </Card>
@@ -675,7 +676,7 @@ export default function LeadsListPage() {
             <p className="text-2xl font-bold">{leadMetrics.qualifiedThisMonth}</p>
           </div>
           <div className="h-12 w-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-600">
-            <ChartBar size={32} weight="duotone" />
+            <BarChart3 className="h-8 w-8" />
           </div>
         </CardContent>
       </Card>
@@ -742,7 +743,7 @@ export default function LeadsListPage() {
   }, [])
 
   const handleOrderByChange = useCallback(
-    (value: 'priority' | 'last_interaction' | 'created_at') => {
+    (value: LeadOrderBy) => {
       const normalized = normalizeSalesOrderBy(value)
       setSalesOrderBy(prev => {
         if (prev === normalized) return prev
@@ -840,7 +841,7 @@ export default function LeadsListPage() {
                       'Status'
                     )}
               </span>
-              <CaretDown className="ml-1 h-4 w-4" />
+              <ChevronDown className="ml-1 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-[200px]">
@@ -873,7 +874,7 @@ export default function LeadsListPage() {
                       'Origem'
                     )}
               </span>
-              <CaretDown className="ml-1 h-4 w-4" />
+              <ChevronDown className="ml-1 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-[220px]">
@@ -1005,7 +1006,7 @@ export default function LeadsListPage() {
             onClick={() => setViewMode('grid')} 
             className="flex-1 text-base font-semibold"
           >
-            <SquaresFour className="mr-2 h-5 w-5" />
+            <LayoutGrid className="mr-2 h-5 w-5" />
             {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_GRID}
           </Button>
           <Button 
@@ -1014,7 +1015,7 @@ export default function LeadsListPage() {
             onClick={() => setViewMode('kanban')} 
             className="flex-1 text-base font-semibold"
           >
-            <Kanban className="mr-2 h-5 w-5" />
+            <Columns3 className="mr-2 h-5 w-5" />
             {SALES_VIEW_MESSAGES.BUTTON_SWITCH_TO_KANBAN}
           </Button>
         </div>

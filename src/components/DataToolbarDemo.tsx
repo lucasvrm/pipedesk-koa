@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsSmartFilters } from '@/features/leads/components/LeadsSmartFilters'
+import { LeadsSmartFilters, LeadOrderBy } from '@/features/leads/components/LeadsSmartFilters'
 import { Button } from '@/components/ui/button'
-import { Plus } from '@phosphor-icons/react'
+import { Plus } from 'lucide-react'
 import { LeadPriorityBucket, User } from '@/lib/types'
 
 /**
@@ -22,7 +22,7 @@ export function DataToolbarDemo() {
   const [statuses, setStatuses] = useState<string[]>([])
   const [origins, setOrigins] = useState<string[]>([])
   const [daysWithoutInteraction, setDaysWithoutInteraction] = useState<number | null>(null)
-  const [orderBy, setOrderBy] = useState<'priority' | 'last_interaction' | 'created_at'>('priority')
+  const [orderBy, setOrderBy] = useState<LeadOrderBy>('priority')
 
   // Mock data for demo
   const mockUsers: User[] = [
@@ -74,7 +74,7 @@ export function DataToolbarDemo() {
           onViewChange={setView}
           actions={
             <Button>
-              <Plus size={16} />
+              <Plus className="h-4 w-4" />
               Novo Lead
             </Button>
           }
@@ -143,7 +143,7 @@ export function DataToolbarDemo() {
             <>
               <Button variant="outline">Exportar</Button>
               <Button>
-                <Plus size={16} />
+                <Plus className="h-4 w-4" />
                 Novo
               </Button>
             </>

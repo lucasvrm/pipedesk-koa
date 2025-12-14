@@ -18,8 +18,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Funnel, UserSwitch, Check, CaretDown, X, Tag as TagIcon } from '@phosphor-icons/react'
-import { useMemo, useCallback } from 'react'
+import { Separator } from '@/components/ui/separator'
+import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon } from 'lucide-react'
+import { useMemo, useCallback, useState } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
 
@@ -28,6 +29,9 @@ interface OptionItem {
   code: string
   label: string
 }
+
+// Extended type for orderBy to include new sorting options
+export type LeadOrderBy = 'priority' | 'last_interaction' | 'created_at' | 'status' | 'next_action' | 'owner'
 
 interface LeadsSmartFiltersProps {
   ownerMode: 'me' | 'all' | 'custom'
@@ -42,8 +46,8 @@ interface LeadsSmartFiltersProps {
   onOriginsChange: (ids: string[]) => void
   daysWithoutInteraction: number | null
   onDaysWithoutInteractionChange: (value: number | null) => void
-  orderBy: 'priority' | 'last_interaction' | 'created_at'
-  onOrderByChange: (value: 'priority' | 'last_interaction' | 'created_at') => void
+  orderBy: LeadOrderBy
+  onOrderByChange: (value: LeadOrderBy) => void
   users: User[]
   leadStatuses: OptionItem[]
   leadOrigins: OptionItem[]
@@ -60,10 +64,13 @@ const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description:
   { value: 'cold', label: 'Cold', description: 'Score baixo, lead frio' }
 ]
 
-const ORDER_BY_OPTIONS: { value: 'priority' | 'last_interaction' | 'created_at'; label: string }[] = [
+export const ORDER_BY_OPTIONS: { value: LeadOrderBy; label: string }[] = [
   { value: 'priority', label: 'Prioridade (padrão)' },
   { value: 'last_interaction', label: 'Última interação' },
-  { value: 'created_at', label: 'Data de criação' }
+  { value: 'created_at', label: 'Data de criação' },
+  { value: 'status', label: 'Status' },
+  { value: 'next_action', label: 'Próxima ação' },
+  { value: 'owner', label: 'Responsável' }
 ]
 
 const DAYS_PRESETS = [3, 7, 14]
@@ -98,14 +105,16 @@ export function LeadsSmartFilters({
   onTagsChange
 }: LeadsSmartFiltersProps) {
   // Defensive: Ensure orderBy is always a valid value
-  const safeOrderBy: 'priority' | 'last_interaction' | 'created_at' =
-    orderBy === 'priority' || orderBy === 'last_interaction' || orderBy === 'created_at'
+  const safeOrderBy: LeadOrderBy =
+    orderBy === 'priority' || orderBy === 'last_interaction' || orderBy === 'created_at' || 
+    orderBy === 'status' || orderBy === 'next_action' || orderBy === 'owner'
       ? orderBy
       : 'priority'
 
   const handleOrderByChange = useCallback(
     (value: string) => {
-      if (value === 'priority' || value === 'last_interaction' || value === 'created_at') {
+      if (value === 'priority' || value === 'last_interaction' || value === 'created_at' ||
+          value === 'status' || value === 'next_action' || value === 'owner') {
         onOrderByChange(value)
       }
     },
@@ -207,29 +216,31 @@ export function LeadsSmartFilters({
             size="sm"
             className="h-9 gap-2 px-3"
           >
-            <Funnel size={16} />
+            <Filter className="h-4 w-4" />
             Filtros
             {activeFiltersCount > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
                 {activeFiltersCount}
               </Badge>
             )}
-            <CaretDown size={12} className="opacity-50" />
+            <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[480px] p-0" align="start">
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-3">
             {/* Header */}
-            <div className="flex items-center justify-between border-b pb-3">
+            <div className="flex items-center justify-between pb-2">
               <div className="flex items-center gap-2">
-                <Funnel size={18} className="text-primary" />
+                <Filter className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">Filtros Inteligentes</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={onClear} className="h-8 gap-1.5 px-2 text-xs">
-                <X size={14} />
+              <Button variant="ghost" size="sm" onClick={onClear} className="h-7 gap-1.5 px-2 text-xs">
+                <X className="h-3.5 w-3.5" />
                 Limpar
               </Button>
             </div>
+
+            <Separator />
 
             {/* Responsável */}
             <div className="space-y-2">
@@ -260,9 +271,9 @@ export function LeadsSmartFilters({
                       size="sm"
                       className="h-8 gap-2 px-3 text-xs"
                     >
-                      <UserSwitch size={14} />
+                      <Users className="h-3.5 w-3.5" />
                       {ownerLabel}
-                      <CaretDown size={10} />
+                      <ChevronDown className="h-2.5 w-2.5" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-64 p-0">
@@ -280,7 +291,7 @@ export function LeadsSmartFilters({
                                     isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
                                   }`}
                                 >
-                                  {isSelected && <Check size={12} weight="bold" />}
+                                  {isSelected && <Check className="h-3 w-3" />}
                                 </div>
                                 <span>{safeString(user.name, 'Usuário')}</span>
                               </CommandItem>
@@ -293,6 +304,8 @@ export function LeadsSmartFilters({
                 </Popover>
               </div>
             </div>
+
+            <Separator />
 
             {/* Prioridade */}
             <div className="space-y-2">
@@ -318,6 +331,8 @@ export function LeadsSmartFilters({
               </div>
             </div>
 
+            <Separator />
+
             {/* Status e Origem */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -335,7 +350,7 @@ export function LeadsSmartFilters({
                       }`}
                     >
                       Status {statuses.length > 0 && `(${statuses.length})`}
-                      <CaretDown size={10} className="opacity-50" />
+                      <ChevronDown className="h-2.5 w-2.5 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="start">
@@ -360,7 +375,7 @@ export function LeadsSmartFilters({
                       className={`h-8 gap-2 px-3 text-xs ${origins.length > 0 ? 'border-primary/20' : ''}`}
                     >
                       Origem {origins.length > 0 && `(${origins.length})`}
-                      <CaretDown size={10} className="opacity-50" />
+                      <ChevronDown className="h-2.5 w-2.5 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="start">
@@ -378,31 +393,70 @@ export function LeadsSmartFilters({
               </div>
             </div>
 
-            {/* Tags */}
-            {availableTags.length > 0 && onTagsChange && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Tags
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                  {availableTags.map(tag => {
-                    const safeColor = safeString(tag.color, '#888')
-                    const isSelected = selectedTags.includes(tag.id)
-                    return (
-                      <Badge
-                        key={tag.id}
-                        variant={isSelected ? 'default' : 'outline'}
-                        className="cursor-pointer hover:opacity-80 text-xs"
-                        onClick={() => handleTagToggle(tag.id)}
-                        style={isSelected ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
+            {/* Tags - with Command search */}
+            {onTagsChange && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                    <TagIcon className="h-3.5 w-3.5" />
+                    Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={selectedTags.length > 0 ? 'secondary' : 'outline'}
+                        size="sm"
+                        className={`h-8 w-full justify-between gap-2 px-3 text-xs ${selectedTags.length > 0 ? 'border-primary/20' : ''}`}
                       >
-                        {safeString(tag.name, 'Tag')}
-                      </Badge>
-                    )
-                  })}
+                        <span className="truncate text-left">
+                          {selectedTags.length > 0 
+                            ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''} selecionada${selectedTags.length > 1 ? 's' : ''}`
+                            : 'Selecionar tags...'}
+                        </span>
+                        <ChevronDown className="h-2.5 w-2.5 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar tag..." className="h-9" />
+                        <CommandList>
+                          <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
+                          <CommandGroup>
+                            {availableTags.map(tag => {
+                              const safeColor = safeString(tag.color, '#888')
+                              const isSelected = selectedTags.includes(tag.id)
+                              return (
+                                <CommandItem 
+                                  key={tag.id} 
+                                  onSelect={() => handleTagToggle(tag.id)}
+                                  className="flex items-center gap-2"
+                                >
+                                  <div
+                                    className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
+                                    }`}
+                                  >
+                                    {isSelected && <Check className="h-3 w-3" />}
+                                  </div>
+                                  <div 
+                                    className="h-2.5 w-2.5 rounded-full" 
+                                    style={{ backgroundColor: safeColor }}
+                                  />
+                                  <span>{safeString(tag.name, 'Tag')}</span>
+                                </CommandItem>
+                              )
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              </div>
+              </>
             )}
+
+            <Separator />
 
             {/* Dias sem interação */}
             <div className="space-y-2">
@@ -432,6 +486,8 @@ export function LeadsSmartFilters({
               </div>
             </div>
 
+            <Separator />
+
             {/* Ordenação */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -446,7 +502,7 @@ export function LeadsSmartFilters({
                     className="h-8 w-full justify-between gap-2 px-3 text-xs font-normal"
                   >
                     <span className="truncate text-left">{orderByLabel}</span>
-                    <CaretDown size={10} className="opacity-50" />
+                    <ChevronDown className="h-2.5 w-2.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[240px]">
@@ -494,7 +550,7 @@ export function LeadsSmartFilters({
           )}
           {selectedTags.length > 0 && (
             <Badge variant="secondary" className="h-7 gap-1 px-2 text-xs">
-              <TagIcon size={12} />
+              <TagIcon className="h-3 w-3" />
               {selectedTags.length} tag{selectedTags.length > 1 ? 's' : ''}
             </Badge>
           )}
