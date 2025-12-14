@@ -235,6 +235,7 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
     enabled: options?.enabled ?? true,
     retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false
+    refetchOnReconnect: false,
+    refetchOnMount: true
   })
 }
