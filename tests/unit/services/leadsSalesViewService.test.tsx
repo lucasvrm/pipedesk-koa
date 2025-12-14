@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useLeadsSalesView } from '@/services/leadsSalesViewService'
+import { useLeadsSalesView, LeadSalesViewQuery } from '@/services/leadsSalesViewService'
 import { ApiError } from '@/lib/errors'
 import React from 'react'
+
+// Valid orderBy values from the API
+type ValidOrderBy = NonNullable<LeadSalesViewQuery['orderBy']>
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -342,9 +345,12 @@ describe('leadsSalesViewService', () => {
         pagination: { total: 0, page: 1, perPage: 10 },
       }
 
-      const orderByValues = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner']
+      const orderByValues: ValidOrderBy[] = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner']
 
       for (const orderBy of orderByValues) {
+        // Clear mock before each iteration to track calls explicitly
+        mockFetch.mockClear()
+        
         mockFetch.mockResolvedValueOnce({
           ok: true,
           headers: new Headers({ 'content-type': 'application/json' }),
@@ -356,14 +362,15 @@ describe('leadsSalesViewService', () => {
             useLeadsSalesView({
               page: 1,
               pageSize: 10,
-              orderBy: orderBy as any,
+              orderBy,
             }),
           { wrapper: createWrapper() }
         )
 
         await waitFor(() => expect(mockFetch).toHaveBeenCalled())
 
-        const callUrl = mockFetch.mock.calls[mockFetch.mock.calls.length - 1][0]
+        // After clearing, the first call is the one we want
+        const callUrl = mockFetch.mock.calls[0][0]
         expect(callUrl).toContain(`order_by=${orderBy}`)
 
         unmount()
