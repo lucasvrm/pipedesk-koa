@@ -2,9 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchEvents, createEvent } from '@/services/calendarService';
 import * as apiClient from '@/lib/apiClient';
 
-vi.mock('@/lib/apiClient', () => ({
-  apiFetch: vi.fn(),
-}));
+vi.mock('@/lib/apiClient', () => {
+  // Create a mock ApiError class inside the factory function to avoid hoisting issues
+  class ApiError extends Error {
+    constructor(
+      message: string,
+      public status: number,
+      public statusText: string
+    ) {
+      super(message);
+      this.name = 'ApiError';
+    }
+  }
+  
+  return {
+    apiFetch: vi.fn(),
+    ApiError,
+  };
+});
 
 describe('calendarService', () => {
   const mockApiFetch = vi.mocked(apiClient.apiFetch);
@@ -71,7 +86,7 @@ describe('calendarService', () => {
   });
 
   describe('createEvent', () => {
-    it('should create a simple event', async () => {
+    it('should create a simple event with both naming conventions', async () => {
       const eventData = {
         title: 'New Meeting',
         startTime: '2024-01-20T14:00:00Z',
@@ -89,14 +104,24 @@ describe('calendarService', () => {
 
       const result = await createEvent(eventData);
 
+      // The payload now includes both camelCase and snake_case fields for compatibility
+      const expectedPayload = {
+        title: eventData.title,
+        startTime: eventData.startTime,
+        endTime: eventData.endTime,
+        summary: eventData.title,
+        start_time: eventData.startTime,
+        end_time: eventData.endTime,
+      };
+
       expect(mockApiFetch).toHaveBeenCalledWith('/calendar/events', {
         method: 'POST',
-        body: JSON.stringify(eventData),
+        body: JSON.stringify(expectedPayload),
       });
       expect(result).toEqual(mockResponse);
     });
 
-    it('should create an event with all optional fields', async () => {
+    it('should create an event with all optional fields using both naming conventions', async () => {
       const eventData = {
         title: 'Deal Review',
         description: 'Review Q1 deals',
@@ -116,9 +141,25 @@ describe('calendarService', () => {
 
       await createEvent(eventData);
 
+      // The payload now includes both camelCase and snake_case fields for compatibility
+      const expectedPayload = {
+        title: eventData.title,
+        startTime: eventData.startTime,
+        endTime: eventData.endTime,
+        summary: eventData.title,
+        start_time: eventData.startTime,
+        end_time: eventData.endTime,
+        description: eventData.description,
+        entityType: eventData.entityType,
+        entity_type: eventData.entityType,
+        entityId: eventData.entityId,
+        entity_id: eventData.entityId,
+        attendees: eventData.attendees,
+      };
+
       expect(mockApiFetch).toHaveBeenCalledWith('/calendar/events', {
         method: 'POST',
-        body: JSON.stringify(eventData),
+        body: JSON.stringify(expectedPayload),
       });
     });
 
