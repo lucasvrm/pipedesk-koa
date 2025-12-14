@@ -16,6 +16,7 @@ export interface LeadSalesViewItem {
     origin?: string | null
     created_at?: string | null
     owner?: {
+      id?: string
       name?: string
       avatar_url?: string | null
     } | null
@@ -31,6 +32,7 @@ export interface LeadSalesViewItem {
   tradeName?: string | null
   trade_name?: string | null
   primaryContact?: {
+    id?: string
     name: string
     role?: string | null
     avatar?: string | null
@@ -38,6 +40,7 @@ export interface LeadSalesViewItem {
     phone?: string | null
   }
   primary_contact?: {
+    id?: string
     name: string
     role?: string | null
     avatar?: string | null
@@ -63,6 +66,7 @@ export interface LeadSalesViewItem {
     reason?: string | null
   }
   owner?: {
+    id?: string
     name: string
     avatar?: string | null
   }

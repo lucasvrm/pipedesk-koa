@@ -1,9 +1,49 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { LeadsSalesList } from '@/features/leads/components/LeadsSalesList'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
+// Mock the SystemMetadata context
+vi.mock('@/hooks/useSystemMetadata', () => ({
+  useSystemMetadata: () => ({
+    getLeadStatusById: () => null,
+    leadStatuses: []
+  })
+}))
+
+// Mock the updateLead hook
+vi.mock('@/services/leadService', () => ({
+  useUpdateLead: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false
+  })
+}))
+
+// Mock the tagService hooks
+vi.mock('@/services/tagService', () => ({
+  useTags: () => ({ data: [], isLoading: false }),
+  useEntityTags: () => ({ data: [], isLoading: false }),
+  useTagOperations: () => ({
+    assign: { mutateAsync: vi.fn(), isPending: false },
+    unassign: { mutateAsync: vi.fn(), isPending: false }
+  })
+}))
+
+// Mock the userService hooks
+vi.mock('@/services/userService', () => ({
+  useUsers: () => ({ data: [], isLoading: false })
+}))
+
 describe('LeadsSalesList', () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false }
+    }
+  })
+
   const baseProps = {
     isLoading: false,
     orderBy: 'priority' as const,
@@ -11,6 +51,16 @@ describe('LeadsSalesList', () => {
     onSelectAll: vi.fn(),
     onSelectOne: vi.fn(),
     onNavigate: vi.fn()
+  }
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          {ui}
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
   }
 
   beforeEach(() => {
@@ -29,7 +79,7 @@ describe('LeadsSalesList', () => {
       }
     ]
 
-    render(<LeadsSalesList {...baseProps} leads={leads} />)
+    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
 
     expect(screen.getByText('Não foi possível exibir os leads')).toBeInTheDocument()
     expect(screen.getByText(/dados retornados estão incompletos/i)).toBeInTheDocument()
@@ -57,7 +107,7 @@ describe('LeadsSalesList', () => {
       }
     ]
 
-    expect(() => render(<LeadsSalesList {...baseProps} leads={leads} />)).not.toThrow()
+    expect(() => renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)).not.toThrow()
 
     expect(screen.getByText('Tag')).toBeInTheDocument()
     expect(screen.getByText('Válida')).toBeInTheDocument()
@@ -84,7 +134,7 @@ describe('LeadsSalesList', () => {
       }
     ]
 
-    expect(() => render(<LeadsSalesList {...baseProps} leads={leads} />)).not.toThrow()
+    expect(() => renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)).not.toThrow()
 
     expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
     expect(screen.getByText('Tag')).toBeInTheDocument()
@@ -103,7 +153,7 @@ describe('LeadsSalesList', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() =>
-      render(
+      renderWithProviders(
         <LeadsSalesList
           {...baseProps}
           leads={[failingLead]}
@@ -115,7 +165,7 @@ describe('LeadsSalesList', () => {
     ).toThrow()
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'LeadSalesRow render failed',
+      expect.stringContaining('LeadSalesRow render failed'),
       'lead-123',
       failingLead,
       expect.any(Error)

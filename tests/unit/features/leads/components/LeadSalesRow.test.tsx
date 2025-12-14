@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { LeadSalesRow } from '@/features/leads/components/LeadSalesRow'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
@@ -25,8 +26,24 @@ vi.mock('@/hooks/useSystemMetadata', () => ({
 // Mock the updateLead hook
 vi.mock('@/services/leadService', () => ({
   useUpdateLead: () => ({
-    mutateAsync: vi.fn()
+    mutateAsync: vi.fn(),
+    isPending: false
   })
+}))
+
+// Mock the tagService hooks
+vi.mock('@/services/tagService', () => ({
+  useTags: () => ({ data: [], isLoading: false }),
+  useEntityTags: () => ({ data: [], isLoading: false }),
+  useTagOperations: () => ({
+    assign: { mutateAsync: vi.fn(), isPending: false },
+    unassign: { mutateAsync: vi.fn(), isPending: false }
+  })
+}))
+
+// Mock the userService hooks
+vi.mock('@/services/userService', () => ({
+  useUsers: () => ({ data: [], isLoading: false })
 }))
 
 describe('LeadSalesRow', () => {
@@ -51,13 +68,15 @@ describe('LeadSalesRow', () => {
 
   it('renders fallback when lastInteractionAt is invalid', () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <LeadSalesRow
-          {...baseLead}
-          lastInteractionAt="invalid-date"
-          lastInteractionType="email"
-        />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow
+            {...baseLead}
+            lastInteractionAt="invalid-date"
+            lastInteractionType="email"
+          />
+        </QueryClientProvider>
+      </MemoryRouter>
     )
 
     expect(screen.getByText('Nenhuma interação')).toBeInTheDocument()
@@ -66,9 +85,11 @@ describe('LeadSalesRow', () => {
 
   it('renders status badge with correct label', () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <LeadSalesRow {...baseLead} />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} />
+        </QueryClientProvider>
+      </MemoryRouter>
     )
 
     expect(screen.getByText('Novo')).toBeInTheDocument()
@@ -76,9 +97,11 @@ describe('LeadSalesRow', () => {
 
   it('renders "Sem status" when status is not provided', () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <LeadSalesRow {...baseLead} status={undefined} />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} status={undefined} />
+        </QueryClientProvider>
+      </MemoryRouter>
     )
 
     expect(screen.getByText('Sem status')).toBeInTheDocument()
@@ -89,9 +112,11 @@ describe('LeadSalesRow', () => {
     const user = userEvent.setup()
     
     render(
-      <QueryClientProvider client={queryClient}>
-        <LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />
+        </QueryClientProvider>
+      </MemoryRouter>
     )
 
     // Find the row and hover to make action buttons visible
@@ -127,9 +152,11 @@ describe('LeadSalesRow', () => {
     const user = userEvent.setup()
     
     render(
-      <QueryClientProvider client={queryClient}>
-        <LeadSalesRow {...baseLead} />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} />
+        </QueryClientProvider>
+      </MemoryRouter>
     )
 
     const row = screen.getByText('Empresa Teste').closest('tr')
