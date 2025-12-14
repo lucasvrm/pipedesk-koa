@@ -231,7 +231,7 @@ export function LeadsSalesList({
             <TableHead className="min-w-0">Próxima ação</TableHead>
             <TableHead className="min-w-0">Tags</TableHead>
             <TableHead className="min-w-0">Responsável</TableHead>
-            <TableHead className="w-[200px] shrink-0 whitespace-nowrap text-right">Ações</TableHead>
+            <TableHead className="w-[200px] shrink-0 whitespace-nowrap">Ações</TableHead>
           </TableRow>
         </TableHeader>
 

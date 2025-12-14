@@ -11,7 +11,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button'
-import { DotsThreeOutline } from '@phosphor-icons/react'
+import { MoreHorizontal } from 'lucide-react'
 import { safeString } from '@/lib/utils'
 
 /**
@@ -67,7 +67,7 @@ export interface QuickActionsMenuProps {
 export function QuickActionsMenu({
   actions,
   label,
-  triggerIcon = <DotsThreeOutline className="h-4 w-4" />,
+  triggerIcon = <MoreHorizontal className="h-4 w-4" />,
   triggerVariant = 'ghost',
   triggerSize = 'icon',
   align = 'end'
