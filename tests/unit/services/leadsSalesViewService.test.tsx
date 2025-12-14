@@ -307,5 +307,67 @@ describe('leadsSalesViewService', () => {
       expect(callUrl).toContain('days_without_interaction=7')
       expect(callUrl).toContain('order_by=last_interaction')
     })
+
+    it('should pass order_by=status parameter correctly', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            orderBy: 'status',
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).toContain('order_by=status')
+    })
+
+    it('should pass all orderBy options correctly', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      const orderByValues = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner']
+
+      for (const orderBy of orderByValues) {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => mockData,
+        })
+
+        const { unmount } = renderHook(
+          () =>
+            useLeadsSalesView({
+              page: 1,
+              pageSize: 10,
+              orderBy: orderBy as any,
+            }),
+          { wrapper: createWrapper() }
+        )
+
+        await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+        const callUrl = mockFetch.mock.calls[mockFetch.mock.calls.length - 1][0]
+        expect(callUrl).toContain(`order_by=${orderBy}`)
+
+        unmount()
+      }
+    })
   })
 })
