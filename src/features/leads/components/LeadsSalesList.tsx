@@ -198,7 +198,7 @@ export function LeadsSalesList({
   const shouldLogRenderError = !import.meta.env.PROD || import.meta.env.VITE_VERCEL_ENV === 'preview'
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className="rounded-lg border bg-card overflow-x-auto">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
         <div className="inline-flex items-center gap-2">
           <ArrowsDownUp className="h-4 w-4" />
@@ -209,17 +209,17 @@ export function LeadsSalesList({
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[40px]">
+            <TableHead className="w-[40px] shrink-0">
               <Checkbox checked={allSelected} onCheckedChange={() => onSelectAll()} disabled={isLoading || safeLeads.length === 0} />
             </TableHead>
-            <TableHead className="w-[20%]">Empresa</TableHead>
-            <TableHead className="w-[14%]">Contato principal</TableHead>
-            <TableHead className="w-[10%]">Status</TableHead>
-            <TableHead className="w-[14%]">Interações</TableHead>
-            <TableHead className="w-[16%]">Próxima ação</TableHead>
-            <TableHead className="w-[10%]">Tags</TableHead>
-            <TableHead className="w-[10%]">Responsável</TableHead>
-            <TableHead className="w-[40px]" />
+            <TableHead className="min-w-0">Empresa</TableHead>
+            <TableHead className="min-w-0">Contato principal</TableHead>
+            <TableHead className="min-w-0">Status</TableHead>
+            <TableHead className="min-w-0">Interações</TableHead>
+            <TableHead className="min-w-0">Próxima ação</TableHead>
+            <TableHead className="min-w-0">Tags</TableHead>
+            <TableHead className="min-w-0">Responsável</TableHead>
+            <TableHead className="w-[200px] shrink-0 whitespace-nowrap text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
 

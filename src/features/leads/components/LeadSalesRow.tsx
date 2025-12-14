@@ -349,18 +349,18 @@ export function LeadSalesRow({
 
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={onClick}>
-      <TableCell className="w-[40px]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="w-[40px] shrink-0" onClick={(e) => e.stopPropagation()}>
         <Checkbox checked={selected} onCheckedChange={(value) => onSelectChange?.(Boolean(value))} />
       </TableCell>
 
       {/* Empresa - navigates to Lead Detail */}
-      <TableCell className="w-[20%]">
+      <TableCell className="min-w-0">
         <TooltipProvider delayDuration={200}>
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 min-w-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[safePriorityBucket]}`}
+                  className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[safePriorityBucket]}`}
                 >
                   <FireSimple size={18} />
                 </div>
@@ -375,10 +375,10 @@ export function LeadSalesRow({
                 )}
               </TooltipContent>
             </Tooltip>
-            <div className="space-y-1">
-              <div className="font-semibold leading-tight text-foreground">{safeLegalName}</div>
+            <div className="space-y-1 min-w-0">
+              <div className="font-semibold leading-tight text-foreground truncate">{safeLegalName}</div>
               {safeTradeName ? (
-                <div className="text-xs text-muted-foreground">{safeTradeName}</div>
+                <div className="text-xs text-muted-foreground truncate">{safeTradeName}</div>
               ) : (
                 tradeName && <div className="text-xs text-muted-foreground">—</div>
               )}
@@ -391,19 +391,19 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Contato principal - does NOT navigate to Lead Detail */}
-      <TableCell className="w-[14%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
         {primaryContact ? (
           <div 
-            className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
+            className="flex items-center gap-3 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
             onClick={() => setIsContactModalOpen(true)}
           >
-            <Avatar className="h-9 w-9 border">
+            <Avatar className="h-9 w-9 shrink-0 border">
               <AvatarImage src={primaryContact.avatar || undefined} alt={safePrimaryContactName} />
               <AvatarFallback>{getInitials(safePrimaryContactName)}</AvatarFallback>
             </Avatar>
-            <div className="space-y-1">
-              <div className="font-medium text-sm leading-tight">{safePrimaryContactName}</div>
-              {safePrimaryContactRole && <div className="text-xs text-muted-foreground">{safePrimaryContactRole}</div>}
+            <div className="space-y-1 min-w-0">
+              <div className="font-medium text-sm leading-tight truncate">{safePrimaryContactName}</div>
+              {safePrimaryContactRole && <div className="text-xs text-muted-foreground truncate">{safePrimaryContactRole}</div>}
             </div>
           </div>
         ) : (
@@ -412,7 +412,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Status - does NOT navigate to Lead Detail */}
-      <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Badge
@@ -442,14 +442,14 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Interações - navigates to Lead Detail */}
-      <TableCell className="w-[14%]">
-        <div className="space-y-1">
+      <TableCell className="min-w-0">
+        <div className="space-y-1 min-w-0">
           <div className="text-xs text-muted-foreground">Última interação</div>
           {parsedLastInteractionDate ? (
             <div className="flex items-center gap-2 text-sm text-foreground">
-              {interactionType === 'email' && <EnvelopeSimple size={16} />}
-              {interactionType === 'event' && <CalendarBlank size={16} />}
-              <span>
+              {interactionType === 'email' && <EnvelopeSimple size={16} className="shrink-0" />}
+              {interactionType === 'event' && <CalendarBlank size={16} className="shrink-0" />}
+              <span className="truncate">
                 {formatDistanceToNow(parsedLastInteractionDate, { addSuffix: true, locale: ptBR })}
               </span>
             </div>
@@ -460,14 +460,14 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Próxima ação - navigates to Lead Detail, text in red */}
-      <TableCell className="w-[16%]">
+      <TableCell className="min-w-0">
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                <Badge variant="secondary" className="flex flex-col items-start gap-0.5 py-2 px-3 text-left max-w-full">
                   <span className="text-xs uppercase tracking-wide text-muted-foreground">Próxima ação</span>
-                  <span className="text-sm font-semibold text-destructive">{safeNextActionLabel}</span>
+                  <span className="text-sm font-semibold text-destructive truncate max-w-full">{safeNextActionLabel}</span>
                   {safeNextActionReason && (
                     <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
                   )}
@@ -487,7 +487,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
         <div 
           className="space-y-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
           onClick={() => actualLeadId && setIsTagsModalOpen(true)}
@@ -518,17 +518,17 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Responsável - does NOT navigate to Lead Detail */}
-      <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: owner.id, name: owner.name, avatar: owner.avatar } : null}>
-            <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
+            <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
               {owner ? (
                 <>
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={owner.avatar || undefined} alt={safeOwnerName ?? undefined} />
                     <AvatarFallback>{getInitials(safeOwnerName ?? undefined)}</AvatarFallback>
                   </Avatar>
-                  <div className="text-sm font-medium leading-tight">{safeOwnerName}</div>
+                  <div className="text-sm font-medium leading-tight truncate">{safeOwnerName}</div>
                 </>
               ) : (
                 <span className="text-sm text-muted-foreground">Sem responsável</span>
@@ -536,150 +536,152 @@ export function LeadSalesRow({
             </div>
           </OwnerActionMenu>
         ) : owner ? (
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar className="h-8 w-8 shrink-0">
               <AvatarImage src={owner.avatar || undefined} alt={safeOwnerName ?? undefined} />
               <AvatarFallback>{getInitials(safeOwnerName ?? undefined)}</AvatarFallback>
             </Avatar>
-            <div className="text-sm font-medium leading-tight">{safeOwnerName}</div>
+            <div className="text-sm font-medium leading-tight truncate">{safeOwnerName}</div>
           </div>
         ) : (
           <span className="text-sm text-muted-foreground">Sem responsável</span>
         )}
       </TableCell>
 
-      <TableCell className="w-[160px]" onClick={(e) => e.stopPropagation()}>
-        <TooltipProvider delayDuration={200}>
-          <div className="grid grid-cols-3 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={handleWhatsApp}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>WhatsApp</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={handleEmail}
-                  >
-                    <Mail className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Gmail</p>
-              </TooltipContent>
-            </Tooltip>
+      {/* Ações - quick actions + kebab menu in a single cell */}
+      <TableCell className="w-[200px] shrink-0 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1">
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handleWhatsApp}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>WhatsApp</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handleEmail}
+                    >
+                      <Mail className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Gmail</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={handlePhone}
-                  >
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Ligar</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handlePhone}
+                    >
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ligar</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={handleOpenDriveFolder}
-                    disabled={isDriveLoading}
-                  >
-                    {isDriveLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <HardDrive className="h-4 w-4" />
-                    )}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Google Drive</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    onClick={handleSchedule}
-                  >
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Agendar Reunião</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={handleCopyId}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Copiar ID</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
-      </TableCell>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handleOpenDriveFolder}
+                      disabled={isDriveLoading}
+                    >
+                      {isDriveLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <HardDrive className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Google Drive</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      onClick={handleSchedule}
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Agendar Reunião</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handleCopyId}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copiar ID</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
 
-      <TableCell className="w-[40px] text-right" onClick={(e) => e.stopPropagation()}>
-        {actions && actions.length > 0 ? (
-          <QuickActionsMenu
-            actions={actions}
-            triggerIcon={<DotsThreeVertical size={18} />}
-            triggerVariant="ghost"
-            triggerSize="icon"
-          />
-        ) : (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMenuClick}>
-            <DotsThreeVertical size={18} />
-          </Button>
-        )}
+          {/* Kebab menu - always visible */}
+          {actions && actions.length > 0 ? (
+            <QuickActionsMenu
+              actions={actions}
+              triggerIcon={<DotsThreeVertical size={18} />}
+              triggerVariant="ghost"
+              triggerSize="icon"
+            />
+          ) : (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMenuClick}>
+              <DotsThreeVertical size={18} />
+            </Button>
+          )}
+        </div>
       </TableCell>
 
       {/* Modals - rendered via portals so they can be inside TableRow */}
@@ -713,16 +715,15 @@ export function LeadSalesRow({
 export function LeadSalesRowSkeleton() {
   return (
     <TableRow>
-      <TableCell className="w-[40px]"><Skeleton className="h-4 w-4" /></TableCell>
-      <TableCell className="w-[20%]"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="w-[14%]"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="w-[10%]"><Skeleton className="h-6 w-20" /></TableCell>
-      <TableCell className="w-[14%]"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="w-[16%]"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[10%]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[160px]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
+      <TableCell className="w-[40px] shrink-0"><Skeleton className="h-4 w-4" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-6 w-20" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="min-w-0"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[200px] shrink-0 whitespace-nowrap"><Skeleton className="h-8 w-full" /></TableCell>
     </TableRow>
   )
 }
