@@ -178,27 +178,8 @@ export default function NewSettingsPage() {
       setIntegrationsSection(getInitialSection('integrations', integrationsSection));
     }
 
-    // Always scroll to top first for consistent UX
+    // Always scroll to top for consistent UX
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-
-    // Optional: if you need to maintain anchor navigation to specific sections,
-    // wait for DOM to update and scroll with a small delay
-    const anchorId = getSectionId(
-      categoryFromParams,
-      sectionFromParams || defaultSectionByCategory[categoryFromParams]
-    );
-    
-    // Use setTimeout to ensure DOM has updated after state changes
-    const scrollTimeout = setTimeout(() => {
-      const sectionElement = document.getElementById(anchorId);
-      if (sectionElement) {
-        // Since we already scrolled to top, we don't need smooth scrolling
-        // This ensures we stay at the top unless there's a specific anchor need
-        // For now, keeping the page at top is the priority
-      }
-    }, 100);
-
-    return () => clearTimeout(scrollTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
