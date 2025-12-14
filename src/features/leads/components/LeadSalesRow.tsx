@@ -513,7 +513,7 @@ export function LeadSalesRow({
 
       <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
-          <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: (owner as any).id, name: owner.name, avatar: owner.avatar } : null}>
+          <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: owner.id, name: owner.name, avatar: owner.avatar } : null}>
             <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
               {owner ? (
                 <>
@@ -690,7 +690,7 @@ export function LeadSalesRow({
           open={isContactModalOpen}
           onOpenChange={setIsContactModalOpen}
           contact={{
-            id: (primaryContact as any).id,
+            id: primaryContact.id,
             name: primaryContact.name,
             role: primaryContact.role,
             email: primaryContact.email,
