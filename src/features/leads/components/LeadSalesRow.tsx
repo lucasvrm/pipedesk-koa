@@ -25,6 +25,9 @@ import { useUpdateLead } from '@/services/leadService'
 import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber } from '@/utils/googleLinks'
 import { getDriveItems } from '@/services/driveService'
+import { LeadTagsModal } from './LeadTagsModal'
+import { ContactPreviewModal } from './ContactPreviewModal'
+import { OwnerActionMenu } from './OwnerActionMenu'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -83,6 +86,8 @@ export function LeadSalesRow({
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
   const [isDriveLoading, setIsDriveLoading] = useState(false)
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false)
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
@@ -384,9 +389,12 @@ export function LeadSalesRow({
         </TooltipProvider>
       </TableCell>
 
-      <TableCell className="w-[18%]">
+      <TableCell className="w-[18%]" onClick={(e) => e.stopPropagation()}>
         {primaryContact ? (
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
+            onClick={() => setIsContactModalOpen(true)}
+          >
             <Avatar className="h-9 w-9 border">
               <AvatarImage src={primaryContact.avatar || undefined} alt={safePrimaryContactName} />
               <AvatarFallback>{getInitials(safePrimaryContactName)}</AvatarFallback>
@@ -397,7 +405,7 @@ export function LeadSalesRow({
             </div>
           </div>
         ) : (
-          <span className="text-sm text-muted-foreground">-</span>
+          <span className="text-sm text-muted-foreground">—</span>
         )}
       </TableCell>
 
@@ -444,8 +452,11 @@ export function LeadSalesRow({
         )}
       </TableCell>
 
-      <TableCell className="w-[12%]">
-        <div className="space-y-2">
+      <TableCell className="w-[12%]" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="space-y-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
+          onClick={() => actualLeadId && setIsTagsModalOpen(true)}
+        >
           {safeTags.length > 0 ? (
             <div className="flex flex-wrap gap-1">
               {safeTags.slice(0, 3).map((tag) => {
@@ -466,7 +477,7 @@ export function LeadSalesRow({
               )}
             </div>
           ) : (
-            <span className="text-sm text-muted-foreground">-</span>
+            <span className="text-sm text-muted-foreground">—</span>
           )}
         </div>
       </TableCell>
@@ -500,8 +511,24 @@ export function LeadSalesRow({
         </DropdownMenu>
       </TableCell>
 
-      <TableCell className="w-[10%]">
-        {owner ? (
+      <TableCell className="w-[10%]" onClick={(e) => e.stopPropagation()}>
+        {actualLeadId ? (
+          <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: (owner as any).id, name: owner.name, avatar: owner.avatar } : null}>
+            <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
+              {owner ? (
+                <>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={owner.avatar || undefined} alt={safeOwnerName ?? undefined} />
+                    <AvatarFallback>{getInitials(safeOwnerName ?? undefined)}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-sm font-medium leading-tight">{safeOwnerName}</div>
+                </>
+              ) : (
+                <span className="text-sm text-muted-foreground">Sem responsável</span>
+              )}
+            </div>
+          </OwnerActionMenu>
+        ) : owner ? (
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
               <AvatarImage src={owner.avatar || undefined} alt={safeOwnerName ?? undefined} />
@@ -647,6 +674,31 @@ export function LeadSalesRow({
           </Button>
         )}
       </TableCell>
+
+      {/* Modals - rendered via portals so they can be inside TableRow */}
+      {actualLeadId && (
+        <LeadTagsModal
+          open={isTagsModalOpen}
+          onOpenChange={setIsTagsModalOpen}
+          leadId={actualLeadId}
+          leadName={safeLegalName}
+        />
+      )}
+
+      {primaryContact && (
+        <ContactPreviewModal
+          open={isContactModalOpen}
+          onOpenChange={setIsContactModalOpen}
+          contact={{
+            id: (primaryContact as any).id,
+            name: primaryContact.name,
+            role: primaryContact.role,
+            email: primaryContact.email,
+            phone: primaryContact.phone,
+            avatar: primaryContact.avatar,
+          }}
+        />
+      )}
     </TableRow>
   )
 }
