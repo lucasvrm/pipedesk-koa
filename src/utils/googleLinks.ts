@@ -83,7 +83,7 @@ export function cleanPhoneNumber(phone: string): { cleanPhone: string; isValid: 
  * // Returns: https://web.whatsapp.com/send?phone=5511999998888
  */
 export function getWhatsAppWebUrl(phone: string): string {
-  // Ensure phone only contains digits (remove plus sign and any other characters)
-  const cleanPhone = phone.replace(/\D/g, '')
-  return `https://web.whatsapp.com/send?phone=${encodeURIComponent(cleanPhone)}`
+  // Reuse cleanPhoneNumber to ensure consistent phone cleaning logic
+  const { cleanPhone } = cleanPhoneNumber(phone)
+  return `https://web.whatsapp.com/send?phone=${cleanPhone}`
 }

@@ -377,6 +377,7 @@ export async function getRootFolderUrl(
     const data = await response.json();
     return {
       url: data.url,
+      // Support both snake_case and camelCase for backend compatibility
       folderId: data.folder_id || data.folderId,
       created: data.created || false,
     };
