@@ -70,3 +70,20 @@ export function cleanPhoneNumber(phone: string): { cleanPhone: string; isValid: 
   
   return { cleanPhone, isValid }
 }
+
+/**
+ * Generate WhatsApp Web URL with the phone number.
+ * Opens WhatsApp Web directly to the chat with the specified phone number.
+ * 
+ * @param phone - Phone number in E.164 format (digits only, no plus sign)
+ * @returns WhatsApp Web URL
+ * 
+ * @example
+ * const url = getWhatsAppWebUrl('5511999998888')
+ * // Returns: https://web.whatsapp.com/send?phone=5511999998888
+ */
+export function getWhatsAppWebUrl(phone: string): string {
+  // Ensure phone only contains digits (remove plus sign and any other characters)
+  const cleanPhone = phone.replace(/\D/g, '')
+  return `https://web.whatsapp.com/send?phone=${encodeURIComponent(cleanPhone)}`
+}
