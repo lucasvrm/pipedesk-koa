@@ -22,8 +22,8 @@ import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { useUpdateLead } from '@/services/leadService'
 import { toast } from 'sonner'
-import { getGmailComposeUrl, cleanPhoneNumber } from '@/utils/googleLinks'
-import { getDriveItems } from '@/services/driveService'
+import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils/googleLinks'
+import { getRootFolderUrl } from '@/services/driveService'
 import { DriveApiError } from '@/lib/driveClient'
 import { LeadTagsModal } from './LeadTagsModal'
 import { ContactPreviewModal } from './ContactPreviewModal'
@@ -148,8 +148,9 @@ export function LeadSalesRow({
         return
       }
       
-      // Open WhatsApp in a new tab
-      window.open(`https://wa.me/${cleanPhone}`, '_blank', 'noopener,noreferrer')
+      // Open WhatsApp Web in a new tab
+      const whatsappUrl = getWhatsAppWebUrl(cleanPhone)
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
     } catch (error) {
       console.error('[LeadSalesRow] Error opening WhatsApp:', error)
       toast.error('Erro ao abrir WhatsApp', {
@@ -169,10 +170,10 @@ export function LeadSalesRow({
         return
       }
       
-      // Open Gmail compose as a popup window
-      const subject = `Contato - ${safeString(legalName, 'Lead')}`
+      // Open Gmail compose in a new tab with email as subject (as per requirement)
+      const subject = email
       const gmailUrl = getGmailComposeUrl(email, subject)
-      window.open(gmailUrl, '_blank', 'width=800,height=600,noopener,noreferrer')
+      window.open(gmailUrl, '_blank', 'noopener,noreferrer')
     } catch (error) {
       console.error('[LeadSalesRow] Error opening Gmail:', error)
       toast.error('Erro ao abrir e-mail', {
@@ -221,19 +222,22 @@ export function LeadSalesRow({
 
     setIsDriveLoading(true)
     try {
-      const response = await getDriveItems('lead', actualLeadId)
+      // Get root folder URL - this will create the folder hierarchy if it doesn't exist
+      const response = await getRootFolderUrl('lead', actualLeadId)
       
-      // Try to find the folder with webViewLink or construct a reasonable fallback
-      const folder = response.items.find(item => item.type === 'folder')
-      if (folder?.url) {
-        window.open(folder.url, '_blank', 'noopener,noreferrer')
-      } else if (response.items.length > 0 && response.items[0].url) {
-        // Fallback to first item's URL
-        window.open(response.items[0].url, '_blank', 'noopener,noreferrer')
+      if (response.url) {
+        // Open the root folder directly in a new tab
+        window.open(response.url, '_blank', 'noopener,noreferrer')
+        
+        // Notify user if folder was just created
+        if (response.created) {
+          toast.success('Pasta criada com sucesso', {
+            description: 'A estrutura de pastas do lead foi criada no Drive.'
+          })
+        }
       } else {
-        // No items yet, just inform the user
-        toast.info('Pasta do Drive', {
-          description: 'A pasta ainda não contém arquivos. Envie o primeiro documento.'
+        toast.error('URL da pasta não encontrada', {
+          description: 'Não foi possível obter a URL da pasta do Drive.'
         })
       }
     } catch (error) {

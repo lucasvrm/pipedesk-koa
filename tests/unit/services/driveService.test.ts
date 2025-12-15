@@ -7,6 +7,7 @@ import {
   deleteFolder,
   repairStructure,
   syncName,
+  getRootFolderUrl,
 } from '@/services/driveService';
 import * as supabaseClient from '@/lib/supabaseClient';
 import * as safeFetchModule from '@/lib/safeFetch';
@@ -447,6 +448,65 @@ describe('DriveService', () => {
 
       await expect(syncName('deal', 'deal-123')).rejects.toThrow(
         'Failed to sync name for deal deal-123'
+      );
+    });
+  });
+
+  describe('getRootFolderUrl', () => {
+    it('should get root folder URL for an entity', async () => {
+      const mockResponse = {
+        url: 'https://drive.google.com/drive/folders/abc123',
+        folder_id: 'abc123',
+        created: false,
+      };
+
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await getRootFolderUrl('lead', 'lead-123');
+
+      expect(result).toEqual({
+        url: 'https://drive.google.com/drive/folders/abc123',
+        folderId: 'abc123',
+        created: false,
+      });
+      expect(safeFetchModule.safeFetch).toHaveBeenCalledWith(
+        `${mockBaseUrl}/api/drive/lead/lead-123/root-folder-url`,
+        expect.objectContaining({
+          method: 'GET',
+        })
+      );
+    });
+
+    it('should return created flag when folder is newly created', async () => {
+      const mockResponse = {
+        url: 'https://drive.google.com/drive/folders/new-folder',
+        folder_id: 'new-folder',
+        created: true,
+      };
+
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await getRootFolderUrl('deal', 'deal-456');
+
+      expect(result.created).toBe(true);
+      expect(result.url).toBe('https://drive.google.com/drive/folders/new-folder');
+    });
+
+    it('should throw error on failed request', async () => {
+      vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'Server Error',
+      } as Response);
+
+      await expect(getRootFolderUrl('lead', 'lead-123')).rejects.toThrow(
+        'Failed to get root folder URL for lead lead-123'
       );
     });
   });

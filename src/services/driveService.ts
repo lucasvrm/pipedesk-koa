@@ -331,3 +331,58 @@ export async function syncName(
     throw error;
   }
 }
+
+/**
+ * Response from getRootFolderUrl endpoint
+ */
+export interface GetRootFolderUrlResponse {
+  url: string;
+  folderId: string;
+  created: boolean;
+}
+
+/**
+ * Get the root folder URL for an entity
+ * 
+ * This endpoint will create the folder hierarchy if it doesn't exist,
+ * based on the template configured in /admin/settings.
+ * 
+ * @param entityType - Type of entity (lead, deal, company, or contact)
+ * @param entityId - ID of the entity
+ * @returns Promise with the root folder URL and metadata
+ * 
+ * @example
+ * const { url } = await getRootFolderUrl('lead', 'lead-123');
+ * window.open(url, '_blank');
+ */
+export async function getRootFolderUrl(
+  entityType: EntityType,
+  entityId: string
+): Promise<GetRootFolderUrlResponse> {
+  try {
+    const response = await driveApiFetch(
+      `/api/drive/${entityType}/${entityId}/root-folder-url`,
+      {
+        method: 'GET',
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to get root folder URL for ${entityType} ${entityId}: ${response.status} ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    return {
+      url: data.url,
+      // Support both snake_case and camelCase for backend compatibility
+      folderId: data.folder_id || data.folderId,
+      created: data.created || false,
+    };
+  } catch (error) {
+    console.error('[DriveService] getRootFolderUrl error:', error);
+    throw error;
+  }
+}
