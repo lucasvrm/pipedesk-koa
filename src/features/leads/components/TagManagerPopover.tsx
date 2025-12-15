@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { X, Check, Tag as TagIcon, Plus, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,10 +15,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { useTags, useEntityTags, useTagOperations, TAG_COLORS } from '@/services/tagService'
+import { useTags, useEntityTags, TAG_COLORS, assignTagToEntity, removeTagFromEntity, createTag } from '@/services/tagService'
 import { Tag } from '@/lib/types'
 import { safeString } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface TagManagerPopoverProps {
   leadId: string
@@ -28,6 +29,10 @@ interface TagManagerPopoverProps {
 export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) {
   const [open, setOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const queryClient = useQueryClient()
+  
+  // Track if any changes were made while the popover was open
+  const hasChangesRef = useRef(false)
 
   // Fetch all available tags for leads (includes global tags)
   const { data: availableTags = [], isLoading: isLoadingTags } = useTags('lead')
@@ -35,7 +40,48 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
   // Fetch currently assigned tags to this lead
   const { data: assignedTags = [], isLoading: isLoadingAssigned } = useEntityTags(leadId, 'lead')
   
-  const { assign, unassign, create } = useTagOperations()
+  // Local mutations that only invalidate entity-specific queries, deferring list invalidation to onClose
+  const assign = useMutation({
+    mutationFn: (vars: { tagId: string; entityId: string; entityType: 'lead' }) =>
+      assignTagToEntity(vars.tagId, vars.entityId, vars.entityType),
+    onSuccess: (_, vars) => {
+      hasChangesRef.current = true
+      // Only invalidate the entity's tags, not the entire leads list
+      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'lead', vars.entityId] })
+    }
+  })
+
+  const unassign = useMutation({
+    mutationFn: (vars: { tagId: string; entityId: string; entityType: 'lead' }) =>
+      removeTagFromEntity(vars.tagId, vars.entityId, vars.entityType),
+    onSuccess: (_, vars) => {
+      hasChangesRef.current = true
+      // Only invalidate the entity's tags, not the entire leads list
+      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'lead', vars.entityId] })
+    }
+  })
+
+  const create = useMutation({
+    mutationFn: createTag,
+    onSuccess: () => {
+      hasChangesRef.current = true
+      queryClient.invalidateQueries({ queryKey: ['tags'] })
+    }
+  })
+
+  // Handle popover open/close - invalidate leads list only when closing if changes were made
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    if (!isOpen && hasChangesRef.current) {
+      // Invalidate the leads list and sales view only when the popover closes
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
+    }
+    // Reset changes flag on any state change (opening resets for new session, closing resets after processing)
+    hasChangesRef.current = false
+    setOpen(isOpen)
+  }, [queryClient])
 
   // Filter tags by search term
   const filteredTags = useMemo(() => {
@@ -140,7 +186,7 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
   const isMutating = assign.isPending || unassign.isPending || create.isPending
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
         <div className="flex">
           <Button

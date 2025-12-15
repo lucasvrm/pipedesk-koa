@@ -781,7 +781,7 @@ export default function LeadsListPage() {
 
     const bulkDeleteButton = selectedIds.length > 0 ? (
       <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
-        <Trash className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
+        <Trash2 className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
       </Button>
     ) : null
 
