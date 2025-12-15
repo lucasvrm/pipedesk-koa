@@ -77,12 +77,9 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
       // Invalidate the leads list and sales view only when the popover closes
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
-      hasChangesRef.current = false
     }
-    if (isOpen) {
-      // Reset changes flag when opening
-      hasChangesRef.current = false
-    }
+    // Reset changes flag on any state change (opening resets for new session, closing resets after processing)
+    hasChangesRef.current = false
     setOpen(isOpen)
   }, [queryClient])
 
