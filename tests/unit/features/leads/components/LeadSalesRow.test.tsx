@@ -191,4 +191,96 @@ describe('LeadSalesRow', () => {
     expect(screen.getByText('Follow-up')).toBeInTheDocument()
     expect(screen.getByText('Cliente solicitou mais informações')).toBeInTheDocument()
   })
+
+  // Urgency Level Tests
+  it('renders urgent styling (red) when nextAction is overdue', () => {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'call',
+          label: 'Ligar',
+          dueAt: yesterday.toISOString()
+        }}
+      />
+    )
+
+    const badge = screen.getByText('Ligar').closest('[class*="border-l-red"]')
+    expect(badge).toBeInTheDocument()
+  })
+
+  it('renders urgent styling (red) when nextAction is due today', () => {
+    const today = new Date()
+    today.setHours(12, 0, 0, 0) // noon today
+    
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'call',
+          label: 'Ligar Hoje',
+          dueAt: today.toISOString()
+        }}
+      />
+    )
+
+    const badge = screen.getByText('Ligar Hoje').closest('[class*="border-l-red"]')
+    expect(badge).toBeInTheDocument()
+  })
+
+  it('renders important styling (yellow) when nextAction is due in 1-3 days', () => {
+    const inTwoDays = new Date()
+    inTwoDays.setDate(inTwoDays.getDate() + 2)
+    
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'meeting',
+          label: 'Reunião em breve',
+          dueAt: inTwoDays.toISOString()
+        }}
+      />
+    )
+
+    const badge = screen.getByText('Reunião em breve').closest('[class*="border-l-yellow"]')
+    expect(badge).toBeInTheDocument()
+  })
+
+  it('renders normal styling (blue) when nextAction is due in 4+ days', () => {
+    const inFiveDays = new Date()
+    inFiveDays.setDate(inFiveDays.getDate() + 5)
+    
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'follow_up',
+          label: 'Follow-up futuro',
+          dueAt: inFiveDays.toISOString()
+        }}
+      />
+    )
+
+    const badge = screen.getByText('Follow-up futuro').closest('[class*="border-l-blue"]')
+    expect(badge).toBeInTheDocument()
+  })
+
+  it('renders neutral styling (gray) when nextAction has no dueAt', () => {
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'task',
+          label: 'Tarefa sem prazo'
+        }}
+      />
+    )
+
+    const badge = screen.getByText('Tarefa sem prazo').closest('[class*="border-l-gray"]')
+    expect(badge).toBeInTheDocument()
+  })
 })

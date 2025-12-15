@@ -4,11 +4,18 @@
 
 **Data:** 2025-12-15  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsListPage.tsx, LeadsKanban.tsx, TagManagerPopover.tsx
+**Escopo:** Frontend - LeadsListPage.tsx, LeadsKanban.tsx, TagManagerPopover.tsx, LeadSalesRow.tsx
 
 ---
 
 ## 🎯 Objetivos
+
+### Fase 4: Melhorar UI/UX Cards de Próxima Ação ✅ CONCLUÍDO
+1. **Sistema de Cores por Urgência:** Implementar cores diferenciadas para o card de "Próxima Ação" baseado na data de vencimento
+   - 🔴 **Urgente** (atrasado/vence hoje): Vermelho
+   - 🟡 **Importante** (vence em 1-3 dias): Amarelo
+   - 🔵 **Normal** (vence em 4+ dias): Azul
+   - ⚪ **Sem próxima ação**: Neutro (cinza discreto)
 
 ### Fase 3: Correções Críticas (Kanban + Tags) ✅ CONCLUÍDO
 1. **Revert Kanban View:** Restaurar título da rota ("Leads") + 3 cards de métricas + garantir 100% da largura da tela
@@ -24,6 +31,141 @@
 ---
 
 ## 📝 Alterações Realizadas
+
+### Fase 4: UI/UX Cards de Próxima Ação (2025-12-15)
+
+#### Arquivos Modificados
+- `src/features/leads/components/LeadSalesRow.tsx`
+- `src/services/leadsSalesViewService.ts`
+- `tests/unit/features/leads/components/LeadSalesRow.test.tsx`
+
+#### Item 1: Função `getUrgencyLevel`
+
+**Implementação:**
+```typescript
+type UrgencyLevel = 'urgent' | 'important' | 'normal' | 'none'
+
+function getUrgencyLevel(dueAt: string | null | undefined): UrgencyLevel {
+  if (!dueAt) return 'none'
+  
+  const dueDate = parseISO(dueAt)
+  if (!isValid(dueDate)) return 'none'
+  
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const dueDateNormalized = new Date(dueDate)
+  dueDateNormalized.setHours(0, 0, 0, 0)
+  
+  const diffTime = dueDateNormalized.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays <= 0) return 'urgent'     // Overdue or today
+  if (diffDays <= 3) return 'important'  // 1-3 days
+  return 'normal'                        // 4+ days
+}
+```
+
+#### Item 2: Sistema de Estilos `URGENCY_STYLES`
+
+**Cores com contraste acessível (WCAG 2.1 AA):**
+```typescript
+const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; text: string }> = {
+  urgent: {
+    border: 'border-l-4 border-l-red-600',
+    bg: 'bg-red-50 dark:bg-red-950/40',
+    text: 'text-red-700 dark:text-red-300'
+  },
+  important: {
+    border: 'border-l-4 border-l-yellow-500',
+    bg: 'bg-yellow-50 dark:bg-yellow-950/40',
+    text: 'text-yellow-700 dark:text-yellow-300'
+  },
+  normal: {
+    border: 'border-l-4 border-l-blue-500',
+    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    text: 'text-blue-700 dark:text-blue-300'
+  },
+  none: {
+    border: 'border-l-4 border-l-gray-300 dark:border-l-gray-600',
+    bg: 'bg-gray-50 dark:bg-gray-800/40',
+    text: 'text-gray-600 dark:text-gray-400'
+  }
+}
+```
+
+#### Item 3: Atualização do Badge de Próxima Ação
+
+**Antes:**
+```tsx
+<Badge variant="secondary" className="...">
+  <span className="text-sm font-semibold text-destructive truncate">
+    {safeNextActionLabel}
+  </span>
+</Badge>
+```
+
+**Depois:**
+```tsx
+<Badge 
+  variant="secondary" 
+  className={`... rounded-md ${urgencyStyle.border} ${urgencyStyle.bg}`}
+>
+  <span className={`text-sm font-semibold truncate ${urgencyStyle.text}`}>
+    {safeNextActionLabel}
+  </span>
+</Badge>
+```
+
+#### Item 4: Atualização de Tipos
+
+**leadsSalesViewService.ts - Adicionado campo `dueAt`:**
+```diff
+nextAction?: {
+  code: string
+  label: string
+  reason?: string | null
++ dueAt?: string | null
+}
+next_action?: {
+  code: string
+  label: string
+  reason?: string | null
++ due_at?: string | null
+}
+```
+
+#### Item 5: Testes Unitários
+
+**Novos testes adicionados:**
+- `renders urgent styling (red) when nextAction is overdue`
+- `renders urgent styling (red) when nextAction is due today`
+- `renders important styling (yellow) when nextAction is due in 1-3 days`
+- `renders normal styling (blue) when nextAction is due in 4+ days`
+- `renders neutral styling (gray) when nextAction has no dueAt`
+
+#### Benefícios
+- ✅ Identificação visual imediata de urgência
+- ✅ Cores com contraste acessível (WCAG 2.1 AA)
+- ✅ Suporte a dark mode
+- ✅ Borda esquerda de 4px para destaque visual
+- ✅ Preserva lógica de API existente
+- ✅ 5 novos testes unitários
+
+#### Decisões Técnicas
+1. **Por que usar `border-l-4` ao invés de background sólido?**
+   - Borda lateral é mais sutil e menos intrusiva
+   - Permite que o fundo use cores claras com bom contraste
+   - Segue padrões de UI modernos para indicadores de status
+
+2. **Por que normalizar horas para meia-noite?**
+   - Evita inconsistências quando a data atual está no meio do dia
+   - Garante que "vence hoje" funcione corretamente independente da hora
+
+3. **Por que `Math.ceil` ao invés de `Math.floor`?**
+   - Garante que uma tarefa que vence em menos de 24h seja considerada urgente
+
+---
 
 ### Fase 3: Correções Críticas - Kanban + Tags (2025-12-15)
 

@@ -57,6 +57,60 @@ const PRIORITY_TOOLTIP_COLORS: Record<LeadPriorityBucket, string> = {
   cold: 'bg-blue-600 text-white'
 }
 
+// Urgency level type for next action cards
+type UrgencyLevel = 'urgent' | 'important' | 'normal' | 'none'
+
+/**
+ * Calculate urgency level based on due date
+ * - urgent: overdue or due today (red)
+ * - important: due in 1-3 days (yellow)
+ * - normal: due in 4+ days (blue)
+ * - none: no due date (gray/neutral)
+ */
+function getUrgencyLevel(dueAt: string | null | undefined): UrgencyLevel {
+  if (!dueAt) return 'none'
+  
+  const dueDate = parseISO(dueAt)
+  if (!isValid(dueDate)) return 'none'
+  
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const dueDateNormalized = new Date(dueDate)
+  dueDateNormalized.setHours(0, 0, 0, 0)
+  
+  const diffTime = dueDateNormalized.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays <= 0) return 'urgent'     // Overdue or today
+  if (diffDays <= 3) return 'important'  // 1-3 days
+  return 'normal'                        // 4+ days
+}
+
+// Urgency styles with WCAG 2.1 AA compliant colors
+const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; text: string }> = {
+  urgent: {
+    border: 'border-l-4 border-l-red-600',
+    bg: 'bg-red-50 dark:bg-red-950/40',
+    text: 'text-red-700 dark:text-red-300'
+  },
+  important: {
+    border: 'border-l-4 border-l-yellow-500',
+    bg: 'bg-yellow-50 dark:bg-yellow-950/40',
+    text: 'text-yellow-700 dark:text-yellow-300'
+  },
+  normal: {
+    border: 'border-l-4 border-l-blue-500',
+    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    text: 'text-blue-700 dark:text-blue-300'
+  },
+  none: {
+    border: 'border-l-4 border-l-gray-300 dark:border-l-gray-600',
+    bg: 'bg-gray-50 dark:bg-gray-800/40',
+    text: 'text-gray-600 dark:text-gray-400'
+  }
+}
+
 function getInitials(name?: string) {
   if (!name) return 'NA'
   const parts = name.trim().split(' ')
@@ -388,6 +442,9 @@ export function LeadSalesRow({
   const safePrimaryContactRole = safeStringOptional(primaryContact?.role)
   const safeNextActionLabel = safeNextAction ? safeString(safeNextAction.label, '—') : null
   const safeNextActionReason = safeNextAction ? safeStringOptional(safeNextAction.reason) : undefined
+  const safeNextActionDueAt = safeNextAction?.dueAt ?? undefined
+  const nextActionUrgency = getUrgencyLevel(safeNextActionDueAt)
+  const urgencyStyle = URGENCY_STYLES[nextActionUrgency]
   const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
 
   const parsedLastInteractionDate = lastInteractionAt
@@ -535,16 +592,19 @@ export function LeadSalesRow({
         </div>
       </td>
 
-      {/* Próxima ação - navigates to Lead Detail, text in red */}
+      {/* Próxima ação - with urgency color coding */}
       <td className="p-2 align-middle min-w-0" style={proximaAcaoStyle}>
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                <Badge 
+                  variant="secondary" 
+                  className={`w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left rounded-md ${urgencyStyle.border} ${urgencyStyle.bg}`}
+                >
                   <div className="flex items-baseline gap-1 max-w-full">
                     <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
-                    <span className="text-sm font-semibold text-destructive truncate">{safeNextActionLabel}</span>
+                    <span className={`text-sm font-semibold truncate ${urgencyStyle.text}`}>{safeNextActionLabel}</span>
                   </div>
                   {safeNextActionReason && (
                     <div className="flex items-baseline gap-1 max-w-full">
