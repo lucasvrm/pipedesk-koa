@@ -90,24 +90,28 @@ export function getUrgencyLevel(dueAt?: string | null): UrgencyLevel {
 
 /**
  * Urgency styles configuration - WCAG 2.1 AA compliant colors
- * Each style includes border and background colors for light and dark modes
+ * Each style includes border, background, and text colors for light and dark modes
  */
-const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string }> = {
+const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; textColor: string }> = {
   urgent: {
     border: 'border-l-4 border-l-red-600',
-    bg: 'bg-red-50 dark:bg-red-950/50'
+    bg: 'bg-red-50 dark:bg-red-950/50',
+    textColor: 'text-red-600 dark:text-red-400'
   },
   important: {
     border: 'border-l-4 border-l-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-950/50'
+    bg: 'bg-amber-50 dark:bg-amber-950/50',
+    textColor: 'text-amber-600 dark:text-amber-400'
   },
   normal: {
     border: 'border-l-4 border-l-blue-500',
-    bg: 'bg-blue-50 dark:bg-blue-950/50'
+    bg: 'bg-blue-50 dark:bg-blue-950/50',
+    textColor: 'text-blue-600 dark:text-blue-400'
   },
   none: {
     border: 'border-l-4 border-l-gray-300 dark:border-l-gray-600',
-    bg: 'bg-gray-50 dark:bg-gray-800/50'
+    bg: 'bg-gray-50 dark:bg-gray-800/50',
+    textColor: 'text-foreground'
   }
 }
 
@@ -435,7 +439,7 @@ export function LeadSalesRow({
   const safePrimaryContactRole = safeStringOptional(primaryContact?.role)
   const safeNextActionLabel = safeNextAction ? safeString(safeNextAction.label, '—') : null
   const safeNextActionReason = safeNextAction ? safeStringOptional(safeNextAction.reason) : undefined
-  const nextActionDueAt = safeNextAction?.dueAt ?? safeNextAction?.due_at as string | null | undefined
+  const nextActionDueAt = safeNextAction?.dueAt ?? safeNextAction?.due_at ?? null
   const urgencyLevel = getUrgencyLevel(nextActionDueAt)
   const urgencyStyle = URGENCY_STYLES[urgencyLevel]
   const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
@@ -586,12 +590,7 @@ export function LeadSalesRow({
                 >
                   <div className="flex items-baseline gap-1 max-w-full">
                     <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
-                    <span className={`text-sm font-semibold truncate ${
-                      urgencyLevel === 'urgent' ? 'text-red-600 dark:text-red-400' :
-                      urgencyLevel === 'important' ? 'text-amber-600 dark:text-amber-400' :
-                      urgencyLevel === 'normal' ? 'text-blue-600 dark:text-blue-400' :
-                      'text-foreground'
-                    }`}>{safeNextActionLabel}</span>
+                    <span className={`text-sm font-semibold truncate ${urgencyStyle.textColor}`}>{safeNextActionLabel}</span>
                   </div>
                   {safeNextActionReason && (
                     <div className="flex items-baseline gap-1 max-w-full">
