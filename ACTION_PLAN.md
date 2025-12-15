@@ -242,6 +242,31 @@ const handleOpenChange = useCallback((isOpen: boolean) => {
 
 ## Histórico de Alterações Anteriores
 
+### Resizable Columns in Sales View (2025-12-15)
+- **Arquivos Criados:**
+  - `src/features/leads/hooks/useResizableColumns.tsx` - Context provider e hook para gerenciar larguras de colunas
+  - `src/features/leads/components/ResizableSalesTableHeader.tsx` - Header com colunas redimensionáveis via react-resizable-panels
+  - `src/features/leads/components/ResizableSalesRow.tsx` - Componentes auxiliares para linhas com larguras sincronizadas
+
+- **Arquivos Modificados:**
+  - `src/features/leads/pages/LeadSalesViewPage.tsx` - Integração com ColumnWidthsProvider e novo header
+  - `src/features/leads/components/LeadSalesRow.tsx` - Atualizado para usar flex layout com larguras do contexto
+
+- **Funcionalidades Implementadas:**
+  - ✅ Colunas redimensionáveis arrastando bordas entre colunas
+  - ✅ Persistência automática no localStorage (chave: react-resizable-panels:leads-sales-view-columns)
+  - ✅ Botão "Resetar larguras" aparece quando há customizações
+  - ✅ Larguras mínimas respeitadas (8-12% por coluna)
+  - ✅ Acessibilidade: PanelResizeHandle com aria-label
+  - ✅ Colunas fixas: checkbox (40px) e ações (200px)
+
+- **Tecnologias Utilizadas:**
+  - react-resizable-panels (já instalada, v2.1.7)
+  - Context API para sincronizar larguras entre header e body
+  - Flexbox para layout de linhas
+
+- **Status:** ✅ Concluído
+
 ### Priority Tooltip Colors (2025-12-15)
 - Arquivo: `src/features/leads/components/LeadSalesRow.tsx`
 - Objetivo: Ajustar cores dos tooltips de prioridade (hot=vermelho, warm=amarelo, cold=azul)

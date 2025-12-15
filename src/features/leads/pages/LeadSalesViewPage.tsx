@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LeadSalesRow, LeadSalesRowSkeleton } from '../components/LeadSalesRow'
+import { ResizableSalesTableHeader } from '../components/ResizableSalesTableHeader'
+import { ColumnWidthsProvider } from '../hooks/useResizableColumns'
 import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { ensureArray, safeString, safeStringOptional } from '@/lib/utils'
-import { SALES_VIEW_MESSAGES, SALES_VIEW_STYLES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
+import { SALES_VIEW_MESSAGES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
 import { SquaresFour, Kanban } from '@phosphor-icons/react'
 import { ApiError } from '@/lib/errors'
 
@@ -245,8 +245,8 @@ export default function LeadSalesViewPage() {
     const errorMessages = getSalesViewErrorMessages(errorCode)
     
     return (
-      <TableRow>
-        <TableCell colSpan={9} className="py-12">
+      <tr className="border-b">
+        <td colSpan={9} className="py-12">
           <div className="flex flex-col items-center justify-center gap-6 text-center">
             <div className="h-20 w-20 rounded-full bg-destructive/10 flex items-center justify-center ring-4 ring-destructive/10">
               <svg className="h-10 w-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -291,112 +291,102 @@ export default function LeadSalesViewPage() {
               {SALES_VIEW_MESSAGES.BUTTON_RETRY}
             </Button>
           </div>
-        </TableCell>
-      </TableRow>
+        </td>
+      </tr>
     )
   }, [isError, isLoading, error, navigate, refetch])
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Sales View de Leads</h1>
-        <p className="text-muted-foreground">
-          Acompanhe os leads priorizados, próximas ações e responsáveis em uma visualização otimizada para vendas.
-        </p>
-      </div>
+    <ColumnWidthsProvider>
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Sales View de Leads</h1>
+          <p className="text-muted-foreground">
+            Acompanhe os leads priorizados, próximas ações e responsáveis em uma visualização otimizada para vendas.
+          </p>
+        </div>
 
-      <Card className="overflow-hidden border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[40px]">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleSelectAll}
-                  disabled={isLoading || leadIds.length === 0}
-                />
-              </TableHead>
-              <TableHead className="w-[20%]">Empresa</TableHead>
-              <TableHead className="w-[14%]">Contato principal</TableHead>
-              <TableHead className="w-[10%]">Status</TableHead>
-              <TableHead className="w-[14%]">Interações</TableHead>
-              <TableHead className="w-[16%]">Próxima ação</TableHead>
-              <TableHead className="w-[10%]">Tags</TableHead>
-              <TableHead className="w-[10%]">Responsável</TableHead>
-              <TableHead className="w-[40px]" />
-            </TableRow>
-          </TableHeader>
+        <Card className="overflow-hidden border bg-card">
+          <div className="relative w-full overflow-x-auto">
+            <table className="w-full caption-bottom text-sm">
+              <ResizableSalesTableHeader
+                allSelected={allSelected}
+                toggleSelectAll={toggleSelectAll}
+                isLoading={isLoading}
+                leadIdsLength={leadIds.length}
+              />
 
-          <TableBody>
-            {isLoading && (
-              <>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <LeadSalesRowSkeleton key={index} />
-                ))}
-              </>
-            )}
+              <tbody data-slot="table-body" className="[&_tr:last-child]:border-0">
+                {isLoading && (
+                  <>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <LeadSalesRowSkeleton key={index} />
+                    ))}
+                  </>
+                )}
 
-            {errorUI}
+                {errorUI}
 
-            {!isLoading && !isError && leads.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="py-12">
-                  <div className="flex flex-col items-center justify-center gap-3 text-center">
-                    <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                      </svg>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-lg font-semibold text-foreground">{SALES_VIEW_MESSAGES.NO_LEADS_FOUND}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {SALES_VIEW_MESSAGES.NO_LEADS_DESCRIPTION}
-                      </p>
-                    </div>
-                    <Button variant="outline" onClick={() => navigate('/leads')}>Ver todos os leads</Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
+                {!isLoading && !isError && leads.length === 0 && (
+                  <tr className="border-b">
+                    <td colSpan={9} className="py-12">
+                      <div className="flex flex-col items-center justify-center gap-3 text-center">
+                        <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
+                          <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                          </svg>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-lg font-semibold text-foreground">{SALES_VIEW_MESSAGES.NO_LEADS_FOUND}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {SALES_VIEW_MESSAGES.NO_LEADS_DESCRIPTION}
+                          </p>
+                        </div>
+                        <Button variant="outline" onClick={() => navigate('/leads')}>Ver todos os leads</Button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
 
-            {!isLoading && !isError &&
-              leads.map((lead) => {
-                const leadId = lead.leadId ?? lead.lead_id ?? lead.id
-                if (!leadId) return null
-                const rowData = mapLeadToRow(lead)
-                return (
-                  <LeadSalesRow
-                    key={leadId}
-                    {...rowData}
-                    selected={selectedIds.includes(leadId)}
-                    onSelectChange={(checked) => toggleSelect(leadId, checked)}
-                    onClick={() => navigate(`/leads/${leadId}`)}
-                    onMenuClick={() => navigate(`/leads/${leadId}`)}
-                    actions={[
-                      {
-                        id: 'view',
-                        label: 'Detalhes',
-                        onClick: () => navigate(`/leads/${leadId}`)
-                      }
-                    ]}
-                  />
-                )
-              })}
+                {!isLoading && !isError &&
+                  leads.map((lead) => {
+                    const leadId = lead.leadId ?? lead.lead_id ?? lead.id
+                    if (!leadId) return null
+                    const rowData = mapLeadToRow(lead)
+                    return (
+                      <LeadSalesRow
+                        key={leadId}
+                        {...rowData}
+                        selected={selectedIds.includes(leadId)}
+                        onSelectChange={(checked) => toggleSelect(leadId, checked)}
+                        onClick={() => navigate(`/leads/${leadId}`)}
+                        onMenuClick={() => navigate(`/leads/${leadId}`)}
+                        actions={[
+                          {
+                            id: 'view',
+                            label: 'Detalhes',
+                            onClick: () => navigate(`/leads/${leadId}`)
+                          }
+                        ]}
+                      />
+                    )
+                  })}
 
-            {isFetching && !isLoading && !isError && (
-              <TableRow>
-                <TableCell colSpan={9}>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-                    <Skeleton className="h-4 w-4" /> Atualizando dados...
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                {isFetching && !isLoading && !isError && (
+                  <tr className="border-b">
+                    <td colSpan={9}>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                        <Skeleton className="h-4 w-4" /> Atualizando dados...
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
 
-      <Pagination>
+        <Pagination>
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
@@ -439,6 +429,7 @@ export default function LeadSalesViewPage() {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-    </div>
+      </div>
+    </ColumnWidthsProvider>
   )
 }
