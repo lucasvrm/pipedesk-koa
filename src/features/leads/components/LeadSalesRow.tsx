@@ -25,7 +25,7 @@ import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils/googleLinks'
 import { getRootFolderUrl } from '@/services/driveService'
 import { DriveApiError } from '@/lib/driveClient'
-import { LeadTagsModal } from './LeadTagsModal'
+import { TagManagerPopover } from './TagManagerPopover'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 
@@ -75,7 +75,6 @@ export function LeadSalesRow({
   lastInteractionType,
   nextAction,
   owner,
-  tags,
   actions,
   status,
   origin,
@@ -86,9 +85,7 @@ export function LeadSalesRow({
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
   const [isDriveLoading, setIsDriveLoading] = useState(false)
-  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false)
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
-  const safeTags = tags ?? []
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
   // Get the actual lead ID from various possible fields
@@ -402,7 +399,7 @@ export function LeadSalesRow({
 
   // Guard to prevent row click navigation when modal is open
   const handleRowClick = () => {
-    if (isTagsModalOpen || isContactModalOpen) {
+    if (isContactModalOpen) {
       return
     }
     onClick?.()
@@ -554,33 +551,14 @@ export function LeadSalesRow({
 
       {/* Tags - does NOT navigate to Lead Detail */}
       <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
-        <div 
-          className="space-y-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
-          onClick={() => actualLeadId && setIsTagsModalOpen(true)}
-        >
-          {safeTags.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {safeTags.slice(0, 3).map((tag) => {
-                const safeColor = safeStringOptional(tag.color)
-                return (
-                  <Badge
-                    key={tag.id ?? tag.name}
-                    variant="outline"
-                    className="text-[10px] px-2 py-0 h-5 border-muted-foreground/40"
-                    style={safeColor ? { backgroundColor: `${safeColor}20`, color: safeColor } : undefined}
-                  >
-                    {safeString(tag.name, '—')}
-                  </Badge>
-                )
-              })}
-              {safeTags.length > 3 && (
-                <span className="text-[11px] text-muted-foreground">+{safeTags.length - 3}</span>
-              )}
-            </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">—</span>
-          )}
-        </div>
+        {actualLeadId ? (
+          <TagManagerPopover
+            leadId={actualLeadId}
+            leadName={safeLegalName}
+          />
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
       </TableCell>
 
       {/* Responsável - does NOT navigate to Lead Detail */}
@@ -751,15 +729,6 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Modals - rendered via portals so they can be inside TableRow */}
-      {actualLeadId && (
-        <LeadTagsModal
-          open={isTagsModalOpen}
-          onOpenChange={setIsTagsModalOpen}
-          leadId={actualLeadId}
-          leadName={safeLegalName}
-        />
-      )}
-
       {primaryContact && (
         <ContactPreviewModal
           open={isContactModalOpen}
