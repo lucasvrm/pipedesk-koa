@@ -86,6 +86,13 @@ const BRAZILIAN_STATES = [
   { value: 'TO', label: 'Tocantins' },
 ]
 
+// Utility function to add opacity to hex color
+const withOpacity = (color: string, opacity: number): string => {
+  // Convert opacity (0-100) to hex (00-FF)
+  const hex = Math.round((opacity / 100) * 255).toString(16).padStart(2, '0')
+  return color + hex
+}
+
 // Zod validation schema
 const createLeadSchema = z.object({
   legalName: z.string().min(3, 'Razão Social deve ter no mínimo 3 caracteres'),
@@ -103,8 +110,8 @@ const createLeadSchema = z.object({
     phone: z.string().optional(),
   }).optional(),
 }).refine((data) => {
-  // If contact mode is 'link', existingContactId is required
-  // If contact mode is 'create' and any new contact field is filled, name is required
+  // Validation: if contact mode is 'create' and any new contact field is filled, name is required
+  // Note: Contact is optional for leads, so 'link' mode doesn't require existingContactId
   if (data.contactMode === 'create' && data.newContact) {
     const hasAnyField = data.newContact.email || data.newContact.phone
     if (hasAnyField && !data.newContact.name) {
@@ -118,6 +125,24 @@ const createLeadSchema = z.object({
 })
 
 type CreateLeadFormData = z.infer<typeof createLeadSchema>
+
+// Default form values - extracted to avoid duplication
+const DEFAULT_FORM_VALUES: CreateLeadFormData = {
+  legalName: '',
+  leadOriginId: '',
+  operationType: '',
+  addressCity: '',
+  addressState: '',
+  description: '',
+  tags: [],
+  contactMode: 'link',
+  existingContactId: '',
+  newContact: {
+    name: '',
+    email: '',
+    phone: '',
+  },
+}
 
 interface CreateLeadModalProps {
   open: boolean
@@ -142,22 +167,7 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
 
   const form = useForm<CreateLeadFormData>({
     resolver: zodResolver(createLeadSchema),
-    defaultValues: {
-      legalName: '',
-      leadOriginId: '',
-      operationType: '',
-      addressCity: '',
-      addressState: '',
-      description: '',
-      tags: [],
-      contactMode: 'link',
-      existingContactId: '',
-      newContact: {
-        name: '',
-        email: '',
-        phone: '',
-      },
-    },
+    defaultValues: DEFAULT_FORM_VALUES,
   })
 
   const contactMode = form.watch('contactMode')
@@ -166,22 +176,7 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      form.reset({
-        legalName: '',
-        leadOriginId: '',
-        operationType: '',
-        addressCity: '',
-        addressState: '',
-        description: '',
-        tags: [],
-        contactMode: 'link',
-        existingContactId: '',
-        newContact: {
-          name: '',
-          email: '',
-          phone: '',
-        },
-      })
+      form.reset(DEFAULT_FORM_VALUES)
       setSelectedTags([])
     }
   }, [open, form])
@@ -573,7 +568,7 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
                         variant="secondary"
                         className="gap-1 pr-1"
                         style={{ 
-                          backgroundColor: tag.color + '20',
+                          backgroundColor: withOpacity(tag.color, 12),
                           borderColor: tag.color,
                           color: tag.color
                         }}
@@ -620,7 +615,7 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
                               style={
                                 selectedTags.includes(tag.id)
                                   ? { backgroundColor: tag.color, borderColor: tag.color }
-                                  : { color: tag.color, borderColor: tag.color + '40' }
+                                  : { color: tag.color, borderColor: withOpacity(tag.color, 25) }
                               }
                             >
                               {tag.name}
