@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { TableRow, TableCell } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -28,6 +27,8 @@ import { DriveApiError } from '@/lib/driveClient'
 import { TagManagerPopover } from './TagManagerPopover'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
+import { useColumnStyle } from './ResizableSalesRow'
+import { SALES_VIEW_COLUMNS, getResizableColumns } from '../hooks/useResizableColumns'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -411,14 +412,25 @@ export function LeadSalesRow({
     onClick?.()
   }
 
+  // Get column styles from context
+  const checkboxStyle = useColumnStyle('checkbox')
+  const empresaStyle = useColumnStyle('empresa')
+  const contatoStyle = useColumnStyle('contato')
+  const statusStyle = useColumnStyle('status')
+  const interacoesStyle = useColumnStyle('interacoes')
+  const proximaAcaoStyle = useColumnStyle('proxima-acao')
+  const tagsStyle = useColumnStyle('tags')
+  const responsavelStyle = useColumnStyle('responsavel')
+  const actionsStyle = useColumnStyle('actions')
+
   return (
-    <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleRowClick}>
-      <TableCell className="w-[40px] shrink-0" onClick={(e) => e.stopPropagation()}>
+    <tr className="group cursor-pointer hover:bg-muted/50 transition-colors border-b flex w-full" onClick={handleRowClick}>
+      <td className="p-2 align-middle" style={checkboxStyle} onClick={(e) => e.stopPropagation()}>
         <Checkbox checked={selected} onCheckedChange={(value) => onSelectChange?.(Boolean(value))} />
-      </TableCell>
+      </td>
 
       {/* Empresa - navigates to Lead Detail */}
-      <TableCell className="min-w-0">
+      <td className="p-2 align-middle min-w-0" style={empresaStyle}>
         <TooltipProvider delayDuration={200}>
           <div className="flex items-start gap-3 min-w-0">
             <Tooltip>
@@ -452,10 +464,10 @@ export function LeadSalesRow({
             </div>
           </div>
         </TooltipProvider>
-      </TableCell>
+      </td>
 
       {/* Contato principal - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <td className="p-2 align-middle min-w-0" style={contatoStyle} onClick={(e) => e.stopPropagation()}>
         {primaryContact ? (
           <div 
             className="flex items-center gap-3 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
@@ -473,10 +485,10 @@ export function LeadSalesRow({
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
         )}
-      </TableCell>
+      </td>
 
       {/* Status - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <td className="p-2 align-middle min-w-0" style={statusStyle} onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Badge
@@ -503,10 +515,10 @@ export function LeadSalesRow({
               ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </TableCell>
+      </td>
 
       {/* Interações - navigates to Lead Detail */}
-      <TableCell className="min-w-0">
+      <td className="p-2 align-middle min-w-0" style={interacoesStyle}>
         <div className="space-y-1 min-w-0">
           <div className="text-xs text-muted-foreground">Última interação</div>
           {parsedLastInteractionDate ? (
@@ -521,10 +533,10 @@ export function LeadSalesRow({
             <div className="text-sm text-muted-foreground">Nenhuma interação</div>
           )}
         </div>
-      </TableCell>
+      </td>
 
       {/* Próxima ação - navigates to Lead Detail, text in red */}
-      <TableCell className="min-w-0">
+      <td className="p-2 align-middle min-w-0" style={proximaAcaoStyle}>
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -553,10 +565,10 @@ export function LeadSalesRow({
         ) : (
           <span className="text-sm text-muted-foreground">Sem próxima ação</span>
         )}
-      </TableCell>
+      </td>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <td className="p-2 align-middle min-w-0" style={tagsStyle} onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <TagManagerPopover
             leadId={actualLeadId}
@@ -565,10 +577,10 @@ export function LeadSalesRow({
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
         )}
-      </TableCell>
+      </td>
 
       {/* Responsável - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <td className="p-2 align-middle min-w-0" style={responsavelStyle} onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: owner.id, name: owner.name, avatar: owner.avatar } : null}>
             <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
@@ -596,10 +608,10 @@ export function LeadSalesRow({
         ) : (
           <span className="text-sm text-muted-foreground">Sem responsável</span>
         )}
-      </TableCell>
+      </td>
 
       {/* Ações - quick actions + kebab menu in a single cell */}
-      <TableCell className="w-[200px] shrink-0 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+      <td className="p-2 align-middle whitespace-nowrap" style={actionsStyle} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1">
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center gap-1">
@@ -732,9 +744,9 @@ export function LeadSalesRow({
             </Button>
           )}
         </div>
-      </TableCell>
+      </td>
 
-      {/* Modals - rendered via portals so they can be inside TableRow */}
+      {/* Modals - rendered via portals so they can be inside the row */}
       {primaryContact && (
         <ContactPreviewModal
           open={isContactModalOpen}
@@ -749,22 +761,33 @@ export function LeadSalesRow({
           }}
         />
       )}
-    </TableRow>
+    </tr>
   )
 }
 
 export function LeadSalesRowSkeleton() {
+  // Use column configuration for consistent widths with header
+  const resizableColumns = getResizableColumns()
+  const checkboxCol = SALES_VIEW_COLUMNS.find((c) => c.id === 'checkbox')
+  const actionsCol = SALES_VIEW_COLUMNS.find((c) => c.id === 'actions')
+
   return (
-    <TableRow>
-      <TableCell className="w-[40px] shrink-0"><Skeleton className="h-4 w-4" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-6 w-20" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[200px] shrink-0 whitespace-nowrap"><Skeleton className="h-8 w-full" /></TableCell>
-    </TableRow>
+    <tr className="flex w-full border-b">
+      <td className="p-2 align-middle" style={{ width: checkboxCol?.fixedWidth ?? 40, minWidth: checkboxCol?.fixedWidth ?? 40 }}>
+        <Skeleton className="h-4 w-4" />
+      </td>
+      {resizableColumns.map((col, index) => (
+        <td 
+          key={col.id} 
+          className="p-2 align-middle" 
+          style={{ flex: `0 0 ${col.defaultSize}%` }}
+        >
+          <Skeleton className={index === 0 ? "h-12 w-full" : index === 2 ? "h-6 w-20" : "h-10 w-full"} />
+        </td>
+      ))}
+      <td className="p-2 align-middle" style={{ width: actionsCol?.fixedWidth ?? 200, minWidth: actionsCol?.fixedWidth ?? 200 }}>
+        <Skeleton className="h-8 w-full" />
+      </td>
+    </tr>
   )
 }
