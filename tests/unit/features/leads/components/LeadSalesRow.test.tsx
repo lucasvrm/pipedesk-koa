@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { LeadSalesRow } from '@/features/leads/components/LeadSalesRow'
+import { ColumnWidthsProvider } from '@/features/leads/hooks/useResizableColumns'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
 // Mock the SystemMetadata context
@@ -38,7 +39,8 @@ vi.mock('@/services/tagService', () => ({
   useTagOperations: () => ({
     assign: { mutateAsync: vi.fn(), isPending: false },
     unassign: { mutateAsync: vi.fn(), isPending: false }
-  })
+  }),
+  createTag: vi.fn()
 }))
 
 // Mock the userService hooks
@@ -66,17 +68,25 @@ describe('LeadSalesRow', () => {
     status: 'status-1'
   }
 
-  it('renders fallback when lastInteractionAt is invalid', () => {
-    render(
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
       <MemoryRouter>
         <QueryClientProvider client={queryClient}>
-          <LeadSalesRow
-            {...baseLead}
-            lastInteractionAt="invalid-date"
-            lastInteractionType="email"
-          />
+          <ColumnWidthsProvider>
+            {ui}
+          </ColumnWidthsProvider>
         </QueryClientProvider>
       </MemoryRouter>
+    )
+  }
+
+  it('renders fallback when lastInteractionAt is invalid', () => {
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        lastInteractionAt="invalid-date"
+        lastInteractionType="email"
+      />
     )
 
     expect(screen.getByText('Nenhuma interação')).toBeInTheDocument()
@@ -84,25 +94,13 @@ describe('LeadSalesRow', () => {
   })
 
   it('renders status badge with correct label', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderWithProviders(<LeadSalesRow {...baseLead} />)
 
     expect(screen.getByText('Novo')).toBeInTheDocument()
   })
 
   it('renders "Sem status" when status is not provided', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} status={undefined} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderWithProviders(<LeadSalesRow {...baseLead} status={undefined} />)
 
     expect(screen.getByText('Sem status')).toBeInTheDocument()
   })
@@ -111,13 +109,7 @@ describe('LeadSalesRow', () => {
     const onScheduleClick = vi.fn()
     const user = userEvent.setup()
     
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderWithProviders(<LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />)
 
     // Find the row and hover to make action buttons visible
     const row = screen.getByText('Empresa Teste').closest('tr')
@@ -151,13 +143,7 @@ describe('LeadSalesRow', () => {
   it('renders calendar button', async () => {
     const user = userEvent.setup()
     
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderWithProviders(<LeadSalesRow {...baseLead} />)
 
     const row = screen.getByText('Empresa Teste').closest('tr')
     if (row) {
@@ -174,46 +160,32 @@ describe('LeadSalesRow', () => {
   })
 
   it('renders nextAction.label correctly from backend', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow
-            {...baseLead}
-            nextAction={{ code: 'presentation', label: 'Apresentação' }}
-          />
-        </QueryClientProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{ code: 'presentation', label: 'Apresentação' }}
+      />
     )
 
     expect(screen.getByText('Apresentação')).toBeInTheDocument()
   })
 
   it('renders "Sem próxima ação" fallback when nextAction is undefined', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} nextAction={undefined} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    renderWithProviders(<LeadSalesRow {...baseLead} nextAction={undefined} />)
 
     expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
   })
 
   it('renders nextAction with reason when provided', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow
-            {...baseLead}
-            nextAction={{
-              code: 'follow_up',
-              label: 'Follow-up',
-              reason: 'Cliente solicitou mais informações'
-            }}
-          />
-        </QueryClientProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'follow_up',
+          label: 'Follow-up',
+          reason: 'Cliente solicitou mais informações'
+        }}
+      />
     )
 
     expect(screen.getByText('Follow-up')).toBeInTheDocument()

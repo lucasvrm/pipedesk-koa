@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { LeadsSalesList } from '../components/LeadsSalesList'
+import { ColumnWidthsProvider } from '../hooks/useResizableColumns'
 import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Progress } from '@/components/ui/progress'
 import { QuickActionsMenu, QuickAction } from '@/components/QuickActionsMenu'
@@ -1115,28 +1116,30 @@ export default function LeadsListPage() {
           ) : (
             <div className="animate-in fade-in duration-300">
               {currentView === 'sales' ? (
-                <LeadsSalesList
-                  leads={paginatedLeads as LeadSalesViewItem[]}
-                  isLoading={isActiveLoading}
-                  orderBy={salesOrderBy}
-                  selectedIds={selectedIds}
-                  onSelectAll={toggleSelectAll}
-                  onSelectOne={toggleSelectOne}
-                  onNavigate={(id) => navigate(`/leads/${id}`)}
-                  onScheduleClick={handleScheduleClick}
-                  getLeadActions={(lead): QuickAction[] => {
-                    const id = lead.leadId ?? lead.lead_id ?? lead.id
-                    if (!id) return []
+                <ColumnWidthsProvider>
+                  <LeadsSalesList
+                    leads={paginatedLeads as LeadSalesViewItem[]}
+                    isLoading={isActiveLoading}
+                    orderBy={salesOrderBy}
+                    selectedIds={selectedIds}
+                    onSelectAll={toggleSelectAll}
+                    onSelectOne={toggleSelectOne}
+                    onNavigate={(id) => navigate(`/leads/${id}`)}
+                    onScheduleClick={handleScheduleClick}
+                    getLeadActions={(lead): QuickAction[] => {
+                      const id = lead.leadId ?? lead.lead_id ?? lead.id
+                      if (!id) return []
 
-                    return [
-                      {
-                        id: 'view',
-                        label: 'Detalhes',
-                        onClick: () => navigate(`/leads/${id}`)
-                      }
-                    ]
-                  }}
-                />
+                      return [
+                        {
+                          id: 'view',
+                          label: 'Detalhes',
+                          onClick: () => navigate(`/leads/${id}`)
+                        }
+                      ]
+                    }}
+                  />
+                </ColumnWidthsProvider>
               ) : currentView === 'kanban' ? (
                 <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
               ) : (

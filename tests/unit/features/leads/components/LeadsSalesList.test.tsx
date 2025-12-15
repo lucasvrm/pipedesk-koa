@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { LeadsSalesList } from '@/features/leads/components/LeadsSalesList'
+import { ColumnWidthsProvider } from '@/features/leads/hooks/useResizableColumns'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
 // Mock the SystemMetadata context
@@ -28,7 +29,8 @@ vi.mock('@/services/tagService', () => ({
   useTagOperations: () => ({
     assign: { mutateAsync: vi.fn(), isPending: false },
     unassign: { mutateAsync: vi.fn(), isPending: false }
-  })
+  }),
+  createTag: vi.fn()
 }))
 
 // Mock the userService hooks
@@ -57,7 +59,9 @@ describe('LeadsSalesList', () => {
     return render(
       <MemoryRouter>
         <QueryClientProvider client={queryClient}>
-          {ui}
+          <ColumnWidthsProvider>
+            {ui}
+          </ColumnWidthsProvider>
         </QueryClientProvider>
       </MemoryRouter>
     )
