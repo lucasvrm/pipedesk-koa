@@ -603,7 +603,7 @@ export function LeadSalesRow({
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                       onClick={handleWhatsApp}
                     >
                       <MessageCircle className="h-4 w-4" />
@@ -621,7 +621,7 @@ export function LeadSalesRow({
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       onClick={handleEmail}
                     >
                       <Mail className="h-4 w-4" />
@@ -639,7 +639,7 @@ export function LeadSalesRow({
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-gray-900 hover:text-black hover:bg-gray-100"
                       onClick={handlePhone}
                     >
                       <Phone className="h-4 w-4" />
@@ -657,7 +657,7 @@ export function LeadSalesRow({
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                       onClick={handleOpenDriveFolder}
                       disabled={isDriveLoading}
                     >
