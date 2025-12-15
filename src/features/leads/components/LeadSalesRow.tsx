@@ -50,6 +50,12 @@ const PRIORITY_LABELS: Record<LeadPriorityBucket, string> = {
   cold: 'Prioridade Baixa'
 }
 
+const PRIORITY_TOOLTIP_COLORS: Record<LeadPriorityBucket, string> = {
+  hot: 'bg-red-600 text-white',
+  warm: 'bg-yellow-400 text-gray-900',
+  cold: 'bg-blue-600 text-white'
+}
+
 function getInitials(name?: string) {
   if (!name) return 'NA'
   const parts = name.trim().split(' ')
@@ -423,13 +429,13 @@ export function LeadSalesRow({
                   <Flame className="h-[18px] w-[18px]" />
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs text-left space-y-1">
-                <div className="font-semibold text-primary-foreground">{PRIORITY_LABELS[safePriorityBucket]}</div>
+              <TooltipContent className={`max-w-xs text-left space-y-1 ${PRIORITY_TOOLTIP_COLORS[safePriorityBucket]}`}>
+                <div className="font-semibold">{PRIORITY_LABELS[safePriorityBucket]}</div>
                 {priorityScore !== undefined && priorityScore !== null && (
-                  <div className="text-primary-foreground/80">Score: {priorityScore}</div>
+                  <div className="opacity-90">Score: {priorityScore}</div>
                 )}
                 {safePriorityDescription && (
-                  <div className="text-primary-foreground/80 text-xs leading-relaxed">{safePriorityDescription}</div>
+                  <div className="opacity-90 text-xs leading-relaxed">{safePriorityDescription}</div>
                 )}
               </TooltipContent>
             </Tooltip>
