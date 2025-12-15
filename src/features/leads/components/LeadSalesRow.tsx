@@ -126,7 +126,10 @@ const isConstructableResizeObserver = (() => {
   }
 })()
 
-if (!isConstructableResizeObserver && typeof window !== 'undefined') {
+const shouldPolyfillResizeObserver = !isConstructableResizeObserver && typeof window !== 'undefined' && process.env.NODE_ENV === 'test'
+const canUseResizeObserver = isConstructableResizeObserver || shouldPolyfillResizeObserver
+
+if (shouldPolyfillResizeObserver) {
   ;(window as unknown as Record<string, unknown>).ResizeObserver = class {
     observe() {}
     unobserve() {}
@@ -153,18 +156,21 @@ export function truncateTags(tags: LeadTag[] = [], maxWidth: number): { visible:
   const visible: LeadTag[] = []
   let usedWidth = 0
 
-  tags.forEach((tag, index) => {
+  for (let index = 0; index < tags.length; index += 1) {
+    const tag = tags[index]
     const label = safeString(tag?.name, 'Tag')
     const estimatedTagWidth = Math.min(maxWidth, label.length * AVERAGE_CHAR_WIDTH + TAG_HORIZONTAL_PADDING)
     const gap = visible.length > 0 ? TAG_GAP : 0
     const remaining = tags.length - (index + 1)
     const reservedForMore = remaining > 0 ? MORE_BADGE_WIDTH : 0
 
-    if (usedWidth + gap + estimatedTagWidth + reservedForMore <= maxWidth) {
-      visible.push(tag)
-      usedWidth += gap + estimatedTagWidth
+    if (usedWidth + gap + estimatedTagWidth + reservedForMore > maxWidth) {
+      break
     }
-  })
+
+    visible.push(tag)
+    usedWidth += gap + estimatedTagWidth
+  }
 
   return {
     visible,
@@ -225,7 +231,7 @@ export function LeadSalesRow({
       }
     }
 
-    if (typeof ResizeObserver === 'function' && tagContainerRef.current) {
+    if (canUseResizeObserver && tagContainerRef.current) {
       try {
         observer = new ResizeObserver(() => updateWidth())
         observer.observe(tagContainerRef.current)
