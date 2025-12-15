@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { LeadSalesRow } from '@/features/leads/components/LeadSalesRow'
+import { LeadSalesRow, getUrgencyLevel } from '@/features/leads/components/LeadSalesRow'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
 // Mock the SystemMetadata context
@@ -38,7 +38,8 @@ vi.mock('@/services/tagService', () => ({
   useTagOperations: () => ({
     assign: { mutateAsync: vi.fn(), isPending: false },
     unassign: { mutateAsync: vi.fn(), isPending: false }
-  })
+  }),
+  createTag: vi.fn().mockResolvedValue({ id: 'new-tag', name: 'New Tag', color: '#000000' })
 }))
 
 // Mock the userService hooks
@@ -218,5 +219,71 @@ describe('LeadSalesRow', () => {
 
     expect(screen.getByText('Follow-up')).toBeInTheDocument()
     expect(screen.getByText('Cliente solicitou mais informações')).toBeInTheDocument()
+  })
+})
+
+describe('getUrgencyLevel', () => {
+  // Helper to create dates relative to today
+  const getDateString = (daysFromNow: number): string => {
+    const date = new Date()
+    date.setDate(date.getDate() + daysFromNow)
+    return date.toISOString()
+  }
+
+  it('returns "none" when dueAt is undefined', () => {
+    expect(getUrgencyLevel(undefined)).toBe('none')
+  })
+
+  it('returns "none" when dueAt is null', () => {
+    expect(getUrgencyLevel(null)).toBe('none')
+  })
+
+  it('returns "none" when dueAt is an invalid date string', () => {
+    expect(getUrgencyLevel('invalid-date')).toBe('none')
+  })
+
+  it('returns "urgent" when dueAt is today', () => {
+    const today = getDateString(0)
+    expect(getUrgencyLevel(today)).toBe('urgent')
+  })
+
+  it('returns "urgent" when dueAt is in the past (overdue)', () => {
+    const yesterday = getDateString(-1)
+    expect(getUrgencyLevel(yesterday)).toBe('urgent')
+  })
+
+  it('returns "urgent" when dueAt is far in the past', () => {
+    const lastWeek = getDateString(-7)
+    expect(getUrgencyLevel(lastWeek)).toBe('urgent')
+  })
+
+  it('returns "important" when dueAt is tomorrow (1 day)', () => {
+    const tomorrow = getDateString(1)
+    expect(getUrgencyLevel(tomorrow)).toBe('important')
+  })
+
+  it('returns "important" when dueAt is in 2 days', () => {
+    const twoDays = getDateString(2)
+    expect(getUrgencyLevel(twoDays)).toBe('important')
+  })
+
+  it('returns "important" when dueAt is in 3 days', () => {
+    const threeDays = getDateString(3)
+    expect(getUrgencyLevel(threeDays)).toBe('important')
+  })
+
+  it('returns "normal" when dueAt is in 4 days', () => {
+    const fourDays = getDateString(4)
+    expect(getUrgencyLevel(fourDays)).toBe('normal')
+  })
+
+  it('returns "normal" when dueAt is in 7 days', () => {
+    const sevenDays = getDateString(7)
+    expect(getUrgencyLevel(sevenDays)).toBe('normal')
+  })
+
+  it('returns "normal" when dueAt is far in the future', () => {
+    const nextMonth = getDateString(30)
+    expect(getUrgencyLevel(nextMonth)).toBe('normal')
   })
 })

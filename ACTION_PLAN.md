@@ -150,6 +150,26 @@ const handleOpenChange = useCallback((isOpen: boolean) => {
 
 ## Histórico de Alterações Anteriores
 
+### Urgency Color System for Next Action Cards (2025-12-15)
+- Arquivos: 
+  - `src/features/leads/components/LeadSalesRow.tsx`
+  - `src/services/leadsSalesViewService.ts`
+  - `tests/unit/features/leads/components/LeadSalesRow.test.tsx`
+- Objetivo: Implementar sistema de cores de urgência para cards de "Próxima Ação"
+- Funcionalidades:
+  - 🔴 **Urgente** (atrasado/vence hoje): Vermelho, borda e fundo com contraste acessível
+  - 🟡 **Importante** (vence em 1-3 dias): Amarelo/Amber, contraste WCAG 2.1 AA
+  - 🔵 **Normal** (vence em 4+ dias): Azul, estilo simplificado
+  - ⚪ **Sem próxima ação**: Neutro (cinza discreto)
+- Implementação:
+  - Criada função `getUrgencyLevel(dueAt)` para calcular nível de urgência baseado na data
+  - Adicionado tipo `UrgencyLevel` exportado para uso em outros componentes
+  - Configuração `URGENCY_STYLES` com estilos Tailwind para borda e fundo (light + dark mode)
+  - Badge de próxima ação agora usa estilos dinâmicos baseados na urgência
+  - Interface `LeadSalesViewItem` atualizada para incluir campo `dueAt` em `nextAction`
+- Testes: 12 testes unitários adicionados para `getUrgencyLevel`
+- Status: ✅ Concluído
+
 ### Priority Tooltip Colors (2025-12-15)
 - Arquivo: `src/features/leads/components/LeadSalesRow.tsx`
 - Objetivo: Ajustar cores dos tooltips de prioridade (hot=vermelho, warm=amarelo, cold=azul)
