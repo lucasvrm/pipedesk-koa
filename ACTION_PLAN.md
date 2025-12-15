@@ -1,24 +1,116 @@
-# 📋 ACTION_PLAN.md - Critical Bug Fixes (/leads)
+# 📋 ACTION_PLAN.md - UI Improvements & Bug Fixes (/leads)
 
 ## ✅ Status: CONCLUÍDO
 
 **Data:** 2025-12-15  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsListPage.tsx, TagManagerPopover.tsx
+**Escopo:** Frontend - LeadsListPage.tsx, LeadsKanban.tsx, TagManagerPopover.tsx
 
 ---
 
-## 🎯 Objetivo
+## 🎯 Objetivos
 
-Corrigir 2 bugs críticos na rota `/leads`:
+### Fase 1: Critical Bug Fixes ✅ CONCLUÍDO
 1. **Bug #1:** Crash "ReferenceError: Trash is not defined" ao marcar checkboxes de seleção
 2. **Bug #2:** Forçar recarregamento da sales view apenas após fechar o componente de tags (não durante edição)
+
+### Fase 2: Kanban View Full-Screen Layout ✅ CONCLUÍDO
+3. **UI Enhancement:** Ajustar o layout da Kanban View para usar a tela inteira (remover padding/margin excessivo)
 
 ---
 
 ## 📝 Alterações Realizadas
 
-### Arquivos Modificados
+### Fase 2: Kanban View Full-Screen Layout (2025-12-15)
+
+#### Arquivos Modificados
+- `src/features/leads/pages/LeadsListPage.tsx`
+- `src/features/leads/components/LeadsKanban.tsx`
+
+#### Problema
+A Kanban View não utilizava toda a tela disponível, tendo padding excessivo e limitações de altura que prejudicavam a visualização dos leads.
+
+#### Solução Implementada
+
+**1. LeadsListPage.tsx - Container Principal**
+```diff
+- <div className="p-6 min-h-screen bg-background space-y-6">
++ <div className={currentView === 'kanban' ? 'h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] bg-background flex flex-col' : 'p-6 min-h-screen bg-background space-y-6'}>
+
+- <div className="flex items-center justify-between">
++ {currentView !== 'kanban' && (
++   <div className="flex items-center justify-between">
++     ...
++   </div>
++ )}
+
+- {metrics}
++ {currentView !== 'kanban' && metrics}
+
+- <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
++ <div className={currentView === 'kanban' ? 'flex-1 overflow-hidden flex flex-col' : 'border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col'}>
+
+- <div className="flex-1 min-h-[500px]">
++ <div className={currentView === 'kanban' ? 'flex-1 overflow-hidden' : 'flex-1 min-h-[500px]'}>
+```
+
+**2. LeadsKanban.tsx - Componente Kanban**
+```diff
+- <div className="w-full space-y-4">
++ <div className="h-full w-full flex flex-col">
+
+- <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4">
++ <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4 pb-2 flex-shrink-0">
+
+- <div className="w-full flex gap-3 overflow-x-auto pb-4 px-4">
++ <div className="flex-1 w-full flex gap-3 overflow-x-auto overflow-y-hidden px-4 pb-4">
+```
+
+**3. DroppableColumn - Colunas do Kanban**
+```diff
+- 'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[280px] flex flex-col min-h-[400px]'
++ 'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[320px] min-w-[320px] flex flex-col h-full'
+
+- <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between">
++ <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between flex-shrink-0">
+
+- <div className="p-3 space-y-2 flex-1">
++ <div className="p-3 space-y-2 flex-1 overflow-y-auto">
+```
+
+#### Benefícios
+- ✅ Kanban usa 100% da largura disponível (sem margens excessivas)
+- ✅ Kanban usa 100% da altura disponível (descontando header de 64px)
+- ✅ Scroll horizontal funciona quando há muitas colunas
+- ✅ Scroll vertical dentro de cada coluna para muitos cards
+- ✅ Colunas com largura aumentada (280px → 320px) para melhor legibilidade
+- ✅ Header e metrics ocultos em Kanban view para maximizar espaço
+- ✅ Layout responsivo mantido
+
+#### Decisões Técnicas
+1. **Por que usar `h-[calc(100vh-4rem)]`?**
+   - O header tem altura fixa de `h-16` (4rem = 64px)
+   - Garante que Kanban use todo o espaço disponível sem overflow
+
+2. **Por que ocultar header e metrics no Kanban?**
+   - Maximiza espaço vertical para visualização de leads
+   - Cria experiência mais imersiva e focada
+   - Informações ainda acessíveis via toolbar/navegação
+
+3. **Por que usar `overflow-x-auto` e não `overflow-x-scroll`?**
+   - `auto`: mostra scrollbar apenas quando necessário (melhor UX)
+   - `scroll`: mostra scrollbar sempre (pode parecer broken em telas grandes)
+
+4. **Por que aumentar largura das colunas de 280px para 320px?**
+   - Melhor legibilidade dos cards de lead
+   - Segue padrões comuns de Kanban boards
+   - Ainda permite 5+ colunas em telas 1920px
+
+---
+
+### Fase 1: Critical Bug Fixes (2025-12-15)
+
+#### Arquivos Modificados
 - `src/features/leads/pages/LeadsListPage.tsx`
 - `src/features/leads/components/TagManagerPopover.tsx`
 

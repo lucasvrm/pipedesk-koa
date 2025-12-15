@@ -1059,27 +1059,29 @@ export default function LeadsListPage() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-background space-y-6">
+    <div className={currentView === 'kanban' ? 'h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] bg-background flex flex-col' : 'p-6 min-h-screen bg-background space-y-6'}>
       
       {/* Header da Página (Título) */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-          <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
+      {currentView !== 'kanban' && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
+            <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Metrics Section */}
-      {metrics}
+      {currentView !== 'kanban' && metrics}
 
       {/* FIXED: O Container Unificado (Card Principal) */}
-      <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
+      <div className={currentView === 'kanban' ? 'flex-1 overflow-hidden flex flex-col' : 'border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col'}>
         
         {/* Toolbar no topo do Card */}
         {unifiedToolbar}
 
         {/* Conteúdo da Lista dentro do Card */}
-        <div className="flex-1 min-h-[500px]"> 
+        <div className={currentView === 'kanban' ? 'flex-1 overflow-hidden' : 'flex-1 min-h-[500px]'}> 
           {isActiveLoading ? (
             <div className="p-6 space-y-4">
               <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
