@@ -60,6 +60,9 @@ const PRIORITY_TOOLTIP_COLORS: Record<LeadPriorityBucket, string> = {
 // Urgency level type for next action cards
 type UrgencyLevel = 'urgent' | 'important' | 'normal' | 'none'
 
+// Milliseconds in a day for date calculations
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+
 /**
  * Calculate urgency level based on due date
  * - urgent: overdue or due today (red)
@@ -80,7 +83,7 @@ function getUrgencyLevel(dueAt: string | null | undefined): UrgencyLevel {
   dueDateNormalized.setHours(0, 0, 0, 0)
   
   const diffTime = dueDateNormalized.getTime() - today.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const diffDays = Math.ceil(diffTime / MS_PER_DAY)
   
   if (diffDays <= 0) return 'urgent'     // Overdue or today
   if (diffDays <= 3) return 'important'  // 1-3 days
