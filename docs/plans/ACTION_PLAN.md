@@ -314,6 +314,38 @@ Entregáveis finais:
 
 ## Correções de Bugs e Manutenção
 
+### ✅ Bug Fix: Modal de Tags navegação indevida + UX (15/12/2024)
+**Status**: ✅ Concluída  
+**Complexidade**: 85/100
+
+**Problema**:
+- Na rota `/leads` (Sales View), interações no modal de tags disparavam navegação indevida para `/leads/{id}`
+- Cliques no search bar, no X para remover tags, nas tags para adicionar/remover causavam redirecionamento
+- Cores dos badges em "Tags atuais" com baixo contraste
+- Layout fixo sem suporte a múltiplas linhas de tags
+
+**Solução Implementada**:
+- **LeadSalesRow.tsx**: Adicionado guard `handleRowClick()` que ignora clique na linha quando `isTagsModalOpen` ou `isContactModalOpen` estiver true
+- **LeadTagsModal.tsx**: 
+  - Adicionado `e.stopPropagation()` em todos os handlers interativos (Input, Badge, Button)
+  - Badges de "Tags atuais" agora usam texto escuro (`hsl(var(--foreground))`) com fundo tintado leve da cor da tag
+  - Borda esquerda colorida (3px) para referência visual da cor da tag
+  - Seção "Tags atuais" com `max-h-[7.5rem] overflow-y-auto` para ~4 linhas com scroll interno
+  - Espaçamento aumentado (`pt-2` e `mb-2`) entre seções
+
+**Resultados**:
+- ✅ Nenhum clique no modal dispara navegação para detalhe do lead
+- ✅ Cores com contraste adequado e UI mais limpa
+- ✅ "Tags atuais" cresce até ~4 linhas e depois scrolla internamente
+- ✅ Testes unitários passam (8/8)
+- ✅ Sem vulnerabilidades de segurança
+
+**Arquivos Modificados**:
+- `src/features/leads/components/LeadSalesRow.tsx`
+- `src/features/leads/components/LeadTagsModal.tsx`
+
+---
+
 ### ✅ Bug Fix: React Error #310 em SystemSettingsSection (14/12/2024)
 **Status**: ✅ Concluída  
 **Complexidade**: 45/100

@@ -46,7 +46,8 @@ export function LeadTagsModal({ open, onOpenChange, leadId, leadName }: LeadTags
   // Set of assigned tag IDs for quick lookup
   const assignedTagIds = useMemo(() => new Set(assignedTags.map((t) => t.id)), [assignedTags])
 
-  const handleToggleTag = async (tag: Tag) => {
+  const handleToggleTag = async (e: React.MouseEvent, tag: Tag) => {
+    e.stopPropagation()
     const isAssigned = assignedTagIds.has(tag.id)
 
     try {
@@ -99,28 +100,35 @@ export function LeadTagsModal({ open, onOpenChange, leadId, leadName }: LeadTags
             placeholder="Buscar tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
             className="h-9"
           />
 
           {/* Currently assigned tags */}
           {assignedTags.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 mb-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Tags atuais
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              {/* Dynamic height: auto up to ~4 lines, then scroll internally */}
+              <div className="flex flex-wrap gap-1.5 max-h-[7.5rem] overflow-y-auto">
                 {assignedTags.map((tag) => {
                   const safeColor = safeString(tag.color, '#888')
                   return (
                     <Badge
                       key={tag.id}
                       variant="secondary"
-                      className="cursor-pointer hover:opacity-80 transition-opacity gap-1 pr-1"
-                      style={{ backgroundColor: `${safeColor}20`, color: safeColor, borderColor: `${safeColor}40` }}
-                      onClick={() => handleToggleTag(tag)}
+                      className="cursor-pointer hover:opacity-80 transition-opacity gap-1 pr-1 border"
+                      style={{ 
+                        backgroundColor: `${safeColor}15`, 
+                        color: 'hsl(var(--foreground))', 
+                        borderColor: safeColor,
+                        borderLeftWidth: '3px'
+                      }}
+                      onClick={(e) => handleToggleTag(e, tag)}
                     >
                       {safeString(tag.name, 'Tag')}
-                      <X className="h-3 w-3 ml-1" />
+                      <X className="h-3 w-3 ml-1 opacity-60 hover:opacity-100" />
                     </Badge>
                   )
                 })}
@@ -129,7 +137,7 @@ export function LeadTagsModal({ open, onOpenChange, leadId, leadName }: LeadTags
           )}
 
           {/* Available tags list */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {assignedTags.length > 0 ? 'Adicionar mais tags' : 'Selecionar tags'}
             </p>
@@ -153,7 +161,7 @@ export function LeadTagsModal({ open, onOpenChange, leadId, leadName }: LeadTags
                         key={tag.id}
                         variant="ghost"
                         className="w-full justify-start h-9 px-2 hover:bg-muted/50"
-                        onClick={() => handleToggleTag(tag)}
+                        onClick={(e) => handleToggleTag(e, tag)}
                         disabled={isMutating}
                       >
                         <div
