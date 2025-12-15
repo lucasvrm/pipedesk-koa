@@ -1,18 +1,24 @@
-# 📋 ACTION_PLAN.md - Critical Bug Fixes (/leads)
+# 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## ✅ Status: CONCLUÍDO
+## 🚧 Status: EM ANDAMENTO (Coluna de Tags + Larguras)
 
 **Data:** 2025-12-15  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsListPage.tsx, TagManagerPopover.tsx
+**Escopo:** Frontend - LeadsListPage.tsx, TagManagerPopover.tsx, LeadSalesRow.tsx, LeadsSalesList.tsx
 
 ---
 
-## 🎯 Objetivo
+## 🎯 Objetivo Atual
 
-Corrigir 2 bugs críticos na rota `/leads`:
-1. **Bug #1:** Crash "ReferenceError: Trash is not defined" ao marcar checkboxes de seleção
-2. **Bug #2:** Forçar recarregamento da sales view apenas após fechar o componente de tags (não durante edição)
+1. Tornar as tags sempre visíveis na coluna "Tags" (renderização truncada dinâmica com `+X`).
+2. Redistribuir larguras das colunas (Empresa -10%, Contato Principal -10%, Próxima Ação -5%, Responsável -10%) transferindo o espaço para "Tags".
+3. Garantir responsividade desktop/tablet/mobile e manter o mesmo comportamento de clique (abrir gerenciador de tags).
+
+### Tarefas em Andamento
+- [ ] Implementar helper `truncateTags` com cálculo dinâmico por largura.
+- [ ] Ajustar renderização das tags com badges e botão `+X` reusando o clique atual.
+- [ ] Redistribuir larguras no header e nas linhas/skeletons.
+- [ ] Validar lint/tests/build após ajustes.
 
 ---
 

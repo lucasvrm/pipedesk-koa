@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, ReactNode } from 'react'
 import { X, Check, Tag as TagIcon, Plus, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,9 +24,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 interface TagManagerPopoverProps {
   leadId: string
   leadName?: string
+  triggerContent?: ReactNode
 }
 
-export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) {
+export function TagManagerPopover({ leadId, leadName, triggerContent }: TagManagerPopoverProps) {
   const [open, setOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const queryClient = useQueryClient()
@@ -188,18 +189,20 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <div className="flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-muted-foreground hover:text-foreground"
-          >
-            <TagIcon className="h-4 w-4 mr-1" />
-            <span className="text-xs">
-              {assignedTags.length > 0 ? `${assignedTags.length} tag${assignedTags.length > 1 ? 's' : ''}` : 'Tags'}
-            </span>
-          </Button>
-        </div>
+        {triggerContent ?? (
+          <div className="flex">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            >
+              <TagIcon className="h-4 w-4 mr-1" />
+              <span className="text-xs">
+                {assignedTags.length > 0 ? `${assignedTags.length} tag${assignedTags.length > 1 ? 's' : ''}` : 'Tags'}
+              </span>
+            </Button>
+          </div>
+        )}
       </PopoverTrigger>
       <PopoverContent 
         align="start" 

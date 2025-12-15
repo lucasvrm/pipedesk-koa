@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, Flame, CalendarDays } from 'lucide-react'
@@ -115,6 +115,63 @@ const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; textCol
   }
 }
 
+const isConstructableResizeObserver = (() => {
+  if (typeof ResizeObserver !== 'function') return false
+  try {
+    // eslint-disable-next-line no-new
+    new ResizeObserver(() => {})
+    return true
+  } catch {
+    return false
+  }
+})()
+
+if (!isConstructableResizeObserver && typeof window !== 'undefined') {
+  ;(window as unknown as Record<string, unknown>).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+}
+
+type LeadTag = NonNullable<LeadSalesViewItem['tags']>[number]
+
+const AVERAGE_CHAR_WIDTH = 7
+const TAG_HORIZONTAL_PADDING = 22
+const TAG_GAP = 8
+const MORE_BADGE_WIDTH = 44
+
+export function truncateTags(tags: LeadTag[] = [], maxWidth: number): { visible: LeadTag[]; hiddenCount: number } {
+  if (!tags.length) {
+    return { visible: [], hiddenCount: 0 }
+  }
+
+  if (!maxWidth || maxWidth <= 0) {
+    return { visible: tags, hiddenCount: 0 }
+  }
+
+  const visible: LeadTag[] = []
+  let usedWidth = 0
+
+  tags.forEach((tag, index) => {
+    const label = safeString(tag?.name, 'Tag')
+    const estimatedTagWidth = Math.min(maxWidth, label.length * AVERAGE_CHAR_WIDTH + TAG_HORIZONTAL_PADDING)
+    const gap = visible.length > 0 ? TAG_GAP : 0
+    const remaining = tags.length - (index + 1)
+    const reservedForMore = remaining > 0 ? MORE_BADGE_WIDTH : 0
+
+    if (usedWidth + gap + estimatedTagWidth + reservedForMore <= maxWidth) {
+      visible.push(tag)
+      usedWidth += gap + estimatedTagWidth
+    }
+  })
+
+  return {
+    visible,
+    hiddenCount: Math.max(tags.length - visible.length, 0)
+  }
+}
+
 export function LeadSalesRow({
   id,
   leadId,
@@ -138,13 +195,55 @@ export function LeadSalesRow({
   origin,
   createdAt,
   created_at,
-  onScheduleClick
+  onScheduleClick,
+  tags
 }: LeadSalesRowProps) {
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
   const [isDriveLoading, setIsDriveLoading] = useState(false)
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
+  const tagContainerRef = useRef<HTMLButtonElement | null>(null)
+  const [tagColumnWidth, setTagColumnWidth] = useState(0)
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (tagContainerRef.current) {
+        setTagColumnWidth(tagContainerRef.current.getBoundingClientRect().width)
+      }
+    }
+
+    updateWidth()
+
+    let observer: ResizeObserver | undefined
+    let resizeListenerAttached = false
+
+    const attachWindowResize = () => {
+      if (!resizeListenerAttached) {
+        window.addEventListener('resize', updateWidth)
+        resizeListenerAttached = true
+      }
+    }
+
+    if (typeof ResizeObserver === 'function' && tagContainerRef.current) {
+      try {
+        observer = new ResizeObserver(() => updateWidth())
+        observer.observe(tagContainerRef.current)
+      } catch (error) {
+        console.warn('[LeadSalesRow] ResizeObserver unavailable, falling back to window resize', error)
+        attachWindowResize()
+      }
+    } else {
+      attachWindowResize()
+    }
+
+    return () => {
+      observer?.disconnect()
+      if (resizeListenerAttached) {
+        window.removeEventListener('resize', updateWidth)
+      }
+    }
+  }, [])
 
   // Get the actual lead ID from various possible fields
   const actualLeadId = id ?? leadId ?? lead_id
@@ -443,6 +542,22 @@ export function LeadSalesRow({
   const urgencyLevel = getUrgencyLevel(nextActionDueAt)
   const urgencyStyle = URGENCY_STYLES[urgencyLevel]
   const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
+  const normalizedTags = useMemo<LeadTag[]>(() => {
+    if (!Array.isArray(tags)) return []
+
+    return tags
+      .filter((tag): tag is LeadTag => Boolean(tag && typeof tag === 'object'))
+      .map((tag) => ({
+        ...tag,
+        name: safeString(tag.name, 'Tag'),
+        color: safeStringOptional(tag.color)
+      }))
+  }, [tags])
+
+  const { visible: visibleTags, hiddenCount: hiddenTagCount } = useMemo(
+    () => truncateTags(normalizedTags, tagColumnWidth || 240),
+    [normalizedTags, tagColumnWidth]
+  )
 
   const parsedLastInteractionDate = lastInteractionAt
     ? (() => {
@@ -466,6 +581,52 @@ export function LeadSalesRow({
     onClick?.()
   }
 
+  const tagTriggerContent = (
+    <button
+      type="button"
+      ref={tagContainerRef}
+      className="w-full min-w-0 rounded-md border border-transparent bg-muted/30 px-2 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      aria-label="Gerenciar tags do lead"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        {visibleTags.length === 0 ? (
+          <Badge variant="outline" className="bg-muted text-muted-foreground text-xs font-medium">
+            Tags
+          </Badge>
+        ) : (
+          <>
+            {visibleTags.map((tag) => {
+              const safeColor = safeStringOptional(tag.color) ?? '#888'
+              return (
+                <Badge
+                  key={tag.id ?? tag.name}
+                  variant="secondary"
+                  className="border text-xs font-medium gap-1 truncate max-w-[160px]"
+                  style={{
+                    backgroundColor: `${safeColor}15`,
+                    color: 'hsl(var(--foreground))',
+                    borderColor: safeColor,
+                    borderLeftWidth: '3px'
+                  }}
+                >
+                  <span className="truncate">{safeString(tag.name, 'Tag')}</span>
+                </Badge>
+              )
+            })}
+            {hiddenTagCount > 0 && (
+              <Badge
+                variant="outline"
+                className="border-dashed bg-muted text-xs font-semibold text-foreground"
+              >
+                +{hiddenTagCount}
+              </Badge>
+            )}
+          </>
+        )}
+      </div>
+    </button>
+  )
+
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleRowClick}>
       <TableCell className="w-[40px] shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -473,7 +634,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Empresa - navigates to Lead Detail */}
-      <TableCell className="min-w-0">
+      <TableCell className="min-w-[200px] lg:w-[16%]">
         <TooltipProvider delayDuration={200}>
           <div className="flex items-start gap-3 min-w-0">
             <Tooltip>
@@ -510,7 +671,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Contato principal - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[190px] lg:w-[16%]" onClick={(e) => e.stopPropagation()}>
         {primaryContact ? (
           <div 
             className="flex items-center gap-3 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
@@ -579,7 +740,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Próxima ação - navigates to Lead Detail, with urgency styling */}
-      <TableCell className="min-w-0">
+      <TableCell className="min-w-[180px] lg:w-[14%]">
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -619,11 +780,12 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[220px] lg:w-[22%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <TagManagerPopover
             leadId={actualLeadId}
             leadName={safeLegalName}
+            triggerContent={tagTriggerContent}
           />
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
@@ -631,7 +793,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Responsável - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[160px] lg:w-[12%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: owner.id, name: owner.name, avatar: owner.avatar } : null}>
             <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
@@ -820,13 +982,13 @@ export function LeadSalesRowSkeleton() {
   return (
     <TableRow>
       <TableCell className="w-[40px] shrink-0"><Skeleton className="h-4 w-4" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
+      <TableCell className="min-w-[200px] lg:w-[16%]"><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell className="min-w-[190px] lg:w-[16%]"><Skeleton className="h-10 w-full" /></TableCell>
       <TableCell className="min-w-0"><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="min-w-[180px] lg:w-[14%]"><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell className="min-w-[220px] lg:w-[22%]"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="min-w-[160px] lg:w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="w-[200px] shrink-0 whitespace-nowrap"><Skeleton className="h-8 w-full" /></TableCell>
     </TableRow>
   )
