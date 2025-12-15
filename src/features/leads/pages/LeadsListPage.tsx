@@ -1062,18 +1062,18 @@ export default function LeadsListPage() {
   return (
     <div className={currentView === 'kanban' ? 'h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] bg-background flex flex-col' : 'p-6 min-h-screen bg-background space-y-6'}>
       
-      {/* Header da Página (Título) */}
-      {currentView !== 'kanban' && (
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-            <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
-          </div>
+      {/* Header da Página (Título) - SEMPRE visível */}
+      <div className={currentView === 'kanban' ? 'px-6 pt-6 pb-4 flex-shrink-0' : 'flex items-center justify-between'}>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
+          <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
         </div>
-      )}
+      </div>
 
-      {/* Metrics Section */}
-      {currentView !== 'kanban' && metrics}
+      {/* Metrics Section - SEMPRE visível */}
+      <div className={currentView === 'kanban' ? 'px-6 pb-4 flex-shrink-0' : ''}>
+        {metrics}
+      </div>
 
       {/* FIXED: O Container Unificado (Card Principal) */}
       <div className={currentView === 'kanban' ? 'flex-1 overflow-hidden flex flex-col' : 'border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col'}>

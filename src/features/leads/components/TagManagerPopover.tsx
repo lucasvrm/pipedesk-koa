@@ -15,11 +15,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTags, useEntityTags, TAG_COLORS, assignTagToEntity, removeTagFromEntity, createTag } from '@/services/tagService'
 import { Tag } from '@/lib/types'
 import { safeString } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+
+const MAX_VISIBLE_TAGS = 2
 
 interface TagManagerPopoverProps {
   leadId: string
@@ -185,20 +188,99 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
   const isLoading = isLoadingTags || isLoadingAssigned
   const isMutating = assign.isPending || unassign.isPending || create.isPending
 
+  // Derive visible/hidden tags for display
+  const visibleTags = assignedTags.slice(0, MAX_VISIBLE_TAGS)
+  const hiddenTags = assignedTags.slice(MAX_VISIBLE_TAGS)
+  const hiddenCount = hiddenTags.length
+
+  // Render the inline tags display (always visible, with +N counter)
+  const renderTagsDisplay = () => {
+    if (assignedTags.length === 0) {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-muted-foreground hover:text-foreground"
+        >
+          <TagIcon className="h-4 w-4 mr-1" />
+          <span className="text-xs">Tags</span>
+        </Button>
+      )
+    }
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {visibleTags.map((tag) => {
+          const safeColor = safeString(tag.color, '#888')
+          return (
+            <Badge 
+              key={tag.id} 
+              variant="secondary" 
+              className="text-[10px] px-2 py-0.5 max-w-[80px] truncate cursor-pointer hover:opacity-80"
+              onClick={(e) => e.stopPropagation()}
+              title={safeString(tag.name, 'Tag')}
+              style={{ 
+                backgroundColor: `${safeColor}20`, 
+                color: 'hsl(var(--foreground))', 
+                borderColor: safeColor,
+                borderWidth: '1px'
+              }}
+            >
+              {safeString(tag.name, 'Tag')}
+            </Badge>
+          )
+        })}
+        
+        {hiddenCount > 0 && (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="inline-block">
+                  <Badge 
+                    variant="outline" 
+                    className="text-[10px] px-2 py-0.5 cursor-help hover:bg-accent"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    +{hiddenCount}
+                  </Badge>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold">Outras tags ({hiddenCount}):</p>
+                  <div className="flex flex-wrap gap-1">
+                    {hiddenTags.map((tag) => {
+                      const safeColor = safeString(tag.color, '#888')
+                      return (
+                        <Badge 
+                          key={tag.id} 
+                          variant="secondary" 
+                          className="text-[10px]"
+                          style={{ 
+                            backgroundColor: `${safeColor}20`, 
+                            borderColor: safeColor,
+                            borderWidth: '1px'
+                          }}
+                        >
+                          {safeString(tag.name, 'Tag')}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+    )
+  }
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <div className="flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-muted-foreground hover:text-foreground"
-          >
-            <TagIcon className="h-4 w-4 mr-1" />
-            <span className="text-xs">
-              {assignedTags.length > 0 ? `${assignedTags.length} tag${assignedTags.length > 1 ? 's' : ''}` : 'Tags'}
-            </span>
-          </Button>
+        <div className="flex cursor-pointer hover:opacity-80 transition-opacity">
+          {renderTagsDisplay()}
         </div>
       </PopoverTrigger>
       <PopoverContent 
