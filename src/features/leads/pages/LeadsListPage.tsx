@@ -751,8 +751,18 @@ export default function LeadsListPage() {
         setCurrentPage(1)
         return normalized
       })
+      // Sync order_by to URL
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev)
+        if (normalized && normalized !== 'priority') {
+          newParams.set('order_by', normalized)
+        } else {
+          newParams.delete('order_by')
+        }
+        return newParams
+      }, { replace: true })
     },
-    [normalizeSalesOrderBy]
+    [normalizeSalesOrderBy, setSearchParams]
   )
 
   const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
