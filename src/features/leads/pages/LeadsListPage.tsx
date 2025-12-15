@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useLeads, useCreateLead, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
+import { useLeads, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { ensureArray } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Plus, LayoutGrid, Globe, ChevronDown, BarChart3, Calendar, Filter, Trash2, Columns3, Tag as TagIcon } from 'lucide-react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -23,6 +22,7 @@ import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
+import { CreateLeadModal } from '../components/CreateLeadModal'
 import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector'
 import { PageContainer } from '@/components/PageContainer'
@@ -286,7 +286,6 @@ export default function LeadsListPage() {
     }
     handleViewChange(mode)
   }, [currentView, isSalesError, handleViewChange])
-  const createLead = useCreateLead()
   const deleteLead = useDeleteLead()
   const updateLead = useUpdateLead()
 
@@ -472,7 +471,6 @@ export default function LeadsListPage() {
   const currentLeads = paginatedLeads as Array<Lead | LeadSalesViewItem>
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [newLeadName, setNewLeadName] = useState('')
 
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [deletingLead, setDeletingLead] = useState<Lead | null>(null)
@@ -488,26 +486,6 @@ export default function LeadsListPage() {
 
   const handleScheduleClick = (lead: Lead) => {
     setLeadToSchedule(lead)
-  }
-
-  const handleCreate = async () => {
-    if (!newLeadName) return
-    if (!profile?.id) {
-      toast.error('Usuário não autenticado')
-      return
-    }
-    try {
-      const lead = await createLead.mutateAsync({
-        data: { legalName: newLeadName },
-        userId: profile.id
-      })
-      setIsCreateOpen(false)
-      setNewLeadName('')
-      navigate(`/leads/${lead.id}`)
-    } catch (error) {
-      console.error(error)
-      toast.error('Erro ao criar lead')
-    }
   }
 
   const handleDelete = async () => {
@@ -1233,24 +1211,7 @@ export default function LeadsListPage() {
       </div>
 
       {/* Dialogs - Outside the card container */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo Lead</DialogTitle>
-            <DialogDescription>Comece adicionando o nome da empresa.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Razão Social / Nome</Label>
-              <Input value={newLeadName} onChange={(e) => setNewLeadName(e.target.value)} placeholder="Ex: Acme Corp Ltda" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!newLeadName}>Criar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateLeadModal open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 
       <LeadEditSheet
         lead={editingLead}
