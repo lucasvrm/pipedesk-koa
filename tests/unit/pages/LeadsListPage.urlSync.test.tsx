@@ -62,6 +62,22 @@ describe('LeadsListPage - URL Synchronization Logic', () => {
       expect(orderByParam).toBe('last_interaction')
     })
 
+    it('should parse order_by=status parameter correctly', () => {
+      const params = new URLSearchParams('order_by=status')
+      const orderByParam = params.get('order_by')
+      
+      expect(orderByParam).toBe('status')
+    })
+
+    it('should parse all valid order_by values', () => {
+      const validOrderByValues = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner']
+      
+      validOrderByValues.forEach(value => {
+        const params = new URLSearchParams(`order_by=${value}`)
+        expect(params.get('order_by')).toBe(value)
+      })
+    })
+
     it('should default order_by to priority when not provided', () => {
       const params = new URLSearchParams('')
       const orderByParam = params.get('order_by') || 'priority'
