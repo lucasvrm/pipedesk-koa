@@ -23,8 +23,6 @@ import { toast } from 'sonner'
 interface TagManagerPopoverProps {
   leadId: string
   leadName?: string
-  currentTags?: Tag[]
-  onUpdate?: (leadId: string, tags: Tag[]) => void
 }
 
 export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) {
@@ -57,8 +55,8 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
     [availableTags, searchTerm]
   )
 
-  const handleToggleTag = async (e: React.MouseEvent, tag: Tag) => {
-    e.stopPropagation()
+  // Core toggle logic without event handling - used by CommandItem onSelect
+  const toggleTag = async (tag: Tag) => {
     const isAssigned = assignedTagIds.has(tag.id)
 
     try {
@@ -240,11 +238,7 @@ export function TagManagerPopover({ leadId, leadName }: TagManagerPopoverProps) 
                       <CommandItem
                         key={tag.id}
                         value={tag.name}
-                        onSelect={() => {
-                          // Create a synthetic event for handleToggleTag
-                          const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent
-                          handleToggleTag(syntheticEvent, tag)
-                        }}
+                        onSelect={() => toggleTag(tag)}
                         className="flex items-center justify-between cursor-pointer"
                         disabled={isMutating}
                       >
