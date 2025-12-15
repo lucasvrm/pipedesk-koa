@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { LeadSalesRow, getUrgencyLevel } from '@/features/leads/components/LeadSalesRow'
+import { LeadSalesRow, getUrgencyLevel, truncateTags } from '@/features/leads/components/LeadSalesRow'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
 // Mock the SystemMetadata context
@@ -219,6 +219,26 @@ describe('LeadSalesRow', () => {
 
     expect(screen.getByText('Follow-up')).toBeInTheDocument()
     expect(screen.getByText('Cliente solicitou mais informações')).toBeInTheDocument()
+  })
+})
+
+describe('truncateTags', () => {
+  const tags = [
+    { id: '1', name: 'Tag 1', color: '#111111' },
+    { id: '2', name: 'Tag 2', color: '#222222' },
+    { id: '3', name: 'Etiqueta longa', color: '#333333' }
+  ]
+
+  it('returns all tags when there is enough space', () => {
+    const result = truncateTags(tags, 400)
+    expect(result.visible).toHaveLength(tags.length)
+    expect(result.hiddenCount).toBe(0)
+  })
+
+  it('hides overflowing tags when space is limited', () => {
+    const result = truncateTags(tags, 80)
+    expect(result.visible.length).toBeLessThan(tags.length)
+    expect(result.hiddenCount).toBe(tags.length - result.visible.length)
   })
 })
 

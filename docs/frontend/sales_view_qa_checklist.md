@@ -152,6 +152,22 @@ Este documento descreve os passos para validação manual das funcionalidades de
 
 ---
 
+## Cenário 6: Coluna "Tags" com truncamento dinâmico
+
+### Passos
+
+1. Abra `/leads` na Sales View com leads que possuam mais de 3 tags.
+2. Redimensione a janela entre desktop e tablet/mobile.
+3. Clique em qualquer badge de tag ou no botão `+X`.
+
+### Resultado Esperado
+
+- ✅ As tags aparecem como badges (cores preservadas); quando o espaço estoura, exibem `+X`.
+- ✅ O botão `+X` mantém o mesmo onClick das tags, abrindo o gerenciador de tags existente.
+- ✅ A coluna "Tags" ocupa mais espaço relativo após redistribuição; colunas Empresa, Contato, Próxima Ação e Responsável estão proporcionalmente menores.
+
+---
+
 ## Resumo de Validação
 
 | # | Cenário | Status |
@@ -161,6 +177,7 @@ Este documento descreve os passos para validação manual das funcionalidades de
 | 3 | Labels de ações 4-10 renderizam corretamente | ⬜ |
 | 4 | Fallback "Sem próxima ação" funciona | ⬜ |
 | 5 | Sem erros no console | ⬜ |
+| 6 | Coluna "Tags" exibe badges e `+X` responsivo | ⬜ |
 
 ---
 
