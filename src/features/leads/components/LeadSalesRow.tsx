@@ -28,6 +28,7 @@ import { TagManagerPopover } from './TagManagerPopover'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 import { useColumnStyle } from './ResizableSalesRow'
+import { SALES_VIEW_COLUMNS, getResizableColumns } from '../hooks/useResizableColumns'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -765,18 +766,28 @@ export function LeadSalesRow({
 }
 
 export function LeadSalesRowSkeleton() {
-  // Simple skeleton without context dependency
+  // Use column configuration for consistent widths with header
+  const resizableColumns = getResizableColumns()
+  const checkboxCol = SALES_VIEW_COLUMNS.find((c) => c.id === 'checkbox')
+  const actionsCol = SALES_VIEW_COLUMNS.find((c) => c.id === 'actions')
+
   return (
     <tr className="flex w-full border-b">
-      <td className="p-2 align-middle" style={{ width: 40, minWidth: 40 }}><Skeleton className="h-4 w-4" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 22%' }}><Skeleton className="h-12 w-full" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 14%' }}><Skeleton className="h-10 w-full" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 10%' }}><Skeleton className="h-6 w-20" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 14%' }}><Skeleton className="h-10 w-full" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 16%' }}><Skeleton className="h-12 w-full" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 10%' }}><Skeleton className="h-8 w-full" /></td>
-      <td className="p-2 align-middle" style={{ flex: '0 0 14%' }}><Skeleton className="h-8 w-full" /></td>
-      <td className="p-2 align-middle" style={{ width: 200, minWidth: 200 }}><Skeleton className="h-8 w-full" /></td>
+      <td className="p-2 align-middle" style={{ width: checkboxCol?.fixedWidth ?? 40, minWidth: checkboxCol?.fixedWidth ?? 40 }}>
+        <Skeleton className="h-4 w-4" />
+      </td>
+      {resizableColumns.map((col, index) => (
+        <td 
+          key={col.id} 
+          className="p-2 align-middle" 
+          style={{ flex: `0 0 ${col.defaultSize}%` }}
+        >
+          <Skeleton className={index === 0 ? "h-12 w-full" : index === 2 ? "h-6 w-20" : "h-10 w-full"} />
+        </td>
+      ))}
+      <td className="p-2 align-middle" style={{ width: actionsCol?.fixedWidth ?? 200, minWidth: actionsCol?.fixedWidth ?? 200 }}>
+        <Skeleton className="h-8 w-full" />
+      </td>
     </tr>
   )
 }

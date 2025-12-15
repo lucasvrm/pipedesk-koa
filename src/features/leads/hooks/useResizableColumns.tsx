@@ -11,6 +11,9 @@ export interface ColumnConfig {
 
 const STORAGE_KEY = 'react-resizable-panels:leads-sales-view-columns'
 
+// Tolerance for comparing sizes to determine if user has customized them
+const SIZE_COMPARISON_TOLERANCE = 0.5
+
 // Column configuration for Sales View
 // Fixed columns have pixel widths, resizable columns use percentages
 export const SALES_VIEW_COLUMNS: ColumnConfig[] = [
@@ -80,7 +83,7 @@ export function ColumnWidthsProvider({ children }: ColumnWidthsProviderProps) {
 
   // Check if user has customized sizes
   const hasCustomSizes = useMemo(() => {
-    return !sizes.every((size, index) => Math.abs(size - defaultSizes[index]) < 0.5)
+    return !sizes.every((size, index) => Math.abs(size - defaultSizes[index]) < SIZE_COMPARISON_TOLERANCE)
   }, [sizes, defaultSizes])
 
   // Save to localStorage whenever sizes change
