@@ -400,8 +400,16 @@ export function LeadSalesRow({
     ? lastInteractionType
     : null
 
+  // Guard to prevent row click navigation when modal is open
+  const handleRowClick = () => {
+    if (isTagsModalOpen || isContactModalOpen) {
+      return
+    }
+    onClick?.()
+  }
+
   return (
-    <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={onClick}>
+    <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleRowClick}>
       <TableCell className="w-[40px] shrink-0" onClick={(e) => e.stopPropagation()}>
         <Checkbox checked={selected} onCheckedChange={(value) => onSelectChange?.(Boolean(value))} />
       </TableCell>
