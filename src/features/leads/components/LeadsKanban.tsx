@@ -238,8 +238,8 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   }
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4">
+    <div className="h-full w-full flex flex-col">
+      <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4 pb-2 flex-shrink-0">
         <Kanban className="h-5 w-5" />
         <div>
           <p className="text-sm font-medium text-foreground">Kanban de Leads</p>
@@ -247,7 +247,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
         </div>
       </div>
 
-      <div className="w-full flex gap-3 overflow-x-auto pb-4 px-4">
+      <div className="flex-1 w-full flex gap-3 overflow-x-auto overflow-y-hidden px-4 pb-4">
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
           {columns.map(column => (
             <SortableContext
@@ -298,18 +298,18 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[280px] flex flex-col min-h-[400px]',
+        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[320px] min-w-[320px] flex flex-col h-full',
         isOver ? 'border-primary border-dashed bg-primary/10' : '',
         column.color
       )}
     >
-      <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between">
+      <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm">{label}</span>
         </div>
         <Badge variant="secondary" className="text-[10px] h-5">{count}</Badge>
       </div>
-      <div className="p-3 space-y-2 flex-1">
+      <div className="p-3 space-y-2 flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="text-xs text-muted-foreground">Carregando...</div>
         ) : (
