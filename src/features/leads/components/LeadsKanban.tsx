@@ -238,7 +238,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4">
       <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4">
         <Kanban className="h-5 w-5" />
         <div>
@@ -247,7 +247,7 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
         </div>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-4 px-4">
+      <div className="w-full flex gap-3 overflow-x-auto pb-4 px-4">
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
           {columns.map(column => (
             <SortableContext
