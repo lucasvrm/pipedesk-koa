@@ -59,11 +59,13 @@ export interface LeadSalesViewItem {
     code: string
     label: string
     reason?: string | null
+    dueAt?: string | null
   }
   next_action?: {
     code: string
     label: string
     reason?: string | null
+    due_at?: string | null
   }
   owner?: {
     id?: string

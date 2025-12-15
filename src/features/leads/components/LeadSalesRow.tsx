@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatDistanceToNow, isValid, parseISO } from 'date-fns'
+import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, Flame, CalendarDays } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -61,6 +61,54 @@ function getInitials(name?: string) {
   const parts = name.trim().split(' ')
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+}
+
+/**
+ * Urgency levels for next action cards based on due date
+ */
+export type UrgencyLevel = 'urgent' | 'important' | 'normal' | 'none'
+
+/**
+ * Calculates the urgency level based on the due date
+ * @param dueAt - ISO date string of when the action is due
+ * @returns UrgencyLevel - urgent (overdue/today), important (1-3 days), normal (4+ days), none (no date)
+ */
+export function getUrgencyLevel(dueAt?: string | null): UrgencyLevel {
+  if (!dueAt) return 'none'
+  
+  const parsedDate = parseISO(dueAt)
+  if (!isValid(parsedDate)) return 'none'
+  
+  const today = startOfDay(new Date())
+  const dueDate = startOfDay(parsedDate)
+  const daysUntilDue = differenceInDays(dueDate, today)
+  
+  if (daysUntilDue <= 0) return 'urgent'     // Overdue or due today
+  if (daysUntilDue <= 3) return 'important'  // Due in 1-3 days
+  return 'normal'                             // Due in 4+ days
+}
+
+/**
+ * Urgency styles configuration - WCAG 2.1 AA compliant colors
+ * Each style includes border and background colors for light and dark modes
+ */
+const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string }> = {
+  urgent: {
+    border: 'border-l-4 border-l-red-600',
+    bg: 'bg-red-50 dark:bg-red-950/50'
+  },
+  important: {
+    border: 'border-l-4 border-l-amber-500',
+    bg: 'bg-amber-50 dark:bg-amber-950/50'
+  },
+  normal: {
+    border: 'border-l-4 border-l-blue-500',
+    bg: 'bg-blue-50 dark:bg-blue-950/50'
+  },
+  none: {
+    border: 'border-l-4 border-l-gray-300 dark:border-l-gray-600',
+    bg: 'bg-gray-50 dark:bg-gray-800/50'
+  }
 }
 
 export function LeadSalesRow({
@@ -387,6 +435,9 @@ export function LeadSalesRow({
   const safePrimaryContactRole = safeStringOptional(primaryContact?.role)
   const safeNextActionLabel = safeNextAction ? safeString(safeNextAction.label, '—') : null
   const safeNextActionReason = safeNextAction ? safeStringOptional(safeNextAction.reason) : undefined
+  const nextActionDueAt = safeNextAction?.dueAt ?? safeNextAction?.due_at as string | null | undefined
+  const urgencyLevel = getUrgencyLevel(nextActionDueAt)
+  const urgencyStyle = URGENCY_STYLES[urgencyLevel]
   const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
 
   const parsedLastInteractionDate = lastInteractionAt
@@ -523,16 +574,24 @@ export function LeadSalesRow({
         </div>
       </TableCell>
 
-      {/* Próxima ação - navigates to Lead Detail, text in red */}
+      {/* Próxima ação - navigates to Lead Detail, with urgency styling */}
       <TableCell className="min-w-0">
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="secondary" className="w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left">
+                <Badge 
+                  variant="secondary" 
+                  className={`w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left ${urgencyStyle.border} ${urgencyStyle.bg}`}
+                >
                   <div className="flex items-baseline gap-1 max-w-full">
                     <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
-                    <span className="text-sm font-semibold text-destructive truncate">{safeNextActionLabel}</span>
+                    <span className={`text-sm font-semibold truncate ${
+                      urgencyLevel === 'urgent' ? 'text-red-600 dark:text-red-400' :
+                      urgencyLevel === 'important' ? 'text-amber-600 dark:text-amber-400' :
+                      urgencyLevel === 'normal' ? 'text-blue-600 dark:text-blue-400' :
+                      'text-foreground'
+                    }`}>{safeNextActionLabel}</span>
                   </div>
                   {safeNextActionReason && (
                     <div className="flex items-baseline gap-1 max-w-full">
@@ -551,7 +610,12 @@ export function LeadSalesRow({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <span className="text-sm text-muted-foreground">Sem próxima ação</span>
+          <Badge 
+            variant="secondary" 
+            className={`w-4/5 max-w-full flex items-center justify-center py-2 px-3 ${URGENCY_STYLES.none.border} ${URGENCY_STYLES.none.bg}`}
+          >
+            <span className="text-sm text-muted-foreground">Sem próxima ação</span>
+          </Badge>
         )}
       </TableCell>
 
