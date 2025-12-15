@@ -3,7 +3,7 @@ import { DndContext, PointerSensor, useDroppable, useSensor, useSensors, DragEnd
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query'
-import { Lead, LeadStatus, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
+import { Lead, LEAD_STATUS_COLORS, LEAD_STATUS_PROGRESS } from '@/lib/types'
 import { updateLead } from '@/services/leadService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,10 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { Kanban } from '@phosphor-icons/react'
 import { MessageCircle, Mail } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn, safeString, safeStringOptional } from '@/lib/utils'
+import { cn, safeStringOptional } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 
 interface LeadsKanbanProps {
@@ -239,15 +238,8 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4 pb-2 flex-shrink-0">
-        <Kanban className="h-5 w-5" />
-        <div>
-          <p className="text-sm font-medium text-foreground">Kanban de Leads</p>
-          <p className="text-xs">Arraste os cards para atualizar o status</p>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full flex gap-3 overflow-x-auto overflow-y-hidden px-4 pb-4">
+      {/* Kanban ocupa 100% da largura disponível - Header removido para evitar duplicação com título principal */}
+      <div className="flex-1 w-full flex gap-4 overflow-x-auto overflow-y-hidden px-6 pb-6">
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
           {columns.map(column => (
             <SortableContext
@@ -298,7 +290,7 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[320px] min-w-[320px] flex flex-col h-full',
+        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[360px] min-w-[360px] flex flex-col h-full',
         isOver ? 'border-primary border-dashed bg-primary/10' : '',
         column.color
       )}

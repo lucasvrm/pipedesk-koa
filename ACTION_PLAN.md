@@ -10,6 +10,10 @@
 
 ## 🎯 Objetivos
 
+### Fase 3: Correções Críticas (Kanban + Tags) ✅ CONCLUÍDO
+1. **Revert Kanban View:** Restaurar título da rota ("Leads") + 3 cards de métricas + garantir 100% da largura da tela
+2. **Tags sempre visíveis:** Mostrar todas as tags na coluna da Sales View, com contador "+N" quando não houver espaço
+
 ### Fase 1: Critical Bug Fixes ✅ CONCLUÍDO
 1. **Bug #1:** Crash "ReferenceError: Trash is not defined" ao marcar checkboxes de seleção
 2. **Bug #2:** Forçar recarregamento da sales view apenas após fechar o componente de tags (não durante edição)
@@ -20,6 +24,143 @@
 ---
 
 ## 📝 Alterações Realizadas
+
+### Fase 3: Correções Críticas - Kanban + Tags (2025-12-15)
+
+#### Arquivos Modificados
+- `src/features/leads/pages/LeadsListPage.tsx`
+- `src/features/leads/components/LeadsKanban.tsx`
+- `src/features/leads/components/TagManagerPopover.tsx`
+
+#### Item 1: Restaurar Título + Métricas na Kanban View
+
+**Problema:** O título "Leads" e os 3 cards de métricas foram ocultados na Kanban View anteriormente.
+
+**Solução Implementada:**
+
+**LeadsListPage.tsx - Título e Métricas SEMPRE visíveis:**
+```diff
+- {/* Header da Página (Título) */}
+- {currentView !== 'kanban' && (
+-   <div className="flex items-center justify-between">
+-     ...
+-   </div>
+- )}
+- {/* Metrics Section */}
+- {currentView !== 'kanban' && metrics}
+
++ {/* Header da Página (Título) - SEMPRE visível */}
++ <div className={currentView === 'kanban' ? 'px-6 pt-6 pb-4 flex-shrink-0' : 'flex items-center justify-between'}>
++   <div>
++     <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
++     <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
++   </div>
++ </div>
++ {/* Metrics Section - SEMPRE visível */}
++ <div className={currentView === 'kanban' ? 'px-6 pb-4 flex-shrink-0' : ''}>
++   {metrics}
++ </div>
+```
+
+**LeadsKanban.tsx - Remover Header Interno Duplicado:**
+```diff
+- import { Kanban } from '@phosphor-icons/react'
++ import { MessageCircle, Mail } from 'lucide-react'
+
+- <div className="flex items-center gap-2 text-muted-foreground px-4 pt-4 pb-2 flex-shrink-0">
+-   <Kanban className="h-5 w-5" />
+-   <div>
+-     <p className="text-sm font-medium text-foreground">Kanban de Leads</p>
+-     <p className="text-xs">Arraste os cards para atualizar o status</p>
+-   </div>
+- </div>
+- <div className="flex-1 w-full flex gap-3 overflow-x-auto overflow-y-hidden px-4 pb-4">
+
++ {/* Kanban ocupa 100% da largura disponível - Header removido para evitar duplicação com título principal */}
++ <div className="flex-1 w-full flex gap-4 overflow-x-auto overflow-y-hidden px-6 pb-6">
+```
+
+**LeadsKanban.tsx - Aumentar Largura das Colunas:**
+```diff
+- 'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[320px] min-w-[320px] flex flex-col h-full'
++ 'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[360px] min-w-[360px] flex flex-col h-full'
+```
+
+#### Item 2: Tags Sempre Visíveis com Contador "+N"
+
+**Problema:** Tags eram exibidas apenas como "X tags" texto, sem mostrar as tags reais na Sales View.
+
+**Solução Implementada:**
+
+**TagManagerPopover.tsx - Exibir Tags Inline com Contador:**
+```typescript
+const MAX_VISIBLE_TAGS = 2
+
+// Derive visible/hidden tags for display
+const visibleTags = assignedTags.slice(0, MAX_VISIBLE_TAGS)
+const hiddenTags = assignedTags.slice(MAX_VISIBLE_TAGS)
+const hiddenCount = hiddenTags.length
+
+// Render inline tags with +N counter tooltip
+const renderTagsDisplay = () => {
+  if (assignedTags.length === 0) {
+    return <Button>Tags</Button>
+  }
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {visibleTags.map((tag) => (
+        <Badge key={tag.id} onClick={(e) => e.stopPropagation()}>
+          {tag.name}
+        </Badge>
+      ))}
+      {hiddenCount > 0 && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="inline-block">
+                <Badge variant="outline" onClick={(e) => e.stopPropagation()}>
+                  +{hiddenCount}
+                </Badge>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Outras tags ({hiddenCount}):</p>
+              {hiddenTags.map((tag) => <Badge key={tag.id}>{tag.name}</Badge>)}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </div>
+  )
+}
+```
+
+#### Benefícios
+- ✅ Título "Leads" + descrição aparecem no topo da Kanban View
+- ✅ 3 cards de métricas aparecem abaixo do título (antes do Kanban)
+- ✅ Kanban ocupa 100% da largura disponível (padding aumentado para px-6)
+- ✅ Colunas do Kanban têm largura w-[360px] (aumentado de 320px)
+- ✅ Header interno "Kanban de Leads" foi REMOVIDO (evitar duplicação)
+- ✅ Ícone Phosphor foi REMOVIDO (substituído pelo header já existente na página)
+- ✅ Tags são exibidas inline (até 2 visíveis)
+- ✅ Badge "+N" mostra contador de tags ocultas
+- ✅ Hover no badge "+N" mostra tooltip com todas as tags ocultas
+- ✅ e.stopPropagation() em todos os elementos de tag para não disparar click da linha
+
+#### Decisões Técnicas
+1. **Por que remover header interno do Kanban?**
+   - Evita duplicação com o título principal "Leads" que agora é sempre visível
+   - Maximiza espaço vertical para as colunas do Kanban
+
+2. **Por que usar TooltipTrigger asChild com div wrapper?**
+   - Segue a Regra de Ouro #1 do AGENTS.md: prevenção de loop de render
+   - O wrapper div quebra a cadeia de refs do Radix UI
+
+3. **Por que MAX_VISIBLE_TAGS = 2?**
+   - Balance entre mostrar tags importantes e não quebrar layout da coluna
+   - Largura típica da coluna de tags (~10%) comporta bem 2 badges + contador
+
+---
 
 ### Fase 2: Kanban View Full-Screen Layout (2025-12-15)
 
