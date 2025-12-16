@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
 import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
-import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
+import { LeadStatusBreadcrumbs } from '../components/LeadStatusBreadcrumbs'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -487,15 +487,6 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = safeAddressCity && safeAddressState ? `${safeAddressCity} - ${safeAddressState}` : safeAddressCity || safeAddressState || ''
 
-  const PIPELINE_STAGES = leadStatuses
-    .filter(s => s.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(s => ({
-      id: s.id,
-      label: safeString(s.label, s.code),
-      color: 'bg-primary' // TODO: Use s.color if available or map code to color
-    }))
-
   const SIDEBAR_METRICS = [
     { label: 'Origem', value: safeOriginLabel, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
     { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
@@ -522,10 +513,9 @@ export default function LeadDetailPage() {
 
       <EntityDetailLayout
         header={
-          <PipelineVisualizer
-            stages={PIPELINE_STAGES}
-            currentStageId={lead.leadStatusId}
-            onStageClick={(id) => handleStatusChange(id)}
+          <LeadStatusBreadcrumbs
+            currentStatusId={lead.leadStatusId}
+            onStatusClick={(id) => handleStatusChange(id)}
           />
         }
         sidebar={
