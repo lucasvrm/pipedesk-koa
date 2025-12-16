@@ -443,10 +443,20 @@ export async function qualifyLead(input: QualifyLeadInput) {
 // Hooks
 // ============================================================================
 
-export function useLeads(filters?: LeadFilters) {
+export function useLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }) {
   return useQuery({
-    queryKey: ['leads', filters],
-    queryFn: () => getLeads(filters)
+    queryKey: ['leads', filters, options?.includeQualified],
+    queryFn: async () => {
+      const leads = await getLeads(filters);
+      // Filter out qualified leads by default (soft delete behavior for qualified status)
+      if (!options?.includeQualified) {
+        return leads.filter(lead => {
+          // Check if lead has qualified status by checking qualifiedAt timestamp
+          return !lead.qualifiedAt;
+        });
+      }
+      return leads;
+    }
   });
 }
 
