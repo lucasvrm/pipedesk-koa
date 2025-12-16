@@ -266,6 +266,69 @@ export default function LeadDetailPage() {
   )
   if (!lead) return <div className="p-8">Lead não encontrado.</div>
 
+  // Check if lead is qualified - show informative message with navigation options
+  if (lead.qualifiedAt) {
+    const safeLeadName = safeString(lead.legalName, 'Lead')
+    return (
+      <PageContainer>
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/leads">Leads</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{safeLeadName}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <Card className="max-w-2xl mx-auto mt-8">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <CardTitle className="text-xl">Lead Qualificado</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <p className="text-muted-foreground">
+              O lead <strong>{safeLeadName}</strong> foi qualificado e convertido em um negócio.
+              Leads qualificados não são mais exibidos na lista de leads ativos.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Para visualizar os detalhes do negócio associado, utilize os links abaixo.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+              {lead.qualifiedMasterDealId && (
+                <Button asChild>
+                  <Link to={`/deals/${lead.qualifiedMasterDealId}`}>
+                    <Buildings className="mr-2 h-4 w-4" />
+                    Ver Negócio Associado
+                  </Link>
+                </Button>
+              )}
+              {lead.qualifiedCompanyId && (
+                <Button variant="outline" asChild>
+                  <Link to={`/companies/${lead.qualifiedCompanyId}`}>
+                    <Buildings className="mr-2 h-4 w-4" />
+                    Ver Empresa
+                  </Link>
+                </Button>
+              )}
+              <Button variant="ghost" asChild>
+                <Link to="/leads">
+                  Voltar para Leads
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </PageContainer>
+    )
+  }
+
   const safeLeadName = safeString(lead.legalName, 'Lead sem nome')
   const safeTradeName = safeStringOptional(lead.tradeName)
   const safeCnpj = safeStringOptional(lead.cnpj) ?? ''

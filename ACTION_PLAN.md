@@ -1,88 +1,59 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ CONCLUÍDO (Modal de Criação de Leads Aprimorado)
+## 🚧 Status: ✅ CONCLUÍDO (Filtrar Leads Qualificados da Interface)
 
-**Data:** 2025-12-15  
+**Data:** 2025-12-16  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - CreateLeadModal.tsx, LeadsListPage.tsx
+**Escopo:** Frontend - leadService.ts, LeadDetailPage.tsx
 
 ---
 
-## 🎯 Objetivo Atual - Modal de Criação de Leads
+## 🎯 Objetivo Atual - Filtrar Leads Qualificados
 
-Aprimorar o modal existente de criação de leads (botão "+ Novo Lead" na rota /leads) para consumir campos disponíveis no banco e adicionar validação rigorosa.
+Ajustar o frontend para ocultar leads com status "qualified" das listagens, mantendo mensagens claras para ações que não são mais possíveis.
 
 ### ✅ Tarefas Concluídas
-- [x] Criar novo componente `CreateLeadModal.tsx` com validação Zod
-- [x] Implementar campo Razão Social (legalName) com foco automático
-- [x] Implementar dropdown Origem do Lead (leadOriginId) consumindo `useSystemMetadata`
-- [x] Implementar dropdown Tipo de Operação (operationType) consumindo dados do backend
-- [x] Implementar seção Contato Principal com toggle Vincular/Criar Novo
-- [x] Implementar campos Cidade/UF com dropdown de estados brasileiros
-- [x] Implementar campo Descrição com contador de caracteres (max 500)
-- [x] Implementar seleção múltipla de Tags com popover
-- [x] Integrar modal no LeadsListPage.tsx substituindo Dialog antigo
-- [x] Limpar imports não utilizados do LeadsListPage.tsx
-- [x] Validar lint, typecheck e build
+- [x] Atualizar hook `useLeads` para filtrar leads qualificados por padrão
+- [x] Atualizar `LeadDetailPage` para exibir mensagem quando lead está qualificado
+- [x] Adicionar navegação para negócio e empresa associados no card de lead qualificado
+- [x] Manter compatibilidade com busca direta (backend já filtra via `deleted_at`)
+- [x] Mensagens em português claras para o usuário
+- [x] Build e typecheck passando
 
 ---
 
 ## 📝 Alterações Realizadas
 
-### Arquivos Criados
-- `src/features/leads/components/CreateLeadModal.tsx` - Novo modal completo com validação Zod
-
 ### Arquivos Modificados
-- `src/features/leads/pages/LeadsListPage.tsx` - Integração do novo modal
+- `src/services/leadService.ts` - Hook `useLeads` agora filtra leads com `qualifiedAt` por padrão
+- `src/features/leads/pages/LeadDetailPage.tsx` - Card informativo para leads qualificados
 
 ### Detalhes da Implementação
 
-#### 1. Schema de Validação Zod
+#### 1. Filtro no Hook `useLeads`
 ```typescript
-const createLeadSchema = z.object({
-  legalName: z.string().min(3, 'Razão Social deve ter no mínimo 3 caracteres'),
-  leadOriginId: z.string().min(1, 'Selecione a origem do lead'),
-  operationType: z.string().min(1, 'Selecione o tipo de operação'),
-  addressCity: z.string().optional(),
-  addressState: z.string().optional(),
-  description: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional(),
-  tags: z.array(z.string()).optional(),
-  contactMode: z.enum(['link', 'create']),
-  existingContactId: z.string().optional(),
-  newContact: z.object({
-    name: z.string().optional(),
-    email: z.string().email('E-mail inválido').optional().or(z.literal('')),
-    phone: z.string().optional(),
-  }).optional(),
-})
+export function useLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }) {
+  return useQuery({
+    queryKey: ['leads', filters, options?.includeQualified],
+    queryFn: async () => {
+      const leads = await getLeads(filters);
+      // Filtra leads qualificados por padrão (soft delete)
+      if (!options?.includeQualified) {
+        return leads.filter(lead => !lead.qualifiedAt);
+      }
+      return leads;
+    }
+  });
+}
 ```
 
-#### 2. Campos Implementados
-| Campo | Tipo | Obrigatório | Fonte de Dados |
-|-------|------|-------------|----------------|
-| Razão Social | Input | ✅ | Usuário |
-| Origem do Lead | Select | ✅ | `useSystemMetadata().leadOrigins` |
-| Tipo de Operação | Select | ✅ | `useSystemMetadata().operationTypes` ou `OPERATION_LABELS` |
-| Contato Principal | Tabs + Combobox/Form | ❌ | `useContacts()` |
-| Cidade | Input | ❌ | Usuário |
-| UF | Select | ❌ | Lista fixa `BRAZILIAN_STATES` |
-| Descrição | Textarea | ❌ | Usuário (max 500 chars) |
-| Tags | Multi-select Popover | ❌ | `useTags('lead')` |
-
-#### 3. Funcionalidades de UX
-- **Foco automático** no campo Razão Social ao abrir o modal
-- **Contador de caracteres** em tempo real para descrição
-- **Toggle Vincular/Criar** para contato principal
-- **Combobox com busca** para seleção de contatos existentes
-- **Badges visuais** para tags selecionadas com botão de remover
-- **Estados de loading** nos botões durante submissão
-- **Mensagens de erro** inline para validação de formulário
-
-#### 4. Acessibilidade
-- Labels associados corretamente via `htmlFor`
-- `aria-expanded` e `aria-label` em comboboxes
-- Navegação por teclado funcional
-- Feedback visual de erros de validação
+#### 2. Card de Lead Qualificado
+Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo):
+- Exibe ícone de sucesso (CheckCircle) em verde
+- Título "Lead Qualificado"
+- Mensagem explicando que o lead foi convertido em negócio
+- Botões para navegar ao negócio e empresa associados
+- Botão para voltar à lista de leads
 
 ---
 
@@ -90,16 +61,13 @@ const createLeadSchema = z.object({
 
 | Item | Status |
 |------|--------|
-| Componente CreateLeadModal criado | ✅ |
-| Validação Zod implementada | ✅ |
-| Campos obrigatórios marcados com * | ✅ |
-| Consumo de APIs (origins, operationTypes, contacts, tags) | ✅ |
-| Toggle Vincular/Criar contato | ✅ |
-| Dropdown estados brasileiros | ✅ |
-| Contador de caracteres descrição | ✅ |
-| Seleção múltipla de tags | ✅ |
-| Integração com LeadsListPage | ✅ |
-| Lint passando | ✅ |
+| Hook `useLeads` filtra leads qualificados | ✅ |
+| Opção `includeQualified` para bypass | ✅ |
+| LeadDetailPage mostra card informativo | ✅ |
+| Link para negócio associado | ✅ |
+| Link para empresa associada | ✅ |
+| Mensagens em português | ✅ |
+| Typecheck passando | ✅ |
 | Build passando | ✅ |
 
 ---
@@ -108,40 +76,50 @@ const createLeadSchema = z.object({
 
 | Métrica | Valor |
 |---------|-------|
-| Linhas adicionadas | ~550 (CreateLeadModal.tsx) |
-| Linhas removidas | ~30 (LeadsListPage.tsx - modal antigo) |
-| Arquivos criados | 1 |
-| Arquivos modificados | 1 |
-| Componentes criados | 1 (CreateLeadModal) |
-| APIs consumidas | 4 (leadOrigins, operationTypes, contacts, tags) |
+| Linhas adicionadas | ~75 |
+| Linhas removidas | ~3 |
+| Arquivos modificados | 2 |
+| APIs alteradas | 0 (apenas cliente) |
+| Contratos quebrados | 0 |
 
-**Risco:** 🟢 Baixo (componente novo, modal antigo completamente substituído)
+**Risco:** 🟢 Baixo (filtro adicional, não quebra funcionalidade existente)
 
 ---
 
 ## Decisões Técnicas
 
-1. **Por que criar um componente separado?**
-   - Separação de responsabilidades (SRP)
-   - Facilita testes unitários
-   - Reduz complexidade do LeadsListPage
+1. **Por que filtrar no frontend em vez do backend?**
+   - Backend já filtra com `deleted_at IS NULL`, mas leads qualificados mantêm `deleted_at = null`
+   - A qualificação é identificada pelo campo `qualifiedAt`
+   - Mantém consistência com a regra de negócio: leads qualificados não devem ser visíveis na lista
 
-2. **Por que usar Zod + React Hook Form?**
-   - Padrão já estabelecido no projeto (CreateDealDialog)
-   - Validação declarativa e type-safe
-   - Integração nativa com shadcn/ui Form components
+2. **Por que adicionar opção `includeQualified`?**
+   - Permite flexibilidade para relatórios que precisam incluir leads qualificados
+   - Mantém compatibilidade com casos de uso futuros
 
-3. **Por que fallback para OPERATION_LABELS?**
-   - Compatibilidade com banco sem operationTypes cadastrados
-   - Garante que o dropdown sempre tenha opções
-
-4. **Por que tags são opcionais no submit?**
-   - Tags serão atribuídas após criação do lead via API de entity_tags
-   - TODO comentado para futura implementação
+3. **Por que mostrar card informativo ao invés de 404?**
+   - Melhor UX: usuário entende que o lead foi convertido
+   - Facilita navegação para o negócio associado
+   - Evita confusão com links antigos ou bookmarks
 
 ---
 
 ## Histórico de Alterações Anteriores
+
+### Modal de Criação de Leads Aprimorado (2025-12-15)
+- Arquivos:
+  - `src/features/leads/components/CreateLeadModal.tsx` (criado)
+  - `src/features/leads/pages/LeadsListPage.tsx` (modificado)
+- Objetivo: Aprimorar modal de criação de leads com validação Zod e campos dinâmicos
+- Funcionalidades:
+  - Campo Razão Social com foco automático
+  - Dropdown Origem do Lead consumindo `useSystemMetadata`
+  - Dropdown Tipo de Operação
+  - Seção Contato Principal com toggle Vincular/Criar Novo
+  - Campos Cidade/UF com dropdown de estados brasileiros
+  - Campo Descrição com contador de caracteres (max 500)
+  - Seleção múltipla de Tags com popover
+- Status: ✅ Concluído
 
 ### Urgency Color System for Next Action Cards (2025-12-15)
 - Arquivos: 
