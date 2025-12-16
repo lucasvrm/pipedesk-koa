@@ -248,6 +248,7 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
       const response = await fetchSalesView(params);
       // Hide qualified or soft-deleted leads from sales view by default
       // They are converted to deals and should no longer appear in the active leads interface
+      // Note: This is a client-side defensive filter. The backend should already exclude these leads.
       if (!options?.includeQualified) {
         const filteredData = response.data.filter(lead => {
           const qualifiedAt = lead.qualifiedAt ?? lead.qualified_at;
@@ -256,12 +257,9 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
         });
         return {
           ...response,
-          data: filteredData,
-          pagination: {
-            ...response.pagination,
-            // Update total to reflect filtered count (for accurate pagination display)
-            total: filteredData.length
-          }
+          data: filteredData
+          // Note: We keep the original pagination.total from the server since this is a defensive
+          // client-side filter. The server should already be excluding qualified/deleted leads.
         };
       }
       return response;

@@ -84,8 +84,9 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
         });
         return {
           ...response,
-          data: filteredData,
-          pagination: { ...response.pagination, total: filteredData.length }
+          data: filteredData
+          // Note: We keep the original pagination.total from the server since this is a defensive
+          // client-side filter. The server should already be excluding qualified/deleted leads.
         };
       }
       return response;

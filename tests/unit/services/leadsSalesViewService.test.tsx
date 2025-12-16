@@ -424,7 +424,8 @@ describe('leadsSalesViewService', () => {
       // Should only return active leads (not qualified)
       expect(result.current.data?.data).toHaveLength(2)
       expect(result.current.data?.data?.every(lead => !lead.qualifiedAt)).toBe(true)
-      expect(result.current.data?.pagination.total).toBe(2)
+      // Pagination total remains as server value (client-side filtering is defensive)
+      expect(result.current.data?.pagination.total).toBe(3)
     })
 
     it('should filter out leads with qualified_at (snake_case) by default', async () => {
@@ -587,7 +588,8 @@ describe('leadsSalesViewService', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
       expect(result.current.data?.data).toHaveLength(0)
-      expect(result.current.data?.pagination.total).toBe(0)
+      // Pagination total remains as server value (client-side filtering is defensive)
+      expect(result.current.data?.pagination.total).toBe(2)
     })
   })
 })
