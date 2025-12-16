@@ -1,7 +1,6 @@
-import { cn } from '@/lib/utils'
+import { cn, safeString } from '@/lib/utils'
 import { Check, Circle } from 'lucide-react'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
-import { safeString } from '@/lib/utils'
 import type { LeadStatusMeta } from '@/types/metadata'
 
 interface LeadStatusBreadcrumbsProps {
@@ -34,7 +33,7 @@ export function LeadStatusBreadcrumbs({
 }: LeadStatusBreadcrumbsProps) {
   const { leadStatuses, isLoading } = useSystemMetadata()
 
-  // Filter active statuses and sort by sortOrder (already sorted from backend)
+  // Filter active statuses and ensure proper sort order for display
   const activeStatuses = leadStatuses
     .filter((status: LeadStatusMeta) => status.isActive)
     .sort((a: LeadStatusMeta, b: LeadStatusMeta) => a.sortOrder - b.sortOrder)
