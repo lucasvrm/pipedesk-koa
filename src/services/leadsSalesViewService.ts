@@ -78,6 +78,11 @@ export interface LeadSalesViewItem {
     name: string
     color?: string | null
   }>
+  // Qualification and soft delete fields - used for client-side filtering
+  qualifiedAt?: string | null
+  qualified_at?: string | null
+  deletedAt?: string | null
+  deleted_at?: string | null
 }
 
 export interface LeadSalesViewPagination {
@@ -236,10 +241,29 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
   }
 }
 
-export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enabled?: boolean }) {
+export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enabled?: boolean; includeQualified?: boolean }) {
   return useQuery({
-    queryKey: ['leads-sales-view', params],
-    queryFn: () => fetchSalesView(params),
+    queryKey: ['leads-sales-view', params, options?.includeQualified],
+    queryFn: async () => {
+      const response = await fetchSalesView(params);
+      // Hide qualified or soft-deleted leads from sales view by default
+      // They are converted to deals and should no longer appear in the active leads interface
+      // Note: This is a client-side defensive filter. The backend should already exclude these leads.
+      if (!options?.includeQualified) {
+        const filteredData = response.data.filter(lead => {
+          const qualifiedAt = lead.qualifiedAt ?? lead.qualified_at;
+          const deletedAt = lead.deletedAt ?? lead.deleted_at;
+          return !qualifiedAt && !deletedAt;
+        });
+        return {
+          ...response,
+          data: filteredData
+          // Note: We keep the original pagination.total from the server since this is a defensive
+          // client-side filter. The server should already be excluding qualified/deleted leads.
+        };
+      }
+      return response;
+    },
     placeholderData: keepPreviousData,
     enabled: options?.enabled ?? true,
     retry: 1,

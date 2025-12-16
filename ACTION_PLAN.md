@@ -1,43 +1,48 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ CONCLUÍDO (Filtrar Leads Qualificados da Interface)
+## 🚧 Status: ✅ CONCLUÍDO (Filtrar Leads Qualificados de TODAS as Views)
 
 **Data:** 2025-12-16  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - leadService.ts, LeadDetailPage.tsx
+**Escopo:** Frontend - leadService.ts, leadsSalesViewService.ts, LeadDetailPage.tsx
 
 ---
 
 ## 🎯 Objetivo Atual - Filtrar Leads Qualificados
 
-Ajustar o frontend para ocultar leads com status "qualified" das listagens, mantendo mensagens claras para ações que não são mais possíveis.
+Ajustar o frontend para ocultar leads com status "qualified" ou "soft deleted" de TODAS as views (sales, kanban, grid), mantendo mensagens claras para leads qualificados acessados diretamente.
 
 ### ✅ Tarefas Concluídas
 - [x] Atualizar hook `useLeads` para filtrar leads qualificados por padrão
+- [x] Atualizar hook `useSalesViewLeads` para filtrar leads qualificados por padrão
+- [x] Atualizar hook `useLeadsSalesView` para filtrar leads qualificados e soft deleted por padrão
+- [x] Atualizar interface `LeadSalesViewItem` para incluir campos `qualifiedAt` e `deletedAt`
 - [x] Atualizar `LeadDetailPage` para exibir mensagem quando lead está qualificado
 - [x] Adicionar navegação para negócio e empresa associados no card de lead qualificado
-- [x] Manter compatibilidade com busca direta (backend já filtra via `deleted_at`)
+- [x] Adicionar opção `includeQualified` para relatórios avançados
+- [x] Adicionar testes unitários para o comportamento de filtragem
 - [x] Mensagens em português claras para o usuário
-- [x] Build e typecheck passando
+- [x] Build passando
 
 ---
 
 ## 📝 Alterações Realizadas
 
 ### Arquivos Modificados
-- `src/services/leadService.ts` - Hook `useLeads` agora filtra leads com `qualifiedAt` por padrão
+- `src/services/leadService.ts` - Hooks `useLeads` e `useSalesViewLeads` agora filtram leads qualificados por padrão
+- `src/services/leadsSalesViewService.ts` - Hook `useLeadsSalesView` filtra leads qualificados e soft deleted; interface `LeadSalesViewItem` atualizada com campos de qualificação
 - `src/features/leads/pages/LeadDetailPage.tsx` - Card informativo para leads qualificados
+- `tests/unit/services/leadsSalesViewService.test.tsx` - 5 novos testes para validar comportamento de filtragem
 
 ### Detalhes da Implementação
 
-#### 1. Filtro no Hook `useLeads`
+#### 1. Filtro no Hook `useLeads` (Grid/Kanban Views)
 ```typescript
 export function useLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }) {
   return useQuery({
     queryKey: ['leads', filters, options?.includeQualified],
     queryFn: async () => {
       const leads = await getLeads(filters);
-      // Filtra leads qualificados por padrão (soft delete)
       if (!options?.includeQualified) {
         return leads.filter(lead => !lead.qualifiedAt);
       }
@@ -47,7 +52,62 @@ export function useLeads(filters?: LeadFilters, options?: { includeQualified?: b
 }
 ```
 
-#### 2. Card de Lead Qualificado
+#### 2. Filtro no Hook `useSalesViewLeads`
+```typescript
+export function useSalesViewLeads(filters?: SalesViewFilters, options?: { enabled?: boolean; includeQualified?: boolean }) {
+  return useQuery({
+    queryKey: ['leads', 'sales-view', filters, options?.includeQualified],
+    queryFn: async () => {
+      const leads = await getSalesViewLeads(filters);
+      if (!options?.includeQualified) {
+        return leads.filter(lead => !lead.qualifiedAt);
+      }
+      return leads;
+    },
+    enabled: options?.enabled ?? true
+  });
+}
+```
+
+#### 3. Filtro no Hook `useLeadsSalesView`
+```typescript
+export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enabled?: boolean; includeQualified?: boolean }) {
+  return useQuery({
+    queryKey: ['leads-sales-view', params, options?.includeQualified],
+    queryFn: async () => {
+      const response = await fetchSalesView(params);
+      if (!options?.includeQualified) {
+        const filteredData = response.data.filter(lead => {
+          const qualifiedAt = lead.qualifiedAt ?? lead.qualified_at;
+          const deletedAt = lead.deletedAt ?? lead.deleted_at;
+          return !qualifiedAt && !deletedAt;
+        });
+        return {
+          ...response,
+          data: filteredData
+          // Note: We keep the original pagination.total from the server since this is a defensive
+          // client-side filter. The server should already be excluding qualified/deleted leads.
+        };
+      }
+      return response;
+    },
+    // ... outras opções
+  });
+}
+```
+
+#### 4. Interface Atualizada `LeadSalesViewItem`
+```typescript
+export interface LeadSalesViewItem {
+  // ... outros campos
+  qualifiedAt?: string | null
+  qualified_at?: string | null
+  deletedAt?: string | null
+  deleted_at?: string | null
+}
+```
+
+#### 5. Card de Lead Qualificado
 Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo):
 - Exibe ícone de sucesso (CheckCircle) em verde
 - Título "Lead Qualificado"
@@ -61,13 +121,16 @@ Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo
 
 | Item | Status |
 |------|--------|
-| Hook `useLeads` filtra leads qualificados | ✅ |
-| Opção `includeQualified` para bypass | ✅ |
+| Hook `useLeads` filtra leads qualificados (grid/kanban) | ✅ |
+| Hook `useSalesViewLeads` filtra leads qualificados | ✅ |
+| Hook `useLeadsSalesView` filtra leads qualificados e deleted | ✅ |
+| Opção `includeQualified` para bypass em todos os hooks | ✅ |
+| Interface `LeadSalesViewItem` inclui campos de qualificação | ✅ |
 | LeadDetailPage mostra card informativo | ✅ |
 | Link para negócio associado | ✅ |
 | Link para empresa associada | ✅ |
 | Mensagens em português | ✅ |
-| Typecheck passando | ✅ |
+| Testes unitários para filtragem | ✅ (5 testes) |
 | Build passando | ✅ |
 
 ---
@@ -76,10 +139,11 @@ Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo
 
 | Métrica | Valor |
 |---------|-------|
-| Linhas adicionadas | ~75 |
-| Linhas removidas | ~3 |
-| Arquivos modificados | 2 |
+| Linhas adicionadas | ~120 |
+| Linhas removidas | ~10 |
+| Arquivos modificados | 4 |
 | APIs alteradas | 0 (apenas cliente) |
+| Testes adicionados | 5 |
 | Contratos quebrados | 0 |
 
 **Risco:** 🟢 Baixo (filtro adicional, não quebra funcionalidade existente)
@@ -91,13 +155,18 @@ Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo
 1. **Por que filtrar no frontend em vez do backend?**
    - Backend já filtra com `deleted_at IS NULL`, mas leads qualificados mantêm `deleted_at = null`
    - A qualificação é identificada pelo campo `qualifiedAt`
-   - Mantém consistência com a regra de negócio: leads qualificados não devem ser visíveis na lista
+   - Filtro cliente-side serve como defesa adicional e garante consistência
+   - Mantém regra de negócio: leads qualificados não devem ser visíveis na lista
 
 2. **Por que adicionar opção `includeQualified`?**
    - Permite flexibilidade para relatórios que precisam incluir leads qualificados
    - Mantém compatibilidade com casos de uso futuros
 
-3. **Por que mostrar card informativo ao invés de 404?**
+3. **Por que suportar snake_case e camelCase?**
+   - Backend pode retornar campos em ambos os formatos
+   - Garante compatibilidade com diferentes versões da API
+
+4. **Por que mostrar card informativo ao invés de 404?**
    - Melhor UX: usuário entende que o lead foi convertido
    - Facilita navegação para o negócio associado
    - Evita confusão com links antigos ou bookmarks
