@@ -178,11 +178,53 @@ function mapLeadFromSalesView(item: any): Lead {
   };
 }
 
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+// Cache qualified status ID to avoid repeated lookups
+let qualifiedStatusIdCache: string | null = null;
+let qualifiedStatusIdLoaded = false;
+let qualifiedStatusIdPromise: Promise<string | null> | null = null;
+
+async function getQualifiedStatusId(): Promise<string | null> {
+  if (qualifiedStatusIdLoaded) {
+    return qualifiedStatusIdCache;
+  }
+
+  if (!qualifiedStatusIdPromise) {
+    qualifiedStatusIdPromise = (async () => {
+      const { data, error } = await supabase
+        .from('lead_statuses')
+        .select('id')
+        .eq('code', 'qualified')
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      const qualifiedStatusId = data?.id;
+      if (qualifiedStatusId && !UUID_REGEX.test(qualifiedStatusId)) {
+        console.warn('[LeadService] Invalid qualified status id format returned from lead_statuses', { qualifiedStatusId });
+        qualifiedStatusIdCache = null;
+      } else {
+        qualifiedStatusIdCache = qualifiedStatusId ?? null;
+      }
+      qualifiedStatusIdLoaded = true;
+      return qualifiedStatusIdCache;
+    })().finally(() => {
+      qualifiedStatusIdPromise = null;
+    });
+  }
+
+  return qualifiedStatusIdPromise;
+}
+
 // ============================================================================
 // API Functions
 // ============================================================================
 
-export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
+export async function getLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }): Promise<Lead[]> {
+  const includeQualified = options?.includeQualified ?? false;
   let query = supabase
     .from('leads')
     .select(`
@@ -192,6 +234,18 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
       owner:profiles!leads_owner_user_id_fkey(id, name, email, avatar_url)
     `)
     .is('deleted_at', null);
+
+  if (!includeQualified) {
+    const qualifiedStatusId = await getQualifiedStatusId();
+
+    if (qualifiedStatusId) {
+      const qualifiedStatusFilter = `lead_status_id.is.null,lead_status_id.neq.${qualifiedStatusId}`;
+      query = query.or(qualifiedStatusFilter).is('qualified_at', null);
+    } else {
+      // Fallback for environments without a configured "qualified" status: still hide leads with a qualified timestamp
+      query = query.is('qualified_at', null);
+    }
+  }
 
   if (filters) {
     // Handle tag filtering first (if provided)
@@ -451,18 +505,7 @@ export async function qualifyLead(input: QualifyLeadInput) {
 export function useLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }) {
   return useQuery({
     queryKey: ['leads', filters, options?.includeQualified],
-    queryFn: async () => {
-      const leads = await getLeads(filters);
-      // Hide qualified leads from lists by default - they are converted to deals
-      // and should no longer appear in the active leads interface
-      if (!options?.includeQualified) {
-        return leads.filter(lead => {
-          // Lead is qualified when qualifiedAt timestamp is set
-          return !lead.qualifiedAt;
-        });
-      }
-      return leads;
-    }
+    queryFn: () => getLeads(filters, { includeQualified: options?.includeQualified })
   });
 }
 
