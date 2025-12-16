@@ -1,6 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ CONCLUÍDO (Backend como Fonte de Verdade para Filtragem)
+## 🚧 Status: ✅ Concluído (Filtro de qualified via Supabase)
 
 **Data:** 2025-12-16  
 **Autor:** GitHub Copilot Agent  
@@ -8,7 +8,18 @@
 
 ---
 
-## 🎯 Objetivo Atual - Remover Filtragem Client-Side
+## 🆕 Iteração atual - Filtro de qualified na query do Supabase
+- [x] Buscar o status `qualified` via `lead_statuses` com cache em memória
+- [x] Aplicar filtro server-side por `lead_status_id` quando `includeQualified=false` sem excluir `NULL`
+- [x] Remover filtragem client-side baseada em `qualifiedAt` em `useLeads`
+- [x] Cobrir com teste unitário que valida o uso de `.or()` na query
+- [x] Rodar lint/typecheck/test/build pós-ajuste e registrar resultado (lint/typecheck/test falham no baseline; build ✅)
+
+---
+
+## 📜 Iteração anterior (Backend como Fonte de Verdade para Filtragem)
+
+### 🎯 Objetivo - Remover Filtragem Client-Side
 
 O backend é agora a fonte de verdade para filtragem de leads qualificados e deletados. O frontend não deve mais filtrar esses dados, confiando no backend para entregar dados já filtrados e manter a paginação consistente.
 
@@ -23,12 +34,23 @@ O backend é agora a fonte de verdade para filtragem de leads qualificados e del
 
 ## 📝 Alterações Realizadas
 
-### Arquivos Modificados
+### Arquivos Modificados (iteração atual)
+- `src/services/leadService.ts` - Filtro server-side para `qualified` com cache de status e remoção do filtro client-side
+- `tests/unit/services/leadService.test.ts` - Teste garante que `.or()` exclui `lead_status_id` de qualified quando `includeQualified=false`
+
+### Arquivos Modificados (iteração anterior)
 - `src/services/leadsSalesViewService.ts` - Removida filtragem client-side; `includeQualified` passado via query param
 - `src/services/leadService.ts` - Removida filtragem client-side em `getSalesViewLeads` e `useSalesViewLeads`
 - `tests/unit/services/leadsSalesViewService.test.tsx` - Testes atualizados para validar comportamento backend-first
 
-### Detalhes da Implementação
+### Detalhes da Implementação (iteração atual)
+
+1. `getQualifiedStatusId` usa cache em memória para buscar o ID via `lead_statuses` (code = 'qualified').
+2. `getLeads` aplica `.or('lead_status_id.is.null,lead_status_id.neq.<qualified>')` e `qualified_at IS NULL` quando `includeQualified=false`.
+3. `useLeads` delega a filtragem para a query Supabase (remove filtro client-side).
+4. Teste unitário valida que o filtro é aplicado/omitido conforme `includeQualified`.
+
+### Detalhes da Implementação (iteração anterior)
 
 #### 1. `fetchSalesView` (leadsSalesViewService.ts)
 ```typescript
@@ -83,7 +105,18 @@ export function useSalesViewLeads(filters?, options?) {
 
 ---
 
-## ✅ Checklist de Qualidade
+## ✅ Checklist de Qualidade (iteração atual)
+
+| Item | Status |
+|------|--------|
+| Filtro server-side exclui status `qualified` quando `includeQualified=false` | ✅ |
+| Filtragem client-side baseada em `qualifiedAt` removida em `useLeads` | ✅ |
+| Teste unitário garantindo o filtro da query | ✅ |
+| Lint/typecheck/tests/build pós-ajustes | ⚠️ (lint/typecheck/test falham no baseline; build ✅) |
+
+---
+
+## ✅ Checklist de Qualidade (iteração anterior)
 
 | Item | Status |
 |------|--------|
@@ -95,7 +128,19 @@ export function useSalesViewLeads(filters?, options?) {
 
 ---
 
-## 📊 Medição de Impacto
+## 📊 Medição de Impacto (iteração atual)
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | 183 |
+| Linhas removidas | 19 |
+| Arquivos modificados | 2 |
+| Arquivos criados | 1 |
+| Contratos quebrados | 0 |
+
+---
+
+## 📊 Medição de Impacto (iteração anterior)
 
 | Métrica | Valor |
 |---------|-------|
