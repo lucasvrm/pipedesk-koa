@@ -378,8 +378,9 @@ describe('leadsSalesViewService', () => {
     })
   })
 
-  describe('Qualified lead filtering', () => {
-    it('should filter out leads with qualifiedAt by default', async () => {
+  describe('Qualified lead filtering (backend-first approach)', () => {
+    it('should return backend data as-is without client-side filtering', async () => {
+      // Backend is now responsible for filtering - FE should not filter
       const mockData = {
         data: [
           {
@@ -390,19 +391,13 @@ describe('leadsSalesViewService', () => {
           },
           {
             id: 'lead-2',
-            legalName: 'Qualified Lead',
-            qualifiedAt: '2024-01-15T10:00:00Z',
-            deletedAt: null,
-          },
-          {
-            id: 'lead-3',
-            legalName: 'Another Active Lead',
+            legalName: 'Another Lead',
             qualifiedAt: null,
             deletedAt: null,
           },
         ],
         pagination: {
-          total: 3,
+          total: 2,
           page: 1,
           perPage: 10,
         },
@@ -421,96 +416,13 @@ describe('leadsSalesViewService', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-      // Should only return active leads (not qualified)
+      // Data should match exactly what backend returned
       expect(result.current.data?.data).toHaveLength(2)
-      expect(result.current.data?.data?.every(lead => !lead.qualifiedAt)).toBe(true)
-      // Pagination total remains as server value (client-side filtering is defensive)
-      expect(result.current.data?.pagination.total).toBe(3)
+      expect(result.current.data?.pagination.total).toBe(2)
     })
 
-    it('should filter out leads with qualified_at (snake_case) by default', async () => {
-      const mockData = {
-        data: [
-          {
-            id: 'lead-1',
-            legal_name: 'Active Lead',
-            qualified_at: null,
-            deleted_at: null,
-          },
-          {
-            id: 'lead-2',
-            legal_name: 'Qualified Lead',
-            qualified_at: '2024-01-15T10:00:00Z',
-            deleted_at: null,
-          },
-        ],
-        pagination: {
-          total: 2,
-          page: 1,
-          perPage: 10,
-        },
-      }
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockData,
-      })
-
-      const { result } = renderHook(
-        () => useLeadsSalesView({ page: 1, pageSize: 10 }),
-        { wrapper: createWrapper() }
-      )
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-      // Should only return active leads (not qualified)
-      expect(result.current.data?.data).toHaveLength(1)
-      expect(result.current.data?.data?.[0].id).toBe('lead-1')
-    })
-
-    it('should filter out leads with deletedAt by default', async () => {
-      const mockData = {
-        data: [
-          {
-            id: 'lead-1',
-            legalName: 'Active Lead',
-            qualifiedAt: null,
-            deletedAt: null,
-          },
-          {
-            id: 'lead-2',
-            legalName: 'Deleted Lead',
-            qualifiedAt: null,
-            deletedAt: '2024-01-10T08:00:00Z',
-          },
-        ],
-        pagination: {
-          total: 2,
-          page: 1,
-          perPage: 10,
-        },
-      }
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockData,
-      })
-
-      const { result } = renderHook(
-        () => useLeadsSalesView({ page: 1, pageSize: 10 }),
-        { wrapper: createWrapper() }
-      )
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-      // Should only return non-deleted leads
-      expect(result.current.data?.data).toHaveLength(1)
-      expect(result.current.data?.data?.[0].id).toBe('lead-1')
-    })
-
-    it('should include qualified leads when includeQualified is true', async () => {
+    it('should NOT filter out leads with qualifiedAt - backend handles this', async () => {
+      // Backend should filter, but if it returns qualified leads, FE should not filter them
       const mockData = {
         data: [
           {
@@ -524,6 +436,44 @@ describe('leadsSalesViewService', () => {
             legalName: 'Qualified Lead',
             qualifiedAt: '2024-01-15T10:00:00Z',
             deletedAt: null,
+          },
+        ],
+        pagination: {
+          total: 2,
+          page: 1,
+          perPage: 10,
+        },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      const { result } = renderHook(
+        () => useLeadsSalesView({ page: 1, pageSize: 10 }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+      // FE should NOT filter - data should match exactly what backend returned
+      expect(result.current.data?.data).toHaveLength(2)
+      expect(result.current.data?.pagination.total).toBe(2)
+    })
+
+    it('should pass includeQualified=true to backend when option is set', async () => {
+      const mockData = {
+        data: [
+          {
+            id: 'lead-1',
+            legalName: 'Active Lead',
+          },
+          {
+            id: 'lead-2',
+            legalName: 'Qualified Lead',
+            qualifiedAt: '2024-01-15T10:00:00Z',
           },
         ],
         pagination: {
@@ -546,29 +496,48 @@ describe('leadsSalesViewService', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-      // Should return all leads including qualified
+      // Verify the URL contains includeQualified=true
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).toContain('includeQualified=true')
+
+      // All leads should be returned
       expect(result.current.data?.data).toHaveLength(2)
       expect(result.current.data?.pagination.total).toBe(2)
     })
 
-    it('should return empty array when all leads are qualified', async () => {
+    it('should NOT pass includeQualified param when option is false/undefined', async () => {
       const mockData = {
-        data: [
-          {
-            id: 'lead-1',
-            legalName: 'Qualified Lead 1',
-            qualifiedAt: '2024-01-15T10:00:00Z',
-            deletedAt: null,
-          },
-          {
-            id: 'lead-2',
-            legalName: 'Qualified Lead 2',
-            qualifiedAt: '2024-01-16T12:00:00Z',
-            deletedAt: null,
-          },
-        ],
+        data: [],
         pagination: {
-          total: 2,
+          total: 0,
+          page: 1,
+          perPage: 10,
+        },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () => useLeadsSalesView({ page: 1, pageSize: 10 }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      // Verify the URL does NOT contain includeQualified
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).not.toContain('includeQualified')
+    })
+
+    it('should return empty array when backend returns empty', async () => {
+      const mockData = {
+        data: [],
+        pagination: {
+          total: 0,
           page: 1,
           perPage: 10,
         },
@@ -588,8 +557,7 @@ describe('leadsSalesViewService', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
       expect(result.current.data?.data).toHaveLength(0)
-      // Pagination total remains as server value (client-side filtering is defensive)
-      expect(result.current.data?.pagination.total).toBe(2)
+      expect(result.current.data?.pagination.total).toBe(0)
     })
   })
 })
