@@ -249,7 +249,7 @@ export async function getLead(id: string): Promise<Lead> {
   return mapLeadFromDB(data);
 }
 
-export async function getSalesViewLeads(filters?: SalesViewFilters): Promise<Lead[]> {
+export async function getSalesViewLeads(filters?: SalesViewFilters, options?: { includeQualified?: boolean }): Promise<Lead[]> {
   const params = new URLSearchParams();
 
   if (filters?.owner === 'me') {
@@ -278,6 +278,11 @@ export async function getSalesViewLeads(filters?: SalesViewFilters): Promise<Lea
 
   if (filters?.orderBy) {
     params.set('order_by', filters.orderBy);
+  }
+
+  // Pass includeQualified to backend - it is now responsible for filtering
+  if (options?.includeQualified) {
+    params.set('includeQualified', 'true');
   }
 
   const query = params.toString();
@@ -465,12 +470,9 @@ export function useSalesViewLeads(filters?: SalesViewFilters, options?: { enable
   return useQuery({
     queryKey: ['leads', 'sales-view', filters, options?.includeQualified],
     queryFn: async () => {
-      const leads = await getSalesViewLeads(filters);
-      // Hide qualified leads from sales view by default - they are converted to deals
-      // and should no longer appear in the active leads interface
-      if (!options?.includeQualified) {
-        return leads.filter(lead => !lead.qualifiedAt);
-      }
+      // Backend is now the source of truth for filtering qualified/deleted leads
+      // The includeQualified param is passed to the backend via query string
+      const leads = await getSalesViewLeads(filters, { includeQualified: options?.includeQualified });
       return leads;
     },
     enabled: options?.enabled ?? true

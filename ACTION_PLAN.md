@@ -1,119 +1,85 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ CONCLUÍDO (Filtrar Leads Qualificados de TODAS as Views)
+## 🚧 Status: ✅ CONCLUÍDO (Backend como Fonte de Verdade para Filtragem)
 
 **Data:** 2025-12-16  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - leadService.ts, leadsSalesViewService.ts, LeadDetailPage.tsx
+**Escopo:** Frontend - leadService.ts, leadsSalesViewService.ts
 
 ---
 
-## 🎯 Objetivo Atual - Filtrar Leads Qualificados
+## 🎯 Objetivo Atual - Remover Filtragem Client-Side
 
-Ajustar o frontend para ocultar leads com status "qualified" ou "soft deleted" de TODAS as views (sales, kanban, grid), mantendo mensagens claras para leads qualificados acessados diretamente.
+O backend é agora a fonte de verdade para filtragem de leads qualificados e deletados. O frontend não deve mais filtrar esses dados, confiando no backend para entregar dados já filtrados e manter a paginação consistente.
 
 ### ✅ Tarefas Concluídas
-- [x] Atualizar hook `useLeads` para filtrar leads qualificados por padrão
-- [x] Atualizar hook `useSalesViewLeads` para filtrar leads qualificados por padrão
-- [x] Atualizar hook `useLeadsSalesView` para filtrar leads qualificados e soft deleted por padrão
-- [x] Atualizar interface `LeadSalesViewItem` para incluir campos `qualifiedAt` e `deletedAt`
-- [x] Atualizar `LeadDetailPage` para exibir mensagem quando lead está qualificado
-- [x] Adicionar navegação para negócio e empresa associados no card de lead qualificado
-- [x] Adicionar opção `includeQualified` para relatórios avançados
-- [x] Adicionar testes unitários para o comportamento de filtragem
-- [x] Mensagens em português claras para o usuário
-- [x] Build passando
+- [x] Remover filtragem client-side em `useLeadsSalesView` (leadsSalesViewService.ts)
+- [x] Remover filtragem client-side em `useSalesViewLeads` (leadService.ts)
+- [x] Passar `includeQualified=true` via query param para o backend quando necessário
+- [x] Atualizar testes para validar abordagem backend-first
+- [x] Documentar decisão de arquitetura
 
 ---
 
 ## 📝 Alterações Realizadas
 
 ### Arquivos Modificados
-- `src/services/leadService.ts` - Hooks `useLeads` e `useSalesViewLeads` agora filtram leads qualificados por padrão
-- `src/services/leadsSalesViewService.ts` - Hook `useLeadsSalesView` filtra leads qualificados e soft deleted; interface `LeadSalesViewItem` atualizada com campos de qualificação
-- `src/features/leads/pages/LeadDetailPage.tsx` - Card informativo para leads qualificados
-- `tests/unit/services/leadsSalesViewService.test.tsx` - 5 novos testes para validar comportamento de filtragem
+- `src/services/leadsSalesViewService.ts` - Removida filtragem client-side; `includeQualified` passado via query param
+- `src/services/leadService.ts` - Removida filtragem client-side em `getSalesViewLeads` e `useSalesViewLeads`
+- `tests/unit/services/leadsSalesViewService.test.tsx` - Testes atualizados para validar comportamento backend-first
 
 ### Detalhes da Implementação
 
-#### 1. Filtro no Hook `useLeads` (Grid/Kanban Views)
+#### 1. `fetchSalesView` (leadsSalesViewService.ts)
 ```typescript
-export function useLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }) {
-  return useQuery({
-    queryKey: ['leads', filters, options?.includeQualified],
-    queryFn: async () => {
-      const leads = await getLeads(filters);
-      if (!options?.includeQualified) {
-        return leads.filter(lead => !lead.qualifiedAt);
-      }
-      return leads;
-    }
-  });
+async function fetchSalesView(params, options?: { includeQualified?: boolean }) {
+  // ...
+  if (options?.includeQualified) {
+    searchParams.set('includeQualified', 'true')
+  }
+  // ...
 }
 ```
 
-#### 2. Filtro no Hook `useSalesViewLeads`
+#### 2. `useLeadsSalesView` (leadsSalesViewService.ts)
 ```typescript
-export function useSalesViewLeads(filters?: SalesViewFilters, options?: { enabled?: boolean; includeQualified?: boolean }) {
-  return useQuery({
-    queryKey: ['leads', 'sales-view', filters, options?.includeQualified],
-    queryFn: async () => {
-      const leads = await getSalesViewLeads(filters);
-      if (!options?.includeQualified) {
-        return leads.filter(lead => !lead.qualifiedAt);
-      }
-      return leads;
-    },
-    enabled: options?.enabled ?? true
-  });
-}
-```
-
-#### 3. Filtro no Hook `useLeadsSalesView`
-```typescript
-export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enabled?: boolean; includeQualified?: boolean }) {
+export function useLeadsSalesView(params, options?) {
   return useQuery({
     queryKey: ['leads-sales-view', params, options?.includeQualified],
     queryFn: async () => {
-      const response = await fetchSalesView(params);
-      if (!options?.includeQualified) {
-        const filteredData = response.data.filter(lead => {
-          const qualifiedAt = lead.qualifiedAt ?? lead.qualified_at;
-          const deletedAt = lead.deletedAt ?? lead.deleted_at;
-          return !qualifiedAt && !deletedAt;
-        });
-        return {
-          ...response,
-          data: filteredData
-          // Note: We keep the original pagination.total from the server since this is a defensive
-          // client-side filter. The server should already be excluding qualified/deleted leads.
-        };
-      }
+      // Backend é agora a fonte de verdade para filtragem
+      const response = await fetchSalesView(params, { includeQualified: options?.includeQualified });
       return response;
     },
-    // ... outras opções
+    // ...
   });
 }
 ```
 
-#### 4. Interface Atualizada `LeadSalesViewItem`
+#### 3. `getSalesViewLeads` (leadService.ts)
 ```typescript
-export interface LeadSalesViewItem {
-  // ... outros campos
-  qualifiedAt?: string | null
-  qualified_at?: string | null
-  deletedAt?: string | null
-  deleted_at?: string | null
+export async function getSalesViewLeads(filters?, options?: { includeQualified?: boolean }) {
+  // ...
+  if (options?.includeQualified) {
+    params.set('includeQualified', 'true');
+  }
+  // ...
 }
 ```
 
-#### 5. Card de Lead Qualificado
-Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo):
-- Exibe ícone de sucesso (CheckCircle) em verde
-- Título "Lead Qualificado"
-- Mensagem explicando que o lead foi convertido em negócio
-- Botões para navegar ao negócio e empresa associados
-- Botão para voltar à lista de leads
+#### 4. `useSalesViewLeads` (leadService.ts)
+```typescript
+export function useSalesViewLeads(filters?, options?) {
+  return useQuery({
+    queryFn: async () => {
+      // Backend é agora a fonte de verdade para filtragem
+      const leads = await getSalesViewLeads(filters, { includeQualified: options?.includeQualified });
+      return leads;
+    },
+    // ...
+  });
+}
+```
 
 ---
 
@@ -121,17 +87,11 @@ Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo
 
 | Item | Status |
 |------|--------|
-| Hook `useLeads` filtra leads qualificados (grid/kanban) | ✅ |
-| Hook `useSalesViewLeads` filtra leads qualificados | ✅ |
-| Hook `useLeadsSalesView` filtra leads qualificados e deleted | ✅ |
-| Opção `includeQualified` para bypass em todos os hooks | ✅ |
-| Interface `LeadSalesViewItem` inclui campos de qualificação | ✅ |
-| LeadDetailPage mostra card informativo | ✅ |
-| Link para negócio associado | ✅ |
-| Link para empresa associada | ✅ |
-| Mensagens em português | ✅ |
-| Testes unitários para filtragem | ✅ (5 testes) |
-| Build passando | ✅ |
+| Removida filtragem client-side em `useLeadsSalesView` | ✅ |
+| Removida filtragem client-side em `useSalesViewLeads` | ✅ |
+| `includeQualified=true` passado via query param | ✅ |
+| Testes atualizados para abordagem backend-first | ✅ (5 testes) |
+| Contratos de API mantidos (data, pagination) | ✅ |
 
 ---
 
@@ -139,37 +99,33 @@ Quando o usuário acessa um lead qualificado diretamente (via URL ou link antigo
 
 | Métrica | Valor |
 |---------|-------|
-| Linhas adicionadas | ~120 |
-| Linhas removidas | ~10 |
-| Arquivos modificados | 4 |
-| APIs alteradas | 0 (apenas cliente) |
-| Testes adicionados | 5 |
+| Linhas adicionadas | ~15 |
+| Linhas removidas | ~25 |
+| Arquivos modificados | 3 |
+| APIs alteradas | 0 (apenas query param) |
+| Testes modificados | 5 |
 | Contratos quebrados | 0 |
 
-**Risco:** 🟢 Baixo (filtro adicional, não quebra funcionalidade existente)
+**Risco:** 🟡 Médio (requer backend ajustado para filtrar leads qualificados/deletados)
 
 ---
 
 ## Decisões Técnicas
 
-1. **Por que filtrar no frontend em vez do backend?**
-   - Backend já filtra com `deleted_at IS NULL`, mas leads qualificados mantêm `deleted_at = null`
-   - A qualificação é identificada pelo campo `qualifiedAt`
-   - Filtro cliente-side serve como defesa adicional e garante consistência
-   - Mantém regra de negócio: leads qualificados não devem ser visíveis na lista
+1. **Por que remover filtragem client-side?**
+   - A filtragem client-side causava inconsistência entre `data.length` e `pagination.total`
+   - O backend já deve filtrar leads qualificados/deletados
+   - Centralizar filtragem no backend garante paginação consistente
+   - Evita duplicação de lógica de negócio
 
-2. **Por que adicionar opção `includeQualified`?**
-   - Permite flexibilidade para relatórios que precisam incluir leads qualificados
-   - Mantém compatibilidade com casos de uso futuros
+2. **Por que passar `includeQualified` como query param?**
+   - Permite que relatórios avançados incluam leads qualificados quando necessário
+   - Mantém compatibilidade com a API existente
+   - Segue padrão RESTful de passar opções via query string
 
-3. **Por que suportar snake_case e camelCase?**
-   - Backend pode retornar campos em ambos os formatos
-   - Garante compatibilidade com diferentes versões da API
-
-4. **Por que mostrar card informativo ao invés de 404?**
-   - Melhor UX: usuário entende que o lead foi convertido
-   - Facilita navegação para o negócio associado
-   - Evita confusão com links antigos ou bookmarks
+3. **Quando fazer o deploy?**
+   - Esta mudança deve ser coordenada com o deploy do backend
+   - O backend deve estar ajustado para filtrar leads qualificados/deletados antes desta mudança no FE
 
 ---
 

@@ -132,7 +132,7 @@ function validateSalesViewResponse(data: unknown): void {
   }
 }
 
-async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery): Promise<LeadSalesViewResponse> {
+async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSalesViewQuery, options?: { includeQualified?: boolean }): Promise<LeadSalesViewResponse> {
   try {
     // Valid order_by values - fallback to 'priority' only if invalid
     const validOrderByValues: readonly string[] = ['priority', 'last_interaction', 'created_at', 'status', 'next_action', 'owner']
@@ -145,6 +145,11 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
       pageSize: String(pageSize),
       order_by: normalizedOrderBy
     })
+
+    // Pass includeQualified to backend - it is now responsible for filtering
+    if (options?.includeQualified) {
+      searchParams.set('includeQualified', 'true')
+    }
 
     if (filters.owner === 'me') searchParams.set('owner', filters.owner)
     if (filters.ownerIds?.length) searchParams.set('ownerIds', filters.ownerIds.join(','))
@@ -245,23 +250,9 @@ export function useLeadsSalesView(params: LeadSalesViewQuery, options?: { enable
   return useQuery({
     queryKey: ['leads-sales-view', params, options?.includeQualified],
     queryFn: async () => {
-      const response = await fetchSalesView(params);
-      // Hide qualified or soft-deleted leads from sales view by default
-      // They are converted to deals and should no longer appear in the active leads interface
-      // Note: This is a client-side defensive filter. The backend should already exclude these leads.
-      if (!options?.includeQualified) {
-        const filteredData = response.data.filter(lead => {
-          const qualifiedAt = lead.qualifiedAt ?? lead.qualified_at;
-          const deletedAt = lead.deletedAt ?? lead.deleted_at;
-          return !qualifiedAt && !deletedAt;
-        });
-        return {
-          ...response,
-          data: filteredData
-          // Note: We keep the original pagination.total from the server since this is a defensive
-          // client-side filter. The server should already be excluding qualified/deleted leads.
-        };
-      }
+      // Backend is now the source of truth for filtering qualified/deleted leads
+      // The includeQualified param is passed to the backend via query string
+      const response = await fetchSalesView(params, { includeQualified: options?.includeQualified });
       return response;
     },
     placeholderData: keepPreviousData,
