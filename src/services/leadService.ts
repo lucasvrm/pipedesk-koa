@@ -448,10 +448,11 @@ export function useLeads(filters?: LeadFilters, options?: { includeQualified?: b
     queryKey: ['leads', filters, options?.includeQualified],
     queryFn: async () => {
       const leads = await getLeads(filters);
-      // Filter out qualified leads by default (soft delete behavior for qualified status)
+      // Hide qualified leads from lists by default - they are converted to deals
+      // and should no longer appear in the active leads interface
       if (!options?.includeQualified) {
         return leads.filter(lead => {
-          // Check if lead has qualified status by checking qualifiedAt timestamp
+          // Lead is qualified when qualifiedAt timestamp is set
           return !lead.qualifiedAt;
         });
       }
