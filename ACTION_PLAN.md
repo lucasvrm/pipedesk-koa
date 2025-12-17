@@ -1,6 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Filtro de qualified via Supabase)
+## 🚧 Status: 🚧 Em andamento (Filtro de Próxima Ação na Sales View)
 
 **Data:** 2025-12-16  
 **Autor:** GitHub Copilot Agent  
@@ -8,12 +8,11 @@
 
 ---
 
-## 🆕 Iteração atual - Filtro de qualified na query do Supabase
-- [x] Buscar o status `qualified` via `lead_statuses` com cache em memória
-- [x] Aplicar filtro server-side por `lead_status_id` quando `includeQualified=false` sem excluir `NULL`
-- [x] Remover filtragem client-side baseada em `qualifiedAt` em `useLeads`
-- [x] Cobrir com teste unitário que valida o uso de `.or()` na query
-- [x] Rodar lint/typecheck/test/build pós-ajuste e registrar resultado (lint/typecheck/test falham no baseline; build ✅)
+## 🆕 Iteração atual - Filtro de Próxima Ação + botão Fechar
+- [x] Tornar o popover de Filtros Inteligentes controlado e adicionar botão **Fechar** após **Limpar**
+- [x] Renderizar seção **Próxima ação** apenas em `view=sales` com multi-select fixo (11 codes)
+- [x] Persistir seleção em estado/querystring e enviar `next_action=<csv>` para `/api/leads/sales-view`
+- [ ] Atualizar checklists/QA e executar lint/typecheck/test/build (baseline ainda possui falhas conhecidas)
 
 ---
 

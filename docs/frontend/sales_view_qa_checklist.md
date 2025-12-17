@@ -72,6 +72,22 @@ Este documento descreve os passos para validação manual das funcionalidades de
 
 ---
 
+## Cenário 7: Filtrar por "Próxima ação" e fechar popover
+
+### Passos
+
+1. Navegue para `/leads?view=sales`.
+2. Clique em **Filtros** para abrir o popover de Filtros Inteligentes.
+3. Confirme que os botões exibem **Limpar** seguido de **Fechar**; clique em **Fechar** para encerrar o popover sem limpar.
+4. Reabra o popover, localize a seção **Próxima ação**.
+5. Selecione uma ou mais opções (lista fixa de 11 codes, incluindo `send_follow_up`).
+
+### Resultado Esperado
+
+- ✅ O popover fecha ao clicar em **Fechar** (não limpa filtros).
+- ✅ A seção **Próxima ação** só aparece na Sales View.
+- ✅ Selecionar uma ação inclui `next_action=<csv>` na requisição `/api/leads/sales-view`.
+
 ## Cenário 3: Renderização do nextAction.label (Ações 4–10)
 
 ### Passos

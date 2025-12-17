@@ -156,9 +156,11 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
     if (filters.priority?.length) searchParams.set('priority', filters.priority.join(','))
     if (filters.status?.length) searchParams.set('status', filters.status.join(','))
     if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
-    if (typeof filters.daysWithoutInteraction === 'number') searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
+    if (typeof filters.daysWithoutInteraction === 'number')
+      searchParams.set('days_without_interaction', String(filters.daysWithoutInteraction))
     if (filters.search) searchParams.set('search', filters.search)
     if (filters.tags?.length) searchParams.set('tags', filters.tags.join(','))
+    if (filters.nextAction?.length) searchParams.set('next_action', filters.nextAction.join(','))
     
     const url = `/api/leads/sales-view?${searchParams.toString()}`
     const response = await fetch(url)

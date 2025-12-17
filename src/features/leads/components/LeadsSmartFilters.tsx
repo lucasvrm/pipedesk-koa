@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon } from 'lucide-react'
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
 
@@ -52,6 +52,9 @@ interface LeadsSmartFiltersProps {
   availableTags?: Tag[]
   selectedTags?: string[]
   onTagsChange?: (ids: string[]) => void
+  showNextActionFilter?: boolean
+  nextActions?: string[]
+  onNextActionsChange?: (codes: string[]) => void
 }
 
 const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description: string }[] = [
@@ -67,6 +70,20 @@ export const ORDER_BY_OPTIONS: { value: LeadOrderBy; label: string }[] = [
   { value: 'status', label: 'Status' },
   { value: 'next_action', label: 'Próxima ação' },
   { value: 'owner', label: 'Responsável' }
+]
+
+const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
+  { code: 'call', label: 'Ligar' },
+  { code: 'email', label: 'Enviar e-mail' },
+  { code: 'send_follow_up', label: 'Follow-up' },
+  { code: 'qualification', label: 'Qualificação' },
+  { code: 'presentation', label: 'Apresentação' },
+  { code: 'proposal', label: 'Proposta' },
+  { code: 'negotiation', label: 'Negociação' },
+  { code: 'closing', label: 'Fechamento' },
+  { code: 'onboarding', label: 'Onboarding' },
+  { code: 'post_sale', label: 'Pós-venda' },
+  { code: 'reactivation', label: 'Reativação' }
 ]
 
 const DAYS_PRESETS = [3, 7, 14]
@@ -96,8 +113,12 @@ export function LeadsSmartFilters({
   onClear,
   availableTags = [],
   selectedTags = [],
-  onTagsChange
+  onTagsChange,
+  showNextActionFilter = false,
+  nextActions = [],
+  onNextActionsChange
 }: LeadsSmartFiltersProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const ownerLabel = useMemo(() => {
     if (ownerMode === 'me') return 'Meus leads'
     if (ownerMode === 'all') return 'Todos'
@@ -124,7 +145,7 @@ export function LeadsSmartFilters({
       onOwnerModeChange('custom')
       toggleItem(selectedOwners, userId, onSelectedOwnersChange)
     },
-    [onOwnerModeChange, onSelectedOwnersChange, selectedOwners, toggleItem]
+    [onOwnerModeChange, onSelectedOwnersChange, selectedOwners]
   )
 
   const handlePriorityToggle = useCallback(
@@ -142,14 +163,14 @@ export function LeadsSmartFilters({
     (code: string) => {
       toggleItem(statuses, code, onStatusesChange)
     },
-    [onStatusesChange, statuses, toggleItem]
+    [onStatusesChange, statuses]
   )
 
   const handleOriginToggle = useCallback(
     (code: string) => {
       toggleItem(origins, code, onOriginsChange)
     },
-    [onOriginsChange, origins, toggleItem]
+    [onOriginsChange, origins]
   )
 
   // Calculate active filters count (orderBy is now separate, not counted as filter)
@@ -161,26 +182,31 @@ export function LeadsSmartFilters({
     if (origins.length > 0) count++
     if (daysWithoutInteraction !== null) count++
     if (selectedTags.length > 0) count++
+    if (showNextActionFilter && nextActions.length > 0) count++
     return count
-  }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, selectedTags])
+  }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, selectedTags, showNextActionFilter, nextActions])
 
   // Handler for toggling tags
   const handleTagToggle = useCallback(
     (tagId: string) => {
       if (!onTagsChange) return
-      if (selectedTags.includes(tagId)) {
-        onTagsChange(selectedTags.filter(id => id !== tagId))
-      } else {
-        onTagsChange([...selectedTags, tagId])
-      }
+      toggleItem(selectedTags, tagId, onTagsChange)
     },
     [onTagsChange, selectedTags]
+  )
+
+  const handleNextActionToggle = useCallback(
+    (code: string) => {
+      if (!onNextActionsChange) return
+      toggleItem(nextActions, code, onNextActionsChange)
+    },
+    [nextActions, onNextActionsChange]
   )
 
   return (
     <>
       {/* Main Filters Popover */}
-      <Popover>
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
             variant={activeFiltersCount > 0 ? 'secondary' : 'outline'}
@@ -205,10 +231,15 @@ export function LeadsSmartFilters({
                 <Filter className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">Filtros Inteligentes</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={onClear} className="h-7 gap-1.5 px-2 text-xs">
-                <X className="h-3.5 w-3.5" />
-                Limpar
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="sm" onClick={onClear} className="h-7 gap-1.5 px-2 text-xs">
+                  <X className="h-3.5 w-3.5" />
+                  Limpar
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsPopoverOpen(false)} className="h-7 px-2 text-xs">
+                  Fechar
+                </Button>
+              </div>
             </div>
 
             <Separator />
@@ -456,6 +487,41 @@ export function LeadsSmartFilters({
                 </Button>
               </div>
             </div>
+
+            {showNextActionFilter && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Próxima ação
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {NEXT_ACTION_OPTIONS.map(option => {
+                      const isSelected = nextActions.includes(option.code)
+                      return (
+                        <button
+                          key={option.code}
+                          type="button"
+                          onClick={() => handleNextActionToggle(option.code)}
+                          className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                            isSelected ? 'border-primary/40 bg-primary/5 text-primary' : 'border-border hover:bg-muted/60'
+                          }`}
+                        >
+                          <span
+                            className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
+                              isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
+                            }`}
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </span>
+                          <span className="truncate text-left">{option.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </PopoverContent>
       </Popover>
@@ -486,6 +552,11 @@ export function LeadsSmartFilters({
           {daysWithoutInteraction !== null && (
             <Badge variant="secondary" className="h-7 gap-1 px-2 text-xs">
               {daysWithoutInteraction} dias
+            </Badge>
+          )}
+          {showNextActionFilter && nextActions.length > 0 && (
+            <Badge variant="secondary" className="h-7 gap-1 px-2 text-xs">
+              Próxima ação ({nextActions.length})
             </Badge>
           )}
           {selectedTags.length > 0 && (
