@@ -1,9 +1,15 @@
 import { User, Tag } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter
+} from '@/components/ui/sheet'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import {
   Command,
@@ -13,14 +19,10 @@ import {
   CommandItem,
   CommandList
 } from '@/components/ui/command'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon } from 'lucide-react'
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
 
@@ -59,6 +61,18 @@ interface LeadsSmartFiltersProps {
   onNextActionsChange?: (codes: string[]) => void
 }
 
+// Draft filters state for managing changes before applying
+interface DraftFilters {
+  ownerMode: 'me' | 'all' | 'custom'
+  selectedOwners: string[]
+  priority: LeadPriorityBucket[]
+  statuses: string[]
+  origins: string[]
+  daysWithoutInteraction: number | null
+  selectedTags: string[]
+  nextActions: string[]
+}
+
 const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description: string }[] = [
   { value: 'hot', label: 'Hot', description: 'Score alto, lead muito quente' },
   { value: 'warm', label: 'Warm', description: 'Score moderado, lead engajado' },
@@ -78,7 +92,7 @@ export const ORDER_BY_OPTIONS: { value: LeadOrderBy; label: string }[] = [
  * Canonical list of Next Action options for Sales View (view=sales).
  * These 11 codes are fixed and should NOT be derived from current page data.
  */
-const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
+export const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
   { code: 'prepare_for_meeting', label: 'Preparar para reunião' },
   { code: 'post_meeting_follow_up', label: 'Follow-up pós-reunião' },
   { code: 'call_first_time', label: 'Fazer primeira ligação' },
@@ -95,10 +109,10 @@ const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
 const DAYS_PRESETS = [3, 7, 14]
 
 /**
- * LeadsSmartFilters - Compact Filter Component for DataToolbar
+ * LeadsSmartFilters - Sheet-based Filter Component for DataToolbar
  * 
- * Adapted from LeadsSalesFiltersBar with a more compact, popover-based design
- * suitable for embedding in a horizontal toolbar.
+ * Uses a Sheet (side panel) with draft mode for a stable UX with many filters.
+ * Changes are only applied when the user clicks "Aplicar filtros".
  */
 export function LeadsSmartFilters({
   ownerMode,
@@ -124,11 +138,55 @@ export function LeadsSmartFilters({
   nextActions = [],
   onNextActionsChange
 }: LeadsSmartFiltersProps) {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
-  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
-  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false)
-  const [tagSearchTerm, setTagSearchTerm] = useState('')
-  const ownerLabel = useMemo(() => {
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const wasSheetOpenRef = useRef(false)
+  
+  // Draft filters state - initialized from applied filters when sheet opens
+  const [draftFilters, setDraftFilters] = useState<DraftFilters>({
+    ownerMode,
+    selectedOwners,
+    priority,
+    statuses,
+    origins,
+    daysWithoutInteraction,
+    selectedTags,
+    nextActions
+  })
+
+  // Sync draft with applied only when sheet opens (not while it's open)
+  useEffect(() => {
+    if (isSheetOpen && !wasSheetOpenRef.current) {
+      // Sheet just opened - sync draft from applied
+      setDraftFilters({
+        ownerMode,
+        selectedOwners,
+        priority,
+        statuses,
+        origins,
+        daysWithoutInteraction,
+        selectedTags,
+        nextActions
+      })
+    }
+    wasSheetOpenRef.current = isSheetOpen
+  }, [isSheetOpen, ownerMode, selectedOwners, priority, statuses, origins, daysWithoutInteraction, selectedTags, nextActions])
+
+  // Defensive: ensure arrays are valid
+  const safeUsers = ensureArray<User>(users)
+  const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
+  const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
+
+  // Helper to compute owner label from draft
+  const draftOwnerLabel = useMemo(() => {
+    if (draftFilters.ownerMode === 'me') return 'Meus leads'
+    if (draftFilters.ownerMode === 'all') return 'Todos'
+    return draftFilters.selectedOwners.length > 0
+      ? `${draftFilters.selectedOwners.length} selecionado${draftFilters.selectedOwners.length > 1 ? 's' : ''}`
+      : 'Selecionar'
+  }, [draftFilters.ownerMode, draftFilters.selectedOwners])
+
+  // Applied filters owner label for trigger button
+  const appliedOwnerLabel = useMemo(() => {
     if (ownerMode === 'me') return 'Meus leads'
     if (ownerMode === 'all') return 'Todos'
     return selectedOwners.length > 0
@@ -136,69 +194,7 @@ export function LeadsSmartFilters({
       : 'Responsável'
   }, [ownerMode, selectedOwners])
 
-  // Defensive: ensure arrays are valid
-  const safeUsers = ensureArray<User>(users)
-  const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
-  const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
-  const selectedTagObjects = useMemo(
-    () => availableTags.filter(tag => selectedTags.includes(tag.id)),
-    [availableTags, selectedTags]
-  )
-  const filteredTagOptions = useMemo(() => {
-    if (!tagSearchTerm.trim()) return availableTags
-    const term = tagSearchTerm.toLowerCase()
-    return availableTags.filter(tag => safeString(tag.name, '').toLowerCase().includes(term))
-  }, [availableTags, tagSearchTerm])
-  const moreFiltersActiveCount = useMemo(() => {
-    let count = 0
-    if (origins.length > 0) count++
-    if (daysWithoutInteraction !== null) count++
-    if (showNextActionFilter && nextActions.length > 0) count++
-    return count
-  }, [daysWithoutInteraction, nextActions, origins, showNextActionFilter])
-
-  const toggleItem = useCallback((list: string[], value: string, onChange: (values: string[]) => void) => {
-    if (list.includes(value)) {
-      onChange(list.filter(item => item !== value))
-    } else {
-      onChange([...list, value])
-    }
-  }, [])
-
-  const handleUserSelect = useCallback(
-    (userId: string) => {
-      onOwnerModeChange('custom')
-      toggleItem(selectedOwners, userId, onSelectedOwnersChange)
-    },
-    [onOwnerModeChange, onSelectedOwnersChange, selectedOwners]
-  )
-
-  const handlePriorityToggle = useCallback(
-    (bucket: LeadPriorityBucket) => {
-      if (priority.includes(bucket)) {
-        onPriorityChange(priority.filter(item => item !== bucket))
-      } else {
-        onPriorityChange([...priority, bucket])
-      }
-    },
-    [onPriorityChange, priority]
-  )
-
-  const handleStatusToggle = useCallback(
-    (code: string) => {
-      toggleItem(statuses, code, onStatusesChange)
-    },
-    [onStatusesChange, statuses]
-  )
-
-  const handleOriginToggle = useCallback(
-    (code: string) => {
-      toggleItem(origins, code, onOriginsChange)
-    },
-    [onOriginsChange, origins]
-  )
-
-  // Calculate active filters count (orderBy is now separate, not counted as filter)
+  // Calculate active filters count from applied filters
   const activeFiltersCount = useMemo(() => {
     let count = 0
     if (ownerMode !== 'me') count++
@@ -210,207 +206,305 @@ export function LeadsSmartFilters({
     if (showNextActionFilter && nextActions.length > 0) count++
     return count
   }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, selectedTags, showNextActionFilter, nextActions])
-  const activeFilterChips = useMemo(
-    () =>
-      [
-        ownerMode !== 'me' || selectedOwners.length > 0
-          ? {
-              key: 'owner',
-              label: ownerLabel,
-              onRemove: () => {
-                onOwnerModeChange('me')
-                onSelectedOwnersChange([])
-              }
-            }
-          : null,
-        priority.length > 0
-          ? {
-              key: 'priority',
-              label: `Prioridade (${priority.length})`,
-              onRemove: () => onPriorityChange([])
-            }
-          : null,
-        statuses.length > 0
-          ? {
-              key: 'statuses',
-              label: `Status (${statuses.length})`,
-              onRemove: () => onStatusesChange([])
-            }
-          : null,
-        origins.length > 0
-          ? {
-              key: 'origins',
-              label: `Origem (${origins.length})`,
-              onRemove: () => onOriginsChange([])
-            }
-          : null,
-        daysWithoutInteraction !== null
-          ? {
-              key: 'days',
-              label: `Dias sem interação: ${daysWithoutInteraction}`,
-              onRemove: () => onDaysWithoutInteractionChange(null)
-            }
-          : null,
-        showNextActionFilter && nextActions.length > 0
-          ? {
-              key: 'nextActions',
-              label: `Próxima ação (${nextActions.length})`,
-              onRemove: () => onNextActionsChange?.([])
-            }
-          : null,
-        onTagsChange && selectedTags.length > 0
-          ? {
-              key: 'tags',
-              label: `Tags (${selectedTags.length})`,
-              onRemove: () => onTagsChange([])
-            }
-          : null
-      ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[],
-    [
-      daysWithoutInteraction,
-      nextActions,
-      onNextActionsChange,
-      onOriginsChange,
-      onOwnerModeChange,
-      onPriorityChange,
-      onSelectedOwnersChange,
-      onStatusesChange,
-      onTagsChange,
-      origins,
-      ownerLabel,
-      ownerMode,
-      priority,
-      selectedOwners,
-      selectedTags,
-      showNextActionFilter,
-      statuses
-    ]
-  )
 
-  // Handler for toggling tags
-  const handleTagToggle = useCallback(
-    (tagId: string) => {
-      if (!onTagsChange) return
-      toggleItem(selectedTags, tagId, onTagsChange)
-    },
-    [onTagsChange, selectedTags]
-  )
+  // Draft filters count for display in sheet
+  const draftFiltersCount = useMemo(() => {
+    let count = 0
+    if (draftFilters.ownerMode !== 'me') count++
+    if (draftFilters.priority.length > 0) count++
+    if (draftFilters.statuses.length > 0) count++
+    if (draftFilters.origins.length > 0) count++
+    if (draftFilters.daysWithoutInteraction !== null) count++
+    if (draftFilters.selectedTags.length > 0) count++
+    if (showNextActionFilter && draftFilters.nextActions.length > 0) count++
+    return count
+  }, [draftFilters, showNextActionFilter])
 
-  const handleNextActionToggle = useCallback(
-    (code: string) => {
-      if (!onNextActionsChange) return
-      toggleItem(nextActions, code, onNextActionsChange)
-    },
-    [nextActions, onNextActionsChange]
+  // Generate chips from draft filters for summary section
+  const draftFilterChips = useMemo(() => {
+    const chips: { key: string; label: string; onRemove: () => void }[] = []
+
+    if (draftFilters.ownerMode !== 'me' || draftFilters.selectedOwners.length > 0) {
+      chips.push({
+        key: 'owner',
+        label: draftOwnerLabel,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, ownerMode: 'me', selectedOwners: [] }))
+      })
+    }
+    if (draftFilters.priority.length > 0) {
+      chips.push({
+        key: 'priority',
+        label: `Prioridade (${draftFilters.priority.length})`,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, priority: [] }))
+      })
+    }
+    if (draftFilters.statuses.length > 0) {
+      chips.push({
+        key: 'statuses',
+        label: `Status (${draftFilters.statuses.length})`,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, statuses: [] }))
+      })
+    }
+    if (draftFilters.origins.length > 0) {
+      chips.push({
+        key: 'origins',
+        label: `Origem (${draftFilters.origins.length})`,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, origins: [] }))
+      })
+    }
+    if (draftFilters.daysWithoutInteraction !== null) {
+      chips.push({
+        key: 'days',
+        label: `Sem interação há ${draftFilters.daysWithoutInteraction}+ dias`,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, daysWithoutInteraction: null }))
+      })
+    }
+    if (showNextActionFilter && draftFilters.nextActions.length > 0) {
+      chips.push({
+        key: 'nextActions',
+        label: `Próxima ação (${draftFilters.nextActions.length})`,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, nextActions: [] }))
+      })
+    }
+    if (onTagsChange && draftFilters.selectedTags.length > 0) {
+      chips.push({
+        key: 'tags',
+        label: `Tags (${draftFilters.selectedTags.length})`,
+        onRemove: () => setDraftFilters(prev => ({ ...prev, selectedTags: [] }))
+      })
+    }
+
+    return chips
+  }, [draftFilters, draftOwnerLabel, showNextActionFilter, onTagsChange])
+
+  // Toggle helper for arrays
+  const toggleArrayItem = useCallback(<T,>(arr: T[], item: T): T[] => {
+    return arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item]
+  }, [])
+
+  // Draft handlers
+  const handleDraftOwnerModeChange = useCallback((mode: 'me' | 'all' | 'custom') => {
+    setDraftFilters(prev => ({
+      ...prev,
+      ownerMode: mode,
+      selectedOwners: mode !== 'custom' ? [] : prev.selectedOwners
+    }))
+  }, [])
+
+  const handleDraftUserSelect = useCallback((userId: string) => {
+    setDraftFilters(prev => ({
+      ...prev,
+      ownerMode: 'custom',
+      selectedOwners: toggleArrayItem(prev.selectedOwners, userId)
+    }))
+  }, [toggleArrayItem])
+
+  const handleDraftPriorityToggle = useCallback((bucket: LeadPriorityBucket) => {
+    setDraftFilters(prev => ({
+      ...prev,
+      priority: toggleArrayItem(prev.priority, bucket)
+    }))
+  }, [toggleArrayItem])
+
+  const handleDraftStatusToggle = useCallback((statusId: string) => {
+    setDraftFilters(prev => ({
+      ...prev,
+      statuses: toggleArrayItem(prev.statuses, statusId)
+    }))
+  }, [toggleArrayItem])
+
+  const handleDraftOriginToggle = useCallback((originId: string) => {
+    setDraftFilters(prev => ({
+      ...prev,
+      origins: toggleArrayItem(prev.origins, originId)
+    }))
+  }, [toggleArrayItem])
+
+  const handleDraftDaysChange = useCallback((days: number | null) => {
+    setDraftFilters(prev => ({ ...prev, daysWithoutInteraction: days }))
+  }, [])
+
+  const handleDraftTagToggle = useCallback((tagId: string) => {
+    setDraftFilters(prev => ({
+      ...prev,
+      selectedTags: toggleArrayItem(prev.selectedTags, tagId)
+    }))
+  }, [toggleArrayItem])
+
+  const handleDraftNextActionToggle = useCallback((code: string) => {
+    setDraftFilters(prev => ({
+      ...prev,
+      nextActions: toggleArrayItem(prev.nextActions, code)
+    }))
+  }, [toggleArrayItem])
+
+  // Clear all draft filters
+  const handleClearDraft = useCallback(() => {
+    setDraftFilters({
+      ownerMode: 'me',
+      selectedOwners: [],
+      priority: [],
+      statuses: [],
+      origins: [],
+      daysWithoutInteraction: null,
+      selectedTags: [],
+      nextActions: []
+    })
+  }, [])
+
+  // Apply filters - commit draft to applied state
+  const handleApplyFilters = useCallback(() => {
+    onOwnerModeChange(draftFilters.ownerMode)
+    onSelectedOwnersChange(draftFilters.selectedOwners)
+    onPriorityChange(draftFilters.priority)
+    onStatusesChange(draftFilters.statuses)
+    onOriginsChange(draftFilters.origins)
+    onDaysWithoutInteractionChange(draftFilters.daysWithoutInteraction)
+    if (onTagsChange) onTagsChange(draftFilters.selectedTags)
+    if (onNextActionsChange) onNextActionsChange(draftFilters.nextActions)
+    setIsSheetOpen(false)
+  }, [draftFilters, onOwnerModeChange, onSelectedOwnersChange, onPriorityChange, onStatusesChange, onOriginsChange, onDaysWithoutInteractionChange, onTagsChange, onNextActionsChange])
+
+  // Cancel - discard draft and close
+  const handleCancel = useCallback(() => {
+    setIsSheetOpen(false)
+  }, [])
+
+  // Selected tag objects for display
+  const selectedTagObjects = useMemo(
+    () => availableTags.filter(tag => draftFilters.selectedTags.includes(tag.id)),
+    [availableTags, draftFilters.selectedTags]
   )
 
   return (
     <>
-      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant={activeFiltersCount > 0 ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-9 gap-2 px-3"
-          >
-            <Filter className="h-4 w-4" />
-            Filtros
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
-                {activeFiltersCount}
-              </Badge>
-            )}
-            <ChevronDown className="h-3 w-3 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[520px] p-0" align="start">
-          <div className="space-y-4 p-4">
+      {/* Trigger Button */}
+      <Button
+        variant={activeFiltersCount > 0 ? 'secondary' : 'outline'}
+        size="sm"
+        className="h-9 gap-2 px-3"
+        onClick={() => setIsSheetOpen(true)}
+      >
+        <Filter className="h-4 w-4" />
+        Filtros
+        {activeFiltersCount > 0 && (
+          <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
+            {activeFiltersCount}
+          </Badge>
+        )}
+      </Button>
+
+      {/* Sheet Panel */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
+          {/* Header */}
+          <SheetHeader className="px-6 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold">Filtros Inteligentes</span>
+              <div>
+                <SheetTitle className="flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-primary" />
+                  Filtros
+                </SheetTitle>
+                <SheetDescription>Ajuste os filtros para refinar a lista</SheetDescription>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Button variant="ghost" size="sm" onClick={onClear} className="h-7 gap-1.5 px-2 text-xs">
-                  <X className="h-3.5 w-3.5" />
-                  Limpar
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearDraft}
+                  className="h-8 gap-1.5 px-2 text-xs"
+                >
+                  Limpar tudo
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsPopoverOpen(false)} className="h-7 px-2 text-xs">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancel}
+                  className="h-8 gap-1.5 px-2 text-xs"
+                >
+                  <X className="h-4 w-4" />
                   Fechar
                 </Button>
               </div>
             </div>
+          </SheetHeader>
 
-            {activeFilterChips.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resumo</p>
-                <div className="flex flex-wrap gap-2">
-                  {activeFilterChips.map(chip => (
-                    <Button
-                      key={chip.key}
-                      variant="secondary"
-                      size="sm"
-                      className="h-7 gap-1 rounded-full px-2 text-xs"
-                      onClick={chip.onRemove}
-                      aria-label={`Remover filtro ${chip.label}`}
-                    >
-                      <span className="truncate max-w-[10rem]">{chip.label}</span>
-                      <X className="h-3 w-3" />
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Essenciais</div>
+          {/* Scrollable Content */}
+          <ScrollArea className="flex-1">
+            <div className="px-6 py-4 space-y-6">
+              {/* Section 1: Summary Chips */}
               <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resumo</p>
+                {draftFilterChips.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {draftFilterChips.map(chip => (
+                      <Button
+                        key={chip.key}
+                        variant="secondary"
+                        size="sm"
+                        className="h-7 gap-1 rounded-full px-3 text-xs"
+                        onClick={chip.onRemove}
+                        aria-label={`Remover filtro ${chip.label}`}
+                      >
+                        <span className="truncate max-w-[12rem]">{chip.label}</span>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Nenhum filtro aplicado</p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Section 2: Essential Filters */}
+              <div className="space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Essenciais</p>
+                
+                {/* Responsável */}
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Responsável</label>
+                  <label className="text-sm font-medium">Responsável</label>
                   <div className="flex flex-wrap gap-2">
                     <Button
-                      variant={ownerMode === 'me' ? 'default' : 'outline'}
+                      variant={draftFilters.ownerMode === 'me' ? 'default' : 'outline'}
                       size="sm"
-                      className="h-8 px-3 text-xs"
-                      onClick={() => onOwnerModeChange('me')}
+                      className="h-9 px-4"
+                      onClick={() => handleDraftOwnerModeChange('me')}
                     >
-                      Meus leads
+                      Meus
                     </Button>
                     <Button
-                      variant={ownerMode === 'all' ? 'default' : 'outline'}
+                      variant={draftFilters.ownerMode === 'all' ? 'default' : 'outline'}
                       size="sm"
-                      className="h-8 px-3 text-xs"
-                      onClick={() => onOwnerModeChange('all')}
+                      className="h-9 px-4"
+                      onClick={() => handleDraftOwnerModeChange('all')}
                     >
                       Todos
                     </Button>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
-                          variant={ownerMode === 'custom' || selectedOwners.length > 0 ? 'default' : 'outline'}
+                          variant={draftFilters.ownerMode === 'custom' ? 'default' : 'outline'}
                           size="sm"
-                          className="h-8 gap-2 px-3 text-xs"
+                          className="h-9 gap-2 px-3"
                         >
-                          <Users className="h-3.5 w-3.5" />
-                          {ownerLabel}
-                          <ChevronDown className="h-2.5 w-2.5" />
+                          <Users className="h-4 w-4" />
+                          {draftFilters.ownerMode === 'custom' ? draftOwnerLabel : 'Selecionar'}
+                          <ChevronDown className="h-3 w-3" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-64 p-0">
+                      <PopoverContent className="w-64 p-0" align="start">
                         <Command>
-                          <CommandInput placeholder="Buscar usuário" className="h-9" />
+                          <CommandInput placeholder="Buscar usuário..." className="h-9" />
                           <CommandList>
                             <CommandEmpty>Nenhum usuário encontrado</CommandEmpty>
                             <CommandGroup>
                               {safeUsers.map(user => {
-                                const isSelected = selectedOwners.includes(user.id)
+                                const isSelected = draftFilters.selectedOwners.includes(user.id)
                                 return (
-                                  <CommandItem key={user.id} onSelect={() => handleUserSelect(user.id)}>
-                                    <div
-                                      className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
-                                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
-                                      }`}
-                                    >
+                                  <CommandItem key={user.id} onSelect={() => handleDraftUserSelect(user.id)}>
+                                    <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
                                       {isSelected && <Check className="h-3 w-3" />}
                                     </div>
                                     <span>{safeString(user.name, 'Usuário')}</span>
@@ -425,302 +519,237 @@ export function LeadsSmartFilters({
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Status {statuses.length > 0 && `(${statuses.length})`}
-                    </label>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant={statuses.length > 0 ? 'secondary' : 'outline'}
-                          size="sm"
-                          className={`h-8 w-full justify-between gap-2 px-3 text-xs ${statuses.length > 0 ? 'border-primary/20' : ''}`}
-                        >
-                          <span className="truncate">Selecionar status</span>
-                          <ChevronDown className="h-2.5 w-2.5 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56" align="start">
-                        {safeLeadStatuses.map(status => (
-                          <DropdownMenuCheckboxItem
-                            key={status.id}
-                            checked={status.id ? statuses.includes(status.id) : false}
-                            onCheckedChange={() => status.id && handleStatusToggle(status.id)}
-                          >
-                            {safeString(status.label, status.code)}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                {/* Status - Multi-select with Command */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Status {draftFilters.statuses.length > 0 && <span className="text-muted-foreground">({draftFilters.statuses.length} selecionados)</span>}
+                  </label>
+                  <Command className="rounded-lg border">
+                    <CommandInput placeholder="Buscar status..." className="h-9" />
+                    <CommandList className="max-h-[160px]">
+                      <CommandEmpty>Nenhum status encontrado</CommandEmpty>
+                      <CommandGroup>
+                        {safeLeadStatuses.map(status => {
+                          const isSelected = status.id ? draftFilters.statuses.includes(status.id) : false
+                          return (
+                            <CommandItem
+                              key={status.id}
+                              onSelect={() => status.id && handleDraftStatusToggle(status.id)}
+                            >
+                              <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+                                {isSelected && <Check className="h-3 w-3" />}
+                              </div>
+                              <span>{safeString(status.label, status.code)}</span>
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Prioridade {priority.length > 0 && `(${priority.length})`}
-                    </label>
-                    <div className="flex gap-0.5 rounded-md bg-muted p-1">
-                      {PRIORITY_OPTIONS.map(option => {
-                        const isActive = priority.includes(option.value)
-                        const buttonClass = isActive
-                          ? 'flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-all bg-background text-foreground shadow-sm'
-                          : 'flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-all text-muted-foreground hover:bg-background/50 hover:text-foreground'
-                        return (
-                          <button
-                            key={option.value}
-                            onClick={() => handlePriorityToggle(option.value)}
-                            className={buttonClass}
-                            type="button"
-                          >
-                            {safeString(option.label, option.value)}
-                          </button>
-                        )
-                      })}
-                    </div>
+                {/* Prioridade - Pill group */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Prioridade {draftFilters.priority.length > 0 && <span className="text-muted-foreground">({draftFilters.priority.length})</span>}
+                  </label>
+                  <div className="flex gap-1 rounded-lg bg-muted p-1">
+                    {PRIORITY_OPTIONS.map(option => {
+                      const isActive = draftFilters.priority.includes(option.value)
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => handleDraftPriorityToggle(option.value)}
+                          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                            isActive
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                          }`}
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
-                {onTagsChange && (
+                {/* Próxima ação - only when view=sales */}
+                {showNextActionFilter && (
                   <div className="space-y-2">
-                    <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      <TagIcon className="h-3.5 w-3.5" />
-                      <span>Tags {selectedTags.length > 0 && `(${selectedTags.length})`}</span>
-                    </label>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        variant={selectedTags.length > 0 ? 'secondary' : 'outline'}
-                        size="sm"
-                        className="h-8 px-3 text-xs"
-                        onClick={() => setIsTagDialogOpen(true)}
-                      >
-                        Selecionar tags...
-                      </Button>
-                      {selectedTagObjects.slice(0, 3).map(tag => {
-                        const safeColor = safeString(tag.color, '#888')
-                        return (
-                          <Badge
-                            key={tag.id}
-                            variant="secondary"
-                            className="flex items-center gap-1 border px-2 py-1 text-[11px]"
-                            style={{ borderColor: safeColor }}
-                          >
-                            <span
-                              className="h-2 w-2 rounded-full"
-                              style={{ backgroundColor: safeColor }}
-                            />
-                            {safeString(tag.name, 'Tag')}
-                          </Badge>
-                        )
-                      })}
-                      {selectedTags.length > selectedTagObjects.length && (
-                        <Badge variant="outline" className="h-6 px-2 text-[11px]">
-                          +{selectedTags.length - selectedTagObjects.length}
-                        </Badge>
-                      )}
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">
+                        Próxima ação {draftFilters.nextActions.length > 0 && <span className="text-muted-foreground">({draftFilters.nextActions.length})</span>}
+                      </label>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setDraftFilters(prev => ({ ...prev, nextActions: NEXT_ACTION_OPTIONS.map(o => o.code) }))}
+                        >
+                          Selecionar tudo
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setDraftFilters(prev => ({ ...prev, nextActions: [] }))}
+                        >
+                          Limpar
+                        </Button>
+                      </div>
                     </div>
+                    <Command className="rounded-lg border">
+                      <CommandInput placeholder="Buscar ação..." className="h-9" />
+                      <CommandList className="max-h-[200px]">
+                        <CommandEmpty>Nenhuma ação encontrada</CommandEmpty>
+                        <CommandGroup>
+                          {NEXT_ACTION_OPTIONS.map(option => {
+                            const isSelected = draftFilters.nextActions.includes(option.code)
+                            return (
+                              <CommandItem
+                                key={option.code}
+                                onSelect={() => handleDraftNextActionToggle(option.code)}
+                              >
+                                <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+                                  {isSelected && <Check className="h-3 w-3" />}
+                                </div>
+                                <span>{option.label}</span>
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
                   </div>
                 )}
               </div>
-            </div>
 
-            <Collapsible open={isMoreFiltersOpen} onOpenChange={setIsMoreFiltersOpen}>
-              <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <span>Mais filtros {moreFiltersActiveCount > 0 && `(${moreFiltersActiveCount})`}</span>
-                </div>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
-                    {isMoreFiltersOpen ? 'Recolher' : 'Mais opções'}
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent className="pt-3">
-                <Accordion type="multiple" className="divide-y rounded-md border">
-                  <AccordionItem value="tempo">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium">
-                      Tempo
-                      {(daysWithoutInteraction !== null || (showNextActionFilter && nextActions.length > 0)) && (
-                        <span className="text-muted-foreground">
-                          {' '}
-                          (
-                          {(daysWithoutInteraction !== null ? 1 : 0) +
-                            (showNextActionFilter && nextActions.length > 0 ? 1 : 0)}
-                          )
-                        </span>
-                      )}
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3">
-                      <div className="space-y-3">
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            Dias sem interação
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {DAYS_PRESETS.map(days => (
-                              <Button
-                                key={days}
-                                variant={daysWithoutInteraction === days ? 'default' : 'outline'}
-                                size="sm"
-                                className="h-8 min-w-[3rem] px-3 text-xs"
-                                onClick={() => onDaysWithoutInteractionChange(days)}
-                              >
-                                {days}
-                              </Button>
-                            ))}
-                            <Button
-                              variant={daysWithoutInteraction === null ? 'default' : 'outline'}
-                              size="sm"
-                              className="h-8 px-3 text-xs"
-                              onClick={() => onDaysWithoutInteractionChange(null)}
-                            >
-                              Qualquer
-                            </Button>
-                          </div>
-                        </div>
+              <Separator />
 
-                        {showNextActionFilter && (
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                              Próxima ação {nextActions.length > 0 && `(${nextActions.length})`}
-                            </p>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                              {NEXT_ACTION_OPTIONS.map(option => {
-                                const isSelected = nextActions.includes(option.code)
-                                return (
-                                  <button
-                                    key={option.code}
-                                    type="button"
-                                    onClick={() => handleNextActionToggle(option.code)}
-                                    className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
-                                      isSelected
-                                        ? 'border-primary/40 bg-primary/5 text-primary'
-                                        : 'border-border hover:bg-muted/60'
-                                    }`}
-                                  >
-                                    <span
-                                      className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
-                                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
-                                      }`}
-                                    >
-                                      {isSelected && <Check className="h-3 w-3" />}
-                                    </span>
-                                    <span className="truncate text-left">{option.label}</span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="categorizacao">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium">
-                      Categorização {origins.length > 0 && `(${origins.length})`}
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3">
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Origem</p>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant={origins.length > 0 ? 'secondary' : 'outline'}
-                              size="sm"
-                              className={`h-8 w-full justify-between gap-2 px-3 text-xs ${origins.length > 0 ? 'border-primary/20' : ''}`}
-                            >
-                              <span className="truncate">Selecionar origem</span>
-                              <ChevronDown className="h-2.5 w-2.5 opacity-50" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-56" align="start">
-                            {safeLeadOrigins.map(origin => (
-                              <DropdownMenuCheckboxItem
+              {/* Section 3: Advanced Filters (Accordion) */}
+              <Accordion type="multiple" className="w-full" defaultValue={[]}>
+                <AccordionItem value="origem">
+                  <AccordionTrigger className="text-sm font-medium">
+                    Origem {draftFilters.origins.length > 0 && <span className="ml-1 text-muted-foreground">({draftFilters.origins.length})</span>}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <Command className="rounded-lg border">
+                      <CommandInput placeholder="Buscar origem..." className="h-9" />
+                      <CommandList className="max-h-[160px]">
+                        <CommandEmpty>Nenhuma origem encontrada</CommandEmpty>
+                        <CommandGroup>
+                          {safeLeadOrigins.map(origin => {
+                            const isSelected = origin.id ? draftFilters.origins.includes(origin.id) : false
+                            return (
+                              <CommandItem
                                 key={origin.id}
-                                checked={origin.id ? origins.includes(origin.id) : false}
-                                onCheckedChange={() => origin.id && handleOriginToggle(origin.id)}
+                                onSelect={() => origin.id && handleDraftOriginToggle(origin.id)}
                               >
-                                {safeString(origin.label, origin.code)}
-                              </DropdownMenuCheckboxItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                                <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+                                  {isSelected && <Check className="h-3 w-3" />}
+                                </div>
+                                <span>{safeString(origin.label, origin.code)}</span>
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="dias">
+                  <AccordionTrigger className="text-sm font-medium">
+                    Dias sem interação {draftFilters.daysWithoutInteraction !== null && <span className="ml-1 text-muted-foreground">({draftFilters.daysWithoutInteraction}+ dias)</span>}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-xs text-muted-foreground mb-3">Sem interação há pelo menos X dias</p>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_PRESETS.map(days => (
+                        <Button
+                          key={days}
+                          variant={draftFilters.daysWithoutInteraction === days ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-9 min-w-[4rem] px-4"
+                          onClick={() => handleDraftDaysChange(days)}
+                        >
+                          {days} dias
+                        </Button>
+                      ))}
+                      <Button
+                        variant={draftFilters.daysWithoutInteraction === null ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-9 px-4"
+                        onClick={() => handleDraftDaysChange(null)}
+                      >
+                        Qualquer
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {onTagsChange && (
+                  <AccordionItem value="tags">
+                    <AccordionTrigger className="text-sm font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <TagIcon className="h-4 w-4" />
+                        Tags {draftFilters.selectedTags.length > 0 && <span className="ml-1 text-muted-foreground">({draftFilters.selectedTags.length})</span>}
                       </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <Command className="rounded-lg border">
+                        <CommandInput placeholder="Buscar tag..." className="h-9" />
+                        <CommandList className="max-h-[160px]">
+                          <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
+                          <CommandGroup>
+                            {availableTags.map(tag => {
+                              const safeColor = safeString(tag.color, '#888')
+                              const isSelected = draftFilters.selectedTags.includes(tag.id)
+                              return (
+                                <CommandItem
+                                  key={tag.id}
+                                  onSelect={() => handleDraftTagToggle(tag.id)}
+                                >
+                                  <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+                                    {isSelected && <Check className="h-3 w-3" />}
+                                  </div>
+                                  <div className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: safeColor }} />
+                                  <span>{safeString(tag.name, 'Tag')}</span>
+                                </CommandItem>
+                              )
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
                     </AccordionContent>
                   </AccordionItem>
-                </Accordion>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {onTagsChange && (
-        <Dialog
-          open={isTagDialogOpen}
-          onOpenChange={open => {
-            setIsTagDialogOpen(open)
-            if (!open) setTagSearchTerm('')
-          }}
-        >
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <TagIcon className="h-4 w-4" />
-                Selecionar tags
-              </DialogTitle>
-              <DialogDescription>Use tags para refinar a lista sem expandir o popover principal.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Command className="rounded-lg border">
-                <CommandInput
-                  placeholder="Buscar tag..."
-                  className="h-9"
-                  value={tagSearchTerm}
-                  onValueChange={setTagSearchTerm}
-                />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
-                  <CommandGroup>
-                    {filteredTagOptions.map(tag => {
-                      const safeColor = safeString(tag.color, '#888')
-                      const isSelected = selectedTags.includes(tag.id)
-                      return (
-                        <CommandItem
-                          key={tag.id}
-                          onSelect={() => handleTagToggle(tag.id)}
-                          className="flex items-center gap-2"
-                        >
-                          <div
-                            className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
-                              isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
-                            }`}
-                          >
-                            {isSelected && <Check className="h-3 w-3" />}
-                          </div>
-                          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: safeColor }} />
-                          <span className="truncate">{safeString(tag.name, 'Tag')}</span>
-                        </CommandItem>
-                      )
-                    })}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-              <div className="flex justify-end">
-                <Button variant="outline" size="sm" onClick={() => setIsTagDialogOpen(false)}>
-                  Fechar
-                </Button>
-              </div>
+                )}
+              </Accordion>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          </ScrollArea>
 
+          {/* Footer with actions */}
+          <SheetFooter className="border-t px-6 py-4 flex-shrink-0">
+            <div className="flex w-full gap-3">
+              <Button variant="outline" className="flex-1" onClick={handleCancel}>
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={handleApplyFilters}>
+                Aplicar filtros {draftFiltersCount > 0 && `(${draftFiltersCount})`}
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Badges showing active filters outside the sheet */}
       {activeFiltersCount > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {ownerMode === 'custom' && selectedOwners.length > 0 && (
             <Badge variant="secondary" className="h-7 gap-1 px-2 text-xs">
-              {ownerLabel}
+              {appliedOwnerLabel}
             </Badge>
           )}
           {priority.length > 0 && (
