@@ -1,14 +1,101 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (UI/UX Filtros + Toolbar + Tags + Min/Max Cards)
+## 🚧 Status: ✅ Concluído (Multi-Select Popovers + Filtros Compactos)
 
 **Data:** 2025-12-17  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsSmartFilters, LeadsListPage, LeadSalesRow, LeadsSummaryCards
+**Escopo:** Frontend - LeadsSmartFilters, MultiSelectPopover
 
 ---
 
-## 🆕 Iteração atual - Ajustes UI/UX Filtros + Toolbar + Coluna Tags + Botão Min/Max
+## 🆕 Iteração atual - Filtros Multi-Opção em Popover + UI Compacta
+
+### ✅ Tarefas Concluídas
+- [x] Criar componente reutilizável `MultiSelectPopover` para padronizar seleção multi-opção
+- [x] Converter filtro **Status** para Popover com busca e checkbox list
+- [x] Converter filtro **Origem** para Popover com busca e checkbox list
+- [x] Converter filtro **Tags** para Popover com busca e checkbox list
+- [x] Converter filtro **Próxima ação** (view=sales) para Popover com busca, "Selecionar tudo" e "Limpar"
+- [x] Manter filtro **Responsável** com Popover quando modo "Selecionar" (já existia)
+- [x] Remover Accordion da seção "Avançados" - agora mostra filtros diretamente com triggers compactos
+- [x] Atualizar triggers para mostrar resumo compacto ("Selecionar...", "N selecionados", ou label quando 1 item)
+- [x] Garantir z-index apropriado para Popovers dentro do Sheet
+- [x] Atualizar 27 testes existentes para novo comportamento
+- [x] Adicionar 2 novos testes de integração (status via popover, origin via popover)
+- [x] Build de produção bem-sucedido (29 testes passando)
+
+### Arquivos Criados
+- `src/components/ui/MultiSelectPopover.tsx` - Componente reutilizável para multi-select em Popover
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsSmartFilters.tsx` - Substituição de Command inline por MultiSelectPopover
+- `tests/unit/components/LeadsSmartFilters.test.tsx` - Testes atualizados para UI com Popovers
+
+### Padrão de UI Implementado (Popover dentro do Sheet)
+
+**Estrutura do Sheet de Filtros:**
+```
+┌─────────────────────────────────────────────────────┐
+│ HEADER (fixo)                                       │
+│ ├─ Título: "Filtros"                               │
+│ ├─ Subtítulo: "Ajuste os filtros para refinar..."  │
+│ └─ Ações: [Limpar tudo] [X Fechar]                 │
+├─────────────────────────────────────────────────────┤
+│ RESUMO (chips do draft)                            │
+│ [Status (1) ×] [Prioridade (2) ×] [Origem (1) ×]  │
+├─────────────────────────────────────────────────────┤
+│ ESSENCIAIS                                          │
+│ ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
+│ ├─ Status: [Selecionar status... ▼] → Popover     │
+│ ├─ Prioridade: [Hot] [Warm] [Cold] pill group      │
+│ └─ Próxima ação (view=sales): [Selecionar ação ▼]  │
+├─────────────────────────────────────────────────────┤
+│ AVANÇADOS                                           │
+│ ├─ Origem: [Selecionar origem... ▼] → Popover      │
+│ ├─ Dias sem interação: [3] [7] [14] [Qualquer]     │
+│ └─ Tags: [Selecionar tags... ▼] → Popover          │
+├─────────────────────────────────────────────────────┤
+│ FOOTER (fixo)                                       │
+│ [Cancelar]                    [Aplicar filtros (N)]│
+└─────────────────────────────────────────────────────┘
+```
+
+**Comportamento do MultiSelectPopover:**
+- Trigger mostra "Selecionar..." quando vazio
+- Trigger mostra label do item quando 1 selecionado
+- Trigger mostra "N selecionados" quando múltiplos
+- Popover contém busca, checkbox list, e ações "Limpar" / "Selecionar tudo"
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Sheet de filtros abre pelo trigger "Filtros"
+- [ ] Status mostra trigger compacto; ao clicar abre Popover com busca
+- [ ] Origem mostra trigger compacto; ao clicar abre Popover com busca
+- [ ] Tags mostra trigger compacto; ao clicar abre Popover com busca
+- [ ] Próxima ação (view=sales) mostra trigger compacto com Popover
+- [ ] Selecionar filtros no draft → resumo atualiza com chips removíveis
+- [ ] "Aplicar filtros" → lista de leads reflete os filtros selecionados
+- [ ] "Cancelar" → descarta mudanças e fecha Sheet
+- [ ] "Limpar tudo" limpa todos os filtros do draft
+- [ ] Popovers abrem corretamente dentro do Sheet (z-index ok)
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~349 |
+| Linhas removidas | ~186 |
+| Arquivos criados | 1 |
+| Arquivos modificados | 2 |
+| Testes adicionados | 2 |
+| Total de testes | 29 |
+| Contratos quebrados | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudanças de UI/UX localizadas, sem alteração de lógica de negócio ou APIs)
+
+---
+
+## ✅ Iteração anterior - Ajustes UI/UX Filtros + Toolbar + Coluna Tags + Botão Min/Max
 
 ### ✅ Tarefas Concluídas
 - [x] Remover botão textual "FECHAR" do Sheet de filtros (fechamento pelo X nativo Radix/shadcn)
