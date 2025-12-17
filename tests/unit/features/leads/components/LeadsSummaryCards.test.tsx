@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { LeadsSummaryCards } from '@/features/leads/components/LeadsSummaryCards'
+import { LeadsSummaryCards, useSummaryCardsState } from '@/features/leads/components/LeadsSummaryCards'
+import { renderHook, act } from '@testing-library/react'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -212,5 +213,84 @@ describe('LeadsSummaryCards', () => {
     const collapsedIndicator = screen.getByTestId('leads-summary-collapsed')
     expect(collapsedIndicator).toHaveTextContent('42 leads em aberto')
     expect(collapsedIndicator).not.toHaveTextContent('criados')
+  })
+
+  // Controlled mode tests
+  it('supports controlled mode with external isCollapsed prop', () => {
+    render(<LeadsSummaryCards {...defaultProps} isCollapsed={true} onToggle={() => {}} hideToggle />)
+    
+    // Should be collapsed
+    expect(screen.getByTestId('leads-summary-collapsed')).toBeInTheDocument()
+    expect(screen.queryByTestId('leads-summary-cards')).not.toBeInTheDocument()
+  })
+
+  it('hides internal toggle when hideToggle is true', () => {
+    // Ensure expanded state via localStorage
+    localStorageMock.getItem.mockReturnValue('0')
+    render(<LeadsSummaryCards {...defaultProps} hideToggle />)
+    
+    // Toggle button should not be rendered
+    expect(screen.queryByTestId('leads-summary-toggle')).not.toBeInTheDocument()
+    // But cards should still be visible
+    expect(screen.getByTestId('leads-summary-cards')).toBeInTheDocument()
+  })
+
+  it('calls onToggle in controlled mode when Collapsible triggers change', async () => {
+    const onToggle = vi.fn()
+    render(<LeadsSummaryCards {...defaultProps} isCollapsed={false} onToggle={onToggle} />)
+    
+    const toggleButton = screen.getByTestId('leads-summary-toggle')
+    await userEvent.click(toggleButton)
+    
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useSummaryCardsState hook', () => {
+  beforeEach(() => {
+    localStorageMock.clear()
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    localStorageMock.clear()
+  })
+
+  it('returns initial collapsed state from localStorage', () => {
+    localStorageMock.getItem.mockReturnValue('1')
+    const { result } = renderHook(() => useSummaryCardsState())
+    
+    expect(result.current.isCollapsed).toBe(true)
+  })
+
+  it('returns expanded state when localStorage is empty', () => {
+    localStorageMock.getItem.mockReturnValue(null)
+    const { result } = renderHook(() => useSummaryCardsState())
+    
+    expect(result.current.isCollapsed).toBe(false)
+  })
+
+  it('toggles state when handleToggle is called', () => {
+    localStorageMock.getItem.mockReturnValue('0')
+    const { result } = renderHook(() => useSummaryCardsState())
+    
+    expect(result.current.isCollapsed).toBe(false)
+    
+    act(() => {
+      result.current.handleToggle()
+    })
+    
+    expect(result.current.isCollapsed).toBe(true)
+  })
+
+  it('persists state to localStorage on change', () => {
+    localStorageMock.getItem.mockReturnValue('0')
+    const { result } = renderHook(() => useSummaryCardsState())
+    
+    act(() => {
+      result.current.handleToggle()
+    })
+    
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('leads.summaryCards.collapsed', '1')
   })
 })

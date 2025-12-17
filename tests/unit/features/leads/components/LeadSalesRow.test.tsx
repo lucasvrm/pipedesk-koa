@@ -220,6 +220,46 @@ describe('LeadSalesRow', () => {
     expect(screen.getByText('Follow-up')).toBeInTheDocument()
     expect(screen.getByText('Cliente solicitou mais informações')).toBeInTheDocument()
   })
+
+  // Tags column tests
+  it('does NOT render placeholder "Tags" badge when lead has no tags', () => {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} tags={[]} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    // The "Tags" placeholder badge should NOT be present
+    // Only check for exact text "Tags" as a standalone badge
+    const tagsBadge = screen.queryByText((content, element) => {
+      // Check if this is a badge-like element with exact text "Tags"
+      return content === 'Tags' && element?.tagName === 'SPAN'
+    })
+    expect(tagsBadge).not.toBeInTheDocument()
+  })
+
+  it('renders tag badges when lead has tags', () => {
+    const leadWithTags = {
+      ...baseLead,
+      tags: [
+        { id: 'tag-1', name: 'Urgente', color: '#ff0000' },
+        { id: 'tag-2', name: 'VIP', color: '#00ff00' }
+      ]
+    }
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...leadWithTags} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Urgente')).toBeInTheDocument()
+    expect(screen.getByText('VIP')).toBeInTheDocument()
+  })
 })
 
 describe('truncateTags', () => {
