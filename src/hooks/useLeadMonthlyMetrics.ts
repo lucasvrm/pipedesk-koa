@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/contexts/AuthContext'
@@ -53,8 +54,13 @@ interface UseLeadMonthlyMetricsParams {
  */
 export function useLeadMonthlyMetrics({ filters, enabled = true }: UseLeadMonthlyMetricsParams = {}) {
   const { profile } = useAuth()
-  const startOfMonth = getStartOfMonthUtc()
-  const startOfNextMonth = getStartOfNextMonthUtc()
+  
+  // Memoize month boundaries to avoid recalculating on every render
+  // These values only change when the month changes
+  const { startOfMonth, startOfNextMonth } = useMemo(() => ({
+    startOfMonth: getStartOfMonthUtc(),
+    startOfNextMonth: getStartOfNextMonthUtc()
+  }), [])
 
   return useQuery({
     queryKey: ['lead-monthly-metrics', startOfMonth, filters],
@@ -86,11 +92,14 @@ export function useLeadMonthlyMetrics({ filters, enabled = true }: UseLeadMonthl
         qualifiedQuery = qualifiedQuery.in('owner_user_id', filters.ownerIds)
       }
 
-      // Apply status filter
+      // Apply status filter to created query only
+      // NOTE: We intentionally skip status filtering for qualified count because:
+      // 1. Qualified leads have a specific status set when they are qualified
+      // 2. We want to count ALL leads qualified in the month, regardless of current status filter
+      // 3. This aligns with the business requirement that "qualified this month" should not be
+      //    affected by the "default exclude qualified" filter in the main list
       if (filters?.status && filters.status.length > 0) {
         createdQuery = createdQuery.in('lead_status_id', filters.status)
-        // For qualified count, we don't filter by status since qualified leads
-        // have a specific status; we count based on qualified_at timestamp
       }
 
       // Apply origin filter

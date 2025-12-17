@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -45,10 +45,6 @@ export function LeadsSummaryCards({
       // Ignore localStorage errors
     }
   }, [isCollapsed])
-
-  const handleToggle = useCallback(() => {
-    setIsCollapsed(prev => !prev)
-  }, [])
 
   // Render metric value with loading/error states
   const renderMetricValue = (value: number, isMetricLoading: boolean, isError: boolean) => {
