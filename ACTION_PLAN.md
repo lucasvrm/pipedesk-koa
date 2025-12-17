@@ -1,6 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Em andamento (Minimizar/Maximizar Cards + Métricas do Mês)
+## 🚧 Status: ✅ Concluído (Minimizar/Maximizar Cards + Métricas do Mês)
 
 **Data:** 2025-12-17  
 **Autor:** GitHub Copilot Agent  
@@ -23,6 +23,8 @@
 - [x] Testes unitários para `LeadsSummaryCards` (17 testes)
 - [x] Testes unitários para `useLeadMonthlyMetrics` (7 testes)
 - [x] Build de produção bem-sucedido
+- [x] Code review - addressed feedback (memoize dates, add comments, remove unused callback)
+- [x] CodeQL security scan - 0 alerts
 
 ### Regras de Negócio Implementadas
 - **Criados no mês**: quantidade de leads com `created_at` entre `startOfMonthUtc` (inclusive) e `startOfNextMonthUtc` (exclusivo)
@@ -44,6 +46,20 @@
 - [ ] "Criados no mês" e "Qualificados no mês" exibem valores corretos (não 0)
 - [ ] Em loading, métricas mostram skeleton (não valores antigos)
 - [ ] Responsivo: cards em grid 3 colunas no desktop, empilhados em mobile
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~420 |
+| Linhas removidas | ~40 |
+| Arquivos criados | 4 |
+| Arquivos modificados | 2 |
+| Testes adicionados | 24 |
+| Contratos quebrados | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (nova funcionalidade isolada, sem mudanças em APIs)
 
 ---
 
