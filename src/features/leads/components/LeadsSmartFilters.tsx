@@ -10,7 +10,6 @@ import {
   SheetFooter
 } from '@/components/ui/sheet'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import {
   Command,
   CommandEmpty,
@@ -21,7 +20,8 @@ import {
 } from '@/components/ui/command'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon } from 'lucide-react'
+import { MultiSelectPopover, MultiSelectOption } from '@/components/ui/MultiSelectPopover'
+import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon, Clock, MapPin } from 'lucide-react'
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
@@ -176,6 +176,35 @@ export function LeadsSmartFilters({
   const safeUsers = ensureArray<User>(users)
   const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
   const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
+
+  // Convert options to MultiSelectOption format for the popover components
+  const statusOptions = useMemo<MultiSelectOption[]>(() => 
+    safeLeadStatuses
+      .filter(s => s.id)
+      .map(s => ({ id: s.id!, label: safeString(s.label, s.code) })),
+    [safeLeadStatuses]
+  )
+
+  const originOptions = useMemo<MultiSelectOption[]>(() =>
+    safeLeadOrigins
+      .filter(o => o.id)
+      .map(o => ({ id: o.id!, label: safeString(o.label, o.code) })),
+    [safeLeadOrigins]
+  )
+
+  const tagOptions = useMemo<MultiSelectOption[]>(() =>
+    availableTags.map(t => ({
+      id: t.id,
+      label: safeString(t.name, 'Tag'),
+      color: safeString(t.color, '#888')
+    })),
+    [availableTags]
+  )
+
+  const nextActionOptions = useMemo<MultiSelectOption[]>(() =>
+    NEXT_ACTION_OPTIONS.map(o => ({ id: o.code, label: o.label })),
+    []
+  )
 
   // Helper to compute owner label from draft
   const draftOwnerLabel = useMemo(() => {
@@ -509,33 +538,19 @@ export function LeadsSmartFilters({
                   </div>
                 </div>
 
-                {/* Status - Multi-select with Command */}
+                {/* Status - Multi-select Popover */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Status {draftFilters.statuses.length > 0 && <span className="text-muted-foreground">({draftFilters.statuses.length} selecionados)</span>}
-                  </label>
-                  <Command className="rounded-lg border">
-                    <CommandInput placeholder="Buscar status..." className="h-9" />
-                    <CommandList className="max-h-[160px]">
-                      <CommandEmpty>Nenhum status encontrado</CommandEmpty>
-                      <CommandGroup>
-                        {safeLeadStatuses.map(status => {
-                          const isSelected = status.id ? draftFilters.statuses.includes(status.id) : false
-                          return (
-                            <CommandItem
-                              key={status.id}
-                              onSelect={() => status.id && handleDraftStatusToggle(status.id)}
-                            >
-                              <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                {isSelected && <Check className="h-3 w-3" />}
-                              </div>
-                              <span>{safeString(status.label, status.code)}</span>
-                            </CommandItem>
-                          )
-                        })}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
+                  <label className="text-sm font-medium">Status</label>
+                  <MultiSelectPopover
+                    options={statusOptions}
+                    selected={draftFilters.statuses}
+                    onSelectionChange={(ids) => setDraftFilters(prev => ({ ...prev, statuses: ids }))}
+                    placeholder="Selecionar status..."
+                    searchPlaceholder="Buscar status..."
+                    emptyText="Nenhum status encontrado"
+                    clearLabel="Limpar status"
+                    align="start"
+                  />
                 </div>
 
                 {/* Prioridade - Pill group */}
@@ -564,159 +579,102 @@ export function LeadsSmartFilters({
                   </div>
                 </div>
 
-                {/* Próxima ação - only when view=sales */}
+                {/* Próxima ação - only when view=sales, now as Popover */}
                 {showNextActionFilter && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">
-                        Próxima ação {draftFilters.nextActions.length > 0 && <span className="text-muted-foreground">({draftFilters.nextActions.length})</span>}
-                      </label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => setDraftFilters(prev => ({ ...prev, nextActions: NEXT_ACTION_OPTIONS.map(o => o.code) }))}
-                        >
-                          Selecionar tudo
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => setDraftFilters(prev => ({ ...prev, nextActions: [] }))}
-                        >
-                          Limpar
-                        </Button>
-                      </div>
-                    </div>
-                    <Command className="rounded-lg border">
-                      <CommandInput placeholder="Buscar ação..." className="h-9" />
-                      <CommandList className="max-h-[200px]">
-                        <CommandEmpty>Nenhuma ação encontrada</CommandEmpty>
-                        <CommandGroup>
-                          {NEXT_ACTION_OPTIONS.map(option => {
-                            const isSelected = draftFilters.nextActions.includes(option.code)
-                            return (
-                              <CommandItem
-                                key={option.code}
-                                onSelect={() => handleDraftNextActionToggle(option.code)}
-                              >
-                                <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                  {isSelected && <Check className="h-3 w-3" />}
-                                </div>
-                                <span>{option.label}</span>
-                              </CommandItem>
-                            )
-                          })}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
+                    <label className="text-sm font-medium">Próxima ação</label>
+                    <MultiSelectPopover
+                      options={nextActionOptions}
+                      selected={draftFilters.nextActions}
+                      onSelectionChange={(ids) => setDraftFilters(prev => ({ ...prev, nextActions: ids }))}
+                      placeholder="Selecionar ação..."
+                      searchPlaceholder="Buscar ação..."
+                      emptyText="Nenhuma ação encontrada"
+                      clearLabel="Limpar"
+                      selectAllLabel="Selecionar tudo"
+                      showSelectAll
+                      icon={<Clock className="h-4 w-4" />}
+                      align="start"
+                      maxHeight="220px"
+                    />
                   </div>
                 )}
               </div>
 
               <Separator />
 
-              {/* Section 3: Advanced Filters (Accordion) */}
-              <Accordion type="multiple" className="w-full" defaultValue={[]}>
-                <AccordionItem value="origem">
-                  <AccordionTrigger className="text-sm font-medium">
-                    Origem {draftFilters.origins.length > 0 && <span className="ml-1 text-muted-foreground">({draftFilters.origins.length})</span>}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <Command className="rounded-lg border">
-                      <CommandInput placeholder="Buscar origem..." className="h-9" />
-                      <CommandList className="max-h-[160px]">
-                        <CommandEmpty>Nenhuma origem encontrada</CommandEmpty>
-                        <CommandGroup>
-                          {safeLeadOrigins.map(origin => {
-                            const isSelected = origin.id ? draftFilters.origins.includes(origin.id) : false
-                            return (
-                              <CommandItem
-                                key={origin.id}
-                                onSelect={() => origin.id && handleDraftOriginToggle(origin.id)}
-                              >
-                                <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                  {isSelected && <Check className="h-3 w-3" />}
-                                </div>
-                                <span>{safeString(origin.label, origin.code)}</span>
-                              </CommandItem>
-                            )
-                          })}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </AccordionContent>
-                </AccordionItem>
+              {/* Section 3: Advanced Filters - Compact Popovers */}
+              <div className="space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Avançados</p>
+                
+                {/* Origem - Popover */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Origem</label>
+                  <MultiSelectPopover
+                    options={originOptions}
+                    selected={draftFilters.origins}
+                    onSelectionChange={(ids) => setDraftFilters(prev => ({ ...prev, origins: ids }))}
+                    placeholder="Selecionar origem..."
+                    searchPlaceholder="Buscar origem..."
+                    emptyText="Nenhuma origem encontrada"
+                    clearLabel="Limpar origem"
+                    icon={<MapPin className="h-4 w-4" />}
+                    align="start"
+                  />
+                </div>
 
-                <AccordionItem value="dias">
-                  <AccordionTrigger className="text-sm font-medium">
-                    Dias sem interação {draftFilters.daysWithoutInteraction !== null && <span className="ml-1 text-muted-foreground">({draftFilters.daysWithoutInteraction}+ dias)</span>}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <p className="text-xs text-muted-foreground mb-3">Sem interação há pelo menos X dias</p>
-                    <div className="flex flex-wrap gap-2">
-                      {DAYS_PRESETS.map(days => (
-                        <Button
-                          key={days}
-                          variant={draftFilters.daysWithoutInteraction === days ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-9 min-w-[4rem] px-4"
-                          onClick={() => handleDraftDaysChange(days)}
-                        >
-                          {days} dias
-                        </Button>
-                      ))}
+                {/* Dias sem interação - Buttons */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Dias sem interação
+                    {draftFilters.daysWithoutInteraction !== null && (
+                      <span className="ml-1 text-muted-foreground">({draftFilters.daysWithoutInteraction}+ dias)</span>
+                    )}
+                  </label>
+                  <p className="text-xs text-muted-foreground">Sem interação há pelo menos X dias</p>
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS_PRESETS.map(days => (
                       <Button
-                        variant={draftFilters.daysWithoutInteraction === null ? 'default' : 'outline'}
+                        key={days}
+                        variant={draftFilters.daysWithoutInteraction === days ? 'default' : 'outline'}
                         size="sm"
-                        className="h-9 px-4"
-                        onClick={() => handleDraftDaysChange(null)}
+                        className="h-9 min-w-[4rem] px-4"
+                        onClick={() => handleDraftDaysChange(days)}
                       >
-                        Qualquer
+                        {days} dias
                       </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                    ))}
+                    <Button
+                      variant={draftFilters.daysWithoutInteraction === null ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-9 px-4"
+                      onClick={() => handleDraftDaysChange(null)}
+                    >
+                      Qualquer
+                    </Button>
+                  </div>
+                </div>
 
+                {/* Tags - Popover */}
                 {onTagsChange && (
-                  <AccordionItem value="tags">
-                    <AccordionTrigger className="text-sm font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <TagIcon className="h-4 w-4" />
-                        Tags {draftFilters.selectedTags.length > 0 && <span className="ml-1 text-muted-foreground">({draftFilters.selectedTags.length})</span>}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <Command className="rounded-lg border">
-                        <CommandInput placeholder="Buscar tag..." className="h-9" />
-                        <CommandList className="max-h-[160px]">
-                          <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
-                          <CommandGroup>
-                            {availableTags.map(tag => {
-                              const safeColor = safeString(tag.color, '#888')
-                              const isSelected = draftFilters.selectedTags.includes(tag.id)
-                              return (
-                                <CommandItem
-                                  key={tag.id}
-                                  onSelect={() => handleDraftTagToggle(tag.id)}
-                                >
-                                  <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                    {isSelected && <Check className="h-3 w-3" />}
-                                  </div>
-                                  <div className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: safeColor }} />
-                                  <span>{safeString(tag.name, 'Tag')}</span>
-                                </CommandItem>
-                              )
-                            })}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </AccordionContent>
-                  </AccordionItem>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tags</label>
+                    <MultiSelectPopover
+                      options={tagOptions}
+                      selected={draftFilters.selectedTags}
+                      onSelectionChange={(ids) => setDraftFilters(prev => ({ ...prev, selectedTags: ids }))}
+                      placeholder="Selecionar tags..."
+                      searchPlaceholder="Buscar tag..."
+                      emptyText="Nenhuma tag encontrada"
+                      clearLabel="Limpar tags"
+                      selectAllLabel="Selecionar tudo"
+                      showSelectAll
+                      icon={<TagIcon className="h-4 w-4" />}
+                      align="start"
+                    />
+                  </div>
                 )}
-              </Accordion>
+              </div>
             </div>
           </ScrollArea>
 

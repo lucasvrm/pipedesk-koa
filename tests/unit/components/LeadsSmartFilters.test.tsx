@@ -272,28 +272,30 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByRole('button', { name: 'Cold' })).toBeInTheDocument()
   })
 
-  // Advanced filters (Accordion) tests
-  it('should have advanced filters in collapsed accordion', async () => {
+  // Advanced filters (now compact Popovers instead of Accordion)
+  it('should have advanced filters section with Origem, Dias sem interação, and Tags', async () => {
     const user = userEvent.setup()
-    render(<LeadsSmartFilters {...defaultProps} />)
+    render(<LeadsSmartFilters {...defaultProps} availableTags={mockTags} selectedTags={[]} onTagsChange={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
 
-    // Origem accordion should exist
-    expect(screen.getByRole('button', { name: /Origem/i })).toBeInTheDocument()
-    // Dias sem interação accordion should exist
-    expect(screen.getByRole('button', { name: /Dias sem interação/i })).toBeInTheDocument()
+    // Avançados section should exist
+    expect(screen.getByText('Avançados')).toBeInTheDocument()
+    // Origem label should exist
+    expect(screen.getByText('Origem')).toBeInTheDocument()
+    // Dias sem interação label should exist
+    expect(screen.getByText('Dias sem interação')).toBeInTheDocument()
+    // Tags label should exist
+    expect(screen.getByText('Tags')).toBeInTheDocument()
   })
 
-  it('should expand dias sem interação accordion and show presets', async () => {
+  it('shows dias sem interação presets in advanced section', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
     
-    // Click to expand accordion
-    await user.click(screen.getByRole('button', { name: /Dias sem interação/i }))
-
+    // Days presets are now visible directly in the advanced section (no accordion needed)
     expect(screen.getByRole('button', { name: /3 dias/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /7 dias/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /14 dias/i })).toBeInTheDocument()
@@ -374,7 +376,7 @@ describe('LeadsSmartFilters', () => {
     expect(screen.queryByText(/Próxima ação/)).not.toBeInTheDocument()
   })
 
-  it('renders all 11 canonical next action options for Sales View', async () => {
+  it('renders all 11 canonical next action options when popover is opened', async () => {
     const user = userEvent.setup()
     render(
       <LeadsSmartFilters
@@ -386,8 +388,12 @@ describe('LeadsSmartFilters', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Click the "Próxima ação" popover trigger to open it
+    const nextActionTrigger = screen.getByRole('button', { name: /Selecionar ação/i })
+    await user.click(nextActionTrigger)
 
-    // Verify all 11 canonical options are in the Command list
+    // Verify all 11 canonical options are in the Command list inside the Popover
     const canonicalOptions = [
       'Preparar para reunião',
       'Follow-up pós-reunião',
@@ -424,7 +430,7 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByLabelText(/Remover filtro Próxima ação/)).toBeInTheDocument()
   })
 
-  it('applies next action filter correctly', async () => {
+  it('applies next action filter correctly via popover', async () => {
     const user = userEvent.setup()
     const onNextActionsChange = vi.fn()
     render(
@@ -438,7 +444,11 @@ describe('LeadsSmartFilters', () => {
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
     
-    // Click on an action
+    // Open the next action popover
+    const nextActionTrigger = screen.getByRole('button', { name: /Selecionar ação/i })
+    await user.click(nextActionTrigger)
+    
+    // Click on an action inside the popover
     await user.click(screen.getByText('Enviar follow-up'))
 
     // Should not be called yet (draft mode)
@@ -450,25 +460,30 @@ describe('LeadsSmartFilters', () => {
     expect(onNextActionsChange).toHaveBeenCalledWith(['send_follow_up'])
   })
 
-  it('has Selecionar tudo and Limpar actions for next action', async () => {
+  it('has Selecionar tudo and Limpar actions inside next action popover', async () => {
     const user = userEvent.setup()
     render(
       <LeadsSmartFilters
         {...defaultProps}
         showNextActionFilter
-        nextActions={[]}
+        nextActions={['call_first_time']}
         onNextActionsChange={vi.fn()}
       />
     )
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Open the next action popover - when 1 item is selected, it shows the label
+    const nextActionTrigger = screen.getByRole('button', { name: /Fazer primeira ligação/i })
+    await user.click(nextActionTrigger)
 
+    // Now the Selecionar tudo and Limpar buttons should be visible inside the popover
     expect(screen.getByRole('button', { name: /Selecionar tudo/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Limpar$/i })).toBeInTheDocument()
   })
 
-  // Tags in accordion
-  it('should have tags accordion when onTagsChange is provided', async () => {
+  // Tags filter as Popover
+  it('should have tags filter with popover when onTagsChange is provided', async () => {
     const user = userEvent.setup()
     render(
       <LeadsSmartFilters
@@ -481,6 +496,7 @@ describe('LeadsSmartFilters', () => {
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
 
-    expect(screen.getByRole('button', { name: /Tags/i })).toBeInTheDocument()
+    // Tags section should have a popover trigger
+    expect(screen.getByRole('button', { name: /Selecionar tags/i })).toBeInTheDocument()
   })
 })
