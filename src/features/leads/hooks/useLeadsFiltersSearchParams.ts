@@ -87,16 +87,23 @@ export function parseFiltersFromSearchParams(searchParams: URLSearchParams): App
     ownerMode = 'custom'
   }
 
-  // Parse multi-value filters
-  const priority = parseCSV(searchParams.get(FILTER_PARAM_KEYS.PRIORITY)) as LeadPriorityBucket[]
+  // Valid priority bucket values for runtime validation
+  const VALID_PRIORITY_BUCKETS = ['hot', 'warm', 'cold'] as const
+  
+  // Parse multi-value filters with runtime validation for priority
+  const rawPriority = parseCSV(searchParams.get(FILTER_PARAM_KEYS.PRIORITY))
+  const priority = rawPriority.filter(
+    (p): p is LeadPriorityBucket => VALID_PRIORITY_BUCKETS.includes(p as LeadPriorityBucket)
+  )
   const status = parseCSV(searchParams.get(FILTER_PARAM_KEYS.STATUS))
   const origin = parseCSV(searchParams.get(FILTER_PARAM_KEYS.ORIGIN))
   const tags = parseCSV(searchParams.get(FILTER_PARAM_KEYS.TAGS))
   const nextAction = parseCSV(searchParams.get(FILTER_PARAM_KEYS.NEXT_ACTION))
 
-  // Parse days without interaction
+  // Parse days without interaction with NaN validation
   const daysParam = searchParams.get(FILTER_PARAM_KEYS.DAYS_WITHOUT_INTERACTION)
-  const daysWithoutInteraction = daysParam ? Number(daysParam) : null
+  const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN
+  const daysWithoutInteraction = Number.isFinite(parsedDays) && parsedDays >= 0 ? parsedDays : null
 
   // Parse orderBy with validation
   const orderByParam = searchParams.get(FILTER_PARAM_KEYS.ORDER_BY)

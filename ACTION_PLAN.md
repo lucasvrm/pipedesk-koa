@@ -1,101 +1,127 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Multi-Select Popovers + Filtros Compactos)
+## 🚧 Status: ✅ Concluído (URL-first Filter System + Inline Filter Bar)
 
 **Data:** 2025-12-17  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsSmartFilters, MultiSelectPopover
+**Escopo:** Frontend - LeadsFiltersBar, useLeadsFiltersSearchParams, LeadsListPage
 
 ---
 
-## 🆕 Iteração atual - Filtros Multi-Opção em Popover + UI Compacta
+## 🆕 Iteração atual - URL-first Filter System + Inline Filter Bar
+
+### 🎯 Problema Resolvido
+- Bug: mudanças de filtros não refletiam na lista (UI muda, lista não atualiza)
+- UX: Sheet de filtros era ruim de navegar
+- Causa raiz: estado duplicado entre useState e URL
 
 ### ✅ Tarefas Concluídas
-- [x] Criar componente reutilizável `MultiSelectPopover` para padronizar seleção multi-opção
-- [x] Converter filtro **Status** para Popover com busca e checkbox list
-- [x] Converter filtro **Origem** para Popover com busca e checkbox list
-- [x] Converter filtro **Tags** para Popover com busca e checkbox list
-- [x] Converter filtro **Próxima ação** (view=sales) para Popover com busca, "Selecionar tudo" e "Limpar"
-- [x] Manter filtro **Responsável** com Popover quando modo "Selecionar" (já existia)
-- [x] Remover Accordion da seção "Avançados" - agora mostra filtros diretamente com triggers compactos
-- [x] Atualizar triggers para mostrar resumo compacto ("Selecionar...", "N selecionados", ou label quando 1 item)
-- [x] Garantir z-index apropriado para Popovers dentro do Sheet
-- [x] Atualizar 27 testes existentes para novo comportamento
-- [x] Adicionar 2 novos testes de integração (status via popover, origin via popover)
-- [x] Build de produção bem-sucedido (29 testes passando)
+- [x] Criar hook `useLeadsFiltersSearchParams` como fonte única de verdade (URL-first)
+  - Parse de searchParams para objeto tipado `appliedFilters`
+  - Serialize de mudanças para URL
+  - Helpers: toggleMulti, setMulti, clearFilter, clearAll
+  - Reset automático de página ao mudar filtros
+- [x] Criar componente `LeadsFiltersBar` com triggers inline e Popovers
+  - Filtros aparecem como botões compactos na toolbar
+  - Cada botão abre Popover com busca e checkboxes
+  - Mudanças aplicam IMEDIATAMENTE via URL (sem modo draft)
+- [x] Criar componente `LeadsFiltersChips` para chips removíveis
+  - Linha de chips abaixo da toolbar
+  - Cada chip remove filtro específico
+  - Botão "Limpar tudo" quando múltiplos ativos
+- [x] Refatorar `LeadsListPage` para usar o novo hook
+  - `salesFilters` derivado diretamente de `appliedFilters` (não mais de useState)
+  - queryKey inclui `appliedFilters` para invalidação correta
+  - Remover useState duplicados para filtros de sales view
+- [x] Adicionar 43 novos testes (25 hook + 18 componentes)
+- [x] Build de produção bem-sucedido
+- [x] 72 testes de filtros passando
 
 ### Arquivos Criados
-- `src/components/ui/MultiSelectPopover.tsx` - Componente reutilizável para multi-select em Popover
+- `src/features/leads/hooks/useLeadsFiltersSearchParams.ts` - Hook central para filtros URL-first
+- `src/features/leads/components/LeadsFiltersBar.tsx` - Filter bar inline + chips
+- `tests/unit/features/leads/hooks/useLeadsFiltersSearchParams.test.tsx` - 25 testes
+- `tests/unit/features/leads/components/LeadsFiltersBar.test.tsx` - 18 testes
 
 ### Arquivos Modificados
-- `src/features/leads/components/LeadsSmartFilters.tsx` - Substituição de Command inline por MultiSelectPopover
-- `tests/unit/components/LeadsSmartFilters.test.tsx` - Testes atualizados para UI com Popovers
+- `src/features/leads/pages/LeadsListPage.tsx` - Refatoração para usar hook URL-first
 
-### Padrão de UI Implementado (Popover dentro do Sheet)
+### Arquitetura Implementada (URL como fonte única de verdade)
 
-**Estrutura do Sheet de Filtros:**
 ```
-┌─────────────────────────────────────────────────────┐
-│ HEADER (fixo)                                       │
-│ ├─ Título: "Filtros"                               │
-│ ├─ Subtítulo: "Ajuste os filtros para refinar..."  │
-│ └─ Ações: [Limpar tudo] [X Fechar]                 │
-├─────────────────────────────────────────────────────┤
-│ RESUMO (chips do draft)                            │
-│ [Status (1) ×] [Prioridade (2) ×] [Origem (1) ×]  │
-├─────────────────────────────────────────────────────┤
-│ ESSENCIAIS                                          │
-│ ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
-│ ├─ Status: [Selecionar status... ▼] → Popover     │
-│ ├─ Prioridade: [Hot] [Warm] [Cold] pill group      │
-│ └─ Próxima ação (view=sales): [Selecionar ação ▼]  │
-├─────────────────────────────────────────────────────┤
-│ AVANÇADOS                                           │
-│ ├─ Origem: [Selecionar origem... ▼] → Popover      │
-│ ├─ Dias sem interação: [3] [7] [14] [Qualquer]     │
-│ └─ Tags: [Selecionar tags... ▼] → Popover          │
-├─────────────────────────────────────────────────────┤
-│ FOOTER (fixo)                                       │
-│ [Cancelar]                    [Aplicar filtros (N)]│
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         ANTES (problemático)                    │
+├─────────────────────────────────────────────────────────────────┤
+│  URL ←→ useState (init) ←→ draftState (Sheet) ←→ callbacks     │
+│                                                                 │
+│  Problema: estados divergem, mudanças não refletem na lista    │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                         DEPOIS (correto)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  URL (fonte de verdade)                                         │
+│    ↓                                                            │
+│  useLeadsFiltersSearchParams() → appliedFilters                 │
+│    ↓                                                            │
+│  salesFilters/queryKey → React Query                            │
+│    ↓                                                            │
+│  Fetch automático ao mudar URL                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Comportamento do MultiSelectPopover:**
-- Trigger mostra "Selecionar..." quando vazio
-- Trigger mostra label do item quando 1 selecionado
-- Trigger mostra "N selecionados" quando múltiplos
-- Popover contém busca, checkbox list, e ações "Limpar" / "Selecionar tudo"
+### Layout Implementado (Inline Filter Bar)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TOOLBAR                                                          │
+│ ┌────────────────────┐ ┌───────────────────────────────────────┐│
+│ │ 🔍 Buscar leads... │ │ Ordenar ▼ │ Filtros inline...        ││
+│ └────────────────────┘ └───────────────────────────────────────┘│
+│                                                                  │
+│ FILTROS INLINE:                                                  │
+│ [Meus][Todos][Selecionar▼] [Status▼] [Prioridade▼] [Origem▼]   │
+│ [Tags▼] [Próxima ação▼] [Sem interação▼] [Limpar 3]            │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ CHIPS (quando filtros ativos)                                    │
+│ Filtros ativos: [Status: Novo ×] [Prioridade: Hot ×] [Limpar]  │
+├─────────────────────────────────────────────────────────────────┤
+│ LISTA DE LEADS                                                   │
+│ ...                                                              │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ### ✅ Checklist de QA manual (/leads)
-- [ ] Sheet de filtros abre pelo trigger "Filtros"
-- [ ] Status mostra trigger compacto; ao clicar abre Popover com busca
-- [ ] Origem mostra trigger compacto; ao clicar abre Popover com busca
-- [ ] Tags mostra trigger compacto; ao clicar abre Popover com busca
-- [ ] Próxima ação (view=sales) mostra trigger compacto com Popover
-- [ ] Selecionar filtros no draft → resumo atualiza com chips removíveis
-- [ ] "Aplicar filtros" → lista de leads reflete os filtros selecionados
-- [ ] "Cancelar" → descarta mudanças e fecha Sheet
-- [ ] "Limpar tudo" limpa todos os filtros do draft
-- [ ] Popovers abrem corretamente dentro do Sheet (z-index ok)
+- [ ] Clicar em filtro (ex: Status) → abre Popover com opções
+- [ ] Selecionar opção → URL atualiza IMEDIATAMENTE (ver barra de endereço)
+- [ ] Lista de leads reflete o filtro aplicado (com loading suave)
+- [ ] Chips aparecem abaixo da toolbar com filtros ativos
+- [ ] Clicar X no chip → remove filtro e atualiza URL e lista
+- [ ] "Limpar tudo" → remove todos os filtros
+- [ ] Navegar back/forward no navegador → filtros e lista acompanham
+- [ ] Recarregar página → filtros persistem via URL
+- [ ] view=sales: filtro "Próxima ação" aparece com 11 opções canônicas
+- [ ] view!=sales: filtro "Próxima ação" não aparece
 
 ### 📊 Medição de Impacto
 
 | Métrica | Valor |
 |---------|-------|
-| Linhas adicionadas | ~349 |
-| Linhas removidas | ~186 |
-| Arquivos criados | 1 |
-| Arquivos modificados | 2 |
-| Testes adicionados | 2 |
-| Total de testes | 29 |
+| Linhas adicionadas | ~1800 |
+| Linhas removidas | ~189 |
+| Arquivos criados | 4 |
+| Arquivos modificados | 1 |
+| Testes adicionados | 43 |
+| Total de testes filtros | 72 |
 | Contratos quebrados | 0 |
 | Alertas de segurança | 0 |
 
-**Risco:** 🟢 Baixo (mudanças de UI/UX localizadas, sem alteração de lógica de negócio ou APIs)
+**Risco:** 🟢 Baixo (mudanças localizadas em Sales view, Grid/Kanban mantidos intactos)
 
 ---
 
-## ✅ Iteração anterior - Ajustes UI/UX Filtros + Toolbar + Coluna Tags + Botão Min/Max
+## ✅ Iteração anterior - Filtros Multi-Opção em Popover + UI Compacta
 
 ### ✅ Tarefas Concluídas
 - [x] Remover botão textual "FECHAR" do Sheet de filtros (fechamento pelo X nativo Radix/shadcn)
