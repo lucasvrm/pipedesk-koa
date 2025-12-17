@@ -368,7 +368,79 @@ describe('LeadsSmartFilters', () => {
     await user.click(screen.getByText('Tempo'))
     expect(screen.getByText(/Próxima ação/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Follow-up' }))
+    // Uses canonical option from the 11-option list for Sales View
+    await user.click(screen.getByRole('button', { name: 'Enviar follow-up' }))
     expect(onNextActionsChange).toHaveBeenCalledWith(['send_follow_up'])
+  })
+
+  it('does NOT render next action section when showNextActionFilter is false (non-sales view)', async () => {
+    const user = userEvent.setup()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        showNextActionFilter={false}
+        nextActions={[]}
+        onNextActionsChange={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByText('Tempo'))
+
+    // Should NOT show "Próxima ação" section since showNextActionFilter is false
+    expect(screen.queryByText(/Próxima ação/)).not.toBeInTheDocument()
+  })
+
+  it('renders all 11 canonical next action options for Sales View', async () => {
+    const user = userEvent.setup()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        showNextActionFilter
+        nextActions={[]}
+        onNextActionsChange={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByText('Tempo'))
+
+    // Verify all 11 canonical options are rendered
+    const canonicalOptions = [
+      'Preparar para reunião',
+      'Follow-up pós-reunião',
+      'Fazer primeira ligação',
+      'Fazer handoff (para deal)',
+      'Qualificar para empresa',
+      'Agendar reunião',
+      'Ligar novamente',
+      'Enviar material / valor',
+      'Enviar follow-up',
+      'Reengajar lead frio',
+      'Desqualificar / encerrar'
+    ]
+
+    for (const optionLabel of canonicalOptions) {
+      expect(screen.getByRole('button', { name: optionLabel })).toBeInTheDocument()
+    }
+  })
+
+  it('includes next action selection in active filter chips summary', async () => {
+    const user = userEvent.setup()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        showNextActionFilter
+        nextActions={['call_first_time', 'send_follow_up']}
+        onNextActionsChange={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+
+    // Should show in summary chips
+    expect(screen.getByLabelText(/Remover filtro Próxima ação/)).toBeInTheDocument()
   })
 })
