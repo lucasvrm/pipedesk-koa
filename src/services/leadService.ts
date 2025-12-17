@@ -48,6 +48,7 @@ export interface SalesViewFilters {
   orderBy?: 'priority' | 'last_interaction' | 'created_at' | 'status' | 'next_action' | 'owner';
   search?: string;
   tags?: string[];
+  nextAction?: string[];
 }
 
 export interface QualifyLeadInput {
@@ -332,6 +333,10 @@ export async function getSalesViewLeads(filters?: SalesViewFilters, options?: { 
 
   if (filters?.orderBy) {
     params.set('order_by', filters.orderBy);
+  }
+
+  if (filters?.nextAction && filters.nextAction.length > 0) {
+    params.set('next_action', filters.nextAction.join(','));
   }
 
   // Pass includeQualified to backend - it is now responsible for filtering

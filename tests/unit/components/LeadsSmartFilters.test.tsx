@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LeadsSmartFilters } from '@/features/leads/components/LeadsSmartFilters'
 import { User, LeadPriorityBucket } from '@/lib/types'
@@ -83,6 +83,17 @@ describe('LeadsSmartFilters', () => {
 
     expect(screen.getByText('Filtros Inteligentes')).toBeInTheDocument()
     expect(screen.getByText('Limpar')).toBeInTheDocument()
+  })
+
+  it('should close popover when clicking Fechar', async () => {
+    const user = userEvent.setup()
+    render(<LeadsSmartFilters {...defaultProps} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    expect(screen.getByText('Filtros Inteligentes')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    await waitFor(() => expect(screen.queryByText('Filtros Inteligentes')).not.toBeInTheDocument())
   })
 
   it('should render all filter sections in popover', async () => {
@@ -251,5 +262,24 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '14' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Qualquer' })).toBeInTheDocument()
+  })
+
+  it('renders next action options when enabled and triggers change', async () => {
+    const user = userEvent.setup()
+    const onNextActionsChange = vi.fn()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        showNextActionFilter
+        nextActions={[]}
+        onNextActionsChange={onNextActionsChange}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    expect(screen.getByText('Próxima ação')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Follow-up' }))
+    expect(onNextActionsChange).toHaveBeenCalledWith(['send_follow_up'])
   })
 })

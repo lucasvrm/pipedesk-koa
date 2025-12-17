@@ -166,6 +166,7 @@ export default function LeadsListPage() {
   const [salesStatusFilter, setSalesStatusFilter] = useState<string[]>(() => searchParams.get('status')?.split(',').filter(Boolean) || [])
   const [salesOriginFilter, setSalesOriginFilter] = useState<string[]>(() => searchParams.get('origin')?.split(',').filter(Boolean) || [])
   const [salesTagFilter, setSalesTagFilter] = useState<string[]>(() => searchParams.get('tags')?.split(',').filter(Boolean) || [])
+  const [salesNextActions, setSalesNextActions] = useState<string[]>(() => searchParams.get('next_action')?.split(',').filter(Boolean) || [])
   const [salesDaysWithoutInteraction, setSalesDaysWithoutInteraction] = useState<number | null>(() => {
     const value = searchParams.get('days_without_interaction')
     return value ? Number(value) : null
@@ -262,9 +263,10 @@ export default function LeadsListPage() {
       daysWithoutInteraction: typeof salesDaysWithoutInteraction === 'number' ? salesDaysWithoutInteraction : undefined,
       orderBy: normalizedOrderBy,
       search: searchTerm || undefined,
-      tags: salesTagFilter.length > 0 ? salesTagFilter : undefined
+      tags: salesTagFilter.length > 0 ? salesTagFilter : undefined,
+      nextAction: salesNextActions.length > 0 ? salesNextActions : undefined
     }
-  }, [normalizeSalesOrderBy, salesDaysWithoutInteraction, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, searchTerm, salesTagFilter])
+  }, [normalizeSalesOrderBy, salesDaysWithoutInteraction, salesNextActions, salesOriginFilter, salesOrderBy, salesOwnerIds, salesOwnerMode, salesPriority, salesStatusFilter, searchTerm, salesTagFilter])
   const salesViewQuery = useMemo(
     () => ({
       ...salesFilters,
@@ -328,7 +330,7 @@ export default function LeadsListPage() {
 
   useEffect(() => {
     setSelectedIds([])
-  }, [currentView, searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesTagFilter, salesDaysWithoutInteraction, salesOrderBy])
+  }, [currentView, searchTerm, normalizedStatusFilter, normalizedOriginFilter, normalizedTagFilter, currentPage, salesOwnerMode, salesOwnerIds, salesPriority, salesStatusFilter, salesOriginFilter, salesTagFilter, salesDaysWithoutInteraction, salesOrderBy, salesNextActions])
 
   useEffect(() => {
     const payload = {
@@ -678,6 +680,7 @@ export default function LeadsListPage() {
     setSalesStatusFilter([])
     setSalesOriginFilter([])
     setSalesTagFilter([])
+    setSalesNextActions([])
     setSalesDaysWithoutInteraction(null)
     setSalesOrderBy('priority')
     setCurrentPage(1)
@@ -715,6 +718,20 @@ export default function LeadsListPage() {
     setSalesTagFilter(values)
     setCurrentPage(1)
   }, [])
+
+  const handleNextActionsChange = useCallback((values: string[]) => {
+    setSalesNextActions(values)
+    setCurrentPage(1)
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (values.length > 0) {
+        newParams.set('next_action', values.join(','))
+      } else {
+        newParams.delete('next_action')
+      }
+      return newParams
+    }, { replace: true })
+  }, [setSearchParams])
 
   const handleDaysWithoutInteractionChange = useCallback((value: number | null) => {
     setSalesDaysWithoutInteraction(value)
@@ -798,6 +815,9 @@ export default function LeadsListPage() {
             availableTags={tags}
             selectedTags={salesTagFilter}
             onTagsChange={handleTagsChange}
+            showNextActionFilter
+            nextActions={salesNextActions}
+            onNextActionsChange={handleNextActionsChange}
           />
           <LeadsOrderByDropdown
             orderBy={salesOrderBy}
@@ -959,6 +979,7 @@ export default function LeadsListPage() {
     salesOwnerMode,
     salesPriority,
     salesStatusFilter,
+    salesNextActions,
     salesTagFilter,
     searchTerm,
     selectedIds.length,
