@@ -1,6 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: 🚧 Em andamento (Filtro de Próxima Ação na Sales View)
+## 🚧 Status: 🚧 Em andamento (UI/UX Filtros Inteligentes em /leads)
 
 **Data:** 2025-12-16  
 **Autor:** GitHub Copilot Agent  
@@ -8,7 +8,15 @@
 
 ---
 
-## 🆕 Iteração atual - Filtro de Próxima Ação + botão Fechar
+## 🆕 Iteração atual - UI/UX Filtros Inteligentes em `/leads`
+- [ ] Reorganizar popover em blocos **Essenciais** (Responsável, Status, Prioridade, Tags) e **Mais filtros** (colapsado por padrão)
+- [ ] Adicionar resumo de filtros ativos com chips removíveis e contadores por seção (incluindo "Mais filtros (N)")
+- [ ] Implementar ação "Selecionar tags..." em modal secundário com busca para evitar listas longas no popover principal
+- [ ] Atualizar testes de UI (RTL) para novo comportamento (accordion fechado, contador, modal de tags, chips removendo filtros)
+- [ ] Registrar checklist de validação manual para `/leads` e capturar screenshot da nova UI
+- [ ] Rodar lint/typecheck/test/build (baseline já possui falhas; registrar estado)
+
+## ✅ Iteração anterior - Filtro de Próxima Ação + botão Fechar
 - [x] Tornar o popover de Filtros Inteligentes controlado e adicionar botão **Fechar** após **Limpar**
 - [x] Renderizar seção **Próxima ação** apenas em `view=sales` com multi-select fixo (11 codes)
 - [x] Persistir seleção em estado/querystring e enviar `next_action=<csv>` para `/api/leads/sales-view`
