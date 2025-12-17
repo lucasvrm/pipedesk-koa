@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Filter, Calendar, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 
 const STORAGE_KEY = 'leads.summaryCards.collapsed'
 
@@ -14,11 +14,28 @@ export interface LeadsSummaryCardsProps {
   isLoading?: boolean
   isMetricsLoading?: boolean
   isMetricsError?: boolean
+  /**
+   * Controlled mode: external collapsed state
+   * When provided, the component operates in controlled mode
+   */
+  isCollapsed?: boolean
+  /**
+   * Controlled mode: callback to toggle collapsed state
+   * Required when isCollapsed is provided
+   */
+  onToggle?: () => void
+  /**
+   * When true, hides the internal toggle button (for external toggle rendering)
+   */
+  hideToggle?: boolean
 }
 
 /**
  * Summary cards for leads page showing key metrics.
  * Supports minimize/maximize with localStorage persistence.
+ * 
+ * Can be used in controlled mode by passing isCollapsed and onToggle props,
+ * or in uncontrolled mode where state is managed internally with localStorage.
  */
 export function LeadsSummaryCards({
   openLeads,
@@ -26,10 +43,16 @@ export function LeadsSummaryCards({
   qualifiedThisMonth,
   isLoading = false,
   isMetricsLoading = false,
-  isMetricsError = false
+  isMetricsError = false,
+  isCollapsed: isCollapsedProp,
+  onToggle: onToggleProp,
+  hideToggle = false
 }: LeadsSummaryCardsProps) {
-  // Initialize collapsed state from localStorage
-  const [isCollapsed, setIsCollapsed] = useState(() => {
+  // Check if controlled mode
+  const isControlled = isCollapsedProp !== undefined
+
+  // Uncontrolled mode: internal state with localStorage persistence
+  const [internalCollapsed, setInternalCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1'
     } catch {
@@ -37,14 +60,27 @@ export function LeadsSummaryCards({
     }
   })
 
-  // Persist collapsed state to localStorage
+  // Resolve effective collapsed state
+  const isCollapsed = isControlled ? isCollapsedProp : internalCollapsed
+
+  // Persist state to localStorage (only in uncontrolled mode)
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, isCollapsed ? '1' : '0')
-    } catch {
-      // Ignore localStorage errors
+    if (!isControlled) {
+      try {
+        localStorage.setItem(STORAGE_KEY, internalCollapsed ? '1' : '0')
+      } catch {
+        // Ignore localStorage errors
+      }
     }
-  }, [isCollapsed])
+  }, [isControlled, internalCollapsed])
+
+  const handleToggle = useCallback(() => {
+    if (isControlled && onToggleProp) {
+      onToggleProp()
+    } else {
+      setInternalCollapsed(prev => !prev)
+    }
+  }, [isControlled, onToggleProp])
 
   // Render metric value with loading/error states
   const renderMetricValue = (value: number, isMetricLoading: boolean, isError: boolean) => {
@@ -57,32 +93,36 @@ export function LeadsSummaryCards({
     return <p className="text-2xl font-bold">{value}</p>
   }
 
+  // Default toggle button (only rendered if hideToggle is false)
+  const defaultToggle = !hideToggle && (
+    <div className="flex items-center justify-between mb-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 gap-2 text-muted-foreground hover:text-foreground"
+        aria-expanded={!isCollapsed}
+        aria-controls="leads-summary-cards-content"
+        data-testid="leads-summary-toggle"
+        onClick={handleToggle}
+      >
+        {isCollapsed ? (
+          <>
+            <ChevronDown className="h-4 w-4" />
+            Mostrar resumo
+          </>
+        ) : (
+          <>
+            <ChevronUp className="h-4 w-4" />
+            Minimizar
+          </>
+        )}
+      </Button>
+    </div>
+  )
+
   return (
-    <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
-      <div className="flex items-center justify-between mb-2">
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-2 text-muted-foreground hover:text-foreground"
-            aria-expanded={!isCollapsed}
-            aria-controls="leads-summary-cards-content"
-            data-testid="leads-summary-toggle"
-          >
-            {isCollapsed ? (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                Mostrar resumo
-              </>
-            ) : (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                Minimizar
-              </>
-            )}
-          </Button>
-        </CollapsibleTrigger>
-      </div>
+    <Collapsible open={!isCollapsed} onOpenChange={() => handleToggle()}>
+      {defaultToggle}
 
       <CollapsibleContent
         id="leads-summary-cards-content"
@@ -164,4 +204,32 @@ export function LeadsSummaryCards({
       )}
     </Collapsible>
   )
+}
+
+/**
+ * Custom hook to manage summary cards collapsed state with localStorage persistence.
+ * Use this hook to render the toggle button externally while maintaining state sync.
+ */
+export function useSummaryCardsState() {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, isCollapsed ? '1' : '0')
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [isCollapsed])
+
+  const handleToggle = useCallback(() => {
+    setIsCollapsed(prev => !prev)
+  }, [])
+
+  return { isCollapsed, setIsCollapsed, handleToggle }
 }

@@ -104,18 +104,19 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByText('Ajuste os filtros para refinar a lista')).toBeInTheDocument()
     // Should have "Limpar tudo" action in header
     expect(screen.getByRole('button', { name: /Limpar tudo/i })).toBeInTheDocument()
-    // Should have "Fechar" action in header
-    expect(screen.getByRole('button', { name: /Fechar/i })).toBeInTheDocument()
+    // Should NOT have textual "Fechar" button (removed per spec - use X from Sheet)
+    expect(screen.queryByRole('button', { name: /^Fechar$/i })).not.toBeInTheDocument()
   })
 
-  it('should close sheet when clicking Fechar', async () => {
+  it('should close sheet when clicking Cancelar in footer', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
     expect(screen.getByText('Ajuste os filtros para refinar a lista')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /Fechar/i }))
+    // Use Cancelar button in footer to close
+    await user.click(screen.getByRole('button', { name: /Cancelar/i }))
     await waitFor(() => expect(screen.queryByText('Ajuste os filtros para refinar a lista')).not.toBeInTheDocument())
   })
 

@@ -594,12 +594,8 @@ export function LeadSalesRow({
       className="w-full min-w-0 rounded-md border border-transparent bg-muted/30 px-2 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       aria-label="Gerenciar tags do lead"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        {visibleTags.length === 0 ? (
-          <Badge variant="outline" className="bg-muted text-muted-foreground text-xs font-medium">
-            Tags
-          </Badge>
-        ) : (
+      <div className="flex flex-wrap items-center gap-2 min-h-[24px]">
+        {visibleTags.length > 0 && (
           <>
             {visibleTags.map((tag) => {
               const safeColor = safeStringOptional(tag.color) ?? '#888'
