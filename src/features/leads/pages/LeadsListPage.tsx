@@ -11,7 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, LayoutGrid, Globe, ChevronDown, BarChart3, Calendar, Filter, Trash2, Columns3, Tag as TagIcon } from 'lucide-react'
+import { Plus, LayoutGrid, Globe, ChevronDown, Trash2, Columns3, Tag as TagIcon } from 'lucide-react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -57,6 +57,8 @@ import { DataToolbar } from '@/components/DataToolbar'
 import { LeadsSmartFilters, LeadOrderBy } from '../components/LeadsSmartFilters'
 import { LeadsOrderByDropdown } from '../components/LeadsOrderByDropdown'
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
+import { LeadsSummaryCards } from '../components/LeadsSummaryCards'
+import { useLeadMonthlyMetrics } from '@/hooks/useLeadMonthlyMetrics'
 
 // View types used by DataToolbar and internal view management
 type DataToolbarView = 'list' | 'cards' | 'kanban'
@@ -181,7 +183,6 @@ export default function LeadsListPage() {
   const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
   const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
   const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
-  const monthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), [])
 
   const { data: tags = [] } = useTags('lead')
   const { data: settings } = useSettings()
@@ -279,6 +280,17 @@ export default function LeadsListPage() {
     enabled: currentView === 'sales'
   })
 
+  // Fetch monthly metrics for created/qualified counts
+  // This is separate from the paginated list to ensure accurate counts
+  const { 
+    data: monthlyMetrics, 
+    isLoading: isMonthlyMetricsLoading, 
+    isError: isMonthlyMetricsError 
+  } = useLeadMonthlyMetrics({
+    filters: currentView === 'sales' ? salesFilters : undefined,
+    enabled: true
+  })
+
   // Wrapper to track preferred fallback when user switches views during Sales View errors
   const setViewMode = useCallback((mode: InternalViewMode) => {
     // If switching away from sales while it's in error, save this as preferred fallback
@@ -309,20 +321,20 @@ export default function LeadsListPage() {
   const isActiveLoading = currentView === 'sales' ? isSalesLoading || isSalesFetching : isLoading
 
   const leadMetrics = useMemo(() => {
+    // Get monthly metrics from the dedicated hook (accurate counts from Supabase)
+    const createdThisMonth = monthlyMetrics?.createdThisMonth ?? 0
+    const qualifiedThisMonth = monthlyMetrics?.qualifiedThisMonth ?? 0
+
     if (currentView === 'sales') {
       const total = salesViewData?.pagination?.total ?? salesLeads.length
-      return { openLeads: total, createdThisMonth: 0, qualifiedThisMonth: 0 }
+      return { openLeads: total, createdThisMonth, qualifiedThisMonth }
     }
 
     const dataset = (leads || []) as Lead[]
     const openLeads = dataset.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
-    const createdThisMonth = dataset.filter(l => new Date(l.createdAt) >= monthStart).length || 0
-    const qualifiedThisMonth = dataset.filter(
-      l => l.status === 'qualified' && l.qualifiedAt && new Date(l.qualifiedAt) >= monthStart
-    ).length || 0
 
     return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [leads, monthStart, salesLeads.length, salesViewData?.pagination.total, currentView])
+  }, [leads, monthlyMetrics, salesLeads.length, salesViewData?.pagination?.total, currentView])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -624,44 +636,15 @@ export default function LeadsListPage() {
     </div>
   ) : null
 
-  const metrics = (
-    <div className="grid gap-4 md:grid-cols-3 animate-in fade-in slide-in-from-top-4 duration-500">
-      <Card className="border-l-4 border-l-primary shadow-sm">
-        <CardContent className="p-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Leads em Aberto</p>
-            <p className="text-2xl font-bold">{leadMetrics.openLeads}</p>
-          </div>
-          <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-            <Filter className="h-8 w-8" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-l-4 border-l-blue-500 shadow-sm">
-        <CardContent className="p-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Criados no Mês</p>
-            <p className="text-2xl font-bold">{leadMetrics.createdThisMonth}</p>
-          </div>
-          <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-600">
-            <Calendar className="h-8 w-8" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-l-4 border-l-emerald-500 shadow-sm">
-        <CardContent className="p-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Qualificados no Mês</p>
-            <p className="text-2xl font-bold">{leadMetrics.qualifiedThisMonth}</p>
-          </div>
-          <div className="h-12 w-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-600">
-            <BarChart3 className="h-8 w-8" />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+  const metricsSection = (
+    <LeadsSummaryCards
+      openLeads={leadMetrics.openLeads}
+      createdThisMonth={leadMetrics.createdThisMonth}
+      qualifiedThisMonth={leadMetrics.qualifiedThisMonth}
+      isLoading={isActiveLoading}
+      isMetricsLoading={isMonthlyMetricsLoading}
+      isMetricsError={isMonthlyMetricsError}
+    />
   )
 
   const handlePageChange = useCallback((page: number) => {
@@ -1069,7 +1052,7 @@ export default function LeadsListPage() {
       </div>
 
       {/* Metrics Section */}
-      {metrics}
+      {metricsSection}
 
       {/* FIXED: O Container Unificado (Card Principal) */}
       <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
