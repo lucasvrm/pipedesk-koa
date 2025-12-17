@@ -57,8 +57,9 @@ import { DataToolbar } from '@/components/DataToolbar'
 import { LeadsSmartFilters, LeadOrderBy } from '../components/LeadsSmartFilters'
 import { LeadsOrderByDropdown } from '../components/LeadsOrderByDropdown'
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
-import { LeadsSummaryCards } from '../components/LeadsSummaryCards'
+import { LeadsSummaryCards, useSummaryCardsState } from '../components/LeadsSummaryCards'
 import { useLeadMonthlyMetrics } from '@/hooks/useLeadMonthlyMetrics'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 // View types used by DataToolbar and internal view management
 type DataToolbarView = 'list' | 'cards' | 'kanban'
@@ -73,6 +74,9 @@ export default function LeadsListPage() {
   const { profile } = useAuth()
   const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const { data: users = [] } = useUsers()
+  
+  // Summary cards collapse state (managed via hook for external toggle rendering)
+  const { isCollapsed: isSummaryCollapsed, handleToggle: toggleSummary } = useSummaryCardsState()
 
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
@@ -644,6 +648,9 @@ export default function LeadsListPage() {
       isLoading={isActiveLoading}
       isMetricsLoading={isMonthlyMetricsLoading}
       isMetricsError={isMonthlyMetricsError}
+      isCollapsed={isSummaryCollapsed}
+      onToggle={toggleSummary}
+      hideToggle
     />
   )
 
@@ -778,6 +785,10 @@ export default function LeadsListPage() {
             </>
           }
         >
+          <LeadsOrderByDropdown
+            orderBy={salesOrderBy}
+            onOrderByChange={handleOrderByChange}
+          />
           <LeadsSmartFilters
             ownerMode={salesOwnerMode}
             onOwnerModeChange={handleOwnerModeChange}
@@ -801,10 +812,6 @@ export default function LeadsListPage() {
             showNextActionFilter
             nextActions={salesNextActions}
             onNextActionsChange={handleNextActionsChange}
-          />
-          <LeadsOrderByDropdown
-            orderBy={salesOrderBy}
-            onOrderByChange={handleOrderByChange}
           />
         </DataToolbar>
       )
@@ -1047,7 +1054,31 @@ export default function LeadsListPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-          <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+              aria-expanded={!isSummaryCollapsed}
+              aria-controls="leads-summary-cards-content"
+              aria-label={isSummaryCollapsed ? 'Mostrar resumo de leads' : 'Minimizar resumo de leads'}
+              data-testid="leads-summary-toggle"
+              onClick={toggleSummary}
+            >
+              {isSummaryCollapsed ? (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Mostrar resumo</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Minimizar</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 

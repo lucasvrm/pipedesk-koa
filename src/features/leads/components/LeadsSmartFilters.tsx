@@ -80,7 +80,7 @@ const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description:
 ]
 
 export const ORDER_BY_OPTIONS: { value: LeadOrderBy; label: string }[] = [
-  { value: 'priority', label: 'Prioridade (padrão)' },
+  { value: 'priority', label: 'Prioridade' },
   { value: 'last_interaction', label: 'Última interação' },
   { value: 'created_at', label: 'Data de criação' },
   { value: 'status', label: 'Status' },
@@ -408,25 +408,14 @@ export function LeadsSmartFilters({
                 </SheetTitle>
                 <SheetDescription>Ajuste os filtros para refinar a lista</SheetDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearDraft}
-                  className="h-8 gap-1.5 px-2 text-xs"
-                >
-                  Limpar tudo
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancel}
-                  className="h-8 gap-1.5 px-2 text-xs"
-                >
-                  <X className="h-4 w-4" />
-                  Fechar
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearDraft}
+                className="h-8 gap-1.5 px-2 text-xs"
+              >
+                Limpar tudo
+              </Button>
             </div>
           </SheetHeader>
 

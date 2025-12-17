@@ -1,14 +1,66 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Minimizar/Maximizar Cards + Métricas do Mês)
+## 🚧 Status: ✅ Concluído (UI/UX Filtros + Toolbar + Tags + Min/Max Cards)
 
 **Data:** 2025-12-17  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsSummaryCards, useLeadMonthlyMetrics, LeadsListPage
+**Escopo:** Frontend - LeadsSmartFilters, LeadsListPage, LeadSalesRow, LeadsSummaryCards
 
 ---
 
-## 🆕 Iteração atual - Minimizar/Maximizar Cards + Correção de Métricas
+## 🆕 Iteração atual - Ajustes UI/UX Filtros + Toolbar + Coluna Tags + Botão Min/Max
+
+### ✅ Tarefas Concluídas
+- [x] Remover botão textual "FECHAR" do Sheet de filtros (fechamento pelo X nativo Radix/shadcn)
+- [x] Remover "(padrão)" do dropdown de Ordenação ("Prioridade (padrão)" → "Prioridade")
+- [x] Reordenar controles do toolbar: Busca → Ordenação → Filtros
+- [x] Remover badge placeholder "Tags" quando lead não tem tags (célula em branco)
+- [x] Mover botão min/max cards para linha do subtítulo "Gerencie seus potenciais clientes."
+- [x] Suporte a modo controlado no LeadsSummaryCards (isCollapsed, onToggle, hideToggle)
+- [x] Hook useSummaryCardsState exportado para controle externo do toggle
+- [x] Atualizar testes para remover referências ao botão "Fechar"
+- [x] Adicionar testes para modo controlado do LeadsSummaryCards (7 novos testes)
+- [x] Adicionar testes para coluna Tags vazia (2 novos testes)
+- [x] Build de produção bem-sucedido
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsSmartFilters.tsx` - Remover botão "Fechar" e "(padrão)"
+- `src/features/leads/components/LeadsSummaryCards.tsx` - Modo controlado + hook exportado
+- `src/features/leads/components/LeadSalesRow.tsx` - Remover badge "Tags" placeholder
+- `src/features/leads/pages/LeadsListPage.tsx` - Reordenar toolbar + integrar toggle externo
+- `tests/unit/components/LeadsSmartFilters.test.tsx` - Atualizar testes
+- `tests/unit/features/leads/components/LeadsSummaryCards.test.tsx` - Testes modo controlado
+- `tests/unit/features/leads/components/LeadSalesRow.test.tsx` - Testes tags vazia
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Sheet de filtros abre pelo trigger "Filtros"; NÃO existe botão textual "FECHAR"
+- [ ] Fechamento do Sheet funciona pelo X nativo (canto superior direito)
+- [ ] Dropdown de ordenação mostra "Prioridade" (sem "(padrão)")
+- [ ] Toolbar: ordem visual é Busca → Ordenação → Filtros
+- [ ] Leads sem tags: célula de tags está em branco (sem badge "Tags")
+- [ ] Leads com tags: badges coloridos aparecem corretamente
+- [ ] Botão min/max cards está à direita do subtítulo "Gerencie seus potenciais clientes."
+- [ ] Clicar no botão minimiza/maximiza os cards de métricas
+- [ ] Estado de min/max persiste após reload (localStorage)
+- [ ] Responsivo: botão min/max visível em mobile e desktop
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~180 |
+| Linhas removidas | ~80 |
+| Arquivos modificados | 7 |
+| Arquivos criados | 0 |
+| Testes adicionados | 9 |
+| Contratos quebrados | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudanças de UI/UX localizadas, sem alteração de lógica de negócio)
+
+---
+
+## ✅ Iteração anterior - Minimizar/Maximizar Cards + Correção de Métricas
 
 ### ✅ Tarefas Concluídas
 - [x] Criar componente `LeadsSummaryCards` com toggle minimizar/maximizar
