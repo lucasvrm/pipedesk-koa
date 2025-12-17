@@ -76,7 +76,11 @@ O backend é agora a fonte de verdade para filtragem de leads qualificados e del
 
 ## 📝 Alterações Realizadas
 
-### Arquivos Modificados (iteração atual)
+### Arquivos Modificados (iteração atual - Próxima Ação Canônica 2025-12-17)
+- `src/features/leads/components/LeadsSmartFilters.tsx` - Atualizado `NEXT_ACTION_OPTIONS` com lista canônica de 11 códigos PT-BR
+- `tests/unit/components/LeadsSmartFilters.test.tsx` - Adicionados 3 novos testes para comportamento de filtro Próxima Ação
+
+### Arquivos Modificados (iteração anterior - UI/UX)
 - `src/services/leadService.ts` - Filtro server-side para `qualified` com cache de status e remoção do filtro client-side
 - `tests/unit/services/leadService.test.ts` - Teste garante que `.or()` exclui `lead_status_id` de qualified quando `includeQualified=false`
 
@@ -85,7 +89,19 @@ O backend é agora a fonte de verdade para filtragem de leads qualificados e del
 - `src/services/leadService.ts` - Removida filtragem client-side em `getSalesViewLeads` e `useSalesViewLeads`
 - `tests/unit/services/leadsSalesViewService.test.tsx` - Testes atualizados para validar comportamento backend-first
 
-### Detalhes da Implementação (iteração atual)
+### Detalhes da Implementação (iteração atual - Próxima Ação Canônica)
+
+1. `NEXT_ACTION_OPTIONS` agora contém lista fixa de 11 códigos conforme especificação:
+   - Códigos não derivam da página atual (são canônicos)
+   - Labels em PT-BR
+   - Seção renderiza apenas quando `showNextActionFilter=true` (view=sales)
+
+2. Novos testes adicionados:
+   - Verificação de que todas as 11 opções são renderizadas
+   - Verificação de que seção não aparece quando `showNextActionFilter=false`
+   - Verificação de que chips de resumo incluem seleção de Próxima Ação
+
+### Detalhes da Implementação (iteração anterior)
 
 1. `getQualifiedStatusId` usa cache em memória para buscar o ID via `lead_statuses` (code = 'qualified').
 2. `getLeads` aplica `.or('lead_status_id.is.null,lead_status_id.neq.<qualified>')` e `qualified_at IS NULL` quando `includeQualified=false`.
@@ -147,7 +163,65 @@ export function useSalesViewLeads(filters?, options?) {
 
 ---
 
-## ✅ Checklist de Qualidade (iteração atual)
+## ✅ Checklist de Qualidade (Próxima Ação Canônica - 2025-12-17)
+
+| Item | Status |
+|------|--------|
+| `NEXT_ACTION_OPTIONS` atualizado com 11 códigos canônicos PT-BR | ✅ |
+| Seção "Próxima ação" renderiza apenas quando `showNextActionFilter=true` | ✅ |
+| Teste verificando todas as 11 opções canônicas | ✅ |
+| Teste verificando seção oculta quando `showNextActionFilter=false` | ✅ |
+| Teste verificando chips de resumo incluem Próxima Ação | ✅ |
+| Todos os 26 testes LeadsSmartFilters passando | ✅ |
+| Build de produção bem-sucedido | ✅ |
+| Code Review: sem comentários | ✅ |
+| CodeQL Security Scan: 0 alertas | ✅ |
+
+---
+
+## 📊 Medição de Impacto (Próxima Ação Canônica - 2025-12-17)
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~65 |
+| Linhas removidas | ~12 |
+| Arquivos modificados | 2 |
+| Arquivos criados | 0 |
+| Testes adicionados | 3 |
+| Total de testes | 26 |
+| Contratos quebrados | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança localizada em lista de opções, comportamento existente mantido)
+
+---
+
+## 📝 ROADMAP Final (Próxima Ação Canônica - 2025-12-17)
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Atualizar lista de Próxima Ação com 11 códigos canônicos | ✅ | `NEXT_ACTION_OPTIONS` em LeadsSmartFilters.tsx |
+| Labels em PT-BR | ✅ | Todos os labels traduzidos |
+| Seção renderiza apenas em view=sales | ✅ | Comportamento existente mantido via `showNextActionFilter` |
+| Multi-select com checkboxes | ✅ | Comportamento existente mantido |
+| Sincronização com URL/state | ✅ | Comportamento existente mantido |
+| Proibido filtrar lista no frontend | ✅ | Nenhuma filtragem client-side adicionada |
+| Testes atualizados | ✅ | 3 novos testes + 1 atualizado |
+
+### Decisões Técnicas:
+1. **Por que manter a estrutura existente do componente?**
+   - O componente já implementa progressive disclosure corretamente
+   - A estrutura de seções (Essenciais / Mais filtros) já atende os requisitos de UX
+   - Mudança focada apenas na lista de opções minimiza risco de regressão
+
+2. **Por que não derivar opções da página atual?**
+   - Conforme especificação, os 11 códigos são canônicos e fixos
+   - Evita inconsistência entre views
+   - Simplifica manutenção
+
+---
+
+## ✅ Checklist de Qualidade (iteração anterior)
 
 | Item | Status |
 |------|--------|
