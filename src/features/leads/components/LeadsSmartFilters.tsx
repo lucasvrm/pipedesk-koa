@@ -130,7 +130,8 @@ export function LeadsSmartFilters({
   users,
   leadStatuses,
   leadOrigins,
-  onClear,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onClear: _onClear,
   availableTags = [],
   selectedTags = [],
   onTagsChange,
