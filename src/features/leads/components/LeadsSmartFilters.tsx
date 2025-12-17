@@ -74,18 +74,22 @@ export const ORDER_BY_OPTIONS: { value: LeadOrderBy; label: string }[] = [
   { value: 'owner', label: 'Responsável' }
 ]
 
+/**
+ * Canonical list of Next Action options for Sales View (view=sales).
+ * These 11 codes are fixed and should NOT be derived from current page data.
+ */
 const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
-  { code: 'call', label: 'Ligar' },
-  { code: 'email', label: 'Enviar e-mail' },
-  { code: 'send_follow_up', label: 'Follow-up' },
-  { code: 'qualification', label: 'Qualificação' },
-  { code: 'presentation', label: 'Apresentação' },
-  { code: 'proposal', label: 'Proposta' },
-  { code: 'negotiation', label: 'Negociação' },
-  { code: 'closing', label: 'Fechamento' },
-  { code: 'onboarding', label: 'Onboarding' },
-  { code: 'post_sale', label: 'Pós-venda' },
-  { code: 'reactivation', label: 'Reativação' }
+  { code: 'prepare_for_meeting', label: 'Preparar para reunião' },
+  { code: 'post_meeting_follow_up', label: 'Follow-up pós-reunião' },
+  { code: 'call_first_time', label: 'Fazer primeira ligação' },
+  { code: 'handoff_to_deal', label: 'Fazer handoff (para deal)' },
+  { code: 'qualify_to_company', label: 'Qualificar para empresa' },
+  { code: 'schedule_meeting', label: 'Agendar reunião' },
+  { code: 'call_again', label: 'Ligar novamente' },
+  { code: 'send_value_asset', label: 'Enviar material / valor' },
+  { code: 'send_follow_up', label: 'Enviar follow-up' },
+  { code: 'reengage_cold_lead', label: 'Reengajar lead frio' },
+  { code: 'disqualify', label: 'Desqualificar / encerrar' }
 ]
 
 const DAYS_PRESETS = [3, 7, 14]
