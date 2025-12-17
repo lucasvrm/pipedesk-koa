@@ -1,8 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LeadsSmartFilters } from '@/features/leads/components/LeadsSmartFilters'
-import { User, LeadPriorityBucket } from '@/lib/types'
+import { User, LeadPriorityBucket, Tag } from '@/lib/types'
+
+class ResizeObserverMock {
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+}
+
+beforeAll(() => {
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock)
+  // @ts-expect-error - JSDOM misses scrollIntoView
+  Element.prototype.scrollIntoView = vi.fn()
+})
+
+afterAll(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('LeadsSmartFilters', () => {
   const mockUsers: User[] = [
@@ -22,6 +38,11 @@ describe('LeadsSmartFilters', () => {
     { id: 'origin-2', code: 'referral', label: 'Indicação' },
     { id: 'origin-3', code: 'cold-call', label: 'Cold Call' }
   ]
+
+  const mockTags = [
+    { id: 'tag-1', name: 'Urgente', color: '#ff0000' },
+    { id: 'tag-2', name: 'Sem resposta', color: '#888888' }
+  ] as unknown as Tag[]
 
   const defaultProps = {
     ownerMode: 'me' as const,
@@ -96,17 +117,18 @@ describe('LeadsSmartFilters', () => {
     await waitFor(() => expect(screen.queryByText('Filtros Inteligentes')).not.toBeInTheDocument())
   })
 
-  it('should render all filter sections in popover', async () => {
+  it('shows essential filters and keeps extras hidden initially', async () => {
     const user = userEvent.setup()
-    render(<LeadsSmartFilters {...defaultProps} />)
+    render(<LeadsSmartFilters {...defaultProps} availableTags={mockTags} selectedTags={[]} onTagsChange={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
 
+    expect(screen.getByText('Essenciais')).toBeInTheDocument()
     expect(screen.getByText('Responsável')).toBeInTheDocument()
-    expect(screen.getByText('Prioridade')).toBeInTheDocument()
-    expect(screen.getByText('Características')).toBeInTheDocument()
-    expect(screen.getByText('Dias sem interação')).toBeInTheDocument()
-    // Ordenação was moved out of the filters popover to a separate dropdown
+    expect(screen.getByText(/Prioridade/)).toBeInTheDocument()
+    expect(screen.getByText(/Status/)).toBeInTheDocument()
+    expect(screen.getByText('Mais filtros')).toBeInTheDocument()
+    expect(screen.queryByText('Dias sem interação')).not.toBeInTheDocument()
   })
 
   it('should call onClear when clear button is clicked', async () => {
@@ -117,6 +139,67 @@ describe('LeadsSmartFilters', () => {
     await user.click(screen.getByRole('button', { name: 'Limpar' }))
 
     expect(defaultProps.onClear).toHaveBeenCalled()
+  })
+
+  it('keeps "Mais filtros" collapsed by default and expands categories on demand', async () => {
+    const user = userEvent.setup()
+    render(<LeadsSmartFilters {...defaultProps} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    expect(screen.queryByText('Dias sem interação')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByText('Tempo'))
+
+    expect(screen.getByText('Dias sem interação')).toBeInTheDocument()
+  })
+
+  it('shows active counter for filters inside "Mais filtros"', async () => {
+    const user = userEvent.setup()
+    render(<LeadsSmartFilters {...defaultProps} origins={['origin-1']} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    expect(screen.getByText('Mais filtros (1)')).toBeInTheDocument()
+  })
+
+  it('opens tag selection modal via "Selecionar tags..." action', async () => {
+    const user = userEvent.setup()
+    const onTagsChange = vi.fn()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        availableTags={mockTags}
+        selectedTags={[]}
+        onTagsChange={onTagsChange}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    await user.click(screen.getByRole('button', { name: /Selecionar tags/i }))
+
+    expect(screen.getByText('Selecionar tags')).toBeInTheDocument()
+    expect(screen.getByText('Urgente')).toBeInTheDocument()
+
+    await user.click(screen.getByText('Urgente'))
+    expect(onTagsChange).toHaveBeenCalledWith(['tag-1'])
+  })
+
+  it('allows removing filters from the summary chips', async () => {
+    const user = userEvent.setup()
+    const onStatusesChange = vi.fn()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        statuses={['status-1']}
+        onStatusesChange={onStatusesChange}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    const removeStatus = screen.getByLabelText(/Remover filtro Status/i)
+
+    await user.click(removeStatus)
+    expect(onStatusesChange).toHaveBeenCalledWith([])
   })
 
   it('should display active filter badges outside popover', () => {
@@ -169,6 +252,8 @@ describe('LeadsSmartFilters', () => {
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByText('Tempo'))
     
     // Find the "7" button for days
     const sevenDaysButton = screen.getByRole('button', { name: '7' })
@@ -257,6 +342,8 @@ describe('LeadsSmartFilters', () => {
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByText('Tempo'))
 
     expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
@@ -277,7 +364,9 @@ describe('LeadsSmartFilters', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    expect(screen.getByText('Próxima ação')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByText('Tempo'))
+    expect(screen.getByText(/Próxima ação/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Follow-up' }))
     expect(onNextActionsChange).toHaveBeenCalledWith(['send_follow_up'])
