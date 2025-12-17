@@ -2,6 +2,9 @@ import { User, Tag } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import {
   Command,
   CommandEmpty,
@@ -16,7 +19,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
 import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon } from 'lucide-react'
 import { useMemo, useCallback, useState } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
@@ -119,6 +121,9 @@ export function LeadsSmartFilters({
   onNextActionsChange
 }: LeadsSmartFiltersProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false)
+  const [tagSearchTerm, setTagSearchTerm] = useState('')
   const ownerLabel = useMemo(() => {
     if (ownerMode === 'me') return 'Meus leads'
     if (ownerMode === 'all') return 'Todos'
@@ -131,6 +136,22 @@ export function LeadsSmartFilters({
   const safeUsers = ensureArray<User>(users)
   const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
   const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
+  const selectedTagObjects = useMemo(
+    () => availableTags.filter(tag => selectedTags.includes(tag.id)),
+    [availableTags, selectedTags]
+  )
+  const filteredTagOptions = useMemo(() => {
+    if (!tagSearchTerm.trim()) return availableTags
+    const term = tagSearchTerm.toLowerCase()
+    return availableTags.filter(tag => safeString(tag.name, '').toLowerCase().includes(term))
+  }, [availableTags, tagSearchTerm])
+  const moreFiltersActiveCount = useMemo(() => {
+    let count = 0
+    if (origins.length > 0) count++
+    if (daysWithoutInteraction !== null) count++
+    if (showNextActionFilter && nextActions.length > 0) count++
+    return count
+  }, [daysWithoutInteraction, nextActions, origins, showNextActionFilter])
 
   const toggleItem = useCallback((list: string[], value: string, onChange: (values: string[]) => void) => {
     if (list.includes(value)) {
@@ -185,6 +206,82 @@ export function LeadsSmartFilters({
     if (showNextActionFilter && nextActions.length > 0) count++
     return count
   }, [ownerMode, priority, statuses, origins, daysWithoutInteraction, selectedTags, showNextActionFilter, nextActions])
+  const activeFilterChips = useMemo(
+    () =>
+      [
+        ownerMode !== 'me' || selectedOwners.length > 0
+          ? {
+              key: 'owner',
+              label: ownerLabel,
+              onRemove: () => {
+                onOwnerModeChange('me')
+                onSelectedOwnersChange([])
+              }
+            }
+          : null,
+        priority.length > 0
+          ? {
+              key: 'priority',
+              label: `Prioridade (${priority.length})`,
+              onRemove: () => onPriorityChange([])
+            }
+          : null,
+        statuses.length > 0
+          ? {
+              key: 'statuses',
+              label: `Status (${statuses.length})`,
+              onRemove: () => onStatusesChange([])
+            }
+          : null,
+        origins.length > 0
+          ? {
+              key: 'origins',
+              label: `Origem (${origins.length})`,
+              onRemove: () => onOriginsChange([])
+            }
+          : null,
+        daysWithoutInteraction !== null
+          ? {
+              key: 'days',
+              label: `Dias sem interação: ${daysWithoutInteraction}`,
+              onRemove: () => onDaysWithoutInteractionChange(null)
+            }
+          : null,
+        showNextActionFilter && nextActions.length > 0
+          ? {
+              key: 'nextActions',
+              label: `Próxima ação (${nextActions.length})`,
+              onRemove: () => onNextActionsChange?.([])
+            }
+          : null,
+        onTagsChange && selectedTags.length > 0
+          ? {
+              key: 'tags',
+              label: `Tags (${selectedTags.length})`,
+              onRemove: () => onTagsChange([])
+            }
+          : null
+      ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[],
+    [
+      daysWithoutInteraction,
+      nextActions,
+      onNextActionsChange,
+      onOriginsChange,
+      onOwnerModeChange,
+      onPriorityChange,
+      onSelectedOwnersChange,
+      onStatusesChange,
+      onTagsChange,
+      origins,
+      ownerLabel,
+      ownerMode,
+      priority,
+      selectedOwners,
+      selectedTags,
+      showNextActionFilter,
+      statuses
+    ]
+  )
 
   // Handler for toggling tags
   const handleTagToggle = useCallback(
@@ -205,7 +302,6 @@ export function LeadsSmartFilters({
 
   return (
     <>
-      {/* Main Filters Popover */}
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -223,10 +319,9 @@ export function LeadsSmartFilters({
             <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[480px] p-0" align="start">
-          <div className="p-4 space-y-3">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-2">
+        <PopoverContent className="w-[520px] p-0" align="start">
+          <div className="space-y-4 p-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">Filtros Inteligentes</span>
@@ -242,291 +337,381 @@ export function LeadsSmartFilters({
               </div>
             </div>
 
-            <Separator />
-
-            {/* Responsável */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Responsável
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={ownerMode === 'me' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-8 px-3 text-xs"
-                  onClick={() => onOwnerModeChange('me')}
-                >
-                  Meus leads
-                </Button>
-                <Button
-                  variant={ownerMode === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-8 px-3 text-xs"
-                  onClick={() => onOwnerModeChange('all')}
-                >
-                  Todos
-                </Button>
-                <Popover>
-                  <PopoverTrigger asChild>
+            {activeFilterChips.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resumo</p>
+                <div className="flex flex-wrap gap-2">
+                  {activeFilterChips.map(chip => (
                     <Button
-                      variant={ownerMode === 'custom' || selectedOwners.length > 0 ? 'default' : 'outline'}
+                      key={chip.key}
+                      variant="secondary"
                       size="sm"
-                      className="h-8 gap-2 px-3 text-xs"
+                      className="h-7 gap-1 rounded-full px-2 text-xs"
+                      onClick={chip.onRemove}
+                      aria-label={`Remover filtro ${chip.label}`}
                     >
-                      <Users className="h-3.5 w-3.5" />
-                      {ownerLabel}
-                      <ChevronDown className="h-2.5 w-2.5" />
+                      <span className="truncate max-w-[10rem]">{chip.label}</span>
+                      <X className="h-3 w-3" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-0">
-                    <Command>
-                      <CommandInput placeholder="Buscar usuário" className="h-9" />
-                      <CommandList>
-                        <CommandEmpty>Nenhum usuário encontrado</CommandEmpty>
-                        <CommandGroup>
-                          {safeUsers.map(user => {
-                            const isSelected = selectedOwners.includes(user.id)
-                            return (
-                              <CommandItem key={user.id} onSelect={() => handleUserSelect(user.id)}>
-                                <div
-                                  className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
-                                    isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
-                                  }`}
-                                >
-                                  {isSelected && <Check className="h-3 w-3" />}
-                                </div>
-                                <span>{safeString(user.name, 'Usuário')}</span>
-                              </CommandItem>
-                            )
-                          })}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <Separator />
-
-            {/* Prioridade */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Prioridade
-              </label>
-              <div className="flex bg-muted p-1 rounded-md gap-0.5">
-                {PRIORITY_OPTIONS.map(option => {
-                  const isActive = priority.includes(option.value)
-                  const buttonClass = isActive
-                    ? 'flex-1 px-3 py-1.5 text-xs font-medium rounded-sm transition-all bg-background text-foreground shadow-sm'
-                    : 'flex-1 px-3 py-1.5 text-xs font-medium rounded-sm transition-all text-muted-foreground hover:bg-background/50 hover:text-foreground'
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => handlePriorityToggle(option.value)}
-                      className={buttonClass}
-                    >
-                      {safeString(option.label, option.value)}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Status e Origem */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Características
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {/* Status */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant={statuses.length > 0 ? 'secondary' : 'outline'}
-                      size="sm"
-                      className={`h-8 gap-2 px-3 text-xs ${
-                        statuses.length > 0 ? 'border-primary/20' : ''
-                      }`}
-                    >
-                      Status {statuses.length > 0 && `(${statuses.length})`}
-                      <ChevronDown className="h-2.5 w-2.5 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="start">
-                    {safeLeadStatuses.map(status => (
-                      <DropdownMenuCheckboxItem
-                        key={status.id}
-                        checked={status.id ? statuses.includes(status.id) : false}
-                        onCheckedChange={() => status.id && handleStatusToggle(status.id)}
-                      >
-                        {safeString(status.label, status.code)}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Origem */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant={origins.length > 0 ? 'secondary' : 'outline'}
-                      size="sm"
-                      className={`h-8 gap-2 px-3 text-xs ${origins.length > 0 ? 'border-primary/20' : ''}`}
-                    >
-                      Origem {origins.length > 0 && `(${origins.length})`}
-                      <ChevronDown className="h-2.5 w-2.5 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="start">
-                    {safeLeadOrigins.map(origin => (
-                      <DropdownMenuCheckboxItem
-                        key={origin.id}
-                        checked={origin.id ? origins.includes(origin.id) : false}
-                        onCheckedChange={() => origin.id && handleOriginToggle(origin.id)}
-                      >
-                        {safeString(origin.label, origin.code)}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            {/* Tags - with Command search */}
-            {onTagsChange && (
-              <>
-                <Separator />
+            <div className="space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Essenciais</div>
+              <div className="space-y-3">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                    <TagIcon className="h-3.5 w-3.5" />
-                    Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
+                  <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Responsável</label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={ownerMode === 'me' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 px-3 text-xs"
+                      onClick={() => onOwnerModeChange('me')}
+                    >
+                      Meus leads
+                    </Button>
+                    <Button
+                      variant={ownerMode === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 px-3 text-xs"
+                      onClick={() => onOwnerModeChange('all')}
+                    >
+                      Todos
+                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={ownerMode === 'custom' || selectedOwners.length > 0 ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-8 gap-2 px-3 text-xs"
+                        >
+                          <Users className="h-3.5 w-3.5" />
+                          {ownerLabel}
+                          <ChevronDown className="h-2.5 w-2.5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar usuário" className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>Nenhum usuário encontrado</CommandEmpty>
+                            <CommandGroup>
+                              {safeUsers.map(user => {
+                                const isSelected = selectedOwners.includes(user.id)
+                                return (
+                                  <CommandItem key={user.id} onSelect={() => handleUserSelect(user.id)}>
+                                    <div
+                                      className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
+                                      }`}
+                                    >
+                                      {isSelected && <Check className="h-3 w-3" />}
+                                    </div>
+                                    <span>{safeString(user.name, 'Usuário')}</span>
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Status {statuses.length > 0 && `(${statuses.length})`}
+                    </label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant={statuses.length > 0 ? 'secondary' : 'outline'}
+                          size="sm"
+                          className={`h-8 w-full justify-between gap-2 px-3 text-xs ${statuses.length > 0 ? 'border-primary/20' : ''}`}
+                        >
+                          <span className="truncate">Selecionar status</span>
+                          <ChevronDown className="h-2.5 w-2.5 opacity-50" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56" align="start">
+                        {safeLeadStatuses.map(status => (
+                          <DropdownMenuCheckboxItem
+                            key={status.id}
+                            checked={status.id ? statuses.includes(status.id) : false}
+                            onCheckedChange={() => status.id && handleStatusToggle(status.id)}
+                          >
+                            {safeString(status.label, status.code)}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Prioridade {priority.length > 0 && `(${priority.length})`}
+                    </label>
+                    <div className="flex gap-0.5 rounded-md bg-muted p-1">
+                      {PRIORITY_OPTIONS.map(option => {
+                        const isActive = priority.includes(option.value)
+                        const buttonClass = isActive
+                          ? 'flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-all bg-background text-foreground shadow-sm'
+                          : 'flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-all text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                        return (
+                          <button
+                            key={option.value}
+                            onClick={() => handlePriorityToggle(option.value)}
+                            className={buttonClass}
+                            type="button"
+                          >
+                            {safeString(option.label, option.value)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {onTagsChange && (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <TagIcon className="h-3.5 w-3.5" />
+                      <span>Tags {selectedTags.length > 0 && `(${selectedTags.length})`}</span>
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         variant={selectedTags.length > 0 ? 'secondary' : 'outline'}
                         size="sm"
-                        className={`h-8 w-full justify-between gap-2 px-3 text-xs ${selectedTags.length > 0 ? 'border-primary/20' : ''}`}
+                        className="h-8 px-3 text-xs"
+                        onClick={() => setIsTagDialogOpen(true)}
                       >
-                        <span className="truncate text-left">
-                          {selectedTags.length > 0 
-                            ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''} selecionada${selectedTags.length > 1 ? 's' : ''}`
-                            : 'Selecionar tags...'}
-                        </span>
-                        <ChevronDown className="h-2.5 w-2.5 opacity-50" />
+                        Selecionar tags...
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Buscar tag..." className="h-9" />
-                        <CommandList>
-                          <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
-                          <CommandGroup>
-                            {availableTags.map(tag => {
-                              const safeColor = safeString(tag.color, '#888')
-                              const isSelected = selectedTags.includes(tag.id)
-                              return (
-                                <CommandItem 
-                                  key={tag.id} 
-                                  onSelect={() => handleTagToggle(tag.id)}
-                                  className="flex items-center gap-2"
-                                >
-                                  <div
-                                    className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
-                                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
-                                    }`}
-                                  >
-                                    {isSelected && <Check className="h-3 w-3" />}
-                                  </div>
-                                  <div 
-                                    className="h-2.5 w-2.5 rounded-full" 
-                                    style={{ backgroundColor: safeColor }}
-                                  />
-                                  <span>{safeString(tag.name, 'Tag')}</span>
-                                </CommandItem>
-                              )
-                            })}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </>
-            )}
-
-            <Separator />
-
-            {/* Dias sem interação */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Dias sem interação
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {DAYS_PRESETS.map(days => (
-                  <Button
-                    key={days}
-                    variant={daysWithoutInteraction === days ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-8 px-3 text-xs min-w-[3rem]"
-                    onClick={() => onDaysWithoutInteractionChange(days)}
-                  >
-                    {days}
-                  </Button>
-                ))}
-                <Button
-                  variant={daysWithoutInteraction === null ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-8 px-3 text-xs"
-                  onClick={() => onDaysWithoutInteractionChange(null)}
-                >
-                  Qualquer
-                </Button>
+                      {selectedTagObjects.slice(0, 3).map(tag => {
+                        const safeColor = safeString(tag.color, '#888')
+                        return (
+                          <Badge
+                            key={tag.id}
+                            variant="secondary"
+                            className="flex items-center gap-1 border px-2 py-1 text-[11px]"
+                            style={{ borderColor: safeColor }}
+                          >
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: safeColor }}
+                            />
+                            {safeString(tag.name, 'Tag')}
+                          </Badge>
+                        )
+                      })}
+                      {selectedTags.length > selectedTagObjects.length && (
+                        <Badge variant="outline" className="h-6 px-2 text-[11px]">
+                          +{selectedTags.length - selectedTagObjects.length}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {showNextActionFilter && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Próxima ação
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {NEXT_ACTION_OPTIONS.map(option => {
-                      const isSelected = nextActions.includes(option.code)
+            <Collapsible open={isMoreFiltersOpen} onOpenChange={setIsMoreFiltersOpen}>
+              <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <span>Mais filtros {moreFiltersActiveCount > 0 && `(${moreFiltersActiveCount})`}</span>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                    {isMoreFiltersOpen ? 'Recolher' : 'Mais opções'}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="pt-3">
+                <Accordion type="multiple" className="divide-y rounded-md border">
+                  <AccordionItem value="tempo">
+                    <AccordionTrigger className="px-3 py-3 text-sm font-medium">
+                      Tempo
+                      {(daysWithoutInteraction !== null || (showNextActionFilter && nextActions.length > 0)) && (
+                        <span className="text-muted-foreground">
+                          {' '}
+                          (
+                          {(daysWithoutInteraction !== null ? 1 : 0) +
+                            (showNextActionFilter && nextActions.length > 0 ? 1 : 0)}
+                          )
+                        </span>
+                      )}
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3">
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            Dias sem interação
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {DAYS_PRESETS.map(days => (
+                              <Button
+                                key={days}
+                                variant={daysWithoutInteraction === days ? 'default' : 'outline'}
+                                size="sm"
+                                className="h-8 min-w-[3rem] px-3 text-xs"
+                                onClick={() => onDaysWithoutInteractionChange(days)}
+                              >
+                                {days}
+                              </Button>
+                            ))}
+                            <Button
+                              variant={daysWithoutInteraction === null ? 'default' : 'outline'}
+                              size="sm"
+                              className="h-8 px-3 text-xs"
+                              onClick={() => onDaysWithoutInteractionChange(null)}
+                            >
+                              Qualquer
+                            </Button>
+                          </div>
+                        </div>
+
+                        {showNextActionFilter && (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                              Próxima ação {nextActions.length > 0 && `(${nextActions.length})`}
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              {NEXT_ACTION_OPTIONS.map(option => {
+                                const isSelected = nextActions.includes(option.code)
+                                return (
+                                  <button
+                                    key={option.code}
+                                    type="button"
+                                    onClick={() => handleNextActionToggle(option.code)}
+                                    className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                                      isSelected
+                                        ? 'border-primary/40 bg-primary/5 text-primary'
+                                        : 'border-border hover:bg-muted/60'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
+                                      }`}
+                                    >
+                                      {isSelected && <Check className="h-3 w-3" />}
+                                    </span>
+                                    <span className="truncate text-left">{option.label}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="categorizacao">
+                    <AccordionTrigger className="px-3 py-3 text-sm font-medium">
+                      Categorização {origins.length > 0 && `(${origins.length})`}
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Origem</p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant={origins.length > 0 ? 'secondary' : 'outline'}
+                              size="sm"
+                              className={`h-8 w-full justify-between gap-2 px-3 text-xs ${origins.length > 0 ? 'border-primary/20' : ''}`}
+                            >
+                              <span className="truncate">Selecionar origem</span>
+                              <ChevronDown className="h-2.5 w-2.5 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56" align="start">
+                            {safeLeadOrigins.map(origin => (
+                              <DropdownMenuCheckboxItem
+                                key={origin.id}
+                                checked={origin.id ? origins.includes(origin.id) : false}
+                                onCheckedChange={() => origin.id && handleOriginToggle(origin.id)}
+                              >
+                                {safeString(origin.label, origin.code)}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {onTagsChange && (
+        <Dialog
+          open={isTagDialogOpen}
+          onOpenChange={open => {
+            setIsTagDialogOpen(open)
+            if (!open) setTagSearchTerm('')
+          }}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <TagIcon className="h-4 w-4" />
+                Selecionar tags
+              </DialogTitle>
+              <DialogDescription>Use tags para refinar a lista sem expandir o popover principal.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Command className="rounded-lg border">
+                <CommandInput
+                  placeholder="Buscar tag..."
+                  className="h-9"
+                  value={tagSearchTerm}
+                  onValueChange={setTagSearchTerm}
+                />
+                <CommandList className="max-h-[260px]">
+                  <CommandEmpty>Nenhuma tag encontrada</CommandEmpty>
+                  <CommandGroup>
+                    {filteredTagOptions.map(tag => {
+                      const safeColor = safeString(tag.color, '#888')
+                      const isSelected = selectedTags.includes(tag.id)
                       return (
-                        <button
-                          key={option.code}
-                          type="button"
-                          onClick={() => handleNextActionToggle(option.code)}
-                          className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
-                            isSelected ? 'border-primary/40 bg-primary/5 text-primary' : 'border-border hover:bg-muted/60'
-                          }`}
+                        <CommandItem
+                          key={tag.id}
+                          onSelect={() => handleTagToggle(tag.id)}
+                          className="flex items-center gap-2"
                         >
-                          <span
+                          <div
                             className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
                               isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
                             }`}
                           >
                             {isSelected && <Check className="h-3 w-3" />}
-                          </span>
-                          <span className="truncate text-left">{option.label}</span>
-                        </button>
+                          </div>
+                          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: safeColor }} />
+                          <span className="truncate">{safeString(tag.name, 'Tag')}</span>
+                        </CommandItem>
                       )
                     })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => setIsTagDialogOpen(false)}>
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Active Filter Badges */}
       {activeFiltersCount > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {ownerMode === 'custom' && selectedOwners.length > 0 && (

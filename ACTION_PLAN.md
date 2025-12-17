@@ -9,12 +9,19 @@
 ---
 
 ## 🆕 Iteração atual - UI/UX Filtros Inteligentes em `/leads`
-- [ ] Reorganizar popover em blocos **Essenciais** (Responsável, Status, Prioridade, Tags) e **Mais filtros** (colapsado por padrão)
-- [ ] Adicionar resumo de filtros ativos com chips removíveis e contadores por seção (incluindo "Mais filtros (N)")
-- [ ] Implementar ação "Selecionar tags..." em modal secundário com busca para evitar listas longas no popover principal
-- [ ] Atualizar testes de UI (RTL) para novo comportamento (accordion fechado, contador, modal de tags, chips removendo filtros)
+- [x] Reorganizar popover em blocos **Essenciais** (Responsável, Status, Prioridade, Tags) e **Mais filtros** (colapsado por padrão)
+- [x] Adicionar resumo de filtros ativos com chips removíveis e contadores por seção (incluindo "Mais filtros (N)")
+- [x] Implementar ação "Selecionar tags..." em modal secundário com busca para evitar listas longas no popover principal
+- [x] Atualizar testes de UI (RTL) para novo comportamento (accordion fechado, contador, modal de tags, chips removendo filtros)
 - [ ] Registrar checklist de validação manual para `/leads` e capturar screenshot da nova UI
 - [ ] Rodar lint/typecheck/test/build (baseline já possui falhas; registrar estado)
+
+### ✅ Checklist de validação manual proposta (/leads)
+- [ ] Abrir popover e confirmar bloco **Essenciais** visível e **Mais filtros** fechado por padrão
+- [ ] Expandir **Mais filtros** e validar contadores por categoria (Tempo, Categorização)
+- [ ] Ativar filtro de origem e conferir contador "Mais filtros (N)" atualizado
+- [ ] Abrir modal **Selecionar tags...** pela ação do popover e aplicar tags sem inflar a altura
+- [ ] Remover filtros ativos pelos chips de resumo no topo e verificar atualização dos contadores
 
 ## ✅ Iteração anterior - Filtro de Próxima Ação + botão Fechar
 - [x] Tornar o popover de Filtros Inteligentes controlado e adicionar botão **Fechar** após **Limpar**
