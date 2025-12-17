@@ -120,10 +120,9 @@ export function MultiSelectPopover({
         </div>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-64 p-0" 
+        className="w-64 p-0 z-[60]" 
         align={align}
         sideOffset={4}
-        style={{ zIndex: 60 }}
       >
         <Command>
           <CommandInput placeholder={searchPlaceholder} className="h-9" />

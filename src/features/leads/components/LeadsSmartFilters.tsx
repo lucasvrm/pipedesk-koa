@@ -180,15 +180,15 @@ export function LeadsSmartFilters({
   // Convert options to MultiSelectOption format for the popover components
   const statusOptions = useMemo<MultiSelectOption[]>(() => 
     safeLeadStatuses
-      .filter(s => s.id)
-      .map(s => ({ id: s.id!, label: safeString(s.label, s.code) })),
+      .filter((s): s is OptionItem & { id: string } => typeof s.id === 'string')
+      .map(s => ({ id: s.id, label: safeString(s.label, s.code) })),
     [safeLeadStatuses]
   )
 
   const originOptions = useMemo<MultiSelectOption[]>(() =>
     safeLeadOrigins
-      .filter(o => o.id)
-      .map(o => ({ id: o.id!, label: safeString(o.label, o.code) })),
+      .filter((o): o is OptionItem & { id: string } => typeof o.id === 'string')
+      .map(o => ({ id: o.id, label: safeString(o.label, o.code) })),
     [safeLeadOrigins]
   )
 

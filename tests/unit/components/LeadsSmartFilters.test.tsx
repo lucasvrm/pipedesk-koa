@@ -499,4 +499,64 @@ describe('LeadsSmartFilters', () => {
     // Tags section should have a popover trigger
     expect(screen.getByRole('button', { name: /Selecionar tags/i })).toBeInTheDocument()
   })
+
+  // Integration test: status filter via popover correctly triggers callback
+  it('applies status filter correctly via popover', async () => {
+    const user = userEvent.setup()
+    const onStatusesChange = vi.fn()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        onStatusesChange={onStatusesChange}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Open the status popover
+    const statusTrigger = screen.getByRole('button', { name: /Selecionar status/i })
+    await user.click(statusTrigger)
+    
+    // Select a status inside the popover
+    await user.click(screen.getByText('Novo'))
+
+    // Should not be called yet (draft mode)
+    expect(onStatusesChange).not.toHaveBeenCalled()
+
+    // Apply filters
+    await user.click(screen.getByRole('button', { name: /Aplicar filtros/i }))
+
+    // Callback should have been called with the selected status ID
+    expect(onStatusesChange).toHaveBeenCalledWith(['status-1'])
+  })
+
+  // Integration test: origin filter via popover correctly triggers callback
+  it('applies origin filter correctly via popover', async () => {
+    const user = userEvent.setup()
+    const onOriginsChange = vi.fn()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        onOriginsChange={onOriginsChange}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Open the origin popover
+    const originTrigger = screen.getByRole('button', { name: /Selecionar origem/i })
+    await user.click(originTrigger)
+    
+    // Select an origin inside the popover
+    await user.click(screen.getByText('Website'))
+
+    // Should not be called yet (draft mode)
+    expect(onOriginsChange).not.toHaveBeenCalled()
+
+    // Apply filters
+    await user.click(screen.getByRole('button', { name: /Aplicar filtros/i }))
+
+    // Callback should have been called with the selected origin ID
+    expect(onOriginsChange).toHaveBeenCalledWith(['origin-1'])
+  })
 })
