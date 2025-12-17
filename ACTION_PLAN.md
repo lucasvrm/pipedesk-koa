@@ -1,6 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (UI/UX Filtros Inteligentes em /leads - Próxima Ação Canônica)
+## 🚧 Status: ✅ Concluído (Sheet-based Filters com Draft Mode)
 
 **Data:** 2025-12-17  
 **Autor:** GitHub Copilot Agent  
@@ -8,7 +8,68 @@
 
 ---
 
-## 🆕 Iteração atual - Filtro "Próxima Ação" com lista canônica (11 opções)
+## 🆕 Iteração atual - Popover → Sheet com Draft Mode (Remodelação UX)
+
+### ✅ Tarefas Concluídas
+- [x] Substituir Popover por Sheet (painel lateral) para filtros
+- [x] Implementar modo rascunho (draftFilters) - alterações só aplicadas ao clicar "Aplicar filtros"
+- [x] Header do Sheet com título, subtítulo, "Limpar tudo" e "Fechar"
+- [x] Seção 1: Resumo com chips removíveis dos filtros do draft
+- [x] Seção 2: Essenciais (Responsável, Status, Prioridade, Próxima ação quando view=sales)
+- [x] Seção 3: Avançados em Accordion recolhido (Origem, Dias sem interação, Tags)
+- [x] Footer fixo com "Cancelar" e "Aplicar filtros"
+- [x] Manter badges de filtros ativos fora do Sheet
+- [x] Atualizar todos os testes para novo comportamento (27 testes)
+- [x] Build de produção bem-sucedido
+
+### Decisão de UX: Modo Rascunho
+- Ao abrir o Sheet: cria `draftFilters` baseado nos filtros aplicados
+- Alterações no painel modificam apenas `draftFilters`
+- Rodapé fixo:
+  - **Cancelar**: descarta `draftFilters` e fecha o Sheet
+  - **Aplicar filtros**: comita `draftFilters` para o state/URL, dispara fetch e fecha
+- "Limpar tudo" no header limpa o `draftFilters` sem fechar
+
+### Estrutura do Painel (Sheet)
+```
+┌─────────────────────────────────────────────────────┐
+│ HEADER (fixo)                                       │
+│ ├─ Título: "Filtros"                               │
+│ ├─ Subtítulo: "Ajuste os filtros para refinar..."  │
+│ └─ Ações: [Limpar tudo] [X Fechar]                 │
+├─────────────────────────────────────────────────────┤
+│ RESUMO (chips do draft)                            │
+│ [Status (1) ×] [Prioridade (2) ×] [Origem (1) ×]  │
+├─────────────────────────────────────────────────────┤
+│ ESSENCIAIS                                          │
+│ ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
+│ ├─ Status: Command multi-select com busca          │
+│ ├─ Prioridade: [Hot] [Warm] [Cold] pill group      │
+│ └─ Próxima ação (view=sales): Command + ações     │
+├─────────────────────────────────────────────────────┤
+│ AVANÇADOS (Accordion recolhido)                    │
+│ ├─ ▶ Origem                                        │
+│ ├─ ▶ Dias sem interação (presets 3/7/14/Qualquer) │
+│ └─ ▶ Tags                                          │
+├─────────────────────────────────────────────────────┤
+│ FOOTER (fixo)                                       │
+│ [Cancelar]                    [Aplicar filtros (N)]│
+└─────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Clicar "Filtros" → abre painel lateral (não popover)
+- [ ] Selecionar filtros no draft → URL não muda
+- [ ] "Aplicar filtros" → URL muda e lista reflete filtros
+- [ ] "Cancelar" → descarta e não muda URL
+- [ ] view=sales: selecionar Próxima ação → aplicar → request inclui next_action=...
+- [ ] "Limpar tudo" limpa draft mas mantém Sheet aberto
+- [ ] Chips de resumo mostram filtros do draft com X para remover
+- [ ] Estado vazio mostra "Nenhum filtro aplicado"
+
+---
+
+## ✅ Iteração anterior - Filtro "Próxima Ação" com lista canônica (11 opções)
 
 ### ✅ Tarefas Concluídas
 - [x] Atualizar `NEXT_ACTION_OPTIONS` com a lista canônica de 11 códigos únicos (PT-BR)

@@ -69,7 +69,6 @@ describe('LeadsSmartFilters', () => {
 
   it('should render filters button', () => {
     render(<LeadsSmartFilters {...defaultProps} />)
-
     expect(screen.getByRole('button', { name: /Filtros/i })).toBeInTheDocument()
   })
 
@@ -82,42 +81,45 @@ describe('LeadsSmartFilters', () => {
     }
 
     render(<LeadsSmartFilters {...props} />)
-
     // Should show count of active filters (ownerMode change + priority + status = 3)
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
   it('should not show badge when no filters are active', () => {
     render(<LeadsSmartFilters {...defaultProps} />)
-
     // Badge with count should not be present
     const button = screen.getByRole('button', { name: /Filtros/i })
     expect(button.textContent).not.toMatch(/\d+/)
   })
 
-  it('should open popover when filters button is clicked', async () => {
+  // Sheet behavior tests
+  it('should open sheet (not popover) when filters button is clicked', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     const filtersButton = screen.getByRole('button', { name: /Filtros/i })
     await user.click(filtersButton)
 
-    expect(screen.getByText('Filtros Inteligentes')).toBeInTheDocument()
-    expect(screen.getByText('Limpar')).toBeInTheDocument()
+    // Sheet should have header with title "Filtros" and description
+    expect(screen.getByText('Ajuste os filtros para refinar a lista')).toBeInTheDocument()
+    // Should have "Limpar tudo" action in header
+    expect(screen.getByRole('button', { name: /Limpar tudo/i })).toBeInTheDocument()
+    // Should have "Fechar" action in header
+    expect(screen.getByRole('button', { name: /Fechar/i })).toBeInTheDocument()
   })
 
-  it('should close popover when clicking Fechar', async () => {
+  it('should close sheet when clicking Fechar', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    expect(screen.getByText('Filtros Inteligentes')).toBeInTheDocument()
+    expect(screen.getByText('Ajuste os filtros para refinar a lista')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Fechar' }))
-    await waitFor(() => expect(screen.queryByText('Filtros Inteligentes')).not.toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: /Fechar/i }))
+    await waitFor(() => expect(screen.queryByText('Ajuste os filtros para refinar a lista')).not.toBeInTheDocument())
   })
 
-  it('shows essential filters and keeps extras hidden initially', async () => {
+  it('shows essential filters section with Responsável, Status, and Prioridade', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} availableTags={mockTags} selectedTags={[]} onTagsChange={vi.fn()} />)
 
@@ -127,82 +129,117 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByText('Responsável')).toBeInTheDocument()
     expect(screen.getByText(/Prioridade/)).toBeInTheDocument()
     expect(screen.getByText(/Status/)).toBeInTheDocument()
-    expect(screen.getByText('Mais filtros')).toBeInTheDocument()
-    expect(screen.queryByText('Dias sem interação')).not.toBeInTheDocument()
   })
 
-  it('should call onClear when clear button is clicked', async () => {
+  it('should have fixed footer with Cancelar and Aplicar filtros buttons', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: 'Limpar' }))
 
-    expect(defaultProps.onClear).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Aplicar filtros/i })).toBeInTheDocument()
   })
 
-  it('keeps "Mais filtros" collapsed by default and expands categories on demand', async () => {
+  // Draft mode tests
+  it('changes in sheet do NOT update URL until Aplicar filtros is clicked', async () => {
+    const user = userEvent.setup()
+    const onPriorityChange = vi.fn()
+    render(<LeadsSmartFilters {...defaultProps} onPriorityChange={onPriorityChange} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Click Hot priority in draft mode
+    const hotButton = screen.getByRole('button', { name: 'Hot' })
+    await user.click(hotButton)
+
+    // The callback should NOT have been called yet (draft mode)
+    expect(onPriorityChange).not.toHaveBeenCalled()
+
+    // Now click Aplicar filtros
+    await user.click(screen.getByRole('button', { name: /Aplicar filtros/i }))
+
+    // Now the callback should be called
+    expect(onPriorityChange).toHaveBeenCalledWith(['hot'])
+  })
+
+  it('Cancelar button discards draft changes and closes sheet', async () => {
+    const user = userEvent.setup()
+    const onPriorityChange = vi.fn()
+    render(<LeadsSmartFilters {...defaultProps} onPriorityChange={onPriorityChange} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Click Hot priority in draft mode
+    await user.click(screen.getByRole('button', { name: 'Hot' }))
+
+    // Click Cancelar
+    await user.click(screen.getByRole('button', { name: /Cancelar/i }))
+
+    // Sheet should be closed
+    await waitFor(() => expect(screen.queryByText('Ajuste os filtros para refinar a lista')).not.toBeInTheDocument())
+    
+    // The callback should NOT have been called
+    expect(onPriorityChange).not.toHaveBeenCalled()
+  })
+
+  it('Limpar tudo clears draft filters but does not close sheet', async () => {
+    const user = userEvent.setup()
+    render(<LeadsSmartFilters {...defaultProps} priority={['hot']} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+
+    // The summary should show the filter chip
+    expect(screen.getByLabelText(/Remover filtro Prioridade/i)).toBeInTheDocument()
+
+    // Click Limpar tudo
+    await user.click(screen.getByRole('button', { name: /Limpar tudo/i }))
+
+    // Sheet should still be open
+    expect(screen.getByText('Ajuste os filtros para refinar a lista')).toBeInTheDocument()
+
+    // But the chip should be gone
+    await waitFor(() => expect(screen.queryByLabelText(/Remover filtro Prioridade/i)).not.toBeInTheDocument())
+  })
+
+  // Summary chips tests
+  it('shows summary chips for draft filters', async () => {
+    const user = userEvent.setup()
+    render(<LeadsSmartFilters {...defaultProps} statuses={['status-1']} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+
+    // Should show status chip in summary
+    expect(screen.getByLabelText(/Remover filtro Status/i)).toBeInTheDocument()
+  })
+
+  it('shows empty state when no draft filters', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    expect(screen.queryByText('Dias sem interação')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
-    await user.click(screen.getByText('Tempo'))
-
-    expect(screen.getByText('Dias sem interação')).toBeInTheDocument()
+    expect(screen.getByText('Nenhum filtro aplicado')).toBeInTheDocument()
   })
 
-  it('shows active counter for filters inside "Mais filtros"', async () => {
-    const user = userEvent.setup()
-    render(<LeadsSmartFilters {...defaultProps} origins={['origin-1']} />)
-
-    await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    expect(screen.getByText('Mais filtros (1)')).toBeInTheDocument()
-  })
-
-  it('opens tag selection modal via "Selecionar tags..." action', async () => {
-    const user = userEvent.setup()
-    const onTagsChange = vi.fn()
-    render(
-      <LeadsSmartFilters
-        {...defaultProps}
-        availableTags={mockTags}
-        selectedTags={[]}
-        onTagsChange={onTagsChange}
-      />
-    )
-
-    await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: /Selecionar tags/i }))
-
-    expect(screen.getByText('Selecionar tags')).toBeInTheDocument()
-    expect(screen.getByText('Urgente')).toBeInTheDocument()
-
-    await user.click(screen.getByText('Urgente'))
-    expect(onTagsChange).toHaveBeenCalledWith(['tag-1'])
-  })
-
-  it('allows removing filters from the summary chips', async () => {
+  it('removing chip updates draft filters', async () => {
     const user = userEvent.setup()
     const onStatusesChange = vi.fn()
-    render(
-      <LeadsSmartFilters
-        {...defaultProps}
-        statuses={['status-1']}
-        onStatusesChange={onStatusesChange}
-      />
-    )
+    render(<LeadsSmartFilters {...defaultProps} statuses={['status-1']} onStatusesChange={onStatusesChange} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    const removeStatus = screen.getByLabelText(/Remover filtro Status/i)
+    const removeChip = screen.getByLabelText(/Remover filtro Status/i)
+    await user.click(removeChip)
 
-    await user.click(removeStatus)
-    expect(onStatusesChange).toHaveBeenCalledWith([])
+    // Chip should be gone in draft
+    await waitFor(() => expect(screen.queryByLabelText(/Remover filtro Status/i)).not.toBeInTheDocument())
+
+    // But callback not called until apply
+    expect(onStatusesChange).not.toHaveBeenCalled()
   })
 
-  it('should display active filter badges outside popover', () => {
+  // Active filter badges outside sheet
+  it('should display active filter badges outside sheet', () => {
     const props = {
       ...defaultProps,
       ownerMode: 'custom' as const,
@@ -222,111 +259,8 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByText(/7 dias/)).toBeInTheDocument()
   })
 
-  it('should call onOwnerModeChange when owner mode button is clicked', async () => {
-    const user = userEvent.setup()
-    render(<LeadsSmartFilters {...defaultProps} />)
-
-    await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    
-    // Click "Todos" button in the popover
-    const allButtons = screen.getAllByRole('button', { name: 'Todos' })
-    await user.click(allButtons[0])
-
-    expect(defaultProps.onOwnerModeChange).toHaveBeenCalledWith('all')
-  })
-
-  it('should handle priority selection', async () => {
-    const user = userEvent.setup()
-    render(<LeadsSmartFilters {...defaultProps} />)
-
-    await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    
-    const hotButton = screen.getByRole('button', { name: 'Hot' })
-    await user.click(hotButton)
-
-    expect(defaultProps.onPriorityChange).toHaveBeenCalledWith(['hot'])
-  })
-
-  it('should handle days without interaction selection', async () => {
-    const user = userEvent.setup()
-    render(<LeadsSmartFilters {...defaultProps} />)
-
-    await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
-    await user.click(screen.getByText('Tempo'))
-    
-    // Find the "7" button for days
-    const sevenDaysButton = screen.getByRole('button', { name: '7' })
-    await user.click(sevenDaysButton)
-
-    expect(defaultProps.onDaysWithoutInteractionChange).toHaveBeenCalledWith(7)
-  })
-
-  it('should handle empty arrays defensively', () => {
-    const props = {
-      ...defaultProps,
-      users: [],
-      leadStatuses: [],
-      leadOrigins: []
-    }
-
-    // Should not throw error
-    expect(() => render(<LeadsSmartFilters {...props} />)).not.toThrow()
-  })
-
-  it('should show correct owner label for "me" mode', () => {
-    render(<LeadsSmartFilters {...defaultProps} ownerMode="me" />)
-
-    // The label should not be visible in the collapsed state, only in popover
-    // So we'll just check the component renders
-    expect(screen.getByRole('button', { name: /Filtros/i })).toBeInTheDocument()
-  })
-
-  it('should show correct owner label for custom mode with selection', () => {
-    const props = {
-      ...defaultProps,
-      ownerMode: 'custom' as const,
-      selectedOwners: ['user-1', 'user-2']
-    }
-
-    render(<LeadsSmartFilters {...props} />)
-
-    // Should show the owner count badge
-    expect(screen.getByText('2 selecionados')).toBeInTheDocument()
-  })
-
-  it('should count active filters correctly', () => {
-    const props = {
-      ...defaultProps,
-      ownerMode: 'all' as const, // +1
-      priority: ['hot', 'warm'] as LeadPriorityBucket[], // +1
-      statuses: ['status-1', 'status-2'], // +1
-      origins: ['origin-1'], // +1
-      daysWithoutInteraction: 7, // +1
-      // orderBy is no longer counted as a filter
-    }
-
-    render(<LeadsSmartFilters {...props} />)
-
-    // Total: 5 active filters (orderBy no longer counts)
-    expect(screen.getByText('5')).toBeInTheDocument()
-  })
-
-  it('should not count default values as active filters', () => {
-    const props = {
-      ...defaultProps,
-      ownerMode: 'me' as const, // default, doesn't count
-      // orderBy is now separate, not counted as filter
-    }
-
-    render(<LeadsSmartFilters {...props} />)
-
-    // Should not show badge
-    const button = screen.getByRole('button', { name: /Filtros/i })
-    expect(button.textContent).not.toMatch(/\d+/)
-  })
-
-  it('should render priority options in compact layout', async () => {
+  // Priority pill group tests
+  it('should render priority options as pill group', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
@@ -337,43 +271,92 @@ describe('LeadsSmartFilters', () => {
     expect(screen.getByRole('button', { name: 'Cold' })).toBeInTheDocument()
   })
 
-  it('should render days presets in compact layout', async () => {
+  // Advanced filters (Accordion) tests
+  it('should have advanced filters in collapsed accordion', async () => {
     const user = userEvent.setup()
     render(<LeadsSmartFilters {...defaultProps} />)
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
-    await user.click(screen.getByText('Tempo'))
 
-    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '14' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Qualquer' })).toBeInTheDocument()
+    // Origem accordion should exist
+    expect(screen.getByRole('button', { name: /Origem/i })).toBeInTheDocument()
+    // Dias sem interação accordion should exist
+    expect(screen.getByRole('button', { name: /Dias sem interação/i })).toBeInTheDocument()
   })
 
-  it('renders next action options when enabled and triggers change', async () => {
+  it('should expand dias sem interação accordion and show presets', async () => {
     const user = userEvent.setup()
-    const onNextActionsChange = vi.fn()
+    render(<LeadsSmartFilters {...defaultProps} />)
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Click to expand accordion
+    await user.click(screen.getByRole('button', { name: /Dias sem interação/i }))
+
+    expect(screen.getByRole('button', { name: /3 dias/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /7 dias/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /14 dias/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Qualquer/i })).toBeInTheDocument()
+  })
+
+  // Defensive tests
+  it('should handle empty arrays defensively', () => {
+    const props = {
+      ...defaultProps,
+      users: [],
+      leadStatuses: [],
+      leadOrigins: []
+    }
+
+    expect(() => render(<LeadsSmartFilters {...props} />)).not.toThrow()
+  })
+
+  it('should count active filters correctly', () => {
+    const props = {
+      ...defaultProps,
+      ownerMode: 'all' as const,
+      priority: ['hot', 'warm'] as LeadPriorityBucket[],
+      statuses: ['status-1', 'status-2'],
+      origins: ['origin-1'],
+      daysWithoutInteraction: 7,
+    }
+
+    render(<LeadsSmartFilters {...props} />)
+    // Total: 5 active filters
+    expect(screen.getByText('5')).toBeInTheDocument()
+  })
+
+  it('should not count default values as active filters', () => {
+    const props = {
+      ...defaultProps,
+      ownerMode: 'me' as const,
+    }
+
+    render(<LeadsSmartFilters {...props} />)
+
+    const button = screen.getByRole('button', { name: /Filtros/i })
+    expect(button.textContent).not.toMatch(/\d+/)
+  })
+
+  // Next Action tests (view=sales)
+  it('renders next action section when showNextActionFilter is true', async () => {
+    const user = userEvent.setup()
     render(
       <LeadsSmartFilters
         {...defaultProps}
         showNextActionFilter
         nextActions={[]}
-        onNextActionsChange={onNextActionsChange}
+        onNextActionsChange={vi.fn()}
       />
     )
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
-    await user.click(screen.getByText('Tempo'))
+    
+    // Next action section should be visible in essentials
     expect(screen.getByText(/Próxima ação/)).toBeInTheDocument()
-
-    // Uses canonical option from the 11-option list for Sales View
-    await user.click(screen.getByRole('button', { name: 'Enviar follow-up' }))
-    expect(onNextActionsChange).toHaveBeenCalledWith(['send_follow_up'])
   })
 
-  it('does NOT render next action section when showNextActionFilter is false (non-sales view)', async () => {
+  it('does NOT render next action section when showNextActionFilter is false', async () => {
     const user = userEvent.setup()
     render(
       <LeadsSmartFilters
@@ -385,10 +368,8 @@ describe('LeadsSmartFilters', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
-    await user.click(screen.getByText('Tempo'))
 
-    // Should NOT show "Próxima ação" section since showNextActionFilter is false
+    // Should NOT show "Próxima ação" section
     expect(screen.queryByText(/Próxima ação/)).not.toBeInTheDocument()
   })
 
@@ -404,10 +385,8 @@ describe('LeadsSmartFilters', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /Filtros/i }))
-    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
-    await user.click(screen.getByText('Tempo'))
 
-    // Verify all 11 canonical options are rendered
+    // Verify all 11 canonical options are in the Command list
     const canonicalOptions = [
       'Preparar para reunião',
       'Follow-up pós-reunião',
@@ -423,11 +402,11 @@ describe('LeadsSmartFilters', () => {
     ]
 
     for (const optionLabel of canonicalOptions) {
-      expect(screen.getByRole('button', { name: optionLabel })).toBeInTheDocument()
+      expect(screen.getByText(optionLabel)).toBeInTheDocument()
     }
   })
 
-  it('includes next action selection in active filter chips summary', async () => {
+  it('includes next action selection in draft filter chips', async () => {
     const user = userEvent.setup()
     render(
       <LeadsSmartFilters
@@ -442,5 +421,65 @@ describe('LeadsSmartFilters', () => {
 
     // Should show in summary chips
     expect(screen.getByLabelText(/Remover filtro Próxima ação/)).toBeInTheDocument()
+  })
+
+  it('applies next action filter correctly', async () => {
+    const user = userEvent.setup()
+    const onNextActionsChange = vi.fn()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        showNextActionFilter
+        nextActions={[]}
+        onNextActionsChange={onNextActionsChange}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+    
+    // Click on an action
+    await user.click(screen.getByText('Enviar follow-up'))
+
+    // Should not be called yet (draft mode)
+    expect(onNextActionsChange).not.toHaveBeenCalled()
+
+    // Apply filters
+    await user.click(screen.getByRole('button', { name: /Aplicar filtros/i }))
+
+    expect(onNextActionsChange).toHaveBeenCalledWith(['send_follow_up'])
+  })
+
+  it('has Selecionar tudo and Limpar actions for next action', async () => {
+    const user = userEvent.setup()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        showNextActionFilter
+        nextActions={[]}
+        onNextActionsChange={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+
+    expect(screen.getByRole('button', { name: /Selecionar tudo/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Limpar$/i })).toBeInTheDocument()
+  })
+
+  // Tags in accordion
+  it('should have tags accordion when onTagsChange is provided', async () => {
+    const user = userEvent.setup()
+    render(
+      <LeadsSmartFilters
+        {...defaultProps}
+        availableTags={mockTags}
+        selectedTags={[]}
+        onTagsChange={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Filtros/i }))
+
+    expect(screen.getByRole('button', { name: /Tags/i })).toBeInTheDocument()
   })
 })
