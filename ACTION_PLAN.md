@@ -1,14 +1,139 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Sticky Header + Ações em Menu Kebab)
+## 🚧 Status: ✅ Concluído (Remove Sticky + Add Bottom Bar + Ordering in Filter Panel)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Sticky header e consolidação de ações em menu "..."
+**Escopo:** Frontend - Remoção do sticky header, adição de Bottom Bar, e Ordenação no painel de filtros
 
 ---
 
-## 🆕 Iteração atual - Sticky Header (2 linhas) + Ações Rápidas no Menu "..."
+## 🆕 Iteração atual - Remove Sticky + Bottom Bar + Ordenação no Painel
+
+### 🎯 Objetivo
+1. **Restaurar "Ordenação" no Painel de Filtros**: Adicionar bloco de ordenação no Sheet de filtros, funcionando via draft + aplicar
+2. **Remover Sticky do topo**: Desfazer comportamento sticky que causava sobreposição com cabeçalho da tabela
+3. **Adicionar Bottom Bar**: Renderizar controles idênticos ao topo após a listagem
+
+### ✅ Tarefas Concluídas
+- [x] **A) Ordenação no LeadsFilterPanel (Sheet)**
+  - Adicionado `orderBy` ao estado de draft (`DraftFilters` interface)
+  - Inicializado `draftFilters.orderBy` a partir de `appliedFilters.orderBy`
+  - Adicionada seção "Ordenação" com AccordionItem dentro do painel
+  - Opções de ordenação renderizadas como botões selecionáveis
+  - `actions.setOrderBy(draftFilters.orderBy)` chamado no "Aplicar filtros"
+  - Seção só aparece quando `showNextActionFilter=true` (view=sales)
+  - Importado `ORDER_BY_OPTIONS` de `LeadsSmartFilters.tsx`
+
+- [x] **B) Remoção do Sticky Header**
+  - Removido wrapper `sticky top-16 z-40` das linhas 1+2
+  - Removido `data-testid="leads-sticky-header"`
+  - Extraído componente reutilizável `LeadsListControls.tsx`
+  - Atualizado teste `LeadsListPage.sticky.test.tsx` para refletir remoção
+
+- [x] **C) Adição do Bottom Bar**
+  - Criado componente `LeadsListControls.tsx` com prop `position: 'top' | 'bottom'`
+  - Renderizado `LeadsListControls` no topo (position="top") e no final (position="bottom")
+  - Bottom Bar renderiza após o conteúdo da lista (após tabela/cards/kanban)
+  - Adicionado `data-testid="leads-bottom-bar"` para identificação
+  - Border-top aplicado automaticamente via prop position
+
+### Arquivos Criados
+- `src/features/leads/components/LeadsListControls.tsx` - Componente reutilizável para controles top/bottom
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Adicionado seção de Ordenação + orderBy no draft
+- `src/features/leads/pages/LeadsListPage.tsx` - Refatorado para usar LeadsListControls top e bottom
+- `tests/unit/features/leads/components/LeadsFilterPanel.test.tsx` - Adicionados 5 testes para Ordenação
+- `tests/unit/pages/LeadsListPage.sticky.test.tsx` - Atualizado para refletir remoção do sticky
+
+### Layout Implementado (Sem Sticky + Bottom Bar)
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│ HEADER PRINCIPAL (sticky top-0 z-50, h-16)                            │
+│ PipeDesk | Dashboard | Leads | ...                                    │
+├───────────────────────────────────────────────────────────────────────┤
+│ CARD PRINCIPAL (border rounded-xl)                                    │
+│ ┌─────────────────────────────────────────────────────────────────────┤
+│ │ TOP BAR (não-sticky) data-testid="leads-top-bar"                   │
+│ │ LINHA 1: [Filtros] ... [Lista][Cards][Kanban] [+ Novo Lead]        │
+│ ├─────────────────────────────────────────────────────────────────────┤
+│ │ LINHA 2: Total: X | Registros: 10 ▼ | 1-10 | < >                   │
+│ └─────────────────────────────────────────────────────────────────────┤
+├───────────────────────────────────────────────────────────────────────┤
+│ TABELA / CARDS / KANBAN (scroll normal)                               │
+│ ...                                                                   │
+│ ...                                                                   │
+├───────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┤
+│ │ BOTTOM BAR (não-sticky) data-testid="leads-bottom-bar"             │
+│ │ LINHA 1: [Filtros] ... [Lista][Cards][Kanban] [+ Novo Lead]        │
+│ ├─────────────────────────────────────────────────────────────────────┤
+│ │ LINHA 2: Total: X | Registros: 10 ▼ | 1-10 | < >                   │
+│ └─────────────────────────────────────────────────────────────────────┤
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### Estrutura do Painel de Filtros (com Ordenação)
+
+```
+┌───────────────────────────────────────────────────────┐
+│ HEADER                                                │
+│ 🔍 Filtrar Leads                                      │
+│ Ajuste os filtros para refinar a lista               │
+├───────────────────────────────────────────────────────┤
+│ ▼ Filtros definidos pelo sistema                      │
+│   ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
+│   ├─ Status: [Selecionar status... ▼]                │
+│   ├─ Prioridade: [Hot] [Warm] [Cold]                 │
+│   ├─ Origem: [Selecionar origem... ▼]                │
+│   └─ Tags: [Selecionar tags... ▼]                    │
+├───────────────────────────────────────────────────────┤
+│ ▼ Atividade do lead                                   │
+│   ├─ Dias sem interação: [3] [7] [14] [Qualquer]     │
+│   └─ Próxima ação: [Selecionar... ▼]                 │
+├───────────────────────────────────────────────────────┤
+│ ▼ 🔀 Ordenação (NOVO - só view=sales)                 │
+│   └─ [Prioridade] [Última interação] [Criação]       │
+│      [Status] [Próxima ação] [Responsável]           │
+├───────────────────────────────────────────────────────┤
+│ FOOTER (fixo)                                         │
+│ [Limpar]                      [Aplicar filtros (N)]  │
+└───────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Painel de filtros mostra seção "Ordenação" (apenas em view=sales)
+- [ ] Selecionar ordenação no draft NÃO atualiza URL imediatamente
+- [ ] "Aplicar filtros" comita ordenação e atualiza URL com `order_by=...`
+- [ ] Topo NÃO é sticky e não sobrepõe cabeçalho da lista
+- [ ] Scroll na lista → topo rola junto com o conteúdo
+- [ ] Bottom Bar aparece ao final da listagem
+- [ ] Paginação no Bottom Bar funciona (prev/next atualizam lista)
+- [ ] Filtros no Bottom Bar funcionam igual ao topo
+- [ ] View toggles funcionam em ambos top e bottom
+- [ ] Responsivo: controles visíveis em mobile e desktop
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~350 |
+| Linhas removidas | ~130 |
+| Arquivos modificados | 4 |
+| Arquivos criados | 1 |
+| Testes adicionados | 9 |
+| Testes modificados | 2 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de layout, sem alteração de lógica de negócio)
+
+---
+
+## ✅ Iteração anterior - Sticky Header (2 linhas) + Ações Rápidas no Menu "..."
 
 ### 🎯 Objetivo
 1. Tornar as duas linhas do topo (filtros + paginação) **sticky** durante scroll

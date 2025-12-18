@@ -70,7 +70,7 @@ describe('LeadsFilterPanel', () => {
     onOpenChange: vi.fn(),
     appliedFilters: defaultAppliedFilters,
     actions: mockActions,
-    users: [{ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'sales', companyId: 'company-1', createdAt: '', updatedAt: '' }],
+    users: [{ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'analyst' as const, companyId: 'company-1', createdAt: '', updatedAt: '' }],
     leadStatuses: [{ id: 'status-1', code: 'new', label: 'Novo' }],
     leadOrigins: [{ id: 'origin-1', code: 'website', label: 'Website' }],
     availableTags: [{ id: 'tag-1', name: 'Hot Lead', color: '#ff0000', companyId: 'company-1' }],
@@ -170,16 +170,19 @@ describe('LeadsFilterPanel', () => {
   it('shows next action filter when showNextActionFilter is true', () => {
     render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
     
-    expect(screen.getByText('Próxima ação')).toBeInTheDocument()
+    // The next action filter appears as a label in the Activity section
+    // Use getAllByText to account for the ordering option as well
+    const nextActionLabels = screen.getAllByText('Próxima ação')
+    expect(nextActionLabels.length).toBeGreaterThanOrEqual(1)
   })
 
   it('hides next action filter when showNextActionFilter is false', () => {
     render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={false} />)
     
-    // The label for next action should not be in the document
+    // The label for next action should not be in the document when the filter is hidden
     const nextActionLabels = screen.queryAllByText('Próxima ação')
-    // It might appear as accordion section, so check for the filter-specific one
-    expect(nextActionLabels.length).toBeLessThanOrEqual(1) // Only section header, no filter
+    // When showNextActionFilter=false, neither the filter nor the ordering section shows
+    expect(nextActionLabels.length).toBe(0)
   })
 
   it('applies multiple filter changes in a single apply action', () => {
@@ -196,5 +199,50 @@ describe('LeadsFilterPanel', () => {
     
     expect(mockActions.setOwnerMode).toHaveBeenCalledWith('me')
     expect(mockActions.setMulti).toHaveBeenCalledWith('priority', ['hot'])
+  })
+
+  describe('Ordering Section', () => {
+    it('renders ordering section when showNextActionFilter is true', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      expect(screen.getByText('Ordenação')).toBeInTheDocument()
+    })
+
+    it('hides ordering section when showNextActionFilter is false', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={false} />)
+      
+      expect(screen.queryByText('Ordenação')).not.toBeInTheDocument()
+    })
+
+    it('renders all ordering options', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // Check some ordering options are rendered
+      expect(screen.getByTestId('ordering-option-priority')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-option-last_interaction')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-option-created_at')).toBeInTheDocument()
+    })
+
+    it('applies orderBy when apply button is clicked', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // Click an ordering option
+      fireEvent.click(screen.getByTestId('ordering-option-last_interaction'))
+      
+      // Click apply
+      fireEvent.click(screen.getByTestId('filter-panel-apply'))
+      
+      expect(mockActions.setOrderBy).toHaveBeenCalledWith('last_interaction')
+    })
+
+    it('does not update URL immediately when ordering is changed (draft mode)', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // Click an ordering option
+      fireEvent.click(screen.getByTestId('ordering-option-created_at'))
+      
+      // Before apply, setOrderBy should NOT be called
+      expect(mockActions.setOrderBy).not.toHaveBeenCalled()
+    })
   })
 })
