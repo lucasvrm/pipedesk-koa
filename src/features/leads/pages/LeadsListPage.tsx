@@ -11,7 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, LayoutGrid, Globe, ChevronDown, Trash2, Columns3, Tag as TagIcon } from 'lucide-react'
+import { Plus, LayoutGrid, Globe, ChevronDown, Trash2, Columns3, Tag as TagIcon, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -53,18 +53,12 @@ import {
   recordSalesViewSuccess
 } from '../utils/salesViewFailureTracker'
 import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesViewErrorGuard'
-import { DataToolbar } from '@/components/DataToolbar'
-import { LeadsOrderByDropdown } from '../components/LeadsOrderByDropdown'
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
-import { LeadsSummaryCards, useSummaryCardsState } from '../components/LeadsSummaryCards'
-import { useLeadMonthlyMetrics } from '@/hooks/useLeadMonthlyMetrics'
-import { ChevronUp } from 'lucide-react'
 import { useLeadsFiltersSearchParams } from '../hooks/useLeadsFiltersSearchParams'
-import { LeadsFiltersBar, LeadsFiltersChips } from '../components/LeadsFiltersBar'
+import { LeadsFilterPanel } from '../components/LeadsFilterPanel'
 import type { LeadOrderBy } from '../components/LeadsSmartFilters'
 
-// View types used by DataToolbar and internal view management
-type DataToolbarView = 'list' | 'cards' | 'kanban'
+// View types used internally
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
 
 const PRIORITY_OPTIONS: LeadPriorityBucket[] = ['hot', 'warm', 'cold']
@@ -77,8 +71,8 @@ export default function LeadsListPage() {
   const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const { data: users = [] } = useUsers()
   
-  // Summary cards collapse state (managed via hook for external toggle rendering)
-  const { isCollapsed: isSummaryCollapsed, handleToggle: toggleSummary } = useSummaryCardsState()
+  // Filter panel state
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
@@ -261,17 +255,6 @@ export default function LeadsListPage() {
     enabled: currentView === 'sales'
   })
 
-  // Fetch monthly metrics for created/qualified counts
-  // This is separate from the paginated list to ensure accurate counts
-  const { 
-    data: monthlyMetrics, 
-    isLoading: isMonthlyMetricsLoading, 
-    isError: isMonthlyMetricsError 
-  } = useLeadMonthlyMetrics({
-    filters: currentView === 'sales' ? salesFilters : undefined,
-    enabled: true
-  })
-
   // Wrapper to track preferred fallback when user switches views during Sales View errors
   const setViewMode = useCallback((mode: InternalViewMode) => {
     // If switching away from sales while it's in error, save this as preferred fallback
@@ -300,22 +283,6 @@ export default function LeadsListPage() {
   const salesLeads = ensureArray<LeadSalesViewItem>(salesViewData?.data)
   const activeLeads = (currentView === 'sales' ? salesLeads : leads) || []
   const isActiveLoading = currentView === 'sales' ? isSalesLoading || isSalesFetching : isLoading
-
-  const leadMetrics = useMemo(() => {
-    // Get monthly metrics from the dedicated hook (accurate counts from Supabase)
-    const createdThisMonth = monthlyMetrics?.createdThisMonth ?? 0
-    const qualifiedThisMonth = monthlyMetrics?.qualifiedThisMonth ?? 0
-
-    if (currentView === 'sales') {
-      const total = salesViewData?.pagination?.total ?? salesLeads.length
-      return { openLeads: total, createdThisMonth, qualifiedThisMonth }
-    }
-
-    const dataset = (leads || []) as Lead[]
-    const openLeads = dataset.filter(l => !['qualified', 'disqualified'].includes(l.status)).length || 0
-
-    return { openLeads, createdThisMonth, qualifiedThisMonth }
-  }, [leads, monthlyMetrics, salesLeads.length, salesViewData?.pagination?.total, currentView])
 
   // Clear selection when filters change
   useEffect(() => {
@@ -572,31 +539,7 @@ export default function LeadsListPage() {
     );
   }
 
-  // Map internal viewMode to DataToolbar's expected values
-  const dataToolbarView: DataToolbarView = useMemo(() => {
-    if (currentView === 'sales') return 'list'
-    if (currentView === 'grid') return 'cards'
-    return 'kanban'
-  }, [currentView])
-
-  const handleDataToolbarViewChange = useCallback((view: string) => {
-    if (view === 'list') handleViewChange('sales')
-    else if (view === 'cards') handleViewChange('grid')
-    else if (view === 'kanban') handleViewChange('kanban')
-  }, [handleViewChange])
-
-  // --- Layout Sections ---
-
-  const actions = (
-    <RequirePermission permission="leads.create">
-      <Button onClick={() => setIsCreateOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" />
-        Novo Lead
-      </Button>
-    </RequirePermission>
-  )
-
-  const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || searchTerm || normalizedTagFilter.length > 0
+  const hasFilters = normalizedStatusFilter !== 'all' || normalizedOriginFilter !== 'all' || searchTerm || normalizedTagFilter.length > 0 || hasActiveFilters
 
   const showFiltersEmptyState =
     currentView !== 'kanban' && hasFilters && !isActiveLoading && activeLeads.length === 0
@@ -609,25 +552,11 @@ export default function LeadsListPage() {
           Seus filtros podem estar ocultando resultados. Tente limpar os filtros para visualizar todos os leads novamente.
         </p>
       </div>
-      <Button variant="secondary" onClick={clearFilters}>
+      <Button variant="secondary" onClick={() => { filterActions.clearAll(); clearFilters(); }}>
         Limpar filtros
       </Button>
     </div>
   ) : null
-
-  const metricsSection = (
-    <LeadsSummaryCards
-      openLeads={leadMetrics.openLeads}
-      createdThisMonth={leadMetrics.createdThisMonth}
-      qualifiedThisMonth={leadMetrics.qualifiedThisMonth}
-      isLoading={isActiveLoading}
-      isMetricsLoading={isMonthlyMetricsLoading}
-      isMetricsError={isMonthlyMetricsError}
-      isCollapsed={isSummaryCollapsed}
-      onToggle={toggleSummary}
-      hideToggle
-    />
-  )
 
   const handlePageChange = useCallback((page: number) => {
     if (currentView === 'sales') {
@@ -642,216 +571,8 @@ export default function LeadsListPage() {
     }
   }, [currentView, filterActions])
 
-  // Use filterActions.setOrderBy for sales view order changes
-  const handleOrderByChange = useCallback(
-    (value: LeadOrderBy) => {
-      filterActions.setOrderBy(value)
-    },
-    [filterActions]
-  )
-
   const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
   const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
-
-  // Unified DataToolbar for all views
-  const unifiedToolbar = useMemo(() => {
-    const newLeadButton = (
-      <RequirePermission permission="leads.create">
-        <Button onClick={() => setIsCreateOpen(true)} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Lead
-        </Button>
-      </RequirePermission>
-    )
-
-    const bulkDeleteButton = selectedIds.length > 0 ? (
-      <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
-        <Trash2 className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
-      </Button>
-    ) : null
-
-    // For Sales view, use inline LeadsFiltersBar (URL-first filters)
-    if (currentView === 'sales') {
-      return (
-        <DataToolbar
-          searchTerm={appliedFilters.search}
-          onSearchChange={filterActions.setSearch}
-          currentView={dataToolbarView}
-          onViewChange={handleDataToolbarViewChange}
-          actions={
-            <>
-              {bulkDeleteButton}
-              {newLeadButton}
-            </>
-          }
-        >
-          <LeadsOrderByDropdown
-            orderBy={appliedFilters.orderBy}
-            onOrderByChange={handleOrderByChange}
-          />
-          <LeadsFiltersBar
-            appliedFilters={appliedFilters}
-            actions={filterActions}
-            users={users}
-            leadStatuses={activeLeadStatuses}
-            leadOrigins={activeLeadOrigins}
-            availableTags={tags}
-            showNextActionFilter
-            activeFiltersCount={activeFiltersCount}
-          />
-        </DataToolbar>
-      )
-    }
-
-    // For Grid/Kanban views, use standard filters
-    return (
-      <DataToolbar
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-        currentView={dataToolbarView}
-        onViewChange={handleDataToolbarViewChange}
-        actions={
-          <>
-            {bulkDeleteButton}
-            {newLeadButton}
-          </>
-        }
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9">
-              <span className="truncate">
-                {statusFilter === 'all'
-                  ? 'Todos Status'
-                  : safeString(
-                      leadStatuses.find(s => s.id === statusFilter)?.label,
-                      'Status'
-                    )}
-              </span>
-              <ChevronDown className="ml-1 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[200px]">
-            <DropdownMenuRadioGroup
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value)}
-            >
-              <DropdownMenuRadioItem value="all">
-                Todos Status
-              </DropdownMenuRadioItem>
-              {leadStatuses
-                .filter(s => s.isActive)
-                .map((status) => (
-                  <DropdownMenuRadioItem key={status.id} value={status.id}>
-                    {safeString(status.label, status.code)}
-                  </DropdownMenuRadioItem>
-                ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9">
-              <span className="truncate">
-                {originFilter === 'all'
-                  ? 'Todas Origens'
-                  : safeString(
-                      leadOrigins.find(o => o.id === originFilter)?.label,
-                      'Origem'
-                    )}
-              </span>
-              <ChevronDown className="ml-1 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[220px]">
-            <DropdownMenuRadioGroup
-              value={originFilter}
-              onValueChange={(value) => setOriginFilter(value)}
-            >
-              <DropdownMenuRadioItem value="all">
-                Todas Origens
-              </DropdownMenuRadioItem>
-              {leadOrigins
-                .filter(o => o.isActive)
-                .map((origin) => (
-                  <DropdownMenuRadioItem key={origin.id} value={origin.id}>
-                    {safeString(origin.label, origin.code)}
-                  </DropdownMenuRadioItem>
-                ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {tagsEnabled && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={`h-9 border-dashed ${tagFilter.length > 0 ? 'bg-primary/5 border-primary text-primary' : ''}`}>
-                <TagIcon className="mr-2 h-4 w-4" /> Tags {tagFilter.length > 0 && `(${tagFilter.length})`}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-3" align="start" side="bottom" sideOffset={8} alignOffset={0} avoidCollisions={true} collisionPadding={8}>
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">Filtrar por Tags</Label>
-                <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
-                  {tags.map(tag => {
-                    const safeColor = safeString(tag.color, '#888')
-                    return (
-                      <Badge
-                        key={tag.id}
-                        variant={tagFilter.includes(tag.id) ? 'default' : 'outline'}
-                        className="cursor-pointer hover:opacity-80"
-                        onClick={() => {
-                          const newTags = tagFilter.includes(tag.id)
-                            ? tagFilter.filter(t => t !== tag.id)
-                            : [...tagFilter, tag.id];
-                          setTagFilter(newTags);
-                          setGridCurrentPage(1);
-                        }}
-                        style={tagFilter.includes(tag.id) ? { backgroundColor: safeColor, borderColor: safeColor } : { color: safeColor, borderColor: safeColor + '40' }}
-                      >
-                        {safeString(tag.name, 'Tag')}
-                      </Badge>
-                    )
-                  })}
-                  {tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag encontrada.</span>}
-                </div>
-                {tagFilter.length > 0 && (
-                  <Button variant="ghost" size="sm" className="w-full h-6 mt-2 text-xs" onClick={() => { setTagFilter([]); setGridCurrentPage(1); }}>
-                    Limpar Tags
-                  </Button>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>Limpar</Button>
-        )}
-      </DataToolbar>
-    )
-  }, [
-    activeFiltersCount,
-    activeLeadOrigins,
-    activeLeadStatuses,
-    appliedFilters,
-    clearFilters,
-    dataToolbarView,
-    filterActions,
-    handleDataToolbarViewChange,
-    handleOrderByChange,
-    hasFilters,
-    originFilter,
-    searchTerm,
-    selectedIds.length,
-    statusFilter,
-    tagFilter,
-    tags,
-    tagsEnabled,
-    users,
-    currentView
-  ])
 
   // Compute error UI for Sales View
   const salesErrorUI = useMemo(() => {
@@ -909,72 +630,150 @@ export default function LeadsListPage() {
   }, [currentView, isSalesError, salesError, setViewMode, refetchSalesView])
 
   const showPagination = currentView !== 'kanban' && totalLeads > 0
-  const paginationProps = {
-    currentPage,
-    totalPages,
-    currentPageSize,
-    totalLeads,
-    itemsPerPage,
-    onPageChange: handlePageChange,
-    onItemsPerPageChange: handleItemsPerPageChange
-  }
+
+  // Calculate pagination range
+  const safePageSize = currentPageSize || itemsPerPage
+  const startItem = Math.min((currentPage - 1) * safePageSize + 1, totalLeads)
+  const endItem = Math.min(currentPage * safePageSize, totalLeads)
 
   return (
-    <div className="p-6 min-h-screen bg-background space-y-6">
+    <div className="p-6 min-h-screen bg-background space-y-4">
       
-      {/* Header da Página (Título) */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-          <div className="flex items-center gap-4">
-            <p className="text-muted-foreground">Gerencie seus potenciais clientes.</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-              aria-expanded={!isSummaryCollapsed}
-              aria-controls="leads-summary-cards-content"
-              aria-label={isSummaryCollapsed ? 'Mostrar resumo de leads' : 'Minimizar resumo de leads'}
-              data-testid="leads-summary-toggle"
-              onClick={toggleSummary}
-            >
-              {isSummaryCollapsed ? (
-                <>
-                  <ChevronDown className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Mostrar resumo</span>
-                </>
-              ) : (
-                <>
-                  <ChevronUp className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Minimizar</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Metrics Section */}
-      {metricsSection}
-
-      {/* FIXED: O Container Unificado (Card Principal) */}
+      {/* Container Unificado (Card Principal) */}
       <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
         
-        {/* Toolbar no topo do Card */}
-        {unifiedToolbar}
+        {/* Line 1: Filter button (left) + View toggles + Create Lead button (right) */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-2">
+            {/* Filter button */}
+            <Button
+              variant={activeFiltersCount > 0 ? 'secondary' : 'outline'}
+              size="sm"
+              className="h-9 gap-2"
+              onClick={() => setIsFilterPanelOpen(true)}
+              data-testid="filter-panel-trigger"
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 rounded-full p-0 text-xs flex items-center justify-center">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+            
+            {/* Bulk delete button */}
+            {selectedIds.length > 0 && (
+              <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* View toggles */}
+            <div className="flex items-center p-1 bg-muted rounded-md border">
+              <Button
+                variant={currentView === 'sales' ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleViewChange('sales')}
+                title="Lista"
+              >
+                <AlignJustify className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={currentView === 'grid' ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleViewChange('grid')}
+                title="Cards"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleViewChange('kanban')}
+                title="Kanban"
+              >
+                <Kanban className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Create Lead button */}
+            <RequirePermission permission="leads.create">
+              <Button onClick={() => setIsCreateOpen(true)} size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Lead
+              </Button>
+            </RequirePermission>
+          </div>
+        </div>
 
-        {/* Filter chips for sales view */}
-        {currentView === 'sales' && activeFiltersCount > 0 && (
-          <LeadsFiltersChips
-            appliedFilters={appliedFilters}
-            actions={filterActions}
-            leadStatuses={activeLeadStatuses}
-            leadOrigins={activeLeadOrigins}
-            availableTags={tags}
-            users={users}
-            showNextActionFilter
-          />
-        )}
+        {/* Line 2: Total count (left) + Items per page + Range + Pagination icons (right) */}
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+          <div className="text-sm text-muted-foreground">
+            Total de registros: <span className="font-medium text-foreground">{totalLeads}</span>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Items per page dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden sm:inline">Registros por página:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 w-[70px] justify-between">
+                    <span>{itemsPerPage}</span>
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[100px]">
+                  <DropdownMenuRadioGroup
+                    value={String(itemsPerPage)}
+                    onValueChange={(value) => handleItemsPerPageChange(Number(value))}
+                  >
+                    <DropdownMenuRadioItem value="10">10</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="20">20</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="50">50</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Range display */}
+            {showPagination && (
+              <span className="text-sm text-muted-foreground">
+                {startItem}–{endItem}
+              </span>
+            )}
+
+            {/* Pagination icons */}
+            {showPagination && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Conteúdo da Lista dentro do Card */}
         <div className="flex-1 min-h-[500px]"> 
@@ -996,7 +795,7 @@ export default function LeadsListPage() {
                 Nenhum lead encontrado.
                 {hasFilters && (
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
-                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <Button variant="outline" size="sm" onClick={() => { filterActions.clearAll(); clearFilters(); }}>
                       Limpar filtros
                     </Button>
                     {currentView !== 'grid' && (
@@ -1121,14 +920,20 @@ export default function LeadsListPage() {
             </div>
           )}
         </div>
-
-        {/* Footer with pagination */}
-        {showPagination && (
-          <div className="border-t p-4">
-            <LeadsPaginationControls {...paginationProps} />
-          </div>
-        )}
       </div>
+
+      {/* Filter Panel (Zoho-style side panel) */}
+      <LeadsFilterPanel
+        isOpen={isFilterPanelOpen}
+        onOpenChange={setIsFilterPanelOpen}
+        appliedFilters={appliedFilters}
+        actions={filterActions}
+        users={users}
+        leadStatuses={activeLeadStatuses}
+        leadOrigins={activeLeadOrigins}
+        availableTags={tags}
+        showNextActionFilter={currentView === 'sales'}
+      />
 
       {/* Dialogs - Outside the card container */}
       <CreateLeadModal open={isCreateOpen} onOpenChange={setIsCreateOpen} />
