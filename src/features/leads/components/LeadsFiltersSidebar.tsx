@@ -153,8 +153,8 @@ export function LeadsFiltersSidebar({
   }, [draftFilters, actions, showNextActionFilter])
 
   // Compute visibility class based on isOpen
-  // When closed: hidden on all breakpoints via md:hidden
-  // When open: flex on md+ via md:flex
+  // When closed: hidden on all breakpoints (just 'hidden' class)
+  // When open: hidden on mobile (< md), flex on md+ (hidden md:flex)
   const visibilityClass = isOpen ? 'hidden md:flex' : 'hidden'
 
   return (
