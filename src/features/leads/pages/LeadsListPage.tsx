@@ -75,6 +75,9 @@ export default function LeadsListPage() {
     }
   }, [isMobile])
 
+  // Computed filters open state - reflects current open state across mobile/desktop
+  const isFiltersOpen = isMobile ? isFilterPanelOpen : isDesktopFiltersOpen
+
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
     if (!saved) return null
@@ -640,7 +643,7 @@ export default function LeadsListPage() {
   return (
     <div className="p-6 min-h-screen bg-background">
       {/* Main container with optional sidebar layout */}
-      <div className="flex gap-6">
+      <div className="flex gap-6 overflow-x-hidden">
         {/* Desktop Sidebar - controlled by toggle, only on non-mobile */}
         {!isMobile && (
           <LeadsFiltersSidebar
@@ -656,7 +659,7 @@ export default function LeadsListPage() {
         )}
 
         {/* Main content area */}
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 min-w-0 space-y-4">
           {/* Container Unificado (Card Principal) */}
           <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
             
@@ -667,6 +670,7 @@ export default function LeadsListPage() {
               onViewChange={handleViewChange}
               activeFiltersCount={activeFiltersCount}
               onOpenFilterPanel={handleToggleFilters}
+              isFiltersOpen={isFiltersOpen}
               selectedIds={selectedIds}
               onBulkDelete={() => setIsBulkDeleteOpen(true)}
               onCreateLead={() => setIsCreateOpen(true)}
@@ -834,6 +838,7 @@ export default function LeadsListPage() {
           onViewChange={handleViewChange}
           activeFiltersCount={activeFiltersCount}
           onOpenFilterPanel={handleToggleFilters}
+          isFiltersOpen={isFiltersOpen}
           selectedIds={selectedIds}
           onBulkDelete={() => setIsBulkDeleteOpen(true)}
           onCreateLead={() => setIsCreateOpen(true)}

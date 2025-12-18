@@ -23,6 +23,8 @@ interface LeadsListControlsProps {
   activeFiltersCount: number
   /** Handler to open filter panel */
   onOpenFilterPanel: () => void
+  /** Whether the filter panel/sidebar is currently open */
+  isFiltersOpen?: boolean
   /** Selected lead IDs for bulk actions */
   selectedIds: string[]
   /** Handler for bulk delete */
@@ -61,6 +63,7 @@ export function LeadsListControls({
   onViewChange,
   activeFiltersCount,
   onOpenFilterPanel,
+  isFiltersOpen = false,
   selectedIds,
   onBulkDelete,
   onCreateLead,
@@ -86,16 +89,20 @@ export function LeadsListControls({
         <div className="flex items-center gap-2">
           {/* Filter button */}
           <Button
-            variant={activeFiltersCount > 0 ? 'secondary' : 'outline'}
+            variant={isFiltersOpen ? 'default' : activeFiltersCount > 0 ? 'secondary' : 'outline'}
             size="sm"
             className="h-9 gap-2"
             onClick={onOpenFilterPanel}
+            aria-pressed={isFiltersOpen}
             data-testid={`filter-panel-trigger${testIdSuffix}`}
           >
             <Filter className="h-4 w-4" />
             Filtros
             {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 min-w-5 rounded-full p-0 text-xs flex items-center justify-center">
+              <Badge 
+                variant={isFiltersOpen ? 'outline' : 'secondary'} 
+                className="ml-1 h-5 min-w-5 rounded-full p-0 text-xs flex items-center justify-center"
+              >
                 {activeFiltersCount}
               </Badge>
             )}

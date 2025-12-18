@@ -69,8 +69,9 @@ describe('LeadsFiltersSidebar', () => {
     render(<LeadsFiltersSidebar {...defaultProps} />)
     
     expect(screen.getByTestId('leads-filters-sidebar')).toBeInTheDocument()
-    expect(screen.getByText('Filtros')).toBeInTheDocument()
-    expect(screen.getByText('Ajuste os filtros para refinar a lista')).toBeInTheDocument()
+    // Header was removed - just verify sidebar renders with content
+    expect(screen.getByTestId('filter-panel-apply')).toBeInTheDocument()
+    expect(screen.getByTestId('filter-panel-clear')).toBeInTheDocument()
   })
 
   it('renders filter sections', () => {
