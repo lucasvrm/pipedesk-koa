@@ -1,14 +1,127 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (UX dos Controles - Prompt B)
+## 🚧 Status: ✅ Concluído (Layout/estrutura - Prompt C)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - UX de Filtros: Ordenação em Popover + Busca ao lado + Checkboxes Multiselect
+**Escopo:** Frontend - Layout: botões ativos + sidebar sem header + footer no scroll + overflow-x só na tabela
 
 ---
 
-## 🆕 Iteração atual - UX dos Controles (Prompt B)
+## 🆕 Iteração atual - Layout/estrutura (Prompt C)
+
+### 🎯 Objetivo
+1. **Botões de filtro com estado visual ativo:** Ao abrir/fechar filtros por topo ou rodapé, ambos os botões ficam com visual "selecionado" (fundo azul, texto+ícone brancos)
+2. **Sidebar sem header:** Remover ícone/título/subtítulo do sidebar desktop
+3. **Footer no scroll:** Botões "Limpar" e "Aplicar filtros" renderizados dentro da área rolável do sidebar
+4. **Scroll horizontal isolado:** Scroll horizontal afeta somente a tabela; sidebar permanece sempre visível
+
+### ✅ Tarefas Concluídas
+- [x] **A) Botões de filtro topo e rodapé com estado visual ativo**
+  - Adicionada prop `isFiltersOpen?: boolean` ao `LeadsListControls.tsx`
+  - Aplicado `aria-pressed={isFiltersOpen}` aos botões de filtro (top e bottom)
+  - Aplicado `variant="default"` e classes para estado ativo (fundo azul + texto/ícone brancos)
+  - Badge de contagem de filtros ajustado para contraste quando ativo
+  - Em `LeadsListPage.tsx`, calculado `isFiltersOpen = isMobile ? isFilterPanelOpen : isDesktopFiltersOpen`
+  - Passado `isFiltersOpen` para ambas instâncias de `LeadsListControls`
+
+- [x] **B) Remover header do sidebar**
+  - Removido bloco com ícone Filter, título "Filtros" e subtítulo "Ajuste os filtros para refinar a lista"
+  - Removida importação não utilizada de `Filter` do lucide-react
+
+- [x] **C) "Limpar/Aplicar" dentro da área de scroll do sidebar**
+  - Reestruturado para haver um único corpo rolável
+  - Footer (botões "Limpar" e "Aplicar") movido para dentro do `overflow-y-auto`
+  - Atualizado `SIDEBAR_SCROLL_OFFSET` de 200px para 100px (sem header/footer fixos)
+
+- [x] **D) Scroll horizontal somente na tabela**
+  - Adicionado `overflow-x-hidden` no wrapper flex que contém sidebar + lista
+  - Adicionado `min-w-0` no container da área de conteúdo principal
+  - Confirmado `shrink-0` no sidebar
+  - Confirmado `overflow-x-auto` no container da tabela (`LeadsSalesList.tsx`)
+
+- [x] **E) Testes**
+  - Criado `tests/unit/features/leads/components/LeadsListControls.test.tsx` (15 testes)
+  - Atualizado `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` (26 testes)
+  - Total: 41 testes passando para os componentes modificados
+
+### Arquivos Criados
+- `tests/unit/features/leads/components/LeadsListControls.test.tsx` - Testes para nova prop isFiltersOpen e comportamento do botão
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsListControls.tsx` - Nova prop `isFiltersOpen`, aria-pressed, estado visual ativo
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Removido header, footer no scroll, ajustado offset
+- `src/features/leads/pages/LeadsListPage.tsx` - Calculado `isFiltersOpen`, passado para controles, overflow-x-hidden + min-w-0
+
+### Layout do Sidebar (SEM HEADER)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ▼ Ordenação e Busca (se sales view)                     │
+│    [🔍 Buscar leads...                    ] [Prioridade ▼]│
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  ▼ Filtros definidos pelo sistema                        │
+│    ├─ Responsável: [Meus] [Todos] [Selecionar ▼]        │
+│    ├─ Status:                                            │
+│    │   ☑️ Novo                                           │
+│    │   ☐ Em andamento                                    │
+│    │   ☐ Qualificado                                     │
+│    ├─ Prioridade: [Hot] [Warm] [Cold]                    │
+│    ├─ Origem:                                            │
+│    │   ☑️ Website                                        │
+│    │   ☐ Indicação                                       │
+│    └─ Tags:                                              │
+│        [🔍 Buscar tag...]                                │
+│        ☑️ 🔴 Hot Lead                                    │
+│        ☐ 🔵 Cold Lead                                    │
+│                                                          │
+│  ▼ Atividade do lead                                     │
+│    ├─ Dias sem interação: [3] [7] [14] [Qualquer]       │
+│    └─ Próxima ação:                                      │
+│        [🔍 Buscar ação...]                               │
+│        ☑️ Preparar para reunião                          │
+│        ☐ Follow-up pós-reunião                           │
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  [Limpar]                         [Aplicar filtros (N)]  │ ← No scroll
+└──────────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Clicar "Filtros" no topo → sidebar aparece + botão fica azul (ativo)
+- [ ] Clicar "Filtros" no rodapé → sidebar aparece + AMBOS botões ficam azuis (ativos)
+- [ ] Sidebar NÃO tem ícone/título/subtítulo no topo
+- [ ] Botões "Limpar" e "Aplicar" aparecem no FIM do scroll (não fixos)
+- [ ] Scroll horizontal na tabela NÃO move o sidebar
+- [ ] Sidebar permanece visível durante scroll horizontal da tabela
+
+#### Mobile (/leads?view=sales)
+- [ ] Botão "Filtros" abre Sheet
+- [ ] Botão fica azul quando Sheet está aberto
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~80 |
+| Linhas removidas | ~25 |
+| Arquivos modificados | 3 |
+| Arquivos de teste criados | 1 |
+| Testes adicionados | 15 |
+| Testes atualizados | 1 |
+| Total testes relacionados | 41 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de layout/CSS, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - UX dos Controles (Prompt B)
 
 ### 🎯 Objetivo
 1. **Ordenação em Popover:** Transformar ordenação em trigger compacto com opções em Popover (radio-like)

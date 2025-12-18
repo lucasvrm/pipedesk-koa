@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { User, Tag } from '@/lib/types'
-import { Filter } from 'lucide-react'
 import { AppliedLeadsFilters, FilterActions } from '../hooks/useLeadsFiltersSearchParams'
 import { LeadsFiltersContent, DraftFilters } from './LeadsFiltersContent'
 import { LeadsFiltersFooter } from './LeadsFiltersFooter'
@@ -15,12 +14,11 @@ interface OptionItem {
  * Offset for sidebar scroll area calculation.
  * This accounts for:
  * - Top navigation bar (~64px)
- * - Sidebar header (~76px) 
- * - Sidebar footer (~56px)
  * - Page padding (~24px)
- * Total: ~220px, rounded to 200px for some visual breathing room
+ * Total: ~88px, rounded to 100px for some visual breathing room
+ * Note: Header was removed and footer is now inside scroll area
  */
-const SIDEBAR_SCROLL_OFFSET = '200px'
+const SIDEBAR_SCROLL_OFFSET = '100px'
 
 interface LeadsFiltersSidebarProps {
   /** Current applied filters from URL */
@@ -170,18 +168,7 @@ export function LeadsFiltersSidebar({
       className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 border rounded-xl bg-card shadow-sm overflow-hidden md:sticky md:top-20 self-start`}
       data-testid="leads-filters-sidebar"
     >
-      {/* Header - Fixed */}
-      <div className="px-4 py-4 border-b flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Filtros</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          Ajuste os filtros para refinar a lista
-        </p>
-      </div>
-
-      {/* Body - Scrollable with native scroll */}
+      {/* Body - Scrollable with native scroll (includes footer) */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
         style={{ maxHeight: `calc(100vh - ${SIDEBAR_SCROLL_OFFSET})` }}
@@ -195,15 +182,15 @@ export function LeadsFiltersSidebar({
           availableTags={availableTags}
           showNextActionFilter={showNextActionFilter}
         />
-      </div>
 
-      {/* Footer - Fixed */}
-      <div className="border-t px-4 py-4 flex-shrink-0">
-        <LeadsFiltersFooter
-          draftFiltersCount={draftFiltersCount}
-          onClear={handleClearDraft}
-          onApply={handleApplyFilters}
-        />
+        {/* Footer - Inside scroll area, at the end of content */}
+        <div className="border-t mt-4 pt-4">
+          <LeadsFiltersFooter
+            draftFiltersCount={draftFiltersCount}
+            onClear={handleClearDraft}
+            onApply={handleApplyFilters}
+          />
+        </div>
       </div>
     </aside>
   )
