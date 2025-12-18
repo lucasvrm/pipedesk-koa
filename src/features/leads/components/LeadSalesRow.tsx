@@ -197,7 +197,7 @@ export function LeadSalesRow({
   lastInteractionType,
   nextAction,
   owner,
-  actions,
+  actions: _actions, // Kept for backward compatibility but actions are now handled internally
   status,
   origin,
   createdAt,
