@@ -76,6 +76,9 @@ export function LeadsListControls({
 }: LeadsListControlsProps) {
   const testIdSuffix = position === 'bottom' ? '-bottom' : ''
   
+  // Compute border class based on position
+  const line2BorderClass = position === 'top' ? 'border-b' : 'border-t'
+  
   return (
     <div data-testid={position === 'bottom' ? 'leads-bottom-bar' : 'leads-top-bar'}>
       {/* Line 1: Filter button (left) + View toggles + Create Lead button (right) */}
@@ -149,7 +152,7 @@ export function LeadsListControls({
       </div>
 
       {/* Line 2: Total count (left) + Items per page + Range + Pagination icons (right) */}
-      <div className={`flex items-center justify-between px-4 py-2 bg-muted/30 ${position === 'top' ? 'border-b' : 'border-t'}`}>
+      <div className={`flex items-center justify-between px-4 py-2 bg-muted/30 ${line2BorderClass}`}>
         <div className="text-sm text-muted-foreground">
           Total de registros: <span className="font-medium text-foreground">{totalLeads}</span>
         </div>
