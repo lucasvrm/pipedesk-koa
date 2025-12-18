@@ -1,14 +1,69 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (URL-first Filter System + Inline Filter Bar)
+## 🚧 Status: ✅ Concluído (Correção de Filtros Responsável e Sem interação há)
 
-**Data:** 2025-12-17  
+**Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - LeadsFiltersBar, useLeadsFiltersSearchParams, LeadsListPage
+**Escopo:** Frontend - leadsSalesViewService, correção de parâmetro API
 
 ---
 
-## 🆕 Iteração atual - URL-first Filter System + Inline Filter Bar
+## 🆕 Iteração atual - Correção de Filtros "Responsável" e "Sem interação há"
+
+### 🎯 Problema Resolvido
+- Bug: os filtros "Responsável" e "Sem interação há" apareciam na UI e mudavam visualmente, mas não alteravam a lista de leads
+
+### 📍 Causa Raiz Identificada
+O serviço `leadsSalesViewService.ts` estava enviando o parâmetro `ownerIds` para a API, mas o backend espera `owners` (conforme implementado em `leadService.ts` - a implementação original).
+
+**Código problemático (antes):**
+```typescript
+if (filters.ownerIds?.length) searchParams.set('ownerIds', filters.ownerIds.join(','))
+```
+
+**Código corrigido (depois):**
+```typescript
+if (filters.ownerIds?.length) searchParams.set('owners', filters.ownerIds.join(','))
+```
+
+### ✅ Tarefas Concluídas
+- [x] Identificar causa raiz: parâmetro API incorreto (`ownerIds` vs `owners`)
+- [x] Corrigir `leadsSalesViewService.ts`: mudar param de `ownerIds` para `owners`
+- [x] Adicionar 6 novos testes específicos para filtros Responsável e Sem interação há
+- [x] Atualizar teste existente para esperar `owners`
+- [x] Build de produção bem-sucedido
+- [x] 51 testes de filtros passando
+
+### Arquivos Modificados
+- `src/services/leadsSalesViewService.ts` - Correção do parâmetro API (linha 155)
+- `tests/unit/services/leadsSalesViewService.test.tsx` - Novos testes e correção
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~140 |
+| Linhas modificadas | 2 |
+| Arquivos modificados | 2 |
+| Testes adicionados | 6 |
+| Total testes filtros | 51 |
+| Contratos quebrados | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (correção cirúrgica de um parâmetro, testes extensivos)
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Filtro Responsável: Meus → URL inclui `owner=me` e lista filtra
+- [ ] Filtro Responsável: Todos → URL sem `owner` e lista mostra todos
+- [ ] Filtro Responsável: Selecionar usuários → URL inclui `ownerIds=...` e API recebe `owners=...`
+- [ ] Filtro Sem interação há: 7 dias → URL inclui `days_without_interaction=7` e lista filtra
+- [ ] Filtro Sem interação há: Qualquer → URL sem param e lista sem filtro
+- [ ] Back/Forward no navegador → filtros persistem
+- [ ] Refresh da página → filtros persistem via URL
+
+---
+
+## ✅ Iteração anterior - URL-first Filter System + Inline Filter Bar
 
 ### 🎯 Problema Resolvido
 - Bug: mudanças de filtros não refletiam na lista (UI muda, lista não atualiza)
