@@ -300,9 +300,35 @@ export function LeadsFilterPanel({
           </div>
         </SheetHeader>
 
-        {/* Scrollable Content */}
-        <ScrollArea className="flex-1">
+        {/* Scrollable Content with improved discoverability */}
+        <ScrollArea className="flex-1 [&_[data-slot=scroll-area-scrollbar]]:w-2.5 [&_[data-slot=scroll-area-thumb]]:bg-muted-foreground/30">
           <div className="px-6 py-4 space-y-6">
+            
+            {/* Fixed Ordering Section at the top - always accessible (only for sales view) */}
+            {showNextActionFilter && (
+              <div data-testid="ordering-section-fixed" className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Ordenação</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Define a ordem da lista.</p>
+                <div className="flex flex-wrap gap-2">
+                  {ORDER_BY_OPTIONS.map(option => (
+                    <Button
+                      key={option.value}
+                      variant={draftFilters.orderBy === option.value ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8"
+                      onClick={() => setDraftFilters(prev => ({ ...prev, orderBy: option.value }))}
+                      data-testid={`ordering-option-${option.value}`}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+                <Separator className="mt-4" />
+              </div>
+            )}
             
             {/* Section: Filtros definidos pelo sistema */}
             <Accordion type="multiple" defaultValue={['system-filters', 'activity-filters']} className="space-y-2">
@@ -507,36 +533,6 @@ export function LeadsFilterPanel({
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Ordering Section - only for sales view */}
-              {showNextActionFilter && (
-                <AccordionItem value="ordering" className="border rounded-lg">
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="text-sm font-medium flex items-center gap-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                      Ordenação
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4 space-y-4">
-                    <div className="space-y-2" data-testid="ordering-section">
-                      <label className="text-sm font-medium text-muted-foreground">Ordenar por</label>
-                      <div className="flex flex-wrap gap-2">
-                        {ORDER_BY_OPTIONS.map(option => (
-                          <Button
-                            key={option.value}
-                            variant={draftFilters.orderBy === option.value ? 'default' : 'outline'}
-                            size="sm"
-                            className="h-8"
-                            onClick={() => setDraftFilters(prev => ({ ...prev, orderBy: option.value }))}
-                            data-testid={`ordering-option-${option.value}`}
-                          >
-                            {option.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              )}
             </Accordion>
 
           </div>
