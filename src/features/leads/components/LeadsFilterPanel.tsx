@@ -23,9 +23,10 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { MultiSelectPopover, MultiSelectOption } from '@/components/ui/MultiSelectPopover'
-import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon, Clock, MapPin } from 'lucide-react'
+import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon, Clock, MapPin, ArrowUpDown } from 'lucide-react'
 import { safeString, ensureArray } from '@/lib/utils'
 import { AppliedLeadsFilters, FilterActions } from '../hooks/useLeadsFiltersSearchParams'
+import { LeadOrderBy, ORDER_BY_OPTIONS } from './LeadsSmartFilters'
 
 interface OptionItem {
   id?: string
@@ -70,6 +71,7 @@ interface DraftFilters {
   daysWithoutInteraction: number | null
   selectedTags: string[]
   nextActions: string[]
+  orderBy: LeadOrderBy
 }
 
 interface LeadsFilterPanelProps {
@@ -121,7 +123,8 @@ export function LeadsFilterPanel({
     origins: appliedFilters.origin,
     daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
     selectedTags: appliedFilters.tags,
-    nextActions: appliedFilters.nextAction
+    nextActions: appliedFilters.nextAction,
+    orderBy: appliedFilters.orderBy
   }))
 
   // Sync draft with applied only when panel opens (not while it's open)
@@ -136,7 +139,8 @@ export function LeadsFilterPanel({
         origins: appliedFilters.origin,
         daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
         selectedTags: appliedFilters.tags,
-        nextActions: appliedFilters.nextAction
+        nextActions: appliedFilters.nextAction,
+        orderBy: appliedFilters.orderBy
       })
     }
     wasOpenRef.current = isOpen
@@ -242,7 +246,8 @@ export function LeadsFilterPanel({
       origins: [],
       daysWithoutInteraction: null,
       selectedTags: [],
-      nextActions: []
+      nextActions: [],
+      orderBy: 'priority'
     })
   }, [])
 
@@ -265,6 +270,9 @@ export function LeadsFilterPanel({
     
     // Update days without interaction
     actions.setDaysWithoutInteraction(draftFilters.daysWithoutInteraction)
+    
+    // Update orderBy (only for sales view, but safe to call regardless)
+    actions.setOrderBy(draftFilters.orderBy)
     
     // Close panel
     onOpenChange(false)
@@ -498,6 +506,37 @@ export function LeadsFilterPanel({
                   )}
                 </AccordionContent>
               </AccordionItem>
+
+              {/* Ordering Section - only for sales view */}
+              {showNextActionFilter && (
+                <AccordionItem value="ordering" className="border rounded-lg">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4" />
+                      Ordenação
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4 space-y-4">
+                    <div className="space-y-2" data-testid="ordering-section">
+                      <label className="text-sm font-medium text-muted-foreground">Ordenar por</label>
+                      <div className="flex flex-wrap gap-2">
+                        {ORDER_BY_OPTIONS.map(option => (
+                          <Button
+                            key={option.value}
+                            variant={draftFilters.orderBy === option.value ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setDraftFilters(prev => ({ ...prev, orderBy: option.value }))}
+                            data-testid={`ordering-option-${option.value}`}
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
             </Accordion>
 
           </div>

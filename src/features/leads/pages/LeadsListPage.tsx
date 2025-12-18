@@ -3,30 +3,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeads, useDeleteLead, LeadFilters, useUpdateLead } from '@/services/leadService'
 import { ensureArray } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Plus, LayoutGrid, Globe, ChevronDown, Trash2, Columns3, Tag as TagIcon, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutGrid, Columns3 } from 'lucide-react'
 import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS_COLORS } from '@/lib/types'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { CreateLeadModal } from '../components/CreateLeadModal'
 import { toast } from 'sonner'
 import TagSelector from '@/components/TagSelector'
-import { PageContainer } from '@/components/PageContainer'
-import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListSkeleton } from '@/components/layouts/SharedListSkeleton'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/contexts/AuthContext'
@@ -36,11 +23,9 @@ import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewS
 import { Progress } from '@/components/ui/progress'
 import { QuickActionsMenu, QuickAction } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTags } from '@/services/tagService'
 import { useSettings } from '@/services/systemSettingsService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
-import { LeadsPaginationControls } from '../components/LeadsPaginationControls'
 import { useUsers } from '@/services/userService'
 import { safeString } from '@/lib/utils'
 import { SALES_VIEW_MESSAGES, getSalesViewErrorMessages } from '../constants/salesViewMessages'
@@ -56,6 +41,7 @@ import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesVi
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
 import { useLeadsFiltersSearchParams } from '../hooks/useLeadsFiltersSearchParams'
 import { LeadsFilterPanel } from '../components/LeadsFilterPanel'
+import { LeadsListControls } from '../components/LeadsListControls'
 import type { LeadOrderBy } from '../components/LeadsSmartFilters'
 
 // View types used internally
@@ -642,144 +628,26 @@ export default function LeadsListPage() {
       {/* Container Unificado (Card Principal) */}
       <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
         
-        {/* Sticky wrapper for Lines 1 and 2 - sticks below main header (h-16 = 4rem = 64px) */}
-        <div 
-          className="sticky top-16 z-40 bg-card rounded-t-xl shadow-sm" 
-          data-testid="leads-sticky-header"
-        >
-          {/* Line 1: Filter button (left) + View toggles + Create Lead button (right) */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              {/* Filter button */}
-              <Button
-                variant={activeFiltersCount > 0 ? 'secondary' : 'outline'}
-                size="sm"
-                className="h-9 gap-2"
-                onClick={() => setIsFilterPanelOpen(true)}
-                data-testid="filter-panel-trigger"
-              >
-                <Filter className="h-4 w-4" />
-                Filtros
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 rounded-full p-0 text-xs flex items-center justify-center">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
-              
-              {/* Bulk delete button */}
-              {selectedIds.length > 0 && (
-                <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* View toggles */}
-              <div className="flex items-center p-1 bg-muted rounded-md border">
-                <Button
-                  variant={currentView === 'sales' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleViewChange('sales')}
-                  title="Lista"
-                >
-                  <AlignJustify className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={currentView === 'grid' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleViewChange('grid')}
-                  title="Cards"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleViewChange('kanban')}
-                  title="Kanban"
-                >
-                  <Kanban className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {/* Create Lead button */}
-              <RequirePermission permission="leads.create">
-                <Button onClick={() => setIsCreateOpen(true)} size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Lead
-                </Button>
-              </RequirePermission>
-            </div>
-          </div>
-
-          {/* Line 2: Total count (left) + Items per page + Range + Pagination icons (right) */}
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-            <div className="text-sm text-muted-foreground">
-              Total de registros: <span className="font-medium text-foreground">{totalLeads}</span>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Items per page dropdown */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground hidden sm:inline">Registros por página:</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 w-[70px] justify-between">
-                      <span>{itemsPerPage}</span>
-                      <ChevronDown className="ml-1 h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[100px]">
-                    <DropdownMenuRadioGroup
-                      value={String(itemsPerPage)}
-                      onValueChange={(value) => handleItemsPerPageChange(Number(value))}
-                    >
-                      <DropdownMenuRadioItem value="10">10</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="20">20</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="50">50</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Range display */}
-              {showPagination && (
-                <span className="text-sm text-muted-foreground">
-                  {startItem}–{endItem}
-                </span>
-              )}
-
-              {/* Pagination icons */}
-              {showPagination && (
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Top Controls (non-sticky) */}
+        <LeadsListControls
+          position="top"
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          activeFiltersCount={activeFiltersCount}
+          onOpenFilterPanel={() => setIsFilterPanelOpen(true)}
+          selectedIds={selectedIds}
+          onBulkDelete={() => setIsBulkDeleteOpen(true)}
+          onCreateLead={() => setIsCreateOpen(true)}
+          totalLeads={totalLeads}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          showPagination={showPagination}
+          startItem={startItem}
+          endItem={endItem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
 
         {/* Conteúdo da Lista dentro do Card */}
         <div className="flex-1 min-h-[500px]"> 
@@ -926,6 +794,27 @@ export default function LeadsListPage() {
             </div>
           )}
         </div>
+
+        {/* Bottom Controls Bar - after content, same as top bar */}
+        <LeadsListControls
+          position="bottom"
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          activeFiltersCount={activeFiltersCount}
+          onOpenFilterPanel={() => setIsFilterPanelOpen(true)}
+          selectedIds={selectedIds}
+          onBulkDelete={() => setIsBulkDeleteOpen(true)}
+          onCreateLead={() => setIsCreateOpen(true)}
+          totalLeads={totalLeads}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          showPagination={showPagination}
+          startItem={startItem}
+          endItem={endItem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </div>
 
       {/* Filter Panel (Zoho-style side panel) */}
