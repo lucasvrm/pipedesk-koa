@@ -1,99 +1,153 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Ordenação Fixa + Separação Visual + Scroll Melhorado no Painel de Filtros)
+## 🚧 Status: ✅ Concluído (Sidebar Desktop + Sheet Mobile + Bordas Consistentes)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Melhorias de UX no Sheet/Painel lateral de filtros inteligentes
+**Escopo:** Frontend - UX de Filtros: Sidebar no desktop + Sheet no mobile
 
 ---
 
-## 🆕 Iteração atual - Ordenação fixa fora do Accordion + borda no header + scroll descobrível
+## 🆕 Iteração atual - Sidebar Desktop (Zoho-like) + Sheet Mobile + Bordas Consistentes
 
 ### 🎯 Objetivo
-1. **Tirar "Ordenação" de dentro do Accordion**: Renderizar como bloco fixo no topo do painel, acima das seções de filtros
-2. **Adicionar separação visual**: Borda/Separator abaixo da seção de Ordenação para clareza
-3. **Melhorar descoberta de scroll**: Scrollbar mais visível no painel de filtros
+1. **Desktop (>= md):** Substituir Sheet por **Sidebar fixo** (Zoho-style) sempre visível
+2. **Mobile (< md):** Manter Sheet/Drawer para filtros com scroll nativo
+3. **Scroll nativo e descobrível:** Usar `overflow-y: auto` no body (sem ScrollArea custom)
+4. **Bordas consistentes:** Seções "Filtros definidos pelo sistema" e "Atividade do lead" com mesma estrutura visual
 
 ### ✅ Tarefas Concluídas
-- [x] **A) Ordenação como bloco fixo no topo**
-  - Removido `AccordionItem` de Ordenação de dentro do `Accordion`
-  - Criado bloco dedicado no topo do painel (acima das seções acordeon)
-  - Adicionado microcopy "Define a ordem da lista." para clareza
-  - Mantido o modelo draft + aplicar (alterações só comitadas via "Aplicar filtros")
-  - Adicionado `data-testid="ordering-section-fixed"` para identificação em testes
-  - Seção só aparece quando `showNextActionFilter=true` (view=sales)
+- [x] **A) Extrair componentes reutilizáveis**
+  - Criado `LeadsFiltersContent.tsx`: Conteúdo dos filtros (seções, inputs)
+  - Criado `LeadsFiltersFooter.tsx`: Botões Limpar/Aplicar
+  - Criado `LeadsFilterSection.tsx`: Wrapper de seção com bordas consistentes (Collapsible)
 
-- [x] **B) Separação visual da seção Ordenação**
-  - Adicionado componente `Separator` abaixo da seção de Ordenação
-  - Espaçamento adequado com `mt-4` no Separator
+- [x] **B) Implementar Sidebar Desktop**
+  - Criado `LeadsFiltersSidebar.tsx`: Sidebar fixo com 320-360px de largura
+  - Header fixo com título "Filtros"
+  - Body rolável com `overflow-y: auto`
+  - Footer fixo com ações Limpar/Aplicar
+  - Classes `hidden md:flex` para exibir apenas no desktop
 
-- [x] **C) Scroll mais descobrível**
-  - Ajustado `ScrollArea` com estilos personalizados via CSS seletores
-  - Scrollbar com thumb mais visível: `bg-muted-foreground/30`
-  - Largura do scrollbar mantida em `w-2.5` (já adequada)
+- [x] **C) Atualizar Sheet Mobile**
+  - Refatorado `LeadsFilterPanel.tsx` para usar componentes compartilhados
+  - Substituído `ScrollArea` por div com `overflow-y: auto` (scroll nativo)
+  - Mantido comportamento de draft + aplicar
+
+- [x] **D) Integrar layout 2 colunas no desktop**
+  - `LeadsListPage.tsx` agora renderiza Sidebar à esquerda e conteúdo à direita
+  - Usa hook `useIsMobile()` para renderização condicional
+  - Desktop: Sidebar sempre visível, botão Filtros oculto
+  - Mobile: Sheet acessível via botão Filtros
+
+- [x] **E) Testes**
+  - 12 novos testes para `LeadsFiltersSidebar`
+  - 21 testes existentes para `LeadsFilterPanel` mantidos
+
+### Arquivos Criados
+- `src/features/leads/components/LeadsFilterSection.tsx` - Wrapper de seção com bordas consistentes
+- `src/features/leads/components/LeadsFiltersContent.tsx` - Conteúdo compartilhado dos filtros
+- `src/features/leads/components/LeadsFiltersFooter.tsx` - Footer compartilhado (Limpar/Aplicar)
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Sidebar para desktop
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - Testes do sidebar
 
 ### Arquivos Modificados
-- `src/features/leads/components/LeadsFilterPanel.tsx` - Ordenação movida para fora do Accordion, Separator adicionado, scrollbar customizado
-- `tests/unit/features/leads/components/LeadsFilterPanel.test.tsx` - Adicionados 3 novos testes para a nova estrutura
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Refatorado para usar componentes compartilhados
+- `src/features/leads/pages/LeadsListPage.tsx` - Layout 2 colunas com sidebar no desktop
 
-### Estrutura do Painel de Filtros (NOVA)
+### Layout Desktop (NOVO)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HEADER PRINCIPAL                                                             │
+├───────────────┬─────────────────────────────────────────────────────────────┤
+│ SIDEBAR       │ CONTEÚDO PRINCIPAL                                          │
+│ (320-360px)   │                                                             │
+│ ┌───────────┐ │ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🔍 Filtros │ │ │ TOP BAR: [Filtros*] [Lista][Cards][Kanban] [+ Lead]    │ │
+│ │           │ │ ├─────────────────────────────────────────────────────────┤ │
+│ │ Ordenação │ │ │ Total: X | Registros: 10 ▼ | 1-10 | < >                 │ │
+│ │ ───────── │ │ ├─────────────────────────────────────────────────────────┤ │
+│ │           │ │ │ TABELA / CARDS / KANBAN                                 │ │
+│ │ ▼ Sistema │ │ │ ...                                                     │ │
+│ │ ▼ Ativid. │ │ │ ...                                                     │ │
+│ │           │ │ ├─────────────────────────────────────────────────────────┤ │
+│ │ ───────── │ │ │ BOTTOM BAR: igual ao topo                               │ │
+│ │ [Limpar]  │ │ └─────────────────────────────────────────────────────────┘ │
+│ │ [Aplicar] │ │                                                             │
+│ └───────────┘ │ * Botão Filtros só aparece no mobile                        │
+└───────────────┴─────────────────────────────────────────────────────────────┘
+```
+
+### Layout Mobile (mantido)
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│ HEADER                                                │
-│ 🔍 Filtrar Leads                                      │
-│ Ajuste os filtros para refinar a lista               │
+│ TOP BAR: [🔍 Filtros (N)] [...] [+ Lead]              │
 ├───────────────────────────────────────────────────────┤
-│ 🔀 Ordenação (FIXO NO TOPO - fora do Accordion)       │
-│   └─ [Prioridade] [Última interação] [Criação]        │
-│      [Status] [Próxima ação] [Responsável]            │
-│   Define a ordem da lista.                            │
-│   ────────────────────── (Separator)                  │
+│ CONTEÚDO (scroll normal)                              │
+│ ...                                                   │
+└───────────────────────────────────────────────────────┘
+
+[Ao clicar em Filtros → abre Sheet/Drawer]
+
+┌───────────────────────────────────────────────────────┐
+│ HEADER: Filtrar Leads                                 │
 ├───────────────────────────────────────────────────────┤
-│ ▼ Filtros definidos pelo sistema                      │
-│   ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
-│   ├─ Status: [Selecionar status... ▼]                │
-│   ├─ Prioridade: [Hot] [Warm] [Cold]                 │
-│   ├─ Origem: [Selecionar origem... ▼]                │
-│   └─ Tags: [Selecionar tags... ▼]                    │
+│ BODY (scroll nativo)                                  │
+│ ┌─ Ordenação ───────────────────────────────────────┐ │
+│ │ [Prioridade] [Última interação] ...               │ │
+│ └───────────────────────────────────────────────────┘ │
+│ ┌─ Filtros definidos pelo sistema ──────────────────┐ │
+│ │ Responsável: [Meus] [Todos] [Selecionar ▼]        │ │
+│ │ Status: ...                                       │ │
+│ │ ...                                               │ │
+│ └───────────────────────────────────────────────────┘ │
+│ ┌─ Atividade do lead ───────────────────────────────┐ │
+│ │ Dias sem interação: [3] [7] [14] [Qualquer]       │ │
+│ │ Próxima ação: ...                                 │ │
+│ └───────────────────────────────────────────────────┘ │
 ├───────────────────────────────────────────────────────┤
-│ ▼ Atividade do lead                                   │
-│   ├─ Dias sem interação: [3] [7] [14] [Qualquer]     │
-│   └─ Próxima ação: [Selecionar... ▼]                 │
-├───────────────────────────────────────────────────────┤
-│ FOOTER (fixo)                                         │
-│ [Limpar]                      [Aplicar filtros (N)]  │
+│ FOOTER: [Limpar] [Aplicar filtros (N)]               │
 └───────────────────────────────────────────────────────┘
 ```
 
-### ✅ Checklist de QA manual (/leads?view=sales)
-- [ ] Abrir painel de filtros: "Ordenação" aparece imediatamente no topo
-- [ ] Expandir seções de filtros: "Ordenação" continua acessível (não precisa fechar outras seções)
-- [ ] Alterar ordenação no painel: não aplica até "Aplicar filtros"
-- [ ] Clicar "Aplicar filtros": URL inclui `order_by=...` e lista reflete ordenação
-- [ ] Separator visível abaixo da seção Ordenação
-- [ ] Scroll do painel é evidente e confortável (scrollbar visível)
-- [ ] Microcopy "Define a ordem da lista." visível
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Sidebar aparece à esquerda da listagem (sempre visível)
+- [ ] Sidebar mostra "Sistema" e "Atividade" sem precisar colapsar uma para ver outra
+- [ ] Scroll do sidebar funciona (conteúdo que não cabe na tela rola)
+- [ ] Alterar filtro no draft → URL não muda
+- [ ] Clicar "Aplicar filtros" → URL atualiza + lista reflete filtros
+- [ ] Bordas das seções são consistentes (todos os lados)
+
+#### Mobile (/leads?view=sales)
+- [ ] Botão "Filtros" aparece no topo
+- [ ] Clicar "Filtros" → Sheet abre
+- [ ] Sheet tem scroll nativo no body
+- [ ] Aplicar filtros funciona corretamente
+- [ ] Fechar Sheet → descarta alterações de draft
 
 ### 📊 Medição de Impacto
 
 | Métrica | Valor |
 |---------|-------|
-| Linhas adicionadas | ~40 |
-| Linhas removidas | ~30 |
+| Linhas adicionadas | ~500 |
+| Linhas removidas | ~280 |
+| Arquivos criados | 5 |
 | Arquivos modificados | 2 |
-| Arquivos criados | 0 |
-| Testes adicionados | 3 |
+| Testes adicionados | 12 |
+| Total testes relacionados | 51 (passando) |
 | Contratos quebrados | 0 |
 | Libs novas adicionadas | 0 |
 | Alertas de segurança | 0 |
 
-**Risco:** 🟢 Baixo (mudança de layout localizada, sem alteração de lógica de negócio)
+**Risco:** 🟢 Baixo (mudança de layout, sem alteração de lógica de negócio ou API)
 
 ---
 
-## ✅ Iteração anterior - Remove Sticky + Bottom Bar + Ordenação no Painel
+## ✅ Iteração anterior - Ordenação fixa fora do Accordion + borda no header + scroll descobrível
 
 ### 🎯 Objetivo
 1. **Restaurar "Ordenação" no Painel de Filtros**: Adicionar bloco de ordenação no Sheet de filtros, funcionando via draft + aplicar

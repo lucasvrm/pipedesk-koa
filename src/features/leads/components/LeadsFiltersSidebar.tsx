@@ -11,6 +11,17 @@ interface OptionItem {
   label: string
 }
 
+/**
+ * Offset for sidebar scroll area calculation.
+ * This accounts for:
+ * - Top navigation bar (~64px)
+ * - Sidebar header (~76px) 
+ * - Sidebar footer (~56px)
+ * - Page padding (~24px)
+ * Total: ~220px, rounded to 200px for some visual breathing room
+ */
+const SIDEBAR_SCROLL_OFFSET = '200px'
+
 interface LeadsFiltersSidebarProps {
   /** Current applied filters from URL */
   appliedFilters: AppliedLeadsFilters
@@ -157,7 +168,7 @@ export function LeadsFiltersSidebar({
       {/* Body - Scrollable with native scroll */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-4"
-        style={{ maxHeight: 'calc(100vh - 200px)' }}
+        style={{ maxHeight: `calc(100vh - ${SIDEBAR_SCROLL_OFFSET})` }}
       >
         <LeadsFiltersContent
           draftFilters={draftFilters}
