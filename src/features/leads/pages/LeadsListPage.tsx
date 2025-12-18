@@ -62,6 +62,18 @@ export default function LeadsListPage() {
   
   // Filter panel state (only used for mobile Sheet)
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  
+  // Desktop sidebar visibility state (default: closed)
+  const [isDesktopFiltersOpen, setIsDesktopFiltersOpen] = useState(false)
+
+  // Toggle handler for "Filtros" button - works for both mobile and desktop
+  const handleToggleFilters = useCallback(() => {
+    if (isMobile) {
+      setIsFilterPanelOpen(prev => !prev)
+    } else {
+      setIsDesktopFiltersOpen(prev => !prev)
+    }
+  }, [isMobile])
 
   const savedPreferences = useMemo(() => {
     const saved = localStorage.getItem('leads-list-preferences')
@@ -629,7 +641,7 @@ export default function LeadsListPage() {
     <div className="p-6 min-h-screen bg-background">
       {/* Main container with optional sidebar layout */}
       <div className="flex gap-6">
-        {/* Desktop Sidebar - always visible on md+ screens */}
+        {/* Desktop Sidebar - controlled by toggle, only on non-mobile */}
         {!isMobile && (
           <LeadsFiltersSidebar
             appliedFilters={appliedFilters}
@@ -639,6 +651,7 @@ export default function LeadsListPage() {
             leadOrigins={activeLeadOrigins}
             availableTags={tags}
             showNextActionFilter={currentView === 'sales'}
+            isOpen={isDesktopFiltersOpen}
           />
         )}
 
@@ -653,7 +666,7 @@ export default function LeadsListPage() {
               currentView={currentView}
               onViewChange={handleViewChange}
               activeFiltersCount={activeFiltersCount}
-              onOpenFilterPanel={() => setIsFilterPanelOpen(true)}
+              onOpenFilterPanel={handleToggleFilters}
               selectedIds={selectedIds}
               onBulkDelete={() => setIsBulkDeleteOpen(true)}
               onCreateLead={() => setIsCreateOpen(true)}
@@ -820,7 +833,7 @@ export default function LeadsListPage() {
           currentView={currentView}
           onViewChange={handleViewChange}
           activeFiltersCount={activeFiltersCount}
-          onOpenFilterPanel={() => setIsFilterPanelOpen(true)}
+          onOpenFilterPanel={handleToggleFilters}
           selectedIds={selectedIds}
           onBulkDelete={() => setIsBulkDeleteOpen(true)}
           onCreateLead={() => setIsCreateOpen(true)}

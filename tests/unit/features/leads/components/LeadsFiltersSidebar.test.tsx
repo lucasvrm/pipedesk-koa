@@ -124,12 +124,43 @@ describe('LeadsFiltersSidebar', () => {
     expect(screen.queryByText('Ordenação')).not.toBeInTheDocument()
   })
 
-  it('has hidden class for mobile (md:flex)', () => {
+  it('is hidden by default when isOpen is false (not passed)', () => {
     render(<LeadsFiltersSidebar {...defaultProps} />)
     
     const sidebar = screen.getByTestId('leads-filters-sidebar')
+    // When isOpen=false (default), sidebar has only 'hidden' class (no md:flex)
+    expect(sidebar.className).toContain('hidden')
+    expect(sidebar.className).not.toContain('md:flex')
+  })
+
+  it('shows sidebar on md+ when isOpen is true', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} isOpen={true} />)
+    
+    const sidebar = screen.getByTestId('leads-filters-sidebar')
+    // When isOpen=true, sidebar has 'hidden md:flex' classes
     expect(sidebar.className).toContain('hidden')
     expect(sidebar.className).toContain('md:flex')
+  })
+
+  it('has sticky positioning classes when open', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} isOpen={true} />)
+    
+    const sidebar = screen.getByTestId('leads-filters-sidebar')
+    expect(sidebar.className).toContain('md:sticky')
+    expect(sidebar.className).toContain('md:top-20')
+    expect(sidebar.className).toContain('self-start')
+  })
+
+  it('has complete border styling (not just border-r)', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} isOpen={true} />)
+    
+    const sidebar = screen.getByTestId('leads-filters-sidebar')
+    // Should have full border, rounded corners, and shadow
+    expect(sidebar.className).toContain('border')
+    expect(sidebar.className).toContain('rounded-xl')
+    expect(sidebar.className).toContain('shadow-sm')
+    // Should NOT have only border-r
+    expect(sidebar.className).not.toContain('border-r')
   })
 
   it('applies filters when apply button is clicked', () => {

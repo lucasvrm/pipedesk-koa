@@ -1,63 +1,130 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Sidebar Desktop + Sheet Mobile + Bordas Consistentes)
+## 🚧 Status: ✅ Concluído (Sidebar Toggle + Bordas Completas + Scroll Independente)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - UX de Filtros: Sidebar no desktop + Sheet no mobile
+**Escopo:** Frontend - UX de Filtros: Sidebar com toggle + painel delimitado + scroll independente
 
 ---
 
-## 🆕 Iteração atual - Sidebar Desktop (Zoho-like) + Sheet Mobile + Bordas Consistentes
+## 🆕 Iteração atual - Sidebar Toggle + Bordas Completas + Scroll Independente (Prompt A)
 
 ### 🎯 Objetivo
-1. **Desktop (>= md):** Substituir Sheet por **Sidebar fixo** (Zoho-style) sempre visível
-2. **Mobile (< md):** Manter Sheet/Drawer para filtros com scroll nativo
-3. **Scroll nativo e descobrível:** Usar `overflow-y: auto` no body (sem ScrollArea custom)
-4. **Bordas consistentes:** Seções "Filtros definidos pelo sistema" e "Atividade do lead" com mesma estrutura visual
+1. **Sidebar Desktop com Toggle:** Sidebar aparece/desaparece via botão "Filtros" (não mais sempre visível)
+2. **Painel Delimitado:** Borda completa (todos os lados) + rounded-xl + shadow
+3. **Sticky:** Sidebar fica estático enquanto lista rola
+4. **Scroll Interno:** Apenas o corpo do sidebar rola, header/footer ficam fixos
+5. **DOM Plano:** Seções sem wrapper interno extra (evita clipping/overflow)
 
 ### ✅ Tarefas Concluídas
-- [x] **A) Extrair componentes reutilizáveis**
-  - Criado `LeadsFiltersContent.tsx`: Conteúdo dos filtros (seções, inputs)
-  - Criado `LeadsFiltersFooter.tsx`: Botões Limpar/Aplicar
-  - Criado `LeadsFilterSection.tsx`: Wrapper de seção com bordas consistentes (Collapsible)
+- [x] **A) Toggle de visibilidade do sidebar desktop**
+  - Criado estado `isDesktopFiltersOpen` em `LeadsListPage.tsx` (default: false)
+  - Criado handler `handleToggleFilters()` que alterna mobile (Sheet) ou desktop (Sidebar)
+  - Passado `onOpenFilterPanel={handleToggleFilters}` para ambos LeadsListControls (top/bottom)
+  - Adicionado prop `isOpen` ao `LeadsFiltersSidebar` para controle externo
 
-- [x] **B) Implementar Sidebar Desktop**
-  - Criado `LeadsFiltersSidebar.tsx`: Sidebar fixo com 320-360px de largura
-  - Header fixo com título "Filtros"
-  - Body rolável com `overflow-y: auto`
-  - Footer fixo com ações Limpar/Aplicar
-  - Classes `hidden md:flex` para exibir apenas no desktop
+- [x] **B) Sidebar estático (sticky) vs scroll da lista**
+  - Adicionado `md:sticky md:top-20 self-start` ao sidebar
+  - Sidebar fica fixo enquanto conteúdo principal rola
+  - Body do sidebar tem `overflow-y-auto` + `min-h-0` para scroll interno
 
-- [x] **C) Atualizar Sheet Mobile**
-  - Refatorado `LeadsFilterPanel.tsx` para usar componentes compartilhados
-  - Substituído `ScrollArea` por div com `overflow-y: auto` (scroll nativo)
-  - Mantido comportamento de draft + aplicar
+- [x] **C) Borda completa do sidebar (painel delimitado)**
+  - Substituído `border-r` por `border rounded-xl shadow-sm`
+  - Adicionado `overflow-hidden` ao container para evitar bleed
 
-- [x] **D) Integrar layout 2 colunas no desktop**
-  - `LeadsListPage.tsx` agora renderiza Sidebar à esquerda e conteúdo à direita
-  - Usa hook `useIsMobile()` para renderização condicional
-  - Desktop: Sidebar sempre visível, botão Filtros oculto
-  - Mobile: Sheet acessível via botão Filtros
+- [x] **D) Remover wrapper interno extra das seções**
+  - `LeadsFilterSection.tsx` agora usa estrutura plana (sem `<div className="border rounded-lg bg-card">`)
+  - Separação visual entre seções via `border-b pb-4 last:border-b-0`
+  - Evita clipping/overflow em containers roláveis
 
-- [x] **E) Testes**
-  - 12 novos testes para `LeadsFiltersSidebar`
-  - 21 testes existentes para `LeadsFilterPanel` mantidos
-
-### Arquivos Criados
-- `src/features/leads/components/LeadsFilterSection.tsx` - Wrapper de seção com bordas consistentes
-- `src/features/leads/components/LeadsFiltersContent.tsx` - Conteúdo compartilhado dos filtros
-- `src/features/leads/components/LeadsFiltersFooter.tsx` - Footer compartilhado (Limpar/Aplicar)
-- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Sidebar para desktop
-- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - Testes do sidebar
+- [x] **E) Testes atualizados**
+  - 4 novos testes para `isOpen` prop e estilos
+  - 8 novos testes documentacionais em `LeadsListPage.sticky.test.tsx`
+  - Total: 27 testes passando
 
 ### Arquivos Modificados
-- `src/features/leads/components/LeadsFilterPanel.tsx` - Refatorado para usar componentes compartilhados
-- `src/features/leads/pages/LeadsListPage.tsx` - Layout 2 colunas com sidebar no desktop
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Nova prop `isOpen`, sticky, bordas completas
+- `src/features/leads/components/LeadsFilterSection.tsx` - Removido wrapper interno, usa border-b
+- `src/features/leads/pages/LeadsListPage.tsx` - Estado toggle, handler, integração
 
-### Layout Desktop (NOVO)
+### Arquivos de Teste Atualizados
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - Testes para isOpen prop
+- `tests/unit/pages/LeadsListPage.sticky.test.tsx` - Documentação do toggle behavior
+
+### Layout Desktop (COM TOGGLE)
 
 ```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HEADER PRINCIPAL                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [Sidebar oculto por padrão]                                                  │
+│                                                                              │
+│ ┌─────────────────────────────────────────────────────────────────────────┐ │
+│ │ TOP BAR: [🔍 Filtros (N)] [Lista][Cards][Kanban] [+ Lead]               │ │
+│ ├─────────────────────────────────────────────────────────────────────────┤ │
+│ │ Total: X | Registros: 10 ▼ | 1-10 | < >                                 │ │
+│ ├─────────────────────────────────────────────────────────────────────────┤ │
+│ │ TABELA / CARDS / KANBAN (ocupa 100% do espaço)                          │ │
+│ ├─────────────────────────────────────────────────────────────────────────┤ │
+│ │ BOTTOM BAR: igual ao topo                                               │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[Ao clicar em "Filtros" → sidebar aparece à esquerda]
+
+┌───────────────┬─────────────────────────────────────────────────────────────┐
+│ SIDEBAR       │ CONTEÚDO PRINCIPAL                                          │
+│ (toggle open) │                                                             │
+│ ┌───────────┐ │ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🔍 Filtros │ │ │ TOP BAR: [🔍 Filtros (N)] [Lista][Cards][Kanban]        │ │
+│ │           │ │ ├─────────────────────────────────────────────────────────┤ │
+│ │ (sticky)  │ │ │ TABELA / CARDS / KANBAN                                 │ │
+│ │ (scroll   │ │ │ ...                                                     │ │
+│ │  interno) │ │ ├─────────────────────────────────────────────────────────┤ │
+│ │           │ │ │ BOTTOM BAR                                              │ │
+│ │ ───────── │ │ └─────────────────────────────────────────────────────────┘ │
+│ │ [Limpar]  │ │                                                             │
+│ │ [Aplicar] │ │ * Clicar "Filtros" novamente fecha o sidebar                │
+│ └───────────┘ │                                                             │
+└───────────────┴─────────────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Sidebar NÃO aparece por padrão (fechado)
+- [ ] Clicar "Filtros" no topo → sidebar aparece
+- [ ] Clicar "Filtros" novamente → sidebar fecha
+- [ ] Clicar "Filtros" no rodapé → mesmo comportamento de toggle
+- [ ] Ao fechar sidebar → listagem ocupa 100% do espaço (sem buraco)
+- [ ] Sidebar tem borda completa (todos os lados) + shadow
+- [ ] Ao rolar a lista → sidebar fica fixo (sticky)
+- [ ] Conteúdo do sidebar rola internamente quando necessário
+- [ ] Seções não têm clipping/borda cortada
+
+#### Mobile (/leads?view=sales)
+- [ ] Botão "Filtros" abre Sheet (mesmo comportamento anterior)
+- [ ] Toggle funciona corretamente no Sheet
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~60 |
+| Linhas removidas | ~25 |
+| Arquivos modificados | 3 |
+| Testes adicionados | 12 |
+| Total testes relacionados | 27 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de layout, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - Sidebar Desktop (Zoho-like) + Sheet Mobile + Bordas Consistentes
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ HEADER PRINCIPAL                                                             │
 ├───────────────┬─────────────────────────────────────────────────────────────┤

@@ -37,6 +37,8 @@ interface LeadsFiltersSidebarProps {
   availableTags?: Tag[]
   /** Show next action filter (only for sales view) */
   showNextActionFilter?: boolean
+  /** Controls visibility of the sidebar on desktop (md+). Default: false */
+  isOpen?: boolean
 }
 
 /**
@@ -57,7 +59,8 @@ export function LeadsFiltersSidebar({
   leadStatuses,
   leadOrigins,
   availableTags = [],
-  showNextActionFilter = false
+  showNextActionFilter = false,
+  isOpen = false
 }: LeadsFiltersSidebarProps) {
   const wasInitializedRef = useRef(false)
 
@@ -149,9 +152,14 @@ export function LeadsFiltersSidebar({
     actions.setOrderBy(draftFilters.orderBy)
   }, [draftFilters, actions, showNextActionFilter])
 
+  // Compute visibility class based on isOpen
+  // When closed: hidden on all breakpoints via md:hidden
+  // When open: flex on md+ via md:flex
+  const visibilityClass = isOpen ? 'hidden md:flex' : 'hidden'
+
   return (
     <aside
-      className="hidden md:flex flex-col w-[320px] lg:w-[360px] shrink-0 border-r bg-card"
+      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 border rounded-xl bg-card shadow-sm overflow-hidden md:sticky md:top-20 self-start`}
       data-testid="leads-filters-sidebar"
     >
       {/* Header - Fixed */}
@@ -167,7 +175,7 @@ export function LeadsFiltersSidebar({
 
       {/* Body - Scrollable with native scroll */}
       <div 
-        className="flex-1 overflow-y-auto px-4 py-4"
+        className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
         style={{ maxHeight: `calc(100vh - ${SIDEBAR_SCROLL_OFFSET})` }}
       >
         <LeadsFiltersContent
