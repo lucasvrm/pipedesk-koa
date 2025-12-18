@@ -194,22 +194,37 @@ export function LeadsFiltersContent({
             defaultOpen={true}
             testId="ordering-section"
           >
-            <div className="space-y-1">
+            <div className="space-y-1" role="radiogroup" aria-label="Ordenação">
               {ORDER_BY_OPTIONS.map(option => {
                 const isSelected = draftFilters.orderBy === option.value
+                const inputId = `ordering-${option.value}`
                 return (
                   <label
                     key={option.value}
+                    htmlFor={inputId}
                     className={cn(
                       'flex items-center gap-2 cursor-pointer py-1.5 px-2 rounded transition-colors',
                       isSelected ? 'bg-accent' : 'hover:bg-muted'
                     )}
                     data-testid={`ordering-option-${option.value}`}
                   >
-                    <div className={cn(
-                      'flex h-4 w-4 items-center justify-center rounded-full border',
-                      isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
-                    )}>
+                    <input
+                      type="radio"
+                      id={inputId}
+                      name="orderBy"
+                      value={option.value}
+                      checked={isSelected}
+                      onChange={() => setDraftFilters(prev => ({ ...prev, orderBy: option.value }))}
+                      className="sr-only"
+                      aria-checked={isSelected}
+                    />
+                    <div 
+                      className={cn(
+                        'flex h-4 w-4 items-center justify-center rounded-full border',
+                        isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      )}
+                      aria-hidden="true"
+                    >
                       {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
                     </div>
                     <span className="text-sm">{option.label}</span>
