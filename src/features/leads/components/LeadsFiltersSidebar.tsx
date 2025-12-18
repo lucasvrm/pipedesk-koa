@@ -74,7 +74,8 @@ export function LeadsFiltersSidebar({
     daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
     selectedTags: appliedFilters.tags,
     nextActions: appliedFilters.nextAction,
-    orderBy: appliedFilters.orderBy
+    orderBy: appliedFilters.orderBy,
+    search: appliedFilters.search
   }))
 
   // Sync draft with applied when URL changes externally (e.g., browser back/forward)
@@ -96,7 +97,8 @@ export function LeadsFiltersSidebar({
       daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
       selectedTags: appliedFilters.tags,
       nextActions: appliedFilters.nextAction,
-      orderBy: appliedFilters.orderBy
+      orderBy: appliedFilters.orderBy,
+      search: appliedFilters.search
     })
   }, [appliedFilters])
 
@@ -110,6 +112,7 @@ export function LeadsFiltersSidebar({
     if (draftFilters.daysWithoutInteraction !== null) count++
     if (draftFilters.selectedTags.length > 0) count++
     if (showNextActionFilter && draftFilters.nextActions.length > 0) count++
+    if (draftFilters.search.trim() !== '') count++
     return count
   }, [draftFilters, showNextActionFilter])
 
@@ -124,7 +127,8 @@ export function LeadsFiltersSidebar({
       daysWithoutInteraction: null,
       selectedTags: [],
       nextActions: [],
-      orderBy: 'priority'
+      orderBy: 'priority',
+      search: ''
     })
   }, [])
 
@@ -150,6 +154,10 @@ export function LeadsFiltersSidebar({
     
     // Update orderBy (only for sales view, but safe to call regardless)
     actions.setOrderBy(draftFilters.orderBy)
+    
+    // Update search and reset page to 1 for fresh results
+    actions.setSearch(draftFilters.search)
+    actions.setPage(1)
   }, [draftFilters, actions, showNextActionFilter])
 
   // Compute visibility class based on isOpen

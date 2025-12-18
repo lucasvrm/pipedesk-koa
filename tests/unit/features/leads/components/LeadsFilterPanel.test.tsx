@@ -205,7 +205,9 @@ describe('LeadsFilterPanel', () => {
     it('renders ordering section when showNextActionFilter is true', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      expect(screen.getByText('Ordenação')).toBeInTheDocument()
+      // The ordering section is now a compact row with search + popover trigger
+      expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-popover-trigger')).toBeInTheDocument()
     })
 
     it('renders ordering section as a fixed block at the top (outside accordion)', () => {
@@ -215,26 +217,28 @@ describe('LeadsFilterPanel', () => {
       expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
     })
 
-    it('renders ordering section with visual separator (microcopy included)', () => {
+    it('renders search input next to ordering popover', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // Should have the microcopy explaining the ordering
-      expect(screen.getByText('Define a ordem da lista.')).toBeInTheDocument()
+      // Search input and ordering popover are in the same section
+      expect(screen.getByTestId('filter-search-input')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-popover-trigger')).toBeInTheDocument()
     })
 
     it('hides ordering section when showNextActionFilter is false', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={false} />)
       
-      expect(screen.queryByText('Ordenação')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('ordering-section-fixed')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('ordering-popover-trigger')).not.toBeInTheDocument()
     })
 
-    it('renders all ordering options', () => {
+    it('renders ordering popover trigger', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // Check some ordering options are rendered
-      expect(screen.getByTestId('ordering-option-priority')).toBeInTheDocument()
-      expect(screen.getByTestId('ordering-option-last_interaction')).toBeInTheDocument()
-      expect(screen.getByTestId('ordering-option-created_at')).toBeInTheDocument()
+      // The ordering is now a popover trigger
+      expect(screen.getByTestId('ordering-popover-trigger')).toBeInTheDocument()
+      // And a search input exists
+      expect(screen.getByTestId('filter-search-input')).toBeInTheDocument()
     })
 
     it('ordering section is accessible without collapsing other accordion sections', () => {
@@ -246,26 +250,27 @@ describe('LeadsFilterPanel', () => {
       expect(screen.getByText('Atividade do lead')).toBeInTheDocument()
     })
 
-    it('applies orderBy when apply button is clicked', () => {
+    it('applies default orderBy when apply button is clicked', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // Click an ordering option
-      fireEvent.click(screen.getByTestId('ordering-option-last_interaction'))
+      // Click apply without changing ordering (uses default)
+      fireEvent.click(screen.getByTestId('filter-panel-apply'))
+      
+      expect(mockActions.setOrderBy).toHaveBeenCalledWith('priority')
+    })
+
+    it('applies search and orderBy when apply button is clicked', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // Type in search input
+      const searchInput = screen.getByTestId('filter-search-input')
+      fireEvent.change(searchInput, { target: { value: 'test search' } })
       
       // Click apply
       fireEvent.click(screen.getByTestId('filter-panel-apply'))
       
-      expect(mockActions.setOrderBy).toHaveBeenCalledWith('last_interaction')
-    })
-
-    it('does not update URL immediately when ordering is changed (draft mode)', () => {
-      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
-      
-      // Click an ordering option
-      fireEvent.click(screen.getByTestId('ordering-option-created_at'))
-      
-      // Before apply, setOrderBy should NOT be called
-      expect(mockActions.setOrderBy).not.toHaveBeenCalled()
+      expect(mockActions.setSearch).toHaveBeenCalledWith('test search')
+      expect(mockActions.setPage).toHaveBeenCalledWith(1)
     })
   })
 })

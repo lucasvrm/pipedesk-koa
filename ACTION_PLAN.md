@@ -1,14 +1,133 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Sidebar Toggle + Bordas Completas + Scroll Independente)
+## 🚧 Status: ✅ Concluído (UX dos Controles - Prompt B)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - UX de Filtros: Sidebar com toggle + painel delimitado + scroll independente
+**Escopo:** Frontend - UX de Filtros: Ordenação em Popover + Busca ao lado + Checkboxes Multiselect
 
 ---
 
-## 🆕 Iteração atual - Sidebar Toggle + Bordas Completas + Scroll Independente (Prompt A)
+## 🆕 Iteração atual - UX dos Controles (Prompt B)
+
+### 🎯 Objetivo
+1. **Ordenação em Popover:** Transformar ordenação em trigger compacto com opções em Popover (radio-like)
+2. **Busca ao lado da Ordenação:** Input compacto para busca no topo do sidebar (Sales View), integrado ao draft/apply
+3. **Multiselect com Checkboxes:** Substituir `MultiSelectPopover` por listas de checkbox + label visíveis
+4. **Busca Local em Seções:** Adicionar filtro de busca local para Tags e Próxima Ação
+
+### ✅ Tarefas Concluídas
+- [x] **A) Ordenação em Popover (radio-like)**
+  - Substituído grupo de botões inline por Popover compacto
+  - Trigger mostra label do orderBy atual (ex: "Prioridade")
+  - Opções aparecem em lista com check na selecionada
+  - Não ocupa altura do painel quando fechado
+
+- [x] **B) Busca ao lado de Ordenação**
+  - Adicionado campo `search` ao interface `DraftFilters`
+  - Input compacto com ícone de lupa no topo do sidebar
+  - Botão X para limpar busca
+  - Sincronizado com draft: só aplica ao clicar "Aplicar filtros"
+  - `actions.setSearch()` e `actions.setPage(1)` chamados ao aplicar
+
+- [x] **C) Multiselect real (checkbox + label) nas seções**
+  - Status: lista de checkboxes visíveis com scroll
+  - Origem: lista de checkboxes visíveis com scroll
+  - Tags: lista de checkboxes com cor e busca local
+  - Próxima ação: lista de checkboxes com busca local
+  - Removidas todas as referências ao `MultiSelectPopover` no LeadsFiltersContent
+
+- [x] **D) Busca local em Tags e Próxima Ação**
+  - Estado local `tagsSearchQuery` e `nextActionsSearchQuery`
+  - Filtragem apenas das opções exibidas (não afeta backend)
+  - Input de busca integrado dentro da seção
+
+- [x] **E) Testes atualizados**
+  - Atualizado teste de ordenação para usar popover trigger
+  - 11 novos testes para:
+    - Search input e aplicação
+    - Status/Origin checkboxes
+    - Tags checkboxes com cor
+    - Next Action checkboxes
+    - Busca local em Tags
+    - Busca local em Next Actions
+  - Total: 26 testes passando
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsFiltersContent.tsx` - Nova UI com Popover/Search/Checkboxes
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Search no draft, setSearch/setPage no apply
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Mesmas mudanças para mobile
+
+### Arquivos de Teste Atualizados
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - 11 novos testes
+
+### Layout do Topo do Sidebar (Sales View)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  [🔍 Buscar leads...                    ] [Prioridade ▼] │
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  ▼ Filtros definidos pelo sistema                        │
+│    ├─ Responsável: [Meus] [Todos] [Selecionar ▼]        │
+│    ├─ Status:                                            │
+│    │   ☑️ Novo                                           │
+│    │   ☐ Em andamento                                    │
+│    │   ☐ Qualificado                                     │
+│    ├─ Prioridade: [Hot] [Warm] [Cold]                    │
+│    ├─ Origem:                                            │
+│    │   ☑️ Website                                        │
+│    │   ☐ Indicação                                       │
+│    └─ Tags:                                              │
+│        [🔍 Buscar tag...]                                │
+│        ☑️ 🔴 Hot Lead                                    │
+│        ☐ 🔵 Cold Lead                                    │
+│                                                          │
+│  ▼ Atividade do lead                                     │
+│    ├─ Dias sem interação: [3] [7] [14] [Qualquer]       │
+│    └─ Próxima ação:                                      │
+│        [🔍 Buscar ação...]                               │
+│        ☑️ Preparar para reunião                          │
+│        ☐ Follow-up pós-reunião                           │
+│        ☐ Fazer primeira ligação                          │
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  [Limpar]                         [Aplicar filtros (N)]  │
+└──────────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Ordenação é um trigger compacto; opções aparecem apenas no Popover
+- [ ] Existe input de busca ao lado do trigger de Ordenação
+- [ ] Busca só aplica ao clicar "Aplicar filtros" (é draft)
+- [ ] Status/Origem/Tags/Próxima ação são listas de checkbox + label
+- [ ] Busca local dentro de Tags filtra apenas as opções exibidas
+- [ ] Busca local dentro de Próxima ação filtra apenas as opções exibidas
+- [ ] Desktop sidebar e mobile sheet compartilham a mesma UX
+
+#### Mobile (/leads?view=sales)
+- [ ] Mesmos comportamentos no Sheet (mesma UX)
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~220 |
+| Linhas removidas | ~80 |
+| Arquivos modificados | 4 |
+| Testes adicionados | 11 |
+| Total testes relacionados | 26 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - Sidebar Toggle + Bordas Completas + Scroll Independente (Prompt A)
 
 ### 🎯 Objetivo
 1. **Sidebar Desktop com Toggle:** Sidebar aparece/desaparece via botão "Filtros" (não mais sempre visível)

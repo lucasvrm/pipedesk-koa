@@ -73,7 +73,8 @@ export function LeadsFilterPanel({
     daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
     selectedTags: appliedFilters.tags,
     nextActions: appliedFilters.nextAction,
-    orderBy: appliedFilters.orderBy
+    orderBy: appliedFilters.orderBy,
+    search: appliedFilters.search
   }))
 
   // Sync draft with applied only when panel opens (not while it's open)
@@ -89,7 +90,8 @@ export function LeadsFilterPanel({
         daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
         selectedTags: appliedFilters.tags,
         nextActions: appliedFilters.nextAction,
-        orderBy: appliedFilters.orderBy
+        orderBy: appliedFilters.orderBy,
+        search: appliedFilters.search
       })
     }
     wasOpenRef.current = isOpen
@@ -105,6 +107,7 @@ export function LeadsFilterPanel({
     if (draftFilters.daysWithoutInteraction !== null) count++
     if (draftFilters.selectedTags.length > 0) count++
     if (showNextActionFilter && draftFilters.nextActions.length > 0) count++
+    if (draftFilters.search.trim() !== '') count++
     return count
   }, [draftFilters, showNextActionFilter])
 
@@ -119,7 +122,8 @@ export function LeadsFilterPanel({
       daysWithoutInteraction: null,
       selectedTags: [],
       nextActions: [],
-      orderBy: 'priority'
+      orderBy: 'priority',
+      search: ''
     })
   }, [])
 
@@ -145,6 +149,10 @@ export function LeadsFilterPanel({
     
     // Update orderBy (only for sales view, but safe to call regardless)
     actions.setOrderBy(draftFilters.orderBy)
+    
+    // Update search and reset page to 1 for fresh results
+    actions.setSearch(draftFilters.search)
+    actions.setPage(1)
     
     // Close panel
     onOpenChange(false)
