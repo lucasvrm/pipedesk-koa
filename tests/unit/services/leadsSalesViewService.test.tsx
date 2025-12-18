@@ -302,7 +302,7 @@ describe('leadsSalesViewService', () => {
       expect(callUrl).toContain('page=2')
       expect(callUrl).toContain('pageSize=20')
       expect(callUrl).toContain('owner=me')
-      expect(callUrl).toMatch(/ownerIds=user-1[,%]2[Cc]user-2/)
+      expect(callUrl).toMatch(/owners=user-1[,%]2[Cc]user-2/)
       // Note: URLSearchParams encodes commas as %2C
       expect(callUrl).toMatch(/priority=hot[,%]2[Cc]warm/)
       expect(callUrl).toMatch(/status=new[,%]2[Cc]contacted/)
@@ -375,6 +375,149 @@ describe('leadsSalesViewService', () => {
 
         unmount()
       }
+    })
+
+    it('should pass owner=me filter correctly (Responsável: Meus)', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            owner: 'me',
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).toContain('owner=me')
+    })
+
+    it('should pass owners filter correctly (Responsável: Selecionar)', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            ownerIds: ['user-123', 'user-456'],
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).toMatch(/owners=user-123[,%]2[Cc]user-456/)
+      // Should NOT include owner=me when using custom owners
+      expect(callUrl).not.toContain('owner=me')
+    })
+
+    it('should NOT pass owner param when mode is all (Responsável: Todos)', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            // No owner or ownerIds = "all" mode
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).not.toContain('owner=')
+      expect(callUrl).not.toContain('owners=')
+    })
+
+    it('should pass days_without_interaction filter correctly (Sem interação há)', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            daysWithoutInteraction: 14,
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).toContain('days_without_interaction=14')
+    })
+
+    it('should NOT pass days_without_interaction when not set', async () => {
+      const mockData = {
+        data: [],
+        pagination: { total: 0, page: 1, perPage: 10 },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockData,
+      })
+
+      renderHook(
+        () =>
+          useLeadsSalesView({
+            page: 1,
+            pageSize: 10,
+            // No daysWithoutInteraction = filter not applied
+          }),
+        { wrapper: createWrapper() }
+      )
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+      const callUrl = mockFetch.mock.calls[0][0]
+      expect(callUrl).not.toContain('days_without_interaction')
     })
   })
 

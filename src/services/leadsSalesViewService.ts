@@ -152,7 +152,7 @@ async function fetchSalesView({ page = 1, pageSize = 10, ...filters }: LeadSales
     }
 
     if (filters.owner === 'me') searchParams.set('owner', filters.owner)
-    if (filters.ownerIds?.length) searchParams.set('ownerIds', filters.ownerIds.join(','))
+    if (filters.ownerIds?.length) searchParams.set('owners', filters.ownerIds.join(','))
     if (filters.priority?.length) searchParams.set('priority', filters.priority.join(','))
     if (filters.status?.length) searchParams.set('status', filters.status.join(','))
     if (filters.origin?.length) searchParams.set('origin', filters.origin.join(','))
