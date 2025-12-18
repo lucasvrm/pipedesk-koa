@@ -1,14 +1,117 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Correção de Filtros Responsável e Sem interação há)
+## 🚧 Status: ✅ Concluído (UX Zoho - Painel Lateral de Filtros + Redesign Layout)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - leadsSalesViewService, correção de parâmetro API
+**Escopo:** Frontend - Redesign UX de /leads com painel lateral estilo Zoho
 
 ---
 
-## 🆕 Iteração atual - Correção de Filtros "Responsável" e "Sem interação há"
+## 🆕 Iteração atual - UX Zoho (painel lateral filtros) + remover cards/título + reorganizar top/segunda linha
+
+### 🎯 Objetivo
+Implementar UX de filtros no padrão Zoho CRM:
+- Botão de filtro abre painel lateral (Sheet) com todos os filtros segmentados por categoria
+- Modo "rascunho" (draft) - alterações só aplicam ao clicar "Aplicar filtros"
+- Remover cards de métricas, título/subtítulo e chips de filtros ativos da página
+- Reorganizar UI em duas linhas compactas
+
+### ✅ Tarefas Concluídas
+- [x] Criar componente `LeadsFilterPanel.tsx` - Painel lateral Zoho-style com modo draft
+  - Header: "Filtrar Leads" com descrição
+  - Seções acordeon por categoria: "Filtros definidos pelo sistema" e "Atividade do lead"
+  - Footer fixo com botões "Limpar" e "Aplicar filtros (N)"
+  - Modo draft: alterações acumulam em estado local até "Aplicar"
+- [x] Remover elementos do layout antigo:
+  - Cards de métricas (LeadsSummaryCards)
+  - Título e subtítulo ("Leads" / "Gerencie seus potenciais clientes")
+  - Linha de chips de filtros ativos (LeadsFiltersChips)
+  - DataToolbar e LeadsFiltersBar inline
+- [x] Implementar novo layout em 2 linhas:
+  - Linha 1: Botão Filtros (esquerda) + View toggles + Botão "Criar Lead" (direita)
+  - Linha 2: "Total de registros: X" (esquerda) + Registros por página + Range + Paginação (direita)
+- [x] Build de produção bem-sucedido
+- [x] Testes do hook de filtros passando (25 testes)
+
+### Arquivos Criados
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Novo painel lateral de filtros
+
+### Arquivos Modificados
+- `src/features/leads/pages/LeadsListPage.tsx` - Redesign completo do layout
+
+### Layout Implementado (2 Linhas)
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│ LINHA 1                                                                │
+│ ┌──────────────────┐                          ┌─────┬─────┬─────┐     │
+│ │ 🔍 Filtros (N)   │                          │Lista│Cards│Kanban│ Criar│
+│ └──────────────────┘                          └─────┴─────┴─────┘ Lead │
+├───────────────────────────────────────────────────────────────────────┤
+│ LINHA 2                                                                │
+│ Total de registros: 123                  Registros: 10 ▼  1-10  < >   │
+├───────────────────────────────────────────────────────────────────────┤
+│ LISTA / CARDS / KANBAN                                                 │
+│ ...                                                                    │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### Estrutura do Painel de Filtros (LeadsFilterPanel)
+
+```
+┌───────────────────────────────────────────────────────┐
+│ HEADER                                                │
+│ 🔍 Filtrar Leads                                      │
+│ Ajuste os filtros para refinar a lista               │
+├───────────────────────────────────────────────────────┤
+│ ▼ Filtros definidos pelo sistema                      │
+│   ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
+│   ├─ Status: [Selecionar status... ▼]                │
+│   ├─ Prioridade: [Hot] [Warm] [Cold] pill group      │
+│   ├─ Origem: [Selecionar origem... ▼]                │
+│   └─ Tags: [Selecionar tags... ▼]                    │
+├───────────────────────────────────────────────────────┤
+│ ▼ Atividade do lead                                   │
+│   ├─ Dias sem interação: [3] [7] [14] [Qualquer]     │
+│   └─ Próxima ação (view=sales): [Selecionar... ▼]    │
+├───────────────────────────────────────────────────────┤
+│ FOOTER (fixo)                                         │
+│ [Limpar]                      [Aplicar filtros (N)]  │
+└───────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Botão "Filtros" na linha 1 abre painel lateral
+- [ ] Painel exibe filtros organizados em acordeons
+- [ ] Alterar filtro no painel NÃO dispara fetch imediatamente
+- [ ] "Aplicar filtros" comita mudanças para URL e dispara refetch
+- [ ] "Limpar" zera seleção no painel (draft)
+- [ ] Fechar painel sem aplicar descarta alterações
+- [ ] View toggles (Lista/Cards/Kanban) funcionam corretamente
+- [ ] Paginação funciona na linha 2 (registros por página, navegação)
+- [ ] Total de registros reflete filtros aplicados
+- [ ] Cards de métricas NÃO aparecem
+- [ ] Título/subtítulo da página NÃO aparecem
+- [ ] Chips de filtros ativos NÃO aparecem na página
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~450 |
+| Linhas removidas | ~250 |
+| Arquivos criados | 1 |
+| Arquivos modificados | 1 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟡 Médio (mudança significativa de layout, mitigado por reuso de componentes existentes)
+
+---
+
+## ✅ Iteração anterior - Correção de Filtros "Responsável" e "Sem interação há"
 
 ### 🎯 Problema Resolvido
 - Bug: os filtros "Responsável" e "Sem interação há" apareciam na UI e mudavam visualmente, mas não alteravam a lista de leads
