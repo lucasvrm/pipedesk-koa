@@ -16,13 +16,11 @@ interface LeadsFilterSectionProps {
 /**
  * LeadsFilterSection - Consistent wrapper for filter sections
  * 
- * Provides a collapsible section with:
- * - Border on all sides (rounded)
- * - Header with title and toggle
- * - Body with padding
+ * Provides a collapsible section WITHOUT internal border/rounded wrapper
+ * to avoid overflow/clipping issues in scrollable containers.
  * 
- * This ensures "Filtros definidos pelo sistema" and "Atividade do lead"
- * have exactly the same visual structure (consistent borders).
+ * Uses border-b as separator between sections instead of individual borders.
+ * The sidebar's outer container provides the complete border.
  */
 export function LeadsFilterSection({
   title,
@@ -31,18 +29,16 @@ export function LeadsFilterSection({
   testId,
 }: LeadsFilterSectionProps) {
   return (
-    <Collapsible defaultOpen={defaultOpen} className="group" data-testid={testId}>
-      <div className="border rounded-lg bg-card">
-        <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors rounded-t-lg">
-          <span className="text-sm font-medium">{title}</span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="border-t px-4 py-4 space-y-4">
-            {children}
-          </div>
-        </CollapsibleContent>
-      </div>
+    <Collapsible defaultOpen={defaultOpen} className="group border-b pb-4 last:border-b-0" data-testid={testId}>
+      <CollapsibleTrigger className="flex w-full items-center justify-between py-3 text-left hover:bg-muted/50 transition-colors rounded-lg -mx-2 px-2">
+        <span className="text-sm font-medium">{title}</span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-4 pt-2">
+          {children}
+        </div>
+      </CollapsibleContent>
     </Collapsible>
   )
 }
