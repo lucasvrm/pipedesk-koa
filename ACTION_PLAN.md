@@ -1,14 +1,99 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Remove Sticky + Add Bottom Bar + Ordering in Filter Panel)
+## 🚧 Status: ✅ Concluído (Ordenação Fixa + Separação Visual + Scroll Melhorado no Painel de Filtros)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Remoção do sticky header, adição de Bottom Bar, e Ordenação no painel de filtros
+**Escopo:** Frontend - Melhorias de UX no Sheet/Painel lateral de filtros inteligentes
 
 ---
 
-## 🆕 Iteração atual - Remove Sticky + Bottom Bar + Ordenação no Painel
+## 🆕 Iteração atual - Ordenação fixa fora do Accordion + borda no header + scroll descobrível
+
+### 🎯 Objetivo
+1. **Tirar "Ordenação" de dentro do Accordion**: Renderizar como bloco fixo no topo do painel, acima das seções de filtros
+2. **Adicionar separação visual**: Borda/Separator abaixo da seção de Ordenação para clareza
+3. **Melhorar descoberta de scroll**: Scrollbar mais visível no painel de filtros
+
+### ✅ Tarefas Concluídas
+- [x] **A) Ordenação como bloco fixo no topo**
+  - Removido `AccordionItem` de Ordenação de dentro do `Accordion`
+  - Criado bloco dedicado no topo do painel (acima das seções acordeon)
+  - Adicionado microcopy "Define a ordem da lista." para clareza
+  - Mantido o modelo draft + aplicar (alterações só comitadas via "Aplicar filtros")
+  - Adicionado `data-testid="ordering-section-fixed"` para identificação em testes
+  - Seção só aparece quando `showNextActionFilter=true` (view=sales)
+
+- [x] **B) Separação visual da seção Ordenação**
+  - Adicionado componente `Separator` abaixo da seção de Ordenação
+  - Espaçamento adequado com `mt-4` no Separator
+
+- [x] **C) Scroll mais descobrível**
+  - Ajustado `ScrollArea` com estilos personalizados via CSS seletores
+  - Scrollbar com thumb mais visível: `bg-muted-foreground/30`
+  - Largura do scrollbar mantida em `w-2.5` (já adequada)
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Ordenação movida para fora do Accordion, Separator adicionado, scrollbar customizado
+- `tests/unit/features/leads/components/LeadsFilterPanel.test.tsx` - Adicionados 3 novos testes para a nova estrutura
+
+### Estrutura do Painel de Filtros (NOVA)
+
+```
+┌───────────────────────────────────────────────────────┐
+│ HEADER                                                │
+│ 🔍 Filtrar Leads                                      │
+│ Ajuste os filtros para refinar a lista               │
+├───────────────────────────────────────────────────────┤
+│ 🔀 Ordenação (FIXO NO TOPO - fora do Accordion)       │
+│   └─ [Prioridade] [Última interação] [Criação]        │
+│      [Status] [Próxima ação] [Responsável]            │
+│   Define a ordem da lista.                            │
+│   ────────────────────── (Separator)                  │
+├───────────────────────────────────────────────────────┤
+│ ▼ Filtros definidos pelo sistema                      │
+│   ├─ Responsável: [Meus] [Todos] [Selecionar ▼]      │
+│   ├─ Status: [Selecionar status... ▼]                │
+│   ├─ Prioridade: [Hot] [Warm] [Cold]                 │
+│   ├─ Origem: [Selecionar origem... ▼]                │
+│   └─ Tags: [Selecionar tags... ▼]                    │
+├───────────────────────────────────────────────────────┤
+│ ▼ Atividade do lead                                   │
+│   ├─ Dias sem interação: [3] [7] [14] [Qualquer]     │
+│   └─ Próxima ação: [Selecionar... ▼]                 │
+├───────────────────────────────────────────────────────┤
+│ FOOTER (fixo)                                         │
+│ [Limpar]                      [Aplicar filtros (N)]  │
+└───────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual (/leads?view=sales)
+- [ ] Abrir painel de filtros: "Ordenação" aparece imediatamente no topo
+- [ ] Expandir seções de filtros: "Ordenação" continua acessível (não precisa fechar outras seções)
+- [ ] Alterar ordenação no painel: não aplica até "Aplicar filtros"
+- [ ] Clicar "Aplicar filtros": URL inclui `order_by=...` e lista reflete ordenação
+- [ ] Separator visível abaixo da seção Ordenação
+- [ ] Scroll do painel é evidente e confortável (scrollbar visível)
+- [ ] Microcopy "Define a ordem da lista." visível
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~40 |
+| Linhas removidas | ~30 |
+| Arquivos modificados | 2 |
+| Arquivos criados | 0 |
+| Testes adicionados | 3 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de layout localizada, sem alteração de lógica de negócio)
+
+---
+
+## ✅ Iteração anterior - Remove Sticky + Bottom Bar + Ordenação no Painel
 
 ### 🎯 Objetivo
 1. **Restaurar "Ordenação" no Painel de Filtros**: Adicionar bloco de ordenação no Sheet de filtros, funcionando via draft + aplicar

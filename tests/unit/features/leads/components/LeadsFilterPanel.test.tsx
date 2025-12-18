@@ -208,6 +208,20 @@ describe('LeadsFilterPanel', () => {
       expect(screen.getByText('Ordenação')).toBeInTheDocument()
     })
 
+    it('renders ordering section as a fixed block at the top (outside accordion)', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // The ordering section should have the new fixed test id
+      expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
+    })
+
+    it('renders ordering section with visual separator (microcopy included)', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // Should have the microcopy explaining the ordering
+      expect(screen.getByText('Define a ordem da lista.')).toBeInTheDocument()
+    })
+
     it('hides ordering section when showNextActionFilter is false', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={false} />)
       
@@ -221,6 +235,15 @@ describe('LeadsFilterPanel', () => {
       expect(screen.getByTestId('ordering-option-priority')).toBeInTheDocument()
       expect(screen.getByTestId('ordering-option-last_interaction')).toBeInTheDocument()
       expect(screen.getByTestId('ordering-option-created_at')).toBeInTheDocument()
+    })
+
+    it('ordering section is accessible without collapsing other accordion sections', () => {
+      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // Both the ordering section and filter sections should be visible simultaneously
+      expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
+      expect(screen.getByText('Filtros definidos pelo sistema')).toBeInTheDocument()
+      expect(screen.getByText('Atividade do lead')).toBeInTheDocument()
     })
 
     it('applies orderBy when apply button is clicked', () => {
