@@ -72,8 +72,7 @@ export function LeadsFiltersSidebar({
     daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
     selectedTags: appliedFilters.tags,
     nextActions: appliedFilters.nextAction,
-    orderBy: appliedFilters.orderBy,
-    search: appliedFilters.search
+    orderBy: appliedFilters.orderBy
   }))
 
   // Sync draft with applied when URL changes externally (e.g., browser back/forward)
@@ -95,8 +94,7 @@ export function LeadsFiltersSidebar({
       daysWithoutInteraction: appliedFilters.daysWithoutInteraction,
       selectedTags: appliedFilters.tags,
       nextActions: appliedFilters.nextAction,
-      orderBy: appliedFilters.orderBy,
-      search: appliedFilters.search
+      orderBy: appliedFilters.orderBy
     })
   }, [appliedFilters])
 
@@ -110,7 +108,6 @@ export function LeadsFiltersSidebar({
     if (draftFilters.daysWithoutInteraction !== null) count++
     if (draftFilters.selectedTags.length > 0) count++
     if (showNextActionFilter && draftFilters.nextActions.length > 0) count++
-    if (draftFilters.search.trim() !== '') count++
     return count
   }, [draftFilters, showNextActionFilter])
 
@@ -125,8 +122,7 @@ export function LeadsFiltersSidebar({
       daysWithoutInteraction: null,
       selectedTags: [],
       nextActions: [],
-      orderBy: 'priority',
-      search: ''
+      orderBy: 'priority'
     })
   }, [])
 
@@ -153,8 +149,7 @@ export function LeadsFiltersSidebar({
     // Update orderBy (only for sales view, but safe to call regardless)
     actions.setOrderBy(draftFilters.orderBy)
     
-    // Update search and reset page to 1 for fresh results
-    actions.setSearch(draftFilters.search)
+    // Reset page to 1 for fresh results
     actions.setPage(1)
   }, [draftFilters, actions, showNextActionFilter])
 
@@ -165,7 +160,7 @@ export function LeadsFiltersSidebar({
 
   return (
     <aside
-      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 border rounded-xl bg-card shadow-sm overflow-hidden md:sticky md:top-20 self-start`}
+      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 border rounded-xl bg-card shadow-sm overflow-hidden md:sticky md:top-20`}
       data-testid="leads-filters-sidebar"
     >
       {/* Body - Scrollable with native scroll (includes footer) */}

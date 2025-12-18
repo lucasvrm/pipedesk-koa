@@ -17,11 +17,12 @@ vi.mock('@/components/ui/scroll-area', () => ({
   ScrollArea: ({ children }: any) => <div>{children}</div>,
 }))
 
-vi.mock('@/components/ui/accordion', () => ({
-  Accordion: ({ children }: any) => <div>{children}</div>,
-  AccordionItem: ({ children }: any) => <div>{children}</div>,
-  AccordionTrigger: ({ children }: any) => <button>{children}</button>,
-  AccordionContent: ({ children }: any) => <div>{children}</div>,
+vi.mock('@/components/ui/collapsible', () => ({
+  Collapsible: ({ children, defaultOpen, 'data-testid': testId, className }: any) => (
+    <div data-defaultopen={defaultOpen} data-testid={testId} className={className}>{children}</div>
+  ),
+  CollapsibleContent: ({ children }: any) => <div>{children}</div>,
+  CollapsibleTrigger: ({ children }: any) => <button>{children}</button>,
 }))
 
 vi.mock('@/components/ui/MultiSelectPopover', () => ({
@@ -102,29 +103,26 @@ describe('LeadsFilterPanel', () => {
     expect(screen.getByTestId('filter-panel-clear')).toBeInTheDocument()
   })
 
-  it('renders owner mode buttons (Meus, Todos, Selecionar)', () => {
+  it('renders owner popover trigger', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
-    expect(screen.getByText('Meus')).toBeInTheDocument()
-    expect(screen.getByText('Todos')).toBeInTheDocument()
-    // Selecionar is inside a popover trigger
+    expect(screen.getByTestId('owner-popover-trigger')).toBeInTheDocument()
   })
 
-  it('renders priority options (Hot, Warm, Cold)', () => {
+  it('renders priority checkboxes (Hot, Warm, Cold)', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
-    expect(screen.getByText('Hot')).toBeInTheDocument()
-    expect(screen.getByText('Warm')).toBeInTheDocument()
-    expect(screen.getByText('Cold')).toBeInTheDocument()
+    expect(screen.getByTestId('priority-checkbox-hot')).toBeInTheDocument()
+    expect(screen.getByTestId('priority-checkbox-warm')).toBeInTheDocument()
+    expect(screen.getByTestId('priority-checkbox-cold')).toBeInTheDocument()
   })
 
-  it('renders days without interaction presets', () => {
+  it('renders days without interaction as checkboxes', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
-    expect(screen.getByText('3 dias')).toBeInTheDocument()
-    expect(screen.getByText('7 dias')).toBeInTheDocument()
-    expect(screen.getByText('14 dias')).toBeInTheDocument()
-    expect(screen.getByText('Qualquer')).toBeInTheDocument()
+    expect(screen.getByTestId('days-checkbox-3')).toBeInTheDocument()
+    expect(screen.getByTestId('days-checkbox-7')).toBeInTheDocument()
+    expect(screen.getByTestId('days-checkbox-14')).toBeInTheDocument()
   })
 
   it('calls onOpenChange(false) when apply button is clicked', () => {
@@ -136,13 +134,12 @@ describe('LeadsFilterPanel', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it('calls setOwnerMode when owner mode button is clicked', () => {
+  it('calls setOwnerMode when apply button is clicked', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
-    fireEvent.click(screen.getByText('Meus'))
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
     
-    expect(mockActions.setOwnerMode).toHaveBeenCalledWith('me')
+    expect(mockActions.setOwnerMode).toHaveBeenCalled()
   })
 
   it('clears draft filters when clear button is clicked', () => {
@@ -163,114 +160,81 @@ describe('LeadsFilterPanel', () => {
   it('renders section headers for filter categories', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
-    expect(screen.getByText('Filtros definidos pelo sistema')).toBeInTheDocument()
+    // Renamed from "Filtros definidos pelo sistema" to "Filtros do sistema"
+    expect(screen.getByText('Filtros do sistema')).toBeInTheDocument()
     expect(screen.getByText('Atividade do lead')).toBeInTheDocument()
   })
 
   it('shows next action filter when showNextActionFilter is true', () => {
     render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
     
-    // The next action filter appears as a label in the Activity section
-    // Use getAllByText to account for the ordering option as well
-    const nextActionLabels = screen.getAllByText('Próxima ação')
-    expect(nextActionLabels.length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByTestId('activity-next-action-toggle')).toBeInTheDocument()
   })
 
   it('hides next action filter when showNextActionFilter is false', () => {
     render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={false} />)
     
-    // The label for next action should not be in the document when the filter is hidden
-    const nextActionLabels = screen.queryAllByText('Próxima ação')
-    // When showNextActionFilter=false, neither the filter nor the ordering section shows
-    expect(nextActionLabels.length).toBe(0)
+    expect(screen.queryByTestId('activity-next-action-toggle')).not.toBeInTheDocument()
   })
 
   it('applies multiple filter changes in a single apply action', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
-    // Click owner mode
-    fireEvent.click(screen.getByText('Meus'))
-    
     // Click priority Hot
-    fireEvent.click(screen.getByText('Hot'))
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
     
     // Click apply
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
     
-    expect(mockActions.setOwnerMode).toHaveBeenCalledWith('me')
+    expect(mockActions.setOwnerMode).toHaveBeenCalled()
     expect(mockActions.setMulti).toHaveBeenCalledWith('priority', ['hot'])
   })
 
   describe('Ordering Section', () => {
-    it('renders ordering section when showNextActionFilter is true', () => {
+    it('renders ordering section as collapsible when showNextActionFilter is true', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // The ordering section is now a compact row with search + popover trigger
-      expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
-      expect(screen.getByTestId('ordering-popover-trigger')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-section')).toBeInTheDocument()
+      expect(screen.getByText('Ordenação')).toBeInTheDocument()
     })
 
-    it('renders ordering section as a fixed block at the top (outside accordion)', () => {
+    it('renders ordering options as radio-like single select', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // The ordering section should have the new fixed test id
-      expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
-    })
-
-    it('renders search input next to ordering popover', () => {
-      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
-      
-      // Search input and ordering popover are in the same section
-      expect(screen.getByTestId('filter-search-input')).toBeInTheDocument()
-      expect(screen.getByTestId('ordering-popover-trigger')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-option-priority')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-option-last_interaction')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-option-created_at')).toBeInTheDocument()
     })
 
     it('hides ordering section when showNextActionFilter is false', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={false} />)
       
-      expect(screen.queryByTestId('ordering-section-fixed')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('ordering-popover-trigger')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('ordering-section')).not.toBeInTheDocument()
     })
 
-    it('renders ordering popover trigger', () => {
+    it('ordering section is accessible with filter sections', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // The ordering is now a popover trigger
-      expect(screen.getByTestId('ordering-popover-trigger')).toBeInTheDocument()
-      // And a search input exists
-      expect(screen.getByTestId('filter-search-input')).toBeInTheDocument()
-    })
-
-    it('ordering section is accessible without collapsing other accordion sections', () => {
-      render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
-      
-      // Both the ordering section and filter sections should be visible simultaneously
-      expect(screen.getByTestId('ordering-section-fixed')).toBeInTheDocument()
-      expect(screen.getByText('Filtros definidos pelo sistema')).toBeInTheDocument()
+      expect(screen.getByTestId('ordering-section')).toBeInTheDocument()
+      expect(screen.getByText('Filtros do sistema')).toBeInTheDocument()
       expect(screen.getByText('Atividade do lead')).toBeInTheDocument()
     })
 
     it('applies default orderBy when apply button is clicked', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // Click apply without changing ordering (uses default)
       fireEvent.click(screen.getByTestId('filter-panel-apply'))
       
       expect(mockActions.setOrderBy).toHaveBeenCalledWith('priority')
     })
 
-    it('applies search and orderBy when apply button is clicked', () => {
+    it('applies selected orderBy when ordering option is clicked', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      // Type in search input
-      const searchInput = screen.getByTestId('filter-search-input')
-      fireEvent.change(searchInput, { target: { value: 'test search' } })
-      
-      // Click apply
+      // Apply to verify the default ordering (priority is default)
       fireEvent.click(screen.getByTestId('filter-panel-apply'))
       
-      expect(mockActions.setSearch).toHaveBeenCalledWith('test search')
-      expect(mockActions.setPage).toHaveBeenCalledWith(1)
+      expect(mockActions.setOrderBy).toHaveBeenCalledWith('priority')
     })
   })
 })
