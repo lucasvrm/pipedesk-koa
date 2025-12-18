@@ -13,9 +13,10 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem
+  DropdownMenuItem,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
-import { QuickAction, QuickActionsMenu } from '@/components/QuickActionsMenu'
+import { QuickAction } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 import { Lead } from '@/lib/types'
 import { safeString, safeStringOptional } from '@/lib/utils'
@@ -196,7 +197,7 @@ export function LeadSalesRow({
   lastInteractionType,
   nextAction,
   owner,
-  actions,
+  actions: _actions, // Kept for backward compatibility but actions are now handled internally
   status,
   origin,
   createdAt,
@@ -825,140 +826,87 @@ export function LeadSalesRow({
         )}
       </TableCell>
 
-      {/* Ações - quick actions + kebab menu in a single cell */}
-      <TableCell className="w-[200px] shrink-0 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-1">
-          <TooltipProvider delayDuration={200}>
-            <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      onClick={handleWhatsApp}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>WhatsApp</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={handleEmail}
-                    >
-                      <Mail className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Gmail</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-gray-900 hover:text-black hover:bg-gray-100"
-                      onClick={handlePhone}
-                    >
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Ligar</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
-                      onClick={handleOpenDriveFolder}
-                      disabled={isDriveLoading}
-                    >
-                      {isDriveLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <HardDrive className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Google Drive</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                      onClick={handleSchedule}
-                    >
-                      <Calendar className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Agendar Reunião</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={handleCopyId}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Copiar ID</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </TooltipProvider>
-
-          {/* Kebab menu - always visible */}
-          {actions && actions.length > 0 ? (
-            <QuickActionsMenu
-              actions={actions}
-              triggerIcon={<MoreVertical className="h-[18px] w-[18px]" />}
-              triggerVariant="ghost"
-              triggerSize="icon"
-            />
-          ) : (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMenuClick}>
+      {/* Ações - All actions consolidated in kebab menu "..." */}
+      <TableCell className="w-[60px] shrink-0 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              data-testid="lead-actions-menu"
+            >
               <MoreVertical className="h-[18px] w-[18px]" />
             </Button>
-          )}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem 
+              onClick={handleWhatsApp}
+              disabled={!primaryContact?.phone}
+              data-testid="action-whatsapp"
+            >
+              <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+              Enviar Whatsapp
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem 
+              onClick={handleEmail}
+              disabled={!primaryContact?.email}
+              data-testid="action-email"
+            >
+              <Mail className="mr-2 h-4 w-4 text-blue-600" />
+              Enviar E-mail
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem 
+              onClick={handlePhone}
+              disabled={!primaryContact?.phone}
+              data-testid="action-phone"
+            >
+              <Phone className="mr-2 h-4 w-4" />
+              Ligar
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem 
+              onClick={handleOpenDriveFolder}
+              disabled={isDriveLoading}
+              data-testid="action-drive"
+            >
+              {isDriveLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-yellow-600" />
+              ) : (
+                <HardDrive className="mr-2 h-4 w-4 text-yellow-600" />
+              )}
+              Drive
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem 
+              onClick={handleSchedule}
+              data-testid="action-schedule"
+            >
+              <Calendar className="mr-2 h-4 w-4 text-orange-600" />
+              Agendar Reunião
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem 
+              onClick={handleCopyId}
+              data-testid="action-copy-id"
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copiar ID
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem 
+              onClick={onClick}
+              data-testid="action-details"
+            >
+              <MoreVertical className="mr-2 h-4 w-4" />
+              Detalhes
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
 
       {/* Modals - rendered via portals so they can be inside TableRow */}
@@ -991,7 +939,7 @@ export function LeadSalesRowSkeleton() {
       <TableCell className="min-w-[180px] lg:w-[14%]"><Skeleton className="h-12 w-full" /></TableCell>
       <TableCell className="min-w-[220px] lg:w-[22%]"><Skeleton className="h-8 w-full" /></TableCell>
       <TableCell className="min-w-[160px] lg:w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[200px] shrink-0 whitespace-nowrap"><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="w-[60px] shrink-0 whitespace-nowrap"><Skeleton className="h-8 w-8" /></TableCell>
     </TableRow>
   )
 }
