@@ -108,7 +108,7 @@ describe('LeadSalesRow', () => {
     expect(screen.getByText('Sem status')).toBeInTheDocument()
   })
 
-  it('calls onScheduleClick when calendar button is clicked', async () => {
+  it('calls onScheduleClick when Agendar Reunião menu item is clicked', async () => {
     const onScheduleClick = vi.fn()
     const user = userEvent.setup()
     
@@ -120,25 +120,17 @@ describe('LeadSalesRow', () => {
       </MemoryRouter>
     )
 
-    // Find the row and hover to make action buttons visible
-    const row = screen.getByText('Empresa Teste').closest('tr')
-    expect(row).toBeInTheDocument()
+    // Find and click the actions menu trigger (kebab menu)
+    const actionsMenuButton = screen.getByTestId('lead-actions-menu')
+    expect(actionsMenuButton).toBeInTheDocument()
     
-    if (row) {
-      await user.hover(row)
-    }
-
-    // Find the calendar button by its orange styling (third button in the actions cell)
-    const actionButtons = screen.getAllByRole('button')
-    // Find the button with the orange color class
-    const calendarButton = actionButtons.find(btn => 
-      btn.className.includes('text-orange-600')
-    )
+    await user.click(actionsMenuButton)
     
-    expect(calendarButton).toBeInTheDocument()
-    if (calendarButton) {
-      await user.click(calendarButton)
-    }
+    // Wait for the dropdown to open and find the "Agendar Reunião" menu item
+    const scheduleMenuItem = await screen.findByText('Agendar Reunião')
+    expect(scheduleMenuItem).toBeInTheDocument()
+    
+    await user.click(scheduleMenuItem)
 
     expect(onScheduleClick).toHaveBeenCalledTimes(1)
     expect(onScheduleClick).toHaveBeenCalledWith(
@@ -149,7 +141,7 @@ describe('LeadSalesRow', () => {
     )
   })
 
-  it('renders calendar button', async () => {
+  it('renders actions menu with all expected items', async () => {
     const user = userEvent.setup()
     
     render(
@@ -160,18 +152,20 @@ describe('LeadSalesRow', () => {
       </MemoryRouter>
     )
 
-    const row = screen.getByText('Empresa Teste').closest('tr')
-    if (row) {
-      await user.hover(row)
-    }
+    // Find and click the actions menu trigger (kebab menu)
+    const actionsMenuButton = screen.getByTestId('lead-actions-menu')
+    expect(actionsMenuButton).toBeInTheDocument()
     
-    // Check that a button with orange styling exists (calendar button)
-    const actionButtons = screen.getAllByRole('button')
-    const calendarButton = actionButtons.find(btn => 
-      btn.className.includes('text-orange-600')
-    )
+    await user.click(actionsMenuButton)
     
-    expect(calendarButton).toBeInTheDocument()
+    // Wait for the dropdown to open and verify all expected menu items are present using test ids
+    expect(await screen.findByTestId('action-whatsapp')).toBeInTheDocument()
+    expect(screen.getByTestId('action-email')).toBeInTheDocument()
+    expect(screen.getByTestId('action-phone')).toBeInTheDocument()
+    expect(screen.getByTestId('action-drive')).toBeInTheDocument()
+    expect(screen.getByTestId('action-schedule')).toBeInTheDocument()
+    expect(screen.getByTestId('action-copy-id')).toBeInTheDocument()
+    expect(screen.getByTestId('action-details')).toBeInTheDocument()
   })
 
   it('renders nextAction.label correctly from backend', () => {
@@ -259,6 +253,111 @@ describe('LeadSalesRow', () => {
 
     expect(screen.getByText('Urgente')).toBeInTheDocument()
     expect(screen.getByText('VIP')).toBeInTheDocument()
+  })
+
+  it('calls clipboard writeText when Copiar ID menu item is clicked', async () => {
+    const user = userEvent.setup()
+    const mockWriteText = vi.fn().mockResolvedValue(undefined)
+    
+    // Mock clipboard API using Object.defineProperty
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: mockWriteText },
+      writable: true,
+      configurable: true
+    })
+    
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    // Open the actions menu
+    const actionsMenuButton = screen.getByTestId('lead-actions-menu')
+    await user.click(actionsMenuButton)
+    
+    // Click "Copiar ID"
+    const copyIdMenuItem = await screen.findByTestId('action-copy-id')
+    await user.click(copyIdMenuItem)
+    
+    expect(mockWriteText).toHaveBeenCalledWith('lead-1')
+  })
+
+  it('calls onClick when Detalhes menu item is clicked', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...baseLead} onClick={onClick} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    // Open the actions menu
+    const actionsMenuButton = screen.getByTestId('lead-actions-menu')
+    await user.click(actionsMenuButton)
+    
+    // Click "Detalhes"
+    const detailsMenuItem = await screen.findByText('Detalhes')
+    await user.click(detailsMenuItem)
+    
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables WhatsApp and Ligar menu items when phone is not available', async () => {
+    const user = userEvent.setup()
+    const leadWithoutPhone = {
+      ...baseLead,
+      primaryContact: { name: 'Contato sem telefone' }
+    }
+    
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...leadWithoutPhone} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    // Open the actions menu
+    const actionsMenuButton = screen.getByTestId('lead-actions-menu')
+    await user.click(actionsMenuButton)
+    
+    // Find WhatsApp and Ligar items - they should be disabled (data-disabled attribute exists)
+    const whatsappItem = await screen.findByTestId('action-whatsapp')
+    const phoneItem = screen.getByTestId('action-phone')
+    
+    expect(whatsappItem).toHaveAttribute('data-disabled')
+    expect(phoneItem).toHaveAttribute('data-disabled')
+  })
+
+  it('disables E-mail menu item when email is not available', async () => {
+    const user = userEvent.setup()
+    const leadWithoutEmail = {
+      ...baseLead,
+      primaryContact: { name: 'Contato sem email' }
+    }
+    
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadSalesRow {...leadWithoutEmail} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    // Open the actions menu
+    const actionsMenuButton = screen.getByTestId('lead-actions-menu')
+    await user.click(actionsMenuButton)
+    
+    // Find Email item - it should be disabled (data-disabled attribute exists)
+    const emailItem = await screen.findByTestId('action-email')
+    
+    expect(emailItem).toHaveAttribute('data-disabled')
   })
 })
 

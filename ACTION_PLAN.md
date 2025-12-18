@@ -1,14 +1,123 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (UX Zoho - Painel Lateral de Filtros + Redesign Layout)
+## 🚧 Status: ✅ Concluído (Sticky Header + Ações em Menu Kebab)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Redesign UX de /leads com painel lateral estilo Zoho
+**Escopo:** Frontend - Sticky header e consolidação de ações em menu "..."
 
 ---
 
-## 🆕 Iteração atual - UX Zoho (painel lateral filtros) + remover cards/título + reorganizar top/segunda linha
+## 🆕 Iteração atual - Sticky Header (2 linhas) + Ações Rápidas no Menu "..."
+
+### 🎯 Objetivo
+1. Tornar as duas linhas do topo (filtros + paginação) **sticky** durante scroll
+2. Consolidar todos os ícones de ação rápida em um único menu kebab ("...")
+
+### ✅ Tarefas Concluídas
+- [x] Criar wrapper sticky para Linha 1 + Linha 2 em `LeadsListPage.tsx`
+  - Classes: `sticky top-16 z-40 bg-card rounded-t-xl shadow-sm`
+  - `top-16` (4rem = 64px) posiciona abaixo do header principal
+  - `data-testid="leads-sticky-header"` para identificação em testes
+- [x] Remover ícones de ação rápida individuais da coluna "Ações"
+  - WhatsApp, Email, Telefone, Drive, Agenda, Copiar ID → todos movidos para menu
+- [x] Consolidar todas as ações no menu "..." (DropdownMenu):
+  - Enviar Whatsapp (desabilitado se sem telefone)
+  - Enviar E-mail (desabilitado se sem email)
+  - Ligar (desabilitado se sem telefone)
+  - Drive
+  - Agendar Reunião
+  - --- (separador)
+  - Copiar ID
+  - Detalhes
+- [x] Reduzir largura da coluna Ações de 200px para 60px
+- [x] Atualizar skeleton para nova largura
+- [x] Atualizar testes existentes para novo comportamento
+- [x] Adicionar novos testes para:
+  - Menu contém todos os 7 itens esperados
+  - Copiar ID chama clipboard.writeText
+  - Detalhes chama onClick
+  - Itens desabilitados quando dados ausentes
+- [x] Criar testes para sticky header (CSS requirements)
+- [x] Build de produção bem-sucedido
+- [x] Todos os 31 testes relacionados passando
+
+### Arquivos Modificados
+- `src/features/leads/pages/LeadsListPage.tsx` - Wrapper sticky para linhas 1+2
+- `src/features/leads/components/LeadSalesRow.tsx` - Ações consolidadas no menu kebab
+- `src/features/leads/components/LeadsSalesList.tsx` - Largura da coluna Ações reduzida
+
+### Arquivos Criados
+- `tests/unit/pages/LeadsListPage.sticky.test.tsx` - Testes de requisitos CSS do sticky
+
+### Layout Implementado (Sticky + Menu Kebab)
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│ HEADER PRINCIPAL (sticky top-0 z-50, h-16)                            │
+│ PipeDesk | Dashboard | Leads | ...                                    │
+├───────────────────────────────────────────────────────────────────────┤
+│ STICKY WRAPPER (sticky top-16 z-40, bg-card)                          │
+│ ┌─────────────────────────────────────────────────────────────────────┤
+│ │ LINHA 1: [Filtros] ... [Lista][Cards][Kanban] [+ Novo Lead]        │
+│ ├─────────────────────────────────────────────────────────────────────┤
+│ │ LINHA 2: Total: X | Registros: 10 ▼ | 1-10 | < >                   │
+│ └─────────────────────────────────────────────────────────────────────┤
+├───────────────────────────────────────────────────────────────────────┤
+│ TABELA (scroll)                                                       │
+│ ... | Ações [⋮]                                                      │
+│ ...                                                                   │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### Menu Kebab (Ações)
+
+```
+┌─────────────────────────┐
+│ 💬 Enviar Whatsapp     │ ← disabled se sem phone
+│ ✉️  Enviar E-mail       │ ← disabled se sem email
+│ 📞 Ligar               │ ← disabled se sem phone
+│ 📁 Drive               │
+│ 📅 Agendar Reunião     │
+│ ─────────────────────── │
+│ 📋 Copiar ID           │
+│ ⋮  Detalhes            │
+└─────────────────────────┘
+```
+
+### ✅ Checklist de QA manual (/leads)
+- [ ] Scroll na lista → Linhas 1 e 2 ficam fixas abaixo do header principal
+- [ ] Sticky não sobrepõe conteúdo (background sólido, sombra sutil)
+- [ ] Ícones de ação rápida NÃO aparecem na linha (apenas menu "...")
+- [ ] Clicar "⋮" abre menu com 7 itens em texto
+- [ ] "Enviar Whatsapp" → abre WhatsApp Web (ou toast se sem telefone)
+- [ ] "Enviar E-mail" → abre Gmail compose (ou toast se sem email)
+- [ ] "Ligar" → abre tel: link (ou toast se sem telefone)
+- [ ] "Drive" → abre pasta do lead no Drive
+- [ ] "Agendar Reunião" → abre modal de agendamento
+- [ ] "Copiar ID" → copia ID para clipboard + toast
+- [ ] "Detalhes" → navega para página de detalhes do lead
+- [ ] Itens desabilitados mostram estilo de disabled
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~150 |
+| Linhas removidas | ~130 |
+| Arquivos modificados | 3 |
+| Arquivos criados | 1 |
+| Testes adicionados | 10 |
+| Total testes relacionados | 31 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟡 Médio (mudança visual em interação recorrente, mitigado por testes)
+
+---
+
+## ✅ Iteração anterior - UX Zoho (painel lateral filtros) + redesign layout
 
 ### 🎯 Objetivo
 Implementar UX de filtros no padrão Zoho CRM:
