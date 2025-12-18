@@ -41,7 +41,9 @@ import { getSalesErrorKey, SALES_VIEW_ERROR_GUARD_LIMIT } from '../utils/salesVi
 import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMeetingDialog'
 import { useLeadsFiltersSearchParams } from '../hooks/useLeadsFiltersSearchParams'
 import { LeadsFilterPanel } from '../components/LeadsFilterPanel'
+import { LeadsFiltersSidebar } from '../components/LeadsFiltersSidebar'
 import { LeadsListControls } from '../components/LeadsListControls'
+import { useIsMobile } from '@/hooks/use-mobile'
 import type { LeadOrderBy } from '../components/LeadsSmartFilters'
 
 // View types used internally
@@ -56,8 +58,9 @@ export default function LeadsListPage() {
   const { profile } = useAuth()
   const { leadStatuses, leadOrigins, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
   const { data: users = [] } = useUsers()
+  const isMobile = useIsMobile()
   
-  // Filter panel state
+  // Filter panel state (only used for mobile Sheet)
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
   const savedPreferences = useMemo(() => {
@@ -623,31 +626,47 @@ export default function LeadsListPage() {
   const endItem = Math.min(currentPage * safePageSize, totalLeads)
 
   return (
-    <div className="p-6 min-h-screen bg-background space-y-4">
-      
-      {/* Container Unificado (Card Principal) */}
-      <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
-        
-        {/* Top Controls (non-sticky) */}
-        <LeadsListControls
-          position="top"
-          currentView={currentView}
-          onViewChange={handleViewChange}
-          activeFiltersCount={activeFiltersCount}
-          onOpenFilterPanel={() => setIsFilterPanelOpen(true)}
-          selectedIds={selectedIds}
-          onBulkDelete={() => setIsBulkDeleteOpen(true)}
-          onCreateLead={() => setIsCreateOpen(true)}
-          totalLeads={totalLeads}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={handleItemsPerPageChange}
-          showPagination={showPagination}
-          startItem={startItem}
-          endItem={endItem}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+    <div className="p-6 min-h-screen bg-background">
+      {/* Main container with optional sidebar layout */}
+      <div className="flex gap-6">
+        {/* Desktop Sidebar - always visible on md+ screens */}
+        {!isMobile && (
+          <LeadsFiltersSidebar
+            appliedFilters={appliedFilters}
+            actions={filterActions}
+            users={users}
+            leadStatuses={activeLeadStatuses}
+            leadOrigins={activeLeadOrigins}
+            availableTags={tags}
+            showNextActionFilter={currentView === 'sales'}
+          />
+        )}
+
+        {/* Main content area */}
+        <div className="flex-1 space-y-4">
+          {/* Container Unificado (Card Principal) */}
+          <div className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
+            
+            {/* Top Controls (non-sticky) */}
+            <LeadsListControls
+              position="top"
+              currentView={currentView}
+              onViewChange={handleViewChange}
+              activeFiltersCount={activeFiltersCount}
+              onOpenFilterPanel={() => setIsFilterPanelOpen(true)}
+              selectedIds={selectedIds}
+              onBulkDelete={() => setIsBulkDeleteOpen(true)}
+              onCreateLead={() => setIsCreateOpen(true)}
+              totalLeads={totalLeads}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              showPagination={showPagination}
+              startItem={startItem}
+              endItem={endItem}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
 
         {/* Conteúdo da Lista dentro do Card */}
         <div className="flex-1 min-h-[500px]"> 
@@ -815,20 +834,24 @@ export default function LeadsListPage() {
           totalPages={totalPages}
           onPageChange={handlePageChange}
         />
+          </div>
+        </div>
       </div>
 
-      {/* Filter Panel (Zoho-style side panel) */}
-      <LeadsFilterPanel
-        isOpen={isFilterPanelOpen}
-        onOpenChange={setIsFilterPanelOpen}
-        appliedFilters={appliedFilters}
-        actions={filterActions}
-        users={users}
-        leadStatuses={activeLeadStatuses}
-        leadOrigins={activeLeadOrigins}
-        availableTags={tags}
-        showNextActionFilter={currentView === 'sales'}
-      />
+      {/* Mobile Filter Panel (Sheet/Drawer) - only rendered on mobile */}
+      {isMobile && (
+        <LeadsFilterPanel
+          isOpen={isFilterPanelOpen}
+          onOpenChange={setIsFilterPanelOpen}
+          appliedFilters={appliedFilters}
+          actions={filterActions}
+          users={users}
+          leadStatuses={activeLeadStatuses}
+          leadOrigins={activeLeadOrigins}
+          availableTags={tags}
+          showNextActionFilter={currentView === 'sales'}
+        />
+      )}
 
       {/* Dialogs - Outside the card container */}
       <CreateLeadModal open={isCreateOpen} onOpenChange={setIsCreateOpen} />
