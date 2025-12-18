@@ -641,9 +641,9 @@ export default function LeadsListPage() {
   const endItem = Math.min(currentPage * safePageSize, totalLeads)
 
   return (
-    <div className="p-6 min-h-screen bg-background">
+    <div className="h-[calc(100vh-4rem)] min-h-0 overflow-hidden p-6 bg-background flex flex-col">
       {/* Main container with optional sidebar layout */}
-      <div className="flex gap-6 overflow-x-hidden items-start">
+      <div className="flex-1 min-h-0 flex gap-6 overflow-hidden items-stretch">
         {/* Desktop Sidebar - controlled by toggle, only on non-mobile */}
         {!isMobile && (
           <LeadsFiltersSidebar
@@ -659,10 +659,10 @@ export default function LeadsListPage() {
         )}
 
         {/* Main content area */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col">
           {/* Container Unificado (Card Principal) */}
           <div 
-            className="border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col"
+            className="flex-1 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col"
             data-testid="leads-list-panel"
           >
             
@@ -688,8 +688,8 @@ export default function LeadsListPage() {
               onPageChange={handlePageChange}
             />
 
-        {/* Conteúdo da Lista dentro do Card */}
-        <div className="flex-1 min-h-[500px]"> 
+        {/* Conteúdo da Lista dentro do Card - área rolável */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"> 
           {isActiveLoading ? (
             <div className="p-6 space-y-4">
               <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />

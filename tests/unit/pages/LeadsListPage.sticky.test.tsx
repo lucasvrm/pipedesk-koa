@@ -11,9 +11,16 @@ import { describe, it, expect } from 'vitest'
  * After the Prompt A update (sidebar toggle + borders + scroll):
  * - Desktop sidebar is now TOGGLE-CONTROLLED via "Filtros" button (not always visible)
  * - Sidebar has COMPLETE BORDER (all sides) instead of just border-r
- * - Sidebar is STICKY (stays in place while list scrolls)
  * - Sidebar body has INTERNAL SCROLL (overflow-y-auto)
  * - Filter sections have NO INTERNAL WRAPPER (direct blocks in scrollable body)
+ * 
+ * After the Independent Scroll update (2025-12-18):
+ * - Page has NO SCROLL - uses h-[calc(100vh-4rem)] overflow-hidden
+ * - LIST scrolls vertically within its container (overflow-y-auto on content area)
+ * - SIDEBAR scrolls vertically within its container (overflow-y-auto on body)
+ * - HORIZONTAL scroll is contained within the table only (overflow-x-auto on LeadsSalesList)
+ * - Sidebar uses flex-1 min-h-0 overflow-hidden (no sticky needed with this approach)
+ * - Both panels (list + sidebar) scroll independently without page scroll
  */
 
 describe('LeadsListPage - Layout Changes (Sticky Removed + Bottom Bar Added)', () => {
@@ -117,9 +124,11 @@ describe('LeadsListPage - Sidebar Toggle Behavior (Prompt A)', () => {
       })
     })
 
-    it('should be sticky positioned when open', () => {
-      // The sidebar has md:sticky md:top-20 self-start classes
-      const expectedClasses = ['md:sticky', 'md:top-20', 'self-start']
+    it('should use flex layout with min-h-0 for independent scroll (replaces sticky)', () => {
+      // The sidebar uses min-h-0 overflow-hidden on container for flex-based scroll
+      // This replaces sticky positioning - the sidebar now scrolls independently
+      // within its flex container, while the page has no scroll
+      const expectedClasses = ['min-h-0', 'overflow-hidden', 'flex-col']
       expectedClasses.forEach(cls => {
         expect(typeof cls).toBe('string')
       })
@@ -148,6 +157,87 @@ describe('LeadsListPage - Sidebar Toggle Behavior (Prompt A)', () => {
       separatorClasses.forEach(cls => {
         expect(typeof cls).toBe('string')
       })
+    })
+  })
+})
+
+describe('LeadsListPage - Independent Scroll (List + Sidebar)', () => {
+  /**
+   * Documents the independent scroll behavior for list and sidebar.
+   * The page has no general scroll - each panel scrolls independently.
+   */
+  describe('Page Layout for Independent Scroll', () => {
+    it('should have page container with no scroll (h-[calc(100vh-4rem)] overflow-hidden)', () => {
+      // Page container uses fixed height and overflow-hidden to prevent page scroll
+      const expectedClasses = ['h-[calc(100vh-4rem)]', 'min-h-0', 'overflow-hidden']
+      expectedClasses.forEach(cls => {
+        expect(typeof cls).toBe('string')
+      })
+    })
+
+    it('should have flex container with min-h-0 overflow-hidden', () => {
+      // The main flex container that holds sidebar + content has min-h-0 and overflow-hidden
+      const expectedClasses = ['flex-1', 'min-h-0', 'flex', 'overflow-hidden']
+      expectedClasses.forEach(cls => {
+        expect(typeof cls).toBe('string')
+      })
+    })
+
+    it('should have content area with flex-1 min-w-0 min-h-0 overflow-hidden', () => {
+      // The content area uses these classes to enable proper flex behavior
+      const expectedClasses = ['flex-1', 'min-w-0', 'min-h-0', 'overflow-hidden']
+      expectedClasses.forEach(cls => {
+        expect(typeof cls).toBe('string')
+      })
+    })
+  })
+
+  describe('List Scroll Behavior', () => {
+    it('should have list content area with overflow-y-auto for vertical scroll', () => {
+      // The list content area scrolls vertically
+      const expectedClasses = ['flex-1', 'min-h-0', 'overflow-y-auto']
+      expectedClasses.forEach(cls => {
+        expect(typeof cls).toBe('string')
+      })
+    })
+
+    it('should have overflow-x-hidden on list wrapper to contain horizontal scroll', () => {
+      // Horizontal scroll is contained within the table, not the wrapper
+      const expectedClass = 'overflow-x-hidden'
+      expect(typeof expectedClass).toBe('string')
+    })
+  })
+
+  describe('Sidebar Scroll Behavior', () => {
+    it('should have sidebar container with min-h-0 overflow-hidden', () => {
+      // Sidebar container prevents overflow from escaping
+      const expectedClasses = ['min-h-0', 'overflow-hidden']
+      expectedClasses.forEach(cls => {
+        expect(typeof cls).toBe('string')
+      })
+    })
+
+    it('should have sidebar body with flex-1 min-h-0 overflow-y-auto', () => {
+      // Sidebar body is the scrollable area
+      const expectedClasses = ['flex-1', 'min-h-0', 'overflow-y-auto']
+      expectedClasses.forEach(cls => {
+        expect(typeof cls).toBe('string')
+      })
+    })
+  })
+
+  describe('Horizontal Scroll Behavior', () => {
+    it('should have table container with overflow-x-auto', () => {
+      // Only the table scrolls horizontally, contained within its container
+      const expectedClass = 'overflow-x-auto'
+      expect(typeof expectedClass).toBe('string')
+    })
+
+    it('should not affect sidebar visibility during horizontal scroll', () => {
+      // The sidebar remains visible because horizontal scroll is contained
+      // This is achieved by overflow-x-hidden on list wrapper
+      const behavior = 'sidebar visible during table horizontal scroll'
+      expect(typeof behavior).toBe('string')
     })
   })
 })

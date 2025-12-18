@@ -10,16 +10,6 @@ interface OptionItem {
   label: string
 }
 
-/**
- * Offset for sidebar scroll area calculation.
- * This accounts for:
- * - Top navigation bar (~64px)
- * - Page padding (~24px)
- * Total: ~88px, rounded to 100px for some visual breathing room
- * Note: Header was removed and footer is now inside scroll area
- */
-const SIDEBAR_SCROLL_OFFSET = '100px'
-
 interface LeadsFiltersSidebarProps {
   /** Current applied filters from URL */
   appliedFilters: AppliedLeadsFilters
@@ -42,11 +32,15 @@ interface LeadsFiltersSidebarProps {
 /**
  * LeadsFiltersSidebar - Desktop sidebar for filters (Zoho-style)
  * 
- * This component provides a fixed sidebar with:
- * - Header with title
- * - Scrollable body with native overflow-y: auto
- * - Fixed footer with Clear/Apply buttons
+ * This component provides a sidebar with:
+ * - Scrollable body with native overflow-y: auto (independent scroll from list)
+ * - Footer with Clear/Apply buttons inside scrollable area
  * - Draft mode: changes only apply when user clicks "Aplicar filtros"
+ * 
+ * The sidebar uses `min-h-0 overflow-hidden` on the outer container and
+ * `flex-1 min-h-0 overflow-y-auto` on the body to enable independent scroll
+ * within a flex layout. The page scroll is disabled and each panel (list + sidebar)
+ * scrolls independently.
  * 
  * Visible only on md breakpoint and above.
  */
@@ -160,13 +154,12 @@ export function LeadsFiltersSidebar({
 
   return (
     <aside
-      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 border rounded-xl bg-card shadow-sm overflow-hidden md:sticky md:top-20`}
+      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden`}
       data-testid="leads-filters-sidebar"
     >
       {/* Body - Scrollable with native scroll (includes footer) */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
-        style={{ maxHeight: `calc(100vh - ${SIDEBAR_SCROLL_OFFSET})` }}
       >
         <LeadsFiltersContent
           draftFilters={draftFilters}
