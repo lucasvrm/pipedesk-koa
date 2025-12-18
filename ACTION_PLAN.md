@@ -1,14 +1,171 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Layout/estrutura - Prompt C)
+## 🚧 Status: ✅ Concluído (Conteúdo/UX - Prompt D)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Layout: botões ativos + sidebar sem header + footer no scroll + overflow-x só na tabela
+**Escopo:** Frontend - Conteúdo/UX: remover busca, ordenação radio colapsável, filtros do sistema e atividade conforme regras
 
 ---
 
-## 🆕 Iteração atual - Layout/estrutura (Prompt C)
+## 🆕 Iteração atual - Conteúdo/UX (Prompt D)
+
+### 🎯 Objetivo
+1. **Remover campo de busca:** Deixar somente a seção de Ordenação
+2. **Ordenação via radio list colapsável:** Single select, 1 opção por linha
+3. **Renomear "Filtros definidos pelo sistema" para "Filtros do sistema"**
+4. **Responsável via Popover único:** Meus/Todos/lista de usuários em um único botão
+5. **Status/Origem/Tags/Próxima ação:** Sem scroll interno, colapsáveis, defaults minimizados
+6. **Prioridade com cores específicas:** Hot=vermelho, Warm=amarelo, Cold=azul
+7. **Dias sem interação:** Single select via checkbox, colapsável
+8. **Alinhamento de painéis:** Borda superior do sidebar alinhada com borda superior da listagem
+
+### ✅ Tarefas Concluídas
+- [x] **A) Remover campo de busca**
+  - Removido campo `search` do `DraftFilters` interface
+  - Removido input de busca e estado relacionado
+  - Removido `actions.setSearch(...)` do handleApplyFilters
+
+- [x] **B) Ordenação como radio list colapsável**
+  - Seção "Ordenação" renderizada como `LeadsFilterSection` colapsável
+  - Single select com radio-like styling (círculo sólido quando selecionado)
+  - 1 opção por linha com hover
+  - `data-testid="ordering-section"` e `data-testid="ordering-option-${value}"`
+
+- [x] **C) Renomear título da seção**
+  - "Filtros definidos pelo sistema" → "Filtros do sistema"
+
+- [x] **D) Responsável via Popover único**
+  - Implementado único trigger (Button) "Responsável"
+  - Popover contém: Meus leads, Todos, lista de usuários
+  - Regra: remover último usuário cai para 'all'
+  - `data-testid="owner-popover-trigger"`, `owner-option-my`, `owner-option-all`, `owner-option-user-${id}`
+
+- [x] **E) Status colapsável minimizado por padrão**
+  - Transformado em `LeadsFilterSection` com `defaultOpen={false}`
+  - Sem scroll interno (removido `max-h`, `overflow-y-auto`)
+  - `data-testid="system-status-toggle"`
+
+- [x] **F) Prioridade com cores específicas**
+  - Hot: bg vermelho, texto branco
+  - Warm: bg amarelo/amber, texto vermelho
+  - Cold: bg azul, texto branco
+  - Checkboxes com pill colorido
+
+- [x] **G) Origem colapsável**
+  - `LeadsFilterSection` com opções soltas
+  - `data-testid="system-origin-toggle"`
+
+- [x] **H) Tags colapsável minimizado por padrão**
+  - `LeadsFilterSection` com `defaultOpen={false}`
+  - Sem scroll interno
+  - `data-testid="system-tags-toggle"`
+
+- [x] **I) Dias sem interação single select**
+  - Checkboxes com comportamento single select (clicar no ativo limpa)
+  - Colapsável dentro de `LeadsFilterSection`
+  - `data-testid="activity-days-toggle"`
+
+- [x] **J) Próxima ação minimizado por padrão**
+  - `LeadsFilterSection` com `defaultOpen={false}`
+  - Sem scroll interno
+  - `data-testid="activity-next-action-toggle"`
+
+- [x] **K) Alinhamento de borda superior sidebar/listagem**
+  - Adicionado `items-start` ao flex container pai
+  - Removido `self-start` do sidebar (redundante com items-start)
+  - Adicionado `data-testid="leads-list-panel"` ao container da listagem
+  - Removido `space-y-4` do wrapper da main content area
+
+- [x] **L) Testes atualizados**
+  - `LeadsFiltersSidebar.test.tsx`: 25 testes passando
+  - `LeadsFilterPanel.test.tsx`: 19 testes passando
+  - Total: 44 testes passando
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsFiltersContent.tsx` - Nova UI completa
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Removido search, removido self-start
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Removido search
+- `src/features/leads/pages/LeadsListPage.tsx` - items-start, data-testid, removido space-y-4
+
+### Arquivos de Teste Atualizados
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx`
+- `tests/unit/features/leads/components/LeadsFilterPanel.test.tsx`
+
+### Layout do Sidebar (SEM BUSCA, COM ORDENAÇÃO COLAPSÁVEL)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ▼ Ordenação (colapsável, radio single select)           │
+│    ○ Prioridade                                          │
+│    ○ Última interação                                    │
+│    ○ Data de criação                                     │
+│    ○ Status                                              │
+│    ○ Próxima ação                                        │
+│    ○ Responsável                                         │
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  ▼ Filtros do sistema                                    │
+│    ├─ Responsável: [Responsável ▼] (Popover único)      │
+│    ├─ ▶ Status (minimizado)                              │
+│    ├─ Prioridade:                                        │
+│    │   ☐ [🔴 Hot]                                        │
+│    │   ☐ [🟡 Warm]                                       │
+│    │   ☐ [🔵 Cold]                                       │
+│    ├─ ▼ Origem (expandido)                               │
+│    │   ☐ Website                                         │
+│    │   ☐ Indicação                                       │
+│    └─ ▶ Tags (minimizado)                                │
+│                                                          │
+│  ▼ Atividade do lead                                     │
+│    ├─ ▼ Dias sem interação (single select checkbox)     │
+│    │   ○ 3+ dias                                         │
+│    │   ○ 7+ dias                                         │
+│    │   ○ 14+ dias                                        │
+│    └─ ▶ Próxima ação (minimizado)                        │
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  [Limpar]                         [Aplicar filtros (N)]  │
+└──────────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Não existe campo de busca
+- [ ] Ordenação é colapsável com opções radio (single select)
+- [ ] "Filtros do sistema" (não "Filtros definidos pelo sistema")
+- [ ] Responsável via Popover único (Meus/Todos/Usuários)
+- [ ] Status colapsável minimizado por padrão
+- [ ] Prioridade com cores Hot=vermelho, Warm=amarelo, Cold=azul
+- [ ] Origem colapsável
+- [ ] Tags colapsável minimizado por padrão
+- [ ] Dias sem interação single select (clicar no ativo limpa)
+- [ ] Próxima ação colapsável minimizado por padrão
+- [ ] Borda superior do sidebar alinhada com borda superior da listagem
+- [ ] Sidebar sticky/scroll interno ok
+
+#### Mobile (/leads?view=sales)
+- [ ] Mesmos comportamentos no Sheet (mesma UX)
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~350 |
+| Linhas removidas | ~200 |
+| Arquivos modificados | 4 |
+| Testes atualizados | 2 |
+| Total testes relacionados | 44 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - Layout/estrutura (Prompt C)
 
 ### 🎯 Objetivo
 1. **Botões de filtro com estado visual ativo:** Ao abrir/fechar filtros por topo ou rodapé, ambos os botões ficam com visual "selecionado" (fundo azul, texto+ícone brancos)
