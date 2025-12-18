@@ -174,6 +174,9 @@ export default function LeadsListPage() {
   const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
   const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
 
+  // Grid/Kanban pagination state (not URL-based)
+  const [gridCurrentPage, setGridCurrentPage] = useState(1)
+
   const { data: tags = [] } = useTags('lead')
   const { data: settings } = useSettings()
 
@@ -638,12 +641,6 @@ export default function LeadsListPage() {
       filterActions.setPage(1)
     }
   }, [currentView, filterActions])
-
-  // Grid/Kanban pagination state (not URL-based)
-  const [gridCurrentPage, setGridCurrentPage] = useState(1)
-  const handleGridPageChange = useCallback((page: number) => {
-    setGridCurrentPage(page)
-  }, [])
 
   // Use filterActions.setOrderBy for sales view order changes
   const handleOrderByChange = useCallback(
