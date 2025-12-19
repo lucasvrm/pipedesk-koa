@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { UnifiedTimeline } from '@/components/UnifiedTimeline'
 import { safeString, safeStringOptional } from '@/lib/utils'
+import { ChevronRight } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -743,11 +744,119 @@ export default function LeadDetailPage() {
 
         </section>
 
-        {/* COLUNA 3 - Placeholder (próximo prompt) */}
-        <aside className="w-[240px] min-w-[240px] bg-white rounded-lg border overflow-y-auto p-4">
-          <div className="text-center text-slate-400 text-sm">
-            <p className="font-medium">Coluna 3</p>
-            <p className="text-xs mt-1">(Status & Ações - próximo prompt)</p>
+        {/* COLUNA 3 - Status & Próximas Ações */}
+        <aside className="w-[240px] min-w-[240px] bg-white rounded-lg border overflow-y-auto">
+          <div className="p-4 space-y-6">
+            
+            {/* ===== SEÇÃO 1: STATUS/FASES ===== */}
+            <div>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                Status do Lead
+              </h3>
+              
+              <div className="space-y-1">
+                {leadStatuses
+                  .filter(status => status.isActive)
+                  .map((status) => {
+                    const isCurrentPhase = status.id === lead.leadStatusId
+                    
+                    return (
+                      <button
+                        key={status.id}
+                        onClick={() => handleStatusChange(status.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
+                          "hover:bg-slate-50",
+                          isCurrentPhase 
+                            ? "bg-blue-50 border border-blue-200" 
+                            : "opacity-50 hover:opacity-80"
+                        )}
+                      >
+                        {/* Indicador visual */}
+                        <span className={cn(
+                          "w-2.5 h-2.5 rounded-full border-2 flex-shrink-0",
+                          isCurrentPhase 
+                            ? "bg-blue-600 border-blue-600" 
+                            : "bg-transparent border-slate-300"
+                        )} />
+                        
+                        {/* Nome da fase */}
+                        <span className={cn(
+                          "text-sm",
+                          isCurrentPhase 
+                            ? "font-medium text-blue-900" 
+                            : "text-slate-600"
+                        )}>
+                          {status.label}
+                        </span>
+                        
+                        {/* Indicador de fase atual */}
+                        {isCurrentPhase && (
+                          <span className="ml-auto text-xs text-blue-600">atual</span>
+                        )}
+                      </button>
+                    )
+                  })}
+              </div>
+            </div>
+
+            {/* Divisor */}
+            <div className="border-t" />
+
+            {/* ===== SEÇÃO 2: PRÓXIMAS AÇÕES ===== */}
+            <div>
+              {/* Mock actions - will be replaced with real data */}
+              {(() => {
+                const mockActions = [
+                  { id: '1', title: 'Ligar para cliente', date: 'Hoje, 14:00' },
+                  { id: '2', title: 'Enviar proposta comercial', date: 'Amanhã' },
+                  { id: '3', title: 'Agendar reunião de apresentação', date: 'Em 3 dias' },
+                ]
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        Próximas Ações
+                      </h3>
+                      <span className="text-xs text-slate-400">{mockActions.length} pendentes</span>
+                    </div>
+                    
+                    {/* Lista de Ações (dados mockados por enquanto) */}
+                    <div className="space-y-2">
+                      {mockActions.map((action) => (
+                        <div 
+                          key={action.id}
+                          className="flex items-start gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group"
+                        >
+                          <Checkbox id={`action-${action.id}`} className="mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <label 
+                              htmlFor={`action-${action.id}`} 
+                              className="text-sm text-slate-900 cursor-pointer block truncate"
+                            >
+                              {action.title}
+                            </label>
+                            <span className="text-xs text-slate-500">{action.date}</span>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
+              })()}
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full mt-3 text-slate-500 hover:text-slate-700"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Adicionar ação
+              </Button>
+            </div>
+
           </div>
         </aside>
 
