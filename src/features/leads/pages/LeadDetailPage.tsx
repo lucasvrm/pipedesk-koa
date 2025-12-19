@@ -66,6 +66,8 @@ import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadTemperatureBadge } from '../components/LeadTemperatureBadge'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
+// Layout offset calculation: global header (h-16 = 64px) + sticky topbar (~57px) = ~121px
+const HEADER_OFFSET_PX = 121
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -437,8 +439,8 @@ export default function LeadDetailPage() {
         </div>
       </header>
 
-      {/* Container das 3 Colunas - adjust for sticky header offset (h-16 = 64px + header ~57px = ~121px) */}
-      <main className="flex gap-4 px-6 py-4 min-h-[calc(100vh-121px)] bg-slate-50">
+      {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
+      <main className={`flex gap-4 px-6 py-4 min-h-[calc(100vh-${HEADER_OFFSET_PX}px)] bg-slate-50`}>
         
         {/* COLUNA 1 - Dados do Lead (260px fixed) */}
         <aside className="w-[260px] min-w-[260px] bg-white rounded-lg border overflow-y-auto">

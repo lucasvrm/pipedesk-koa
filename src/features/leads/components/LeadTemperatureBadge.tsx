@@ -7,7 +7,15 @@ export interface LeadTemperatureBadgeProps {
   className?: string
 }
 
-const TEMPERATURE_CONFIG: Record<LeadPriorityBucket, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }> = {
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
+
+interface TemperatureConfig {
+  label: string
+  variant: BadgeVariant
+  className: string
+}
+
+const TEMPERATURE_CONFIG: Record<LeadPriorityBucket, TemperatureConfig> = {
   hot: {
     label: 'Quente',
     variant: 'destructive',
