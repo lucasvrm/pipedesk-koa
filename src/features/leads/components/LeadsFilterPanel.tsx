@@ -153,6 +153,9 @@ export function LeadsFilterPanel({
     onOpenChange(false)
   }, [draftFilters, actions, showNextActionFilter, onOpenChange])
 
+  // Show footer when there are filters selected (draft has any filter active)
+  const shouldShowFooter = draftFiltersCount > 0
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent 
@@ -176,7 +179,10 @@ export function LeadsFilterPanel({
         </SheetHeader>
 
         {/* Body - Scrollable with native scroll (overflow-y: auto) */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div 
+          className="flex-1 overflow-y-auto px-6 py-4 min-h-0"
+          data-testid="leads-filter-panel-scroll"
+        >
           <LeadsFiltersContent
             draftFilters={draftFilters}
             setDraftFilters={setDraftFilters}
@@ -188,14 +194,19 @@ export function LeadsFilterPanel({
           />
         </div>
 
-        {/* Footer - Fixed */}
-        <SheetFooter className="border-t px-6 py-4 flex-shrink-0">
-          <LeadsFiltersFooter
-            draftFiltersCount={draftFiltersCount}
-            onClear={handleClearDraft}
-            onApply={handleApplyFilters}
-          />
-        </SheetFooter>
+        {/* Footer - Fixed, only visible when filters are selected */}
+        {shouldShowFooter && (
+          <SheetFooter 
+            className="border-t px-6 py-4 flex-shrink-0"
+            data-testid="leads-filters-footer"
+          >
+            <LeadsFiltersFooter
+              draftFiltersCount={draftFiltersCount}
+              onClear={handleClearDraft}
+              onApply={handleApplyFilters}
+            />
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
   )

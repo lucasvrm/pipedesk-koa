@@ -1,14 +1,105 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Ajustes Finos - Prompt F)
+## 🚧 Status: ✅ Concluído (Footer Condicional e Fixo - Prompt G)
 
 **Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Ajustes finos de seções (Warm amarelo, Tags com busca + colapsável, separador, defaults de minimização)
+**Escopo:** Frontend - Footer de aplicar/limpar condicional (1+ filtros) e fixo no rodapé (fora do scroll) para sidebar e sheet
 
 ---
 
-## 🆕 Iteração atual - Ajustes Finos de Seções (Prompt F)
+## 🆕 Iteração atual - Footer Condicional e Fixo no Rodapé (Prompt G)
+
+### 🎯 Objetivo
+1. **Footer só aparece quando 1+ filtros selecionados:** Os botões "Aplicar filtros" e "Limpar" só devem aparecer quando há ao menos 1 filtro selecionado no draft
+2. **Footer fixo no rodapé:** O footer não deve rolar junto com o conteúdo do sidebar/sheet - deve ficar fixo na parte inferior
+3. **Conteúdo do sidebar/sheet rola independentemente:** O scroll interno não deve afetar o footer
+
+### ✅ Tarefas Concluídas
+- [x] **A) Desktop Sidebar (LeadsFiltersSidebar.tsx)**
+  - Footer movido para fora do container rolável (como irmão)
+  - Footer renderizado condicionalmente quando `draftFiltersCount > 0`
+  - Adicionado `data-testid="leads-filters-footer"` no footer
+  - Adicionado `data-testid="leads-filters-sidebar-scroll"` no body rolável
+  - Classes CSS: footer com `shrink-0 border-t bg-card px-4 py-4`
+
+- [x] **B) Mobile Sheet (LeadsFilterPanel.tsx)**
+  - SheetFooter renderizado condicionalmente quando `draftFiltersCount > 0`
+  - Adicionado `data-testid="leads-filters-footer"` no SheetFooter
+  - Adicionado `data-testid="leads-filter-panel-scroll"` no body rolável
+  - Footer já estava fixo (SheetFooter com `flex-shrink-0`)
+
+- [x] **C) Testes atualizados**
+  - `LeadsFiltersSidebar.test.tsx`: 
+    - Atualizado teste "renders the sidebar with proper structure" para verificar que footer está oculto
+    - Atualizado "renders apply and clear buttons" para verificar comportamento condicional
+    - Adicionados testes: "hides footer when no filters are selected", "shows footer when 1+ filters are selected"
+    - Atualizados testes que usam apply/clear para primeiro selecionar um filtro
+  - `LeadsFilterPanel.test.tsx`:
+    - Mesmas atualizações para o mobile sheet
+    - Atualizado mock do SheetFooter para passar data-testid
+  - Total: 60 testes passando (antes 56)
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Footer condicional e fora do scroll
+- `src/features/leads/components/LeadsFilterPanel.tsx` - Footer condicional
+
+### Arquivos de Teste Atualizados
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - Testes para footer condicional
+- `tests/unit/features/leads/components/LeadsFilterPanel.test.tsx` - Testes para footer condicional
+
+### Layout do Sidebar (COM FOOTER CONDICIONAL)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ▼ Ordenação (colapsável)                                │
+│    ○ Prioridade                                          │
+│    ...                                                   │
+│                                                          │
+│  ────────────────────────────────────────────────────────│
+│  ▼ Filtros do sistema                                    │
+│    ...                                                   │
+│                                                          │ ← SCROLL INTERNO AQUI
+│  ▼ Atividade do lead                                     │
+│    ...                                                   │
+│                                                          │
+├──────────────────────────────────────────────────────────┤
+│  [Limpar]                         [Aplicar filtros (N)]  │ ← FOOTER FIXO (só aparece quando 1+ filtros)
+└──────────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Sidebar aberto sem filtros selecionados → botões NÃO aparecem
+- [ ] Selecionar 1+ filtros → botões aparecem no rodapé
+- [ ] Botões ficam fixos enquanto o conteúdo do sidebar rola
+- [ ] Clicar "Limpar" → botões desaparecem (draft zerado)
+- [ ] Clicar "Aplicar filtros" → filtros aplicados, URL atualiza
+
+#### Mobile (/leads?view=sales)
+- [ ] Sheet aberto sem filtros selecionados → botões NÃO aparecem
+- [ ] Selecionar 1+ filtros → botões aparecem no rodapé
+- [ ] Botões ficam fixos enquanto o conteúdo do sheet rola
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~40 |
+| Linhas removidas | ~10 |
+| Arquivos modificados | 2 |
+| Testes atualizados | ~15 |
+| Total testes relacionados | 60 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - Ajustes Finos de Seções (Prompt F)
 
 ### 🎯 Objetivo
 1. **Warm deve ser amarelo (não laranja):** Ajustar classes de cor do item "Warm" para amarelo

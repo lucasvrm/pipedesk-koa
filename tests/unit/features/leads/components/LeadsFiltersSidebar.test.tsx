@@ -71,8 +71,9 @@ describe('LeadsFiltersSidebar', () => {
     render(<LeadsFiltersSidebar {...defaultProps} />)
     
     expect(screen.getByTestId('leads-filters-sidebar')).toBeInTheDocument()
-    expect(screen.getByTestId('filter-panel-apply')).toBeInTheDocument()
-    expect(screen.getByTestId('filter-panel-clear')).toBeInTheDocument()
+    expect(screen.getByTestId('leads-filters-sidebar-scroll')).toBeInTheDocument()
+    // Footer is hidden when no filters are selected
+    expect(screen.queryByTestId('leads-filters-footer')).not.toBeInTheDocument()
   })
 
   it('renders filter sections', () => {
@@ -83,9 +84,38 @@ describe('LeadsFiltersSidebar', () => {
     expect(screen.getByText('Atividade do lead')).toBeInTheDocument()
   })
 
-  it('renders apply and clear buttons', () => {
+  it('renders apply and clear buttons when filters are selected', () => {
     render(<LeadsFiltersSidebar {...defaultProps} />)
     
+    // Footer is hidden when no filters are selected
+    expect(screen.queryByTestId('filter-panel-apply')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('filter-panel-clear')).not.toBeInTheDocument()
+    
+    // Select a filter to show footer
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
+    // Now footer should be visible
+    expect(screen.getByTestId('filter-panel-apply')).toBeInTheDocument()
+    expect(screen.getByTestId('filter-panel-clear')).toBeInTheDocument()
+  })
+
+  it('hides footer when no filters are selected', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    
+    // Footer should be hidden initially
+    expect(screen.queryByTestId('leads-filters-footer')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('filter-panel-apply')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('filter-panel-clear')).not.toBeInTheDocument()
+  })
+
+  it('shows footer when 1+ filters are selected', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    
+    // Select a filter
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
+    // Footer should now be visible
+    expect(screen.getByTestId('leads-filters-footer')).toBeInTheDocument()
     expect(screen.getByTestId('filter-panel-apply')).toBeInTheDocument()
     expect(screen.getByTestId('filter-panel-clear')).toBeInTheDocument()
   })
@@ -168,6 +198,9 @@ describe('LeadsFiltersSidebar', () => {
   it('applies filters when apply button is clicked', () => {
     render(<LeadsFiltersSidebar {...defaultProps} />)
     
+    // First select a filter to show the footer
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
     // Click apply
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
     
@@ -182,11 +215,20 @@ describe('LeadsFiltersSidebar', () => {
     
     render(<LeadsFiltersSidebar {...defaultProps} appliedFilters={appliedWithFilters} />)
     
+    // Footer should be visible because there are filters
+    expect(screen.getByTestId('leads-filters-footer')).toBeInTheDocument()
+    
     fireEvent.click(screen.getByTestId('filter-panel-clear'))
     
-    // After clear and apply, priority should be empty
+    // After clear, footer should be hidden (no filters selected)
+    expect(screen.queryByTestId('leads-filters-footer')).not.toBeInTheDocument()
+    
+    // Select a filter to show footer again
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
+    // Now apply and verify priority is just 'hot' (not hot + warm from original)
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
-    expect(mockActions.setMulti).toHaveBeenCalledWith('priority', [])
+    expect(mockActions.setMulti).toHaveBeenCalledWith('priority', ['hot'])
   })
 
   it('displays both filter sections simultaneously', () => {
@@ -248,6 +290,9 @@ describe('LeadsFiltersSidebar', () => {
 
   it('applies orderBy when ordering option is selected', () => {
     render(<LeadsFiltersSidebar {...defaultProps} showNextActionFilter={true} />)
+    
+    // First select a filter to show the footer
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
     
     // Apply to verify the default selection (priority is default)
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
