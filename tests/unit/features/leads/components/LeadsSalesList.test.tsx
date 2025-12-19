@@ -28,7 +28,8 @@ vi.mock('@/services/tagService', () => ({
   useTagOperations: () => ({
     assign: { mutateAsync: vi.fn(), isPending: false },
     unassign: { mutateAsync: vi.fn(), isPending: false }
-  })
+  }),
+  createTag: vi.fn().mockResolvedValue({ id: 'new-tag', name: 'New Tag', color: '#000000' })
 }))
 
 // Mock the userService hooks
