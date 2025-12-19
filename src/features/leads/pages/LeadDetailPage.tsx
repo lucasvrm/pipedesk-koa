@@ -9,7 +9,7 @@ import { logActivity } from '@/services/activityService'
 import { useEntityTags, useTagOperations } from '@/services/tagService'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { StatusBadge, type SemanticStatus } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -63,9 +63,39 @@ import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
-import { LeadTemperatureBadge } from '../components/LeadTemperatureBadge'
+import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
+const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: string }> = {
+  success: {
+    bg: 'bg-green-50 border border-green-200',
+    dot: 'bg-green-600 border-green-600',
+    text: 'text-green-900'
+  },
+  warning: {
+    bg: 'bg-amber-50 border border-amber-200',
+    dot: 'bg-amber-600 border-amber-600',
+    text: 'text-amber-900'
+  },
+  error: {
+    bg: 'bg-red-50 border border-red-200',
+    dot: 'bg-red-600 border-red-600',
+    text: 'text-red-900'
+  },
+  info: {
+    bg: 'bg-blue-50 border border-blue-200',
+    dot: 'bg-blue-600 border-blue-600',
+    text: 'text-blue-900'
+  },
+  neutral: {
+    bg: 'bg-slate-50 border border-slate-200',
+    dot: 'bg-slate-600 border-slate-600',
+    text: 'text-slate-900'
+  }
+}
+const LEAD_STATUS_CODES: LeadStatus[] = ['new', 'contacted', 'qualified', 'disqualified']
+const toSemanticStatus = (code?: string): SemanticStatus =>
+  LEAD_STATUS_CODES.includes(code as LeadStatus) ? leadStatusMap(code as LeadStatus) : 'neutral'
 // Layout offset calculation: global header (h-16 = 64px) + sticky topbar (~57px) = ~121px
 const HEADER_OFFSET_PX = 121
 
@@ -76,7 +106,7 @@ export default function LeadDetailPage() {
   const { profile, user } = useAuth()
 
   // 🔹 Chamada ÚNICA ao hook de metadata
-  const { leadStatuses, getLeadStatusById, getLeadOriginById } = useSystemMetadata()
+  const { leadStatuses, getLeadStatusById } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const updateLead = useUpdateLead()
@@ -263,7 +293,10 @@ export default function LeadDetailPage() {
   const safeAddressCity = safeStringOptional(lead.addressCity)
   const safeAddressState = safeStringOptional(lead.addressState)
   const safeDescription = safeStringOptional(lead.description) ?? ''
-  const safeOriginLabel = safeString(getLeadOriginById(lead.leadOriginId)?.label, lead.leadOriginId)
+  const companyId = lead.qualifiedCompanyId ?? primaryContact?.companyId ?? null
+  const safePrimaryContactName = safeStringOptional(primaryContact?.name)
+  const safePrimaryContactPhone = safeStringOptional(primaryContact?.phone)
+  const safePrimaryContactEmail = safeStringOptional(primaryContact?.email)
 
   const handleStatusChange = async (value: string) => { // value is ID now
     if (!lead) return
@@ -411,6 +444,7 @@ export default function LeadDetailPage() {
 
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = safeAddressCity && safeAddressState ? `${safeAddressCity} - ${safeAddressState}` : safeAddressCity || safeAddressState || ''
+  const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
     <PageContainer className="p-0 space-y-0">
@@ -449,32 +483,55 @@ export default function LeadDetailPage() {
             {/* 1. Badge da fase atual + Temperatura */}
             <div className="flex items-center gap-2 flex-wrap">
               {statusBadge}
-              <LeadTemperatureBadge priorityBucket={lead.priorityBucket} />
+              <LeadPriorityBadge
+                priorityBucket={lead.priorityBucket}
+                priorityScore={lead.priorityScore}
+                priorityDescription={safeStringOptional(lead.priorityDescription)}
+              />
             </div>
 
             {/* 2. Título do Lead */}
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">
+            <div className="space-y-1">
+              <h1 className="text-lg font-semibold text-slate-900 flex items-center gap-2 flex-wrap">
                 {safeLeadName}
                 {renderNewBadge(lead.createdAt)}
-                {renderUpdatedTodayBadge(lead.updatedAt)}
               </h1>
-              <p className="text-sm text-slate-500">{safeTradeName || 'Lead'}</p>
+              <div className="flex items-center justify-between gap-2">
+                {companyId ? (
+                  <Link to={`/companies/${companyId}`} className="text-sm font-medium text-primary hover:underline">
+                    {safeTradeName || 'Empresa não informada'}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-medium text-slate-700">{safeTradeName || 'Empresa não informada'}</span>
+                )}
+                {updatedTodayBadge ? <div className="text-xs text-muted-foreground">{updatedTodayBadge}</div> : null}
+              </div>
             </div>
 
             {/* 3. Campos principais */}
             <div className="space-y-3 pt-2 border-t">
-              
-              {/* Responsável */}
+              {/* Operação */}
               <div>
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Responsável</label>
-                <p className="text-sm text-slate-900 mt-0.5">{lead.owner?.name || 'Não atribuído'}</p>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Operação</label>
+                <p className="text-sm text-slate-900 mt-0.5">{operationTypeName || '-'}</p>
               </div>
 
-              {/* Origem */}
+              {/* Nome do contato */}
               <div>
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Origem</label>
-                <p className="text-sm text-slate-900 mt-0.5">{safeOriginLabel || '-'}</p>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Nome do contato</label>
+                <p className="text-sm text-slate-900 mt-0.5">{safePrimaryContactName || 'Não informado'}</p>
+              </div>
+
+              {/* Telefone */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Telefone</label>
+                <p className="text-sm text-slate-900 mt-0.5">{safePrimaryContactPhone || '-'}</p>
+              </div>
+
+              {/* E-mail */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">E-mail</label>
+                <p className="text-sm text-slate-900 mt-0.5">{safePrimaryContactEmail || '-'}</p>
               </div>
 
               {/* Cidade/UF */}
@@ -483,10 +540,10 @@ export default function LeadDetailPage() {
                 <p className="text-sm text-slate-900 mt-0.5">{cityState || '-'}</p>
               </div>
 
-              {/* Operação */}
+              {/* Responsável */}
               <div>
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Operação</label>
-                <p className="text-sm text-slate-900 mt-0.5">{operationTypeName || '-'}</p>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Responsável</label>
+                <p className="text-sm text-slate-900 mt-0.5">{lead.owner?.name || 'Não atribuído'}</p>
               </div>
 
               {/* Data de criação */}
@@ -762,6 +819,8 @@ export default function LeadDetailPage() {
                   .filter(status => status.isActive)
                   .map((status) => {
                     const isCurrentPhase = status.id === lead.leadStatusId
+                    const semantic = toSemanticStatus(status.code)
+                    const highlight = STATUS_HIGHLIGHT[semantic] || STATUS_HIGHLIGHT.neutral
                     
                     return (
                       <button
@@ -770,8 +829,8 @@ export default function LeadDetailPage() {
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                           "hover:bg-slate-50",
-                          isCurrentPhase 
-                            ? "bg-blue-50 border border-blue-200" 
+                          isCurrentPhase
+                            ? highlight.bg
                             : "opacity-50 hover:opacity-80"
                         )}
                       >
@@ -779,7 +838,7 @@ export default function LeadDetailPage() {
                         <span className={cn(
                           "w-2.5 h-2.5 rounded-full border-2 flex-shrink-0",
                           isCurrentPhase 
-                            ? "bg-blue-600 border-blue-600" 
+                            ? highlight.dot
                             : "bg-transparent border-slate-300"
                         )} />
                         
@@ -787,7 +846,7 @@ export default function LeadDetailPage() {
                         <span className={cn(
                           "text-sm",
                           isCurrentPhase 
-                            ? "font-medium text-blue-900" 
+                            ? cn("font-medium", highlight.text)
                             : "text-slate-600"
                         )}>
                           {status.label}
@@ -795,7 +854,7 @@ export default function LeadDetailPage() {
                         
                         {/* Indicador de fase atual */}
                         {isCurrentPhase && (
-                          <span className="ml-auto text-xs text-blue-600">atual</span>
+                          <span className={cn("ml-auto text-xs", highlight.text)}>atual</span>
                         )}
                       </button>
                     )

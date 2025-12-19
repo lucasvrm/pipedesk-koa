@@ -135,20 +135,37 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
               <CommandGroup heading="Tags Disponíveis">
                 {filteredTags.map(tag => {
                   const isSelected = selectedTagIds.includes(tag.id)
+                  const tagColor = tag.color || '#3b82f6'
+                  const backgroundMix = isSelected
+                    ? `color-mix(in srgb, ${tagColor} 22%, transparent)`
+                    : `color-mix(in srgb, ${tagColor} 14%, transparent)`
                   return (
                     <CommandItem
                       key={tag.id}
                       value={tag.name}
                       onSelect={() => handleSelect(tag.id)}
-                      className="flex items-center justify-between group cursor-pointer"
+                      className={`flex items-center justify-between group cursor-pointer px-3 py-2 ${
+                        isSelected ? 'bg-muted/70 border border-primary/30 rounded-md' : 'hover:bg-muted/60'
+                      }`}
                     >
                       <div className="flex items-center gap-2">
                         <div
-                          className={`flex items-center justify-center w-4 h-4 border rounded transition-colors ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-input'}`}
+                          className={`flex items-center justify-center w-4 h-4 border rounded transition-colors ${
+                            isSelected ? 'bg-primary text-primary-foreground' : ''
+                          }`}
+                          style={{ borderColor: tagColor }}
                         >
                           {isSelected && <Check className="w-3 h-3" />}
                         </div>
-                        <Badge variant="outline" style={{ borderColor: tag.color, color: tag.color, backgroundColor: tag.color + '15' }}>
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-medium border px-2 py-1"
+                          style={{
+                            borderColor: tagColor,
+                            backgroundColor: backgroundMix,
+                            color: 'hsl(var(--foreground))'
+                          }}
+                        >
                           {tag.name}
                         </Badge>
                       </div>
