@@ -479,8 +479,18 @@ Entregar prompts completos, prontos para copiar e colar.
 (Pode repetir no final para facilitar leitura)
 ```
 
-**Justificativa:**  
+**Justificativa:**
 Padronização facilita manutenção, revisão e onboarding de novos devs.
+
+---
+
+## 📌 **13. Capturas de tela em ambiente local (GitHub Copilot)**
+
+**Regra:**
+Agentes do GitHub Copilot **não precisam tentar gerar screenshots da aplicação** ao rodar localmente, pois a interface renderiza tela branca sem conexão com o Supabase.
+
+**Justificativa:**
+Evita tentativas inúteis de captura e perda de tempo em ambientes sem acesso ao Supabase.
 
 ---
 
@@ -509,5 +519,5 @@ Este documento deve ser atualizado sempre que:
 - Padrões do projeto evoluírem
 - Feedbacks de code reviews indicarem gaps nas regras
 
-**Última atualização:** 2025-12-15  
-**Versão:** 1.0.0
+**Última atualização:** 2025-12-18
+**Versão:** 1.0.1
