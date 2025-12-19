@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, Flame, CalendarDays } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -17,7 +16,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { QuickAction } from '@/components/QuickActionsMenu'
-import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
+import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 import { Lead } from '@/lib/types'
 import { safeString, safeStringOptional } from '@/lib/utils'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
@@ -29,6 +28,7 @@ import { DriveApiError } from '@/lib/driveClient'
 import { TagManagerPopover } from './TagManagerPopover'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
+import { LeadPriorityBadge } from './LeadPriorityBadge'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -37,24 +37,6 @@ interface LeadSalesRowProps extends LeadSalesViewItem {
   onMenuClick?: () => void
   actions?: QuickAction[]
   onScheduleClick?: (lead: Lead) => void
-}
-
-const PRIORITY_COLORS: Record<LeadPriorityBucket, string> = {
-  hot: 'bg-destructive/20 text-destructive',
-  warm: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-100',
-  cold: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100'
-}
-
-const PRIORITY_LABELS: Record<LeadPriorityBucket, string> = {
-  hot: 'Prioridade Alta',
-  warm: 'Prioridade Média',
-  cold: 'Prioridade Baixa'
-}
-
-const PRIORITY_TOOLTIP_COLORS: Record<LeadPriorityBucket, string> = {
-  hot: 'bg-red-600 text-white',
-  warm: 'bg-yellow-400 text-gray-900',
-  cold: 'bg-blue-600 text-white'
 }
 
 function getInitials(name?: string) {
@@ -537,10 +519,8 @@ export function LeadSalesRow({
     }
   }
 
-  const safePriorityBucket: LeadPriorityBucket = priorityBucket ?? 'cold'
   const safeLegalName = safeString(legalName, 'Lead sem nome')
   const safeTradeName = safeStringOptional(tradeName)
-  const safePriorityDescription = safeStringOptional(priorityDescription)
   const safePrimaryContactName = safeString(primaryContact?.name, 'Contato não informado')
   const safePrimaryContactRole = safeStringOptional(primaryContact?.role)
   const safeNextActionLabel = safeNextAction ? safeString(safeNextAction.label, '—') : null
@@ -638,39 +618,24 @@ export function LeadSalesRow({
 
       {/* Empresa - navigates to Lead Detail */}
       <TableCell className="min-w-[200px] lg:w-[16%]">
-        <TooltipProvider delayDuration={200}>
-          <div className="flex items-start gap-3 min-w-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${PRIORITY_COLORS[safePriorityBucket]}`}
-                >
-                  <Flame className="h-[18px] w-[18px]" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className={`max-w-xs text-left space-y-1 ${PRIORITY_TOOLTIP_COLORS[safePriorityBucket]}`}>
-                <div className="font-semibold">{PRIORITY_LABELS[safePriorityBucket]}</div>
-                {priorityScore !== undefined && priorityScore !== null && (
-                  <div className="opacity-90">Score: {priorityScore}</div>
-                )}
-                {safePriorityDescription && (
-                  <div className="opacity-90 text-xs leading-relaxed">{safePriorityDescription}</div>
-                )}
-              </TooltipContent>
-            </Tooltip>
-            <div className="space-y-1 min-w-0">
-              <div className="font-semibold leading-tight text-foreground truncate">{safeLegalName}</div>
-              {safeTradeName ? (
-                <div className="text-xs text-muted-foreground truncate">{safeTradeName}</div>
-              ) : (
-                tradeName && <div className="text-xs text-muted-foreground">—</div>
-              )}
-              {priorityScore !== undefined && priorityScore !== null && (
-                <div className="text-[11px] text-muted-foreground">Score: {priorityScore}</div>
-              )}
-            </div>
+        <div className="flex items-start gap-3 min-w-0">
+          <LeadPriorityBadge
+            priorityBucket={priorityBucket}
+            priorityScore={priorityScore}
+            priorityDescription={priorityDescription}
+          />
+          <div className="space-y-1 min-w-0">
+            <div className="font-semibold leading-tight text-foreground truncate">{safeLegalName}</div>
+            {safeTradeName ? (
+              <div className="text-xs text-muted-foreground truncate">{safeTradeName}</div>
+            ) : (
+              tradeName && <div className="text-xs text-muted-foreground">—</div>
+            )}
+            {priorityScore !== undefined && priorityScore !== null && (
+              <div className="text-[11px] text-muted-foreground">Score: {priorityScore}</div>
+            )}
           </div>
-        </TooltipProvider>
+        </div>
       </TableCell>
 
       {/* Contato principal - does NOT navigate to Lead Detail */}

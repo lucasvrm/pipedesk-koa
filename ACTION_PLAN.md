@@ -1,6 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Lead Detail - Breadcrumbs, Sticky Topbar, Tabs, Temperature Badge)
+## 🚧 Status: ✅ Concluído (Lead Detail - Prioridade, Header, Status, Tags)
 
 **Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  
@@ -8,7 +8,60 @@
 
 ---
 
-## 🆕 Iteração atual - Lead Detail: Breadcrumbs + Sticky Topbar + Tabs + Temperature Badge
+## 🆕 Iteração atual - Lead Detail: Prioridade + Header + Status + Tags
+
+### 🎯 Objetivo
+1. Reutilizar o badge de prioridade existente do Sales View no Lead Detail e remover o componente duplicado.
+2. Reorganizar o header: status + prioridade na primeira linha, nome do lead na segunda e empresa clicável + “Atualizado hoje” na terceira.
+3. Reordenar campos da primeira coluna e posicionar Tags após o segundo separador.
+4. Harmonizar cores de status na coluna direita com o StatusBadge do header.
+5. Melhorar contraste do SmartTagSelector.
+
+### ✅ Tarefas Concluídas
+- [x] Extraído `LeadPriorityBadge` compartilhado a partir do `LeadSalesRow` e aplicado no Lead Detail.
+- [x] Removido `LeadTemperatureBadge` e testes associados; criado `LeadPriorityBadge.test.tsx`.
+- [x] Header reorganizado com link seguro para `/companies/{id}` e badge “Atualizado hoje” abaixo da empresa.
+- [x] Primeira coluna reordenada (Operação → Contato → Telefone → E-mail → Cidade/UF → Responsável → Criado em) e Tags após separador.
+- [x] Coluna direita agora usa a mesma paleta semântica do StatusBadge.
+- [x] Melhorado contraste/hover/seleção no `SmartTagSelector`.
+- [x] Teste adicional cobrindo link da empresa e badge de atualização no header.
+
+### Arquivos Criados
+- `src/features/leads/components/LeadPriorityBadge.tsx`
+- `tests/unit/features/leads/components/LeadPriorityBadge.test.tsx`
+- `tests/unit/features/leads/LeadDetailPage.headerLayout.test.tsx`
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadSalesRow.tsx`
+- `src/features/leads/pages/LeadDetailPage.tsx`
+- `src/components/SmartTagSelector.tsx`
+
+### ✅ Checklist de QA manual
+- [ ] Badge de prioridade aparece no Lead Detail igual à Sales View.
+- [ ] Empresa clicável navega para `/companies/{id}` (quando houver id).
+- [ ] “Atualizado hoje” está na linha da empresa, alinhado à direita.
+- [ ] Ordem da coluna esquerda conforme solicitado, Tags após segundo separador.
+- [ ] Status atual na coluna direita respeita a cor semântica do StatusBadge.
+- [ ] Seleção/adição/remoção de tags com contraste legível.
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 3 |
+| Arquivos modificados | 3 |
+| Linhas adicionadas | ~240 |
+| Linhas removidas | ~120 |
+| Testes adicionados | 2 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX localizada, sem alteração de lógica de negócio ou API)
+
+---
+
+## Iteração anterior - Lead Detail: Breadcrumbs + Sticky Topbar + Tabs + Temperature Badge
 
 ### 🎯 Objetivo
 1. **Alinhar breadcrumbs:** Padding horizontal consistente com o header global (px-6).
