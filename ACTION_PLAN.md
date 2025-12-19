@@ -8,6 +8,16 @@
 
 ---
 
+## 🆕 Iteração atual - Atualização do GOLDEN_RULES
+
+### 🎯 Objetivo
+- Registrar nas regras de ouro que agentes GitHub Copilot não precisam gerar screenshots quando o ambiente local não possui conexão com o Supabase.
+
+### ✅ Tarefas Concluídas
+- [x] Adicionada a regra de screenshots locais no `GOLDEN_RULES.md` com justificativa clara.
+
+---
+
 ## 🆕 Iteração atual - Conteúdo/UX (Prompt D)
 
 ### 🎯 Objetivo
