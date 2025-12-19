@@ -566,11 +566,11 @@ export default function LeadDetailPage() {
           </>
         }
         content={
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue="timeline" className="space-y-6">
             <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
               <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
               <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
-              <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
+              <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Contexto</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -734,7 +734,10 @@ export default function LeadDetailPage() {
               <DriveSection entityType="lead" entityId={lead.id} entityName={safeLeadName} />
             </TabsContent>
 
-            <TabsContent value="timeline" className="min-h-[500px]">
+            <TabsContent value="timeline" className="min-h-[500px] space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Aqui você encontra o histórico completo de interações: anotações, eventos agendados, e-mails e atividades do lead.
+              </p>
               <UnifiedTimeline entityId={lead.id} entityType="lead" />
             </TabsContent>
           </Tabs>

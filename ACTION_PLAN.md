@@ -1,33 +1,108 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Lead Detail - Contatos + Quick Actions)
+## 🚧 Status: ✅ Concluído (Lead Detail - UX Improvements - Contexto Tab + Quick Actions Labels)
 
 **Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - /leads/:id - Contatos melhorados + Quick Actions + remover Mapa de Relacionamentos
+**Escopo:** Frontend - /leads/:id - Contexto como tab padrão + Quick Actions com labels visíveis
 
 ---
 
-## 🆕 Iteração atual - Lead Detail Improvements
+## 🆕 Iteração atual - Lead Detail UX: Contexto como Tab Padrão + Quick Actions Visíveis
 
 ### 🎯 Objetivo
-1. **EmptyState de contatos:** Adicionar botão "Vincular" no EmptyState quando não há contatos.
-2. **Renomear seção:** Alterar "Comitê de Compra" para "Contatos do Lead".
-3. **Contatos clicáveis:** Tornar BuyingCommitteeCard clicável, abrindo modal com informações do contato.
-4. **Remover Mapa de Relacionamentos:** Remover seção e queries desnecessárias.
-5. **Quick Actions:** Adicionar as mesmas ações rápidas existentes em /leads list.
+1. **Tab Contexto como padrão:** Ao abrir `/leads/:id`, a aba "Contexto" (anteriormente "Atividades") é selecionada automaticamente.
+2. **Renomear tab:** Alterar nome da tab de "Atividades" para "Contexto".
+3. **Texto explicativo:** Adicionar texto curto explicando o conteúdo da aba Contexto.
+4. **Quick Actions com labels:** Substituir botões apenas com ícones por botões com ícone + texto visível.
 
 ### ✅ Tarefas Concluídas
-- [x] **A) EmptyState com Novo + Vincular**
-  - Adicionado `secondaryAction` ao EmptyState com label "Vincular".
-  - `primaryAction` com label "Novo".
-  - Ambos abrem os modals corretos.
+- [x] **A) Tab Contexto como padrão**
+  - Alterado `defaultValue` de `"overview"` para `"timeline"` no componente `Tabs`.
+  - Ao abrir `/leads/:id`, usuário cai diretamente na aba Contexto.
 
-- [x] **B) Renomear seção para "Contatos do Lead"**
-  - Atualizado CardTitle de "Comitê de Compra" para "Contatos do Lead".
-  - Atualizada descrição para "Adicione contatos para este lead."
+- [x] **B) Renomear tab para "Contexto"**
+  - Atualizado texto do `TabsTrigger` de "Atividades" para "Contexto".
 
-- [x] **C) Contatos clicáveis com modal**
+- [x] **C) Texto explicativo na aba Contexto**
+  - Adicionado parágrafo: "Aqui você encontra o histórico completo de interações: anotações, eventos agendados, e-mails e atividades do lead."
+
+- [x] **D) Quick Actions com labels visíveis**
+  - Alterado layout de `flex items-center gap-1` para `flex flex-wrap gap-2`.
+  - Botões alterados de `variant="ghost" size="icon"` para `variant="outline" size="sm"`.
+  - Adicionados labels visíveis: WhatsApp, E-mail, Ligar, Drive, Agendar, Copiar ID.
+  - Mantidos `aria-label`, `data-testid` e lógica de `disabled`.
+
+- [x] **E) Testes unitários**
+  - `LeadDetailPage.defaultTab.test.tsx`: 2 testes (tab padrão, texto explicativo).
+  - Atualizado `LeadDetailQuickActions.test.tsx`: +1 teste (labels visíveis).
+  - Total: 9 testes passando.
+
+### Arquivos Modificados
+- `src/features/leads/pages/LeadDetailPage.tsx` - Tab padrão + renomear tab + texto explicativo
+- `src/features/leads/components/LeadDetailQuickActions.tsx` - Layout com labels visíveis
+
+### Arquivos de Teste Criados/Modificados
+- `tests/unit/features/leads/LeadDetailPage.defaultTab.test.tsx` - 2 testes (NOVO)
+- `tests/unit/features/leads/components/LeadDetailQuickActions.test.tsx` - +1 teste
+
+### ✅ Checklist de QA manual
+
+#### Lead Detail (/leads/:id)
+- [ ] Ao abrir a página, tab "Contexto" está selecionada (não "Visão Geral").
+- [ ] Tab mostra texto "Contexto" (não "Atividades").
+- [ ] Texto explicativo aparece no topo do conteúdo da aba Contexto.
+- [ ] Quick Actions no sidebar mostram labels visíveis (WhatsApp, E-mail, etc.).
+- [ ] Usuário identifica ações sem precisar de hover/tooltip.
+- [ ] Botões desabilitados quando sem telefone/email continuam funcionando.
+- [ ] Outras abas (Visão Geral, Docs) continuam funcionando normalmente.
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos modificados | 2 |
+| Arquivos de teste criados | 1 |
+| Arquivos de teste modificados | 1 |
+| Linhas adicionadas | ~90 |
+| Linhas removidas | ~30 |
+| Testes adicionados | 3 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX localizada, sem alteração de lógica de negócio ou API)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Tab "Contexto" como padrão | ✅ | `defaultValue="timeline"` |
+| Renomear tab para "Contexto" | ✅ | TabsTrigger atualizado |
+| Texto explicativo na aba | ✅ | Parágrafo adicionado |
+| Quick Actions com labels visíveis | ✅ | Layout atualizado com `variant="outline"` + texto |
+| Manter acessibilidade | ✅ | `aria-label` mantido |
+| Manter disabled states | ✅ | Lógica preservada |
+| Testes unitários | ✅ | 3 novos testes |
+| Sem alteração de lógica | ✅ | Apenas UI/layout |
+| Sem alteração de API | ✅ | Nenhuma mudança |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
+#### Decisões Técnicas
+1. **Por que usar `variant="outline"` nos botões?**
+   - Melhor visibilidade e hierarquia visual comparado ao `variant="ghost"`.
+   
+2. **Por que usar `flex flex-wrap gap-2`?**
+   - Permite que os botões quebrem linha em telas menores, mantendo boa UX.
+
+3. **Por que manter tooltips?**
+   - Tooltips agora mostram descrições mais detalhadas (ex: "Enviar WhatsApp para o contato principal").
+
+---
+
+## ✅ Iteração anterior - Lead Detail Improvements
   - Adicionada prop `onClick` ao `BuyingCommitteeCard`.
   - Implementado suporte a teclado (Enter/Space).
   - Adicionado `cursor-pointer` e `role="button"` quando onClick é fornecido.
