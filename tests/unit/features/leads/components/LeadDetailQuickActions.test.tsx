@@ -139,4 +139,16 @@ describe('LeadDetailQuickActions', () => {
     
     expect(toast.info).toHaveBeenCalledWith('Integração de calendário em breve')
   })
+
+  it('renders visible text labels for quick action buttons', () => {
+    render(<LeadDetailQuickActions {...defaultProps} />)
+    
+    // Check that visible labels are rendered (not just icons)
+    expect(screen.getByText('WhatsApp')).toBeInTheDocument()
+    expect(screen.getByText('E-mail')).toBeInTheDocument()
+    expect(screen.getByText('Ligar')).toBeInTheDocument()
+    expect(screen.getByText('Drive')).toBeInTheDocument()
+    expect(screen.getByText('Agendar')).toBeInTheDocument()
+    expect(screen.getByText('Copiar ID')).toBeInTheDocument()
+  })
 })

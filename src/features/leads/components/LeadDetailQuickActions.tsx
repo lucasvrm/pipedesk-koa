@@ -208,25 +208,26 @@ export function LeadDetailQuickActions({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
                 onClick={handleWhatsApp}
                 disabled={!primaryContact?.phone}
                 data-testid="quick-action-whatsapp"
                 aria-label="Enviar WhatsApp"
               >
-                <MessageCircle className="h-4 w-4 text-green-600" />
+                <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+                <span>WhatsApp</span>
               </Button>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Enviar WhatsApp</p>
+            <p>Enviar WhatsApp para o contato principal</p>
           </TooltipContent>
         </Tooltip>
 
@@ -234,20 +235,21 @@ export function LeadDetailQuickActions({
           <TooltipTrigger asChild>
             <div className="flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
                 onClick={handleEmail}
                 disabled={!primaryContact?.email}
                 data-testid="quick-action-email"
                 aria-label="Enviar E-mail"
               >
-                <Mail className="h-4 w-4 text-blue-600" />
+                <Mail className="h-3.5 w-3.5 text-blue-600" />
+                <span>E-mail</span>
               </Button>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Enviar E-mail</p>
+            <p>Enviar e-mail para o contato principal</p>
           </TooltipContent>
         </Tooltip>
 
@@ -255,20 +257,21 @@ export function LeadDetailQuickActions({
           <TooltipTrigger asChild>
             <div className="flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
                 onClick={handlePhone}
                 disabled={!primaryContact?.phone}
                 data-testid="quick-action-phone"
                 aria-label="Ligar"
               >
-                <Phone className="h-4 w-4" />
+                <Phone className="h-3.5 w-3.5" />
+                <span>Ligar</span>
               </Button>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Ligar</p>
+            <p>Ligar para o contato principal</p>
           </TooltipContent>
         </Tooltip>
 
@@ -276,24 +279,25 @@ export function LeadDetailQuickActions({
           <TooltipTrigger asChild>
             <div className="flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
                 onClick={handleOpenDriveFolder}
                 disabled={isDriveLoading}
                 data-testid="quick-action-drive"
                 aria-label="Drive"
               >
                 {isDriveLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-600" />
                 ) : (
-                  <HardDrive className="h-4 w-4 text-yellow-600" />
+                  <HardDrive className="h-3.5 w-3.5 text-yellow-600" />
                 )}
+                <span>Drive</span>
               </Button>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Drive</p>
+            <p>Abrir pasta do lead no Drive</p>
           </TooltipContent>
         </Tooltip>
 
@@ -301,19 +305,20 @@ export function LeadDetailQuickActions({
           <TooltipTrigger asChild>
             <div className="flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
                 onClick={handleSchedule}
                 data-testid="quick-action-schedule"
                 aria-label="Agendar Reunião"
               >
-                <Calendar className="h-4 w-4 text-orange-600" />
+                <Calendar className="h-3.5 w-3.5 text-orange-600" />
+                <span>Agendar</span>
               </Button>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Agendar Reunião</p>
+            <p>Agendar reunião</p>
           </TooltipContent>
         </Tooltip>
 
@@ -321,19 +326,20 @@ export function LeadDetailQuickActions({
           <TooltipTrigger asChild>
             <div className="flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
                 onClick={handleCopyId}
                 data-testid="quick-action-copy-id"
                 aria-label="Copiar ID"
               >
-                <Copy className="h-4 w-4" />
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copiar ID</span>
               </Button>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Copiar ID</p>
+            <p>Copiar ID do lead</p>
           </TooltipContent>
         </Tooltip>
       </div>
