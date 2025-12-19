@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -624,7 +624,7 @@ export default function LeadDetailPage() {
             <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
               <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
               <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
-            <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
+              <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Atividades</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -632,8 +632,9 @@ export default function LeadDetailPage() {
               <div className="grid grid-cols-1 gap-6">
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Dados Principais</CardTitle>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base">Dados Principais</CardTitle>
+                    <CardDescription>Informações básicas do lead</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -677,23 +678,23 @@ export default function LeadDetailPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader>
-                  <CardTitle>Descrição</CardTitle>
-                  <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
-                </CardHeader>
-                <CardContent>
-                  <Textarea value={safeDescription} disabled className="min-h-[110px]" />
-                </CardContent>
-              </Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base">Descrição</CardTitle>
+                    <CardDescription>Contexto adicional sobre a lead</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea value={safeDescription} disabled className="min-h-[110px]" />
+                  </CardContent>
+                </Card>
 
                 {/* Relationship Map - Show only if we have relationships beyond the current entity */}
                 {relationshipData.nodes.length > 1 && (
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Mapa de Relacionamentos</CardTitle>
-                      <p className="text-sm text-muted-foreground">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-base">Mapa de Relacionamentos</CardTitle>
+                      <CardDescription>
                         Visualização da cadeia Lead → Empresa → Negócio → Player
-                      </p>
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="h-[400px]">
@@ -708,9 +709,9 @@ export default function LeadDetailPage() {
                 )}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <Card>
-                  <CardHeader className="space-y-3 border-b pb-4">
+                  <CardHeader className="pb-4">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Comitê de Compra</CardTitle>
                       <div className="flex gap-2">
@@ -722,9 +723,9 @@ export default function LeadDetailPage() {
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">Mapeie influenciadores e decisores.</p>
+                    <CardDescription>Mapeie influenciadores e decisores</CardDescription>
                   </CardHeader>
-                  <CardContent className="p-4 space-y-3">
+                  <CardContent className="space-y-3">
                     {lead.contacts && lead.contacts.length > 0 ? (
                       lead.contacts.map(contact => (
                         <div key={contact.id} className="relative">
@@ -754,25 +755,25 @@ export default function LeadDetailPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader className="space-y-3 border-b pb-4">
+                  <CardHeader className="pb-4">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Equipe</CardTitle>
                       <Button variant="outline" size="sm" onClick={() => setMemberModalOpen(true)}>
                         Vincular usuário existente
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground">Controle de responsáveis e colaboradores.</p>
+                    <CardDescription>Controle de responsáveis e colaboradores</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     {lead.members && lead.members.length > 0 ? (
                       <div className="divide-y">
                         {lead.members.map(member => (
-                          <div key={member.userId} className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div key={member.userId} className="px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
                                 {safeStringOptional(member.user?.name)?.charAt(0) || 'U'}
                               </div>
-                              <div className="space-y-1">
+                              <div className="space-y-0.5">
                                 <p className="text-sm font-medium leading-tight">{safeString(member.user?.name, 'Usuário')}</p>
                                 <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                               </div>
@@ -790,7 +791,7 @@ export default function LeadDetailPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-5 text-center text-sm text-muted-foreground">Nenhum membro vinculado.</div>
+                      <div className="text-center text-sm text-muted-foreground px-6 py-4">Nenhum membro vinculado.</div>
                     )}
                   </CardContent>
                 </Card>
