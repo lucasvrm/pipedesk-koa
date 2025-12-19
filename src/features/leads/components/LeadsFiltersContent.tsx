@@ -10,9 +10,9 @@ import {
   CommandItem,
   CommandList
 } from '@/components/ui/command'
-import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Users, Check, ChevronDown } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Users, Check, ChevronDown, Search, X } from 'lucide-react'
 import { safeString, ensureArray, cn } from '@/lib/utils'
 import { LeadsFilterSection } from './LeadsFilterSection'
 import { LeadOrderBy, ORDER_BY_OPTIONS } from './LeadsSmartFilters'
@@ -51,6 +51,24 @@ const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string }[] = [
   { value: 'warm', label: 'Warm' },
   { value: 'cold', label: 'Cold' }
 ]
+
+const PRIORITY_STYLES: Record<LeadPriorityBucket, { base: string; active: string; pill: string }> = {
+  hot: {
+    base: 'bg-red-500/10 border-red-500/30',
+    active: 'bg-red-500 text-white border-red-500',
+    pill: 'bg-red-500 text-white'
+  },
+  warm: {
+    base: 'bg-yellow-300/20 border-yellow-400/40',
+    active: 'bg-yellow-300 text-red-700 border-yellow-400',
+    pill: 'bg-yellow-300 text-red-700'
+  },
+  cold: {
+    base: 'bg-blue-500/10 border-blue-500/30',
+    active: 'bg-blue-500 text-white border-blue-500',
+    pill: 'bg-blue-500 text-white'
+  }
+}
 
 const DAYS_PRESETS = [3, 7, 14] as const
 
@@ -200,57 +218,79 @@ export function LeadsFiltersContent({
     }))
   }, [setDraftFilters])
 
+  const selectionCounts = useMemo(() => {
+    const statusCount = draftFilters.statuses.length
+    const originCount = draftFilters.origins.length
+    const tagCount = draftFilters.selectedTags.length
+    const priorityCount = draftFilters.priority.length
+    const daysCount = draftFilters.daysWithoutInteraction !== null ? 1 : 0
+    const nextActionCount = showNextActionFilter ? draftFilters.nextActions.length : 0
+    const ownerCount = draftFilters.ownerMode !== 'all' ? 1 : 0
+
+    return {
+      statusCount,
+      originCount,
+      tagCount,
+      priorityCount,
+      daysCount,
+      nextActionCount,
+      ownerCount,
+      systemTotal: statusCount + originCount + tagCount + priorityCount + ownerCount,
+      activityTotal: daysCount + nextActionCount
+    }
+  }, [draftFilters, showNextActionFilter])
+
+  const optionRowClassName = 'flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background border border-transparent'
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Ordering Section - Collapsible radio list (only for sales view) */}
       {showNextActionFilter && (
-        <>
-          <LeadsFilterSection
-            title="Ordenação"
-            defaultOpen={false}
-            testId="ordering-section"
-          >
-            <div className="space-y-1" role="radiogroup" aria-label="Ordenação">
-              {ORDER_BY_OPTIONS.map(option => {
-                const isSelected = draftFilters.orderBy === option.value
-                const inputId = `ordering-${option.value}`
-                return (
-                  <label
-                    key={option.value}
-                    htmlFor={inputId}
+        <LeadsFilterSection
+          title="Ordenação"
+          defaultOpen={false}
+          testId="ordering-section"
+          tone="parent"
+        >
+          <div className="space-y-2" role="radiogroup" aria-label="Ordenação">
+            {ORDER_BY_OPTIONS.map(option => {
+              const isSelected = draftFilters.orderBy === option.value
+              const inputId = `ordering-${option.value}`
+              return (
+                <label
+                  key={option.value}
+                  htmlFor={inputId}
+                  className={cn(
+                    optionRowClassName,
+                    isSelected ? 'bg-accent/60 border-border text-foreground' : ''
+                  )}
+                  data-testid={`ordering-option-${option.value}`}
+                >
+                  <input
+                    type="radio"
+                    id={inputId}
+                    name="orderBy"
+                    value={option.value}
+                    checked={isSelected}
+                    onChange={() => setDraftFilters(prev => ({ ...prev, orderBy: option.value }))}
+                    className="sr-only"
+                    aria-checked={isSelected}
+                  />
+                  <div 
                     className={cn(
-                      'flex items-center gap-2 cursor-pointer py-1.5 px-2 rounded transition-colors',
-                      isSelected ? 'bg-accent' : 'hover:bg-muted'
+                      'flex h-4 w-4 items-center justify-center rounded-full border',
+                      isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
                     )}
-                    data-testid={`ordering-option-${option.value}`}
+                    aria-hidden="true"
                   >
-                    <input
-                      type="radio"
-                      id={inputId}
-                      name="orderBy"
-                      value={option.value}
-                      checked={isSelected}
-                      onChange={() => setDraftFilters(prev => ({ ...prev, orderBy: option.value }))}
-                      className="sr-only"
-                      aria-checked={isSelected}
-                    />
-                    <div 
-                      className={cn(
-                        'flex h-4 w-4 items-center justify-center rounded-full border',
-                        isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
-                      )}
-                      aria-hidden="true"
-                    >
-                      {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                    </div>
-                    <span className="text-sm">{option.label}</span>
-                  </label>
-                )
-              })}
-            </div>
-          </LeadsFilterSection>
-          <Separator />
-        </>
+                    {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                  </div>
+                  <span className="text-sm">{option.label}</span>
+                </label>
+              )
+            })}
+          </div>
+        </LeadsFilterSection>
       )}
 
       {/* Section: Filtros do sistema */}
@@ -258,22 +298,31 @@ export function LeadsFiltersContent({
         title="Filtros do sistema"
         defaultOpen={true}
         testId="filter-section-system"
+        selectedCount={selectionCounts.systemTotal}
+        tone="parent"
       >
         {/* Responsável - Single Popover with Meus/Todos/Users */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Responsável</label>
+          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+            Responsável
+            {selectionCounts.ownerCount > 0 && (
+              <span className="text-xs text-muted-foreground font-medium">
+                (1)
+              </span>
+            )}
+          </label>
           <Popover>
             <PopoverTrigger asChild>
-              <div className="flex">
+              <div className="flex w-full">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-1.5 justify-between w-full"
+                  className="h-9 gap-2 justify-between w-full rounded-lg"
                   data-testid="owner-popover-trigger"
                 >
-                  <Users className="h-3.5 w-3.5" />
+                  <Users className="h-4 w-4" />
                   <span className="truncate flex-1 text-left">{draftOwnerLabel}</span>
-                  <ChevronDown className="h-3 w-3 shrink-0" />
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform" />
                 </Button>
               </div>
             </PopoverTrigger>
@@ -341,19 +390,26 @@ export function LeadsFiltersContent({
           title="Status"
           defaultOpen={false}
           testId="system-status-toggle"
+          selectedCount={selectionCounts.statusCount}
         >
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {statusOptions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-1">Nenhum status disponível</p>
             ) : (
               statusOptions.map(option => {
                 const isSelected = draftFilters.statuses.includes(option.id)
+                const checkboxId = `status-${option.id}`
                 return (
                   <label
                     key={option.id}
-                    className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
+                    htmlFor={checkboxId}
+                    className={cn(
+                      optionRowClassName,
+                      isSelected ? 'bg-accent/60 border-border' : ''
+                    )}
                   >
                     <Checkbox
+                      id={checkboxId}
                       checked={isSelected}
                       onCheckedChange={() => {
                         const newStatuses = isSelected
@@ -363,7 +419,7 @@ export function LeadsFiltersContent({
                       }}
                       data-testid={`status-checkbox-${option.id}`}
                     />
-                    <span className="text-sm">{option.label}</span>
+                    <span className="text-sm leading-6">{option.label}</span>
                   </label>
                 )
               })
@@ -373,44 +429,38 @@ export function LeadsFiltersContent({
 
         {/* Prioridade - with specific colors for Hot/Warm/Cold */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Prioridade</label>
-          <div className="space-y-1">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            Prioridade
+            {selectionCounts.priorityCount > 0 && (
+              <span className="text-xs text-muted-foreground font-medium">
+                ({selectionCounts.priorityCount})
+              </span>
+            )}
+          </label>
+          <div className="space-y-1.5">
             {PRIORITY_OPTIONS.map(option => {
               const isActive = draftFilters.priority.includes(option.value)
-              // Priority-specific styles
-              const priorityStyles = {
-                hot: {
-                  base: 'bg-red-500/10 border-red-500/30',
-                  active: 'bg-red-500 text-white border-red-500',
-                  pill: 'bg-red-500 text-white'
-                },
-                warm: {
-                  base: 'bg-yellow-300/20 border-yellow-400/40',
-                  active: 'bg-yellow-300 text-red-700 border-yellow-400',
-                  pill: 'bg-yellow-300 text-red-700'
-                },
-                cold: {
-                  base: 'bg-blue-500/10 border-blue-500/30',
-                  active: 'bg-blue-500 text-white border-blue-500',
-                  pill: 'bg-blue-500 text-white'
-                }
-              }
-              const styles = priorityStyles[option.value]
+              const styles = PRIORITY_STYLES[option.value]
+              const inputId = `priority-${option.value}`
               return (
                 <label
                   key={option.value}
+                  htmlFor={inputId}
                   className={cn(
-                    'flex items-center gap-2 cursor-pointer py-1.5 px-2 rounded border transition-colors',
-                    isActive ? styles.active : `${styles.base} hover:opacity-80`
+                    'flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors',
+                    isActive
+                      ? `${styles.active} shadow-sm ring-1 ring-offset-1 ring-offset-background ring-primary/20`
+                      : `${styles.base} hover:opacity-90`
                   )}
                 >
                   <Checkbox
+                    id={inputId}
                     checked={isActive}
                     onCheckedChange={() => handleDraftPriorityToggle(option.value)}
                     data-testid={`priority-checkbox-${option.value}`}
                   />
                   <span className={cn(
-                    'text-xs font-medium px-2 py-0.5 rounded-full',
+                    'text-xs font-semibold px-2.5 py-1 rounded-full',
                     styles.pill
                   )}>
                     {option.label}
@@ -426,19 +476,26 @@ export function LeadsFiltersContent({
           title="Origem"
           defaultOpen={false}
           testId="system-origin-toggle"
+          selectedCount={selectionCounts.originCount}
         >
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {originOptions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-1">Nenhuma origem disponível</p>
             ) : (
               originOptions.map(option => {
                 const isSelected = draftFilters.origins.includes(option.id)
+                const checkboxId = `origin-${option.id}`
                 return (
                   <label
                     key={option.id}
-                    className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
+                    htmlFor={checkboxId}
+                    className={cn(
+                      optionRowClassName,
+                      isSelected ? 'bg-accent/60 border-border' : ''
+                    )}
                   >
                     <Checkbox
+                      id={checkboxId}
                       checked={isSelected}
                       onCheckedChange={() => {
                         const newOrigins = isSelected
@@ -448,7 +505,7 @@ export function LeadsFiltersContent({
                       }}
                       data-testid={`origin-checkbox-${option.id}`}
                     />
-                    <span className="text-sm">{option.label}</span>
+                    <span className="text-sm leading-6">{option.label}</span>
                   </label>
                 )
               })
@@ -462,32 +519,50 @@ export function LeadsFiltersContent({
             title="Tags"
             defaultOpen={false}
             testId="system-tags-toggle"
+            selectedCount={selectionCounts.tagCount}
           >
             <div className="space-y-2">
               {/* Search input for tags */}
               <div className="relative">
-                <input
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
                   type="text"
                   placeholder="Buscar tag..."
                   value={tagsSearchQuery}
                   onChange={e => setTagsSearchQuery(e.target.value)}
-                  className="w-full h-8 px-3 text-sm border rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  className="h-9 pl-9 pr-9 text-sm"
                   data-testid="tags-search-input"
                 />
+                {tagsSearchQuery && (
+                  <button
+                    type="button"
+                    aria-label="Limpar busca de tags"
+                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                    onClick={() => setTagsSearchQuery('')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               {/* Tag checkboxes */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {filteredTagOptions.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-1">Nenhuma tag encontrada</p>
                 ) : (
                   filteredTagOptions.map(option => {
                     const isSelected = draftFilters.selectedTags.includes(option.id)
+                    const checkboxId = `tag-${option.id}`
                     return (
                       <label
                         key={option.id}
-                        className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
+                        htmlFor={checkboxId}
+                        className={cn(
+                          optionRowClassName,
+                          isSelected ? 'bg-accent/60 border-border' : ''
+                        )}
                       >
                         <Checkbox
+                          id={checkboxId}
                           checked={isSelected}
                           onCheckedChange={() => {
                             const newTags = isSelected
@@ -499,11 +574,11 @@ export function LeadsFiltersContent({
                         />
                         {option.color && (
                           <div
-                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            className="h-2.5 w-2.5 rounded-full border border-border/50 shrink-0"
                             style={{ backgroundColor: option.color }}
                           />
                         )}
-                        <span className="text-sm">{option.label}</span>
+                        <span className="text-sm leading-6">{option.label}</span>
                       </label>
                     )
                   })
@@ -519,27 +594,36 @@ export function LeadsFiltersContent({
         title="Atividade do lead"
         defaultOpen={true}
         testId="filter-section-activity"
+        selectedCount={selectionCounts.activityTotal}
+        tone="parent"
       >
         {/* Dias sem interação - Single select via checkbox, minimized by default */}
         <LeadsFilterSection
           title="Dias sem interação"
           defaultOpen={false}
           testId="activity-days-toggle"
+          selectedCount={selectionCounts.daysCount}
         >
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {DAYS_PRESETS.map(days => {
               const isSelected = draftFilters.daysWithoutInteraction === days
+              const checkboxId = `days-${days}`
               return (
                 <label
                   key={days}
-                  className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
+                  htmlFor={checkboxId}
+                  className={cn(
+                    optionRowClassName,
+                    isSelected ? 'bg-accent/60 border-border' : ''
+                  )}
                 >
                   <Checkbox
+                    id={checkboxId}
                     checked={isSelected}
                     onCheckedChange={() => handleDaysWithoutInteractionToggle(days)}
                     data-testid={`days-checkbox-${days}`}
                   />
-                  <span className="text-sm">{days}+ dias</span>
+                  <span className="text-sm leading-6">{days}+ dias</span>
                 </label>
               )
             })}
@@ -552,16 +636,23 @@ export function LeadsFiltersContent({
             title="Próxima ação"
             defaultOpen={false}
             testId="activity-next-action-toggle"
+            selectedCount={selectionCounts.nextActionCount}
           >
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {nextActionOptions.map(option => {
                 const isSelected = draftFilters.nextActions.includes(option.id)
+                const checkboxId = `next-action-${option.id}`
                 return (
                   <label
                     key={option.id}
-                    className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
+                    htmlFor={checkboxId}
+                    className={cn(
+                      optionRowClassName,
+                      isSelected ? 'bg-accent/60 border-border' : ''
+                    )}
                   >
                     <Checkbox
+                      id={checkboxId}
                       checked={isSelected}
                       onCheckedChange={() => {
                         const newActions = isSelected

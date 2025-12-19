@@ -176,16 +176,18 @@ export function LeadsFilterPanel({
         </SheetHeader>
 
         {/* Body - Scrollable with native scroll (overflow-y: auto) */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <LeadsFiltersContent
-            draftFilters={draftFilters}
-            setDraftFilters={setDraftFilters}
-            users={users}
-            leadStatuses={leadStatuses}
-            leadOrigins={leadOrigins}
-            availableTags={availableTags}
-            showNextActionFilter={showNextActionFilter}
-          />
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="space-y-6">
+            <LeadsFiltersContent
+              draftFilters={draftFilters}
+              setDraftFilters={setDraftFilters}
+              users={users}
+              leadStatuses={leadStatuses}
+              leadOrigins={leadOrigins}
+              availableTags={availableTags}
+              showNextActionFilter={showNextActionFilter}
+            />
+          </div>
         </div>
 
         {/* Footer - Fixed */}

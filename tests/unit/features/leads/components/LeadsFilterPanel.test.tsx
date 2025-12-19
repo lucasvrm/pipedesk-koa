@@ -17,14 +17,6 @@ vi.mock('@/components/ui/scroll-area', () => ({
   ScrollArea: ({ children }: any) => <div>{children}</div>,
 }))
 
-vi.mock('@/components/ui/collapsible', () => ({
-  Collapsible: ({ children, defaultOpen, 'data-testid': testId, className }: any) => (
-    <div data-defaultopen={defaultOpen} data-testid={testId} className={className}>{children}</div>
-  ),
-  CollapsibleContent: ({ children }: any) => <div>{children}</div>,
-  CollapsibleTrigger: ({ children }: any) => <button>{children}</button>,
-}))
-
 vi.mock('@/components/ui/MultiSelectPopover', () => ({
   MultiSelectPopover: ({ placeholder, selected, onSelectionChange }: any) => (
     <button 
@@ -269,34 +261,23 @@ describe('LeadsFilterPanel', () => {
       expect(screen.queryByTestId('tag-checkbox-tag-2')).not.toBeInTheDocument()
     })
 
-    it('Tags section is minimized by default (defaultOpen={false})', () => {
+    it('Tags section is minimized by default (aria-expanded)', () => {
       render(<LeadsFilterPanel {...defaultProps} />)
       
-      const tagsSection = screen.getByTestId('system-tags-toggle')
-      expect(tagsSection.getAttribute('data-defaultopen')).toBe('false')
+      const tagsTrigger = screen.getByRole('button', { name: /Tags/i })
+      expect(tagsTrigger).toHaveAttribute('aria-expanded', 'false')
     })
   })
 
   describe('Default Open States', () => {
-    it('Filtros do sistema parent section is open by default', () => {
-      render(<LeadsFilterPanel {...defaultProps} />)
-      
-      const systemSection = screen.getByTestId('filter-section-system')
-      expect(systemSection.getAttribute('data-defaultopen')).toBe('true')
-    })
-
-    it('Atividade do lead parent section is open by default', () => {
-      render(<LeadsFilterPanel {...defaultProps} />)
-      
-      const activitySection = screen.getByTestId('filter-section-activity')
-      expect(activitySection.getAttribute('data-defaultopen')).toBe('true')
-    })
-
-    it('Ordenação section is minimized by default', () => {
+    it('applies aria-expanded defaults to collapsible sections', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
-      const orderingSection = screen.getByTestId('ordering-section')
-      expect(orderingSection.getAttribute('data-defaultopen')).toBe('false')
+      expect(screen.getByRole('button', { name: /Ordenação/i })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getByRole('button', { name: /Filtros do sistema/i })).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('button', { name: /Status/i })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getByRole('button', { name: /Tags/i })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getByRole('button', { name: /Atividade do lead/i })).toHaveAttribute('aria-expanded', 'true')
     })
   })
 })

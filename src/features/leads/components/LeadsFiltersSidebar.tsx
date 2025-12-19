@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { User, Tag } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { AppliedLeadsFilters, FilterActions } from '../hooks/useLeadsFiltersSearchParams'
 import { LeadsFiltersContent, DraftFilters } from './LeadsFiltersContent'
 import { LeadsFiltersFooter } from './LeadsFiltersFooter'
@@ -151,6 +152,7 @@ export function LeadsFiltersSidebar({
   // When closed: hidden on all breakpoints (just 'hidden' class)
   // When open: hidden on mobile (< md), flex on md+ (hidden md:flex)
   const visibilityClass = isOpen ? 'hidden md:flex' : 'hidden'
+  const stickyFooter = draftFiltersCount > 0
 
   return (
     <aside
@@ -158,26 +160,32 @@ export function LeadsFiltersSidebar({
       data-testid="leads-filters-sidebar"
     >
       {/* Body - Scrollable with native scroll (includes footer) */}
-      <div 
-        className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
-      >
-        <LeadsFiltersContent
-          draftFilters={draftFilters}
-          setDraftFilters={setDraftFilters}
-          users={users}
-          leadStatuses={leadStatuses}
-          leadOrigins={leadOrigins}
-          availableTags={availableTags}
-          showNextActionFilter={showNextActionFilter}
-        />
-
-        {/* Footer - Inside scroll area, at the end of content */}
-        <div className="border-t mt-4 pt-4">
-          <LeadsFiltersFooter
-            draftFiltersCount={draftFiltersCount}
-            onClear={handleClearDraft}
-            onApply={handleApplyFilters}
+      <div className="flex-1 overflow-y-auto p-5 min-h-0">
+        <div className="space-y-6">
+          <LeadsFiltersContent
+            draftFilters={draftFilters}
+            setDraftFilters={setDraftFilters}
+            users={users}
+            leadStatuses={leadStatuses}
+            leadOrigins={leadOrigins}
+            availableTags={availableTags}
+            showNextActionFilter={showNextActionFilter}
           />
+
+          {/* Footer - Inside scroll area, at the end of content */}
+          <div
+            className={cn(
+              'border-t pt-4',
+              stickyFooter && 'sticky bottom-0 bg-card pb-4'
+            )}
+            data-testid="leads-filters-footer"
+          >
+            <LeadsFiltersFooter
+              draftFiltersCount={draftFiltersCount}
+              onClear={handleClearDraft}
+              onApply={handleApplyFilters}
+            />
+          </div>
         </div>
       </div>
     </aside>

@@ -8,6 +8,15 @@
 
 ---
 
+## 🆕 Iteração atual - UI polish do sidebar de filtros inteligentes
+
+- [x] Refinada hierarquia visual das seções (badges de contagem, triggers com focus-ring e chevron animado, pais vs. filhas com tipografia distinta).
+- [x] Padronizado espaçamento do painel e das linhas de opções (labels clicáveis, hover suave, ids para Checkbox/Radio, busca de tags com ícone + clear).
+- [x] Acessibilidade reforçada: `aria-expanded` validado em testes para os colapsáveis principais.
+- [x] Rodapé (Aplicar/Limpar) fixo no sidebar quando há filtros selecionados, preservando lógica existente.
+
+---
+
 ## 🆕 Iteração atual - Ajustes Finos de Seções (Prompt F)
 
 ### 🎯 Objetivo
