@@ -28,7 +28,7 @@ export function EntityDetailLayout({
           style={{ maxHeight: 'calc(100vh - 4rem)' }}
           data-testid="entity-detail-sidebar"
         >
-          <div className="flex flex-col gap-4 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+          <div className="flex flex-col gap-4 overflow-y-auto">
             {sidebar}
           </div>
         </aside>

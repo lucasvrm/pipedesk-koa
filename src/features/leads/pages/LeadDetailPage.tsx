@@ -764,9 +764,9 @@ export default function LeadDetailPage() {
                     </div>
                     <CardDescription>Controle de responsáveis e colaboradores</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     {lead.members && lead.members.length > 0 ? (
-                      <div className="divide-y -mx-6">
+                      <div className="divide-y">
                         {lead.members.map(member => (
                           <div key={member.userId} className="px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
@@ -791,7 +791,7 @@ export default function LeadDetailPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center text-sm text-muted-foreground py-4">Nenhum membro vinculado.</div>
+                      <div className="text-center text-sm text-muted-foreground px-6 py-4">Nenhum membro vinculado.</div>
                     )}
                   </CardContent>
                 </Card>
