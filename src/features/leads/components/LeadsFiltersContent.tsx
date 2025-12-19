@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import { User, Tag, LeadPriorityBucket } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -137,6 +137,11 @@ export function LeadsFiltersContent({
 
   // Local search state for Tags section
   const [tagsSearchQuery, setTagsSearchQuery] = useState('')
+
+  // Reset tags search when available tags change (e.g., company switch)
+  useEffect(() => {
+    setTagsSearchQuery('')
+  }, [availableTags])
 
   // Filtered tags based on search query
   const filteredTagOptions = useMemo(() =>
