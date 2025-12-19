@@ -1,13 +1,115 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Scroll Independente - Prompt E)
+## 🚧 Status: ✅ Concluído (Ajustes Finos - Prompt F)
 
-**Data:** 2025-12-18  
+**Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Layout: scroll independente (lista + sidebar) sem scroll geral da página
+**Escopo:** Frontend - Ajustes finos de seções (Warm amarelo, Tags com busca + colapsável, separador, defaults de minimização)
 
 ---
 
+## 🆕 Iteração atual - Ajustes Finos de Seções (Prompt F)
+
+### 🎯 Objetivo
+1. **Warm deve ser amarelo (não laranja):** Ajustar classes de cor do item "Warm" para amarelo
+2. **Tags com busca + colapsável:** Adicionar campo de busca local na seção Tags, manter colapsável minimizado por padrão
+3. **Separador único:** Garantir apenas 1 separador entre Ordenação e Filtros do sistema
+4. **Defaults de minimização:** Seções "mãe" (Filtros do sistema, Atividade do lead) abertas; todas as demais minimizadas
+
+### ✅ Tarefas Concluídas
+- [x] **A) Warm cor amarela**
+  - Alterado de `bg-amber-500` para `bg-yellow-300` com `text-red-700`
+  - Base: `bg-yellow-300/20 border-yellow-400/40`
+  - Active: `bg-yellow-300 text-red-700 border-yellow-400`
+  - Pill: `bg-yellow-300 text-red-700`
+
+- [x] **B) Tags com busca local**
+  - Adicionado estado `tagsSearchQuery` com `useState`
+  - Adicionado input de busca com placeholder "Buscar tag..."
+  - Implementado filtro `filteredTagOptions` para busca local
+  - Mensagem "Nenhuma tag encontrada" quando busca não retorna resultados
+  - `data-testid="tags-search-input"` para identificação em testes
+
+- [x] **C) Defaults de minimização corrigidos**
+  - **Abertos por padrão** (`defaultOpen={true}`):
+    - "Filtros do sistema" (seção mãe)
+    - "Atividade do lead" (seção mãe)
+  - **Minimizados por padrão** (`defaultOpen={false}`):
+    - Ordenação
+    - Status
+    - Origem
+    - Tags
+    - Dias sem interação
+    - Próxima ação
+
+- [x] **D) Separador verificado**
+  - Apenas 1 `<Separator />` após seção Ordenação (nenhum duplicado encontrado)
+
+- [x] **E) Testes atualizados**
+  - `LeadsFiltersSidebar.test.tsx`: 6 novos testes (Tags busca, defaults de seções)
+  - `LeadsFilterPanel.test.tsx`: 6 novos testes (Tags busca, defaults de seções)
+  - Total: 56 testes passando
+
+### Arquivos Modificados
+- `src/features/leads/components/LeadsFiltersContent.tsx` - Warm amarelo, Tags com busca, defaults de minimização
+
+### Arquivos de Teste Atualizados
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - 6 novos testes
+- `tests/unit/features/leads/components/LeadsFilterPanel.test.tsx` - 6 novos testes
+
+### Mudanças de Cores de Prioridade
+
+| Prioridade | Antes | Depois |
+|------------|-------|--------|
+| Hot | `bg-red-500` (vermelho) | `bg-red-500` (vermelho) - sem mudança |
+| Warm | `bg-amber-500` (laranja) | `bg-yellow-300` (amarelo) |
+| Cold | `bg-blue-500` (azul) | `bg-blue-500` (azul) - sem mudança |
+
+### Defaults de Minimização
+
+| Seção | Tipo | defaultOpen |
+|-------|------|-------------|
+| Ordenação | Subseção | `false` (minimizada) |
+| Filtros do sistema | Mãe | `true` (aberta) |
+| Status | Subseção | `false` (minimizada) |
+| Origem | Subseção | `false` (minimizada) |
+| Tags | Subseção | `false` (minimizada) |
+| Atividade do lead | Mãe | `true` (aberta) |
+| Dias sem interação | Subseção | `false` (minimizada) |
+| Próxima ação | Subseção | `false` (minimizada) |
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] Warm está amarelo (não laranja)
+- [ ] Tags tem campo de busca "Buscar tag..."
+- [ ] Buscar tag filtra apenas as opções exibidas
+- [ ] Tags inicia minimizada e expande ao clicar
+- [ ] Apenas 1 separador entre Ordenação e Filtros do sistema
+- [ ] "Filtros do sistema" e "Atividade do lead" iniciam abertas
+- [ ] Ordenação, Status, Origem, Dias sem interação, Próxima ação iniciam minimizadas
+
+#### Mobile (/leads?view=sales)
+- [ ] Mesmos comportamentos no Sheet (mesma UX)
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~55 |
+| Linhas removidas | ~20 |
+| Arquivos modificados | 1 |
+| Testes adicionados | 12 |
+| Total testes relacionados | 56 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - Scroll Independente (Prompt E)
 ## 🆕 Iteração atual - Atualização do GOLDEN_RULES
 
 ### 🎯 Objetivo
