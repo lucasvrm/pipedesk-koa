@@ -179,8 +179,9 @@ export function LeadsFilterPanel({
         </SheetHeader>
 
         {/* Body - Scrollable with native scroll (overflow-y: auto) */}
+        {/* Adjusted padding to px-4 to match sidebar as per requirements */}
         <div 
-          className="flex-1 overflow-y-auto px-6 py-4 min-h-0"
+          className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
           data-testid="leads-filter-panel-scroll"
         >
           <LeadsFiltersContent

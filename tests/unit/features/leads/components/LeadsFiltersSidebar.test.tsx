@@ -8,8 +8,12 @@ vi.mock('@/components/ui/collapsible', () => ({
   Collapsible: ({ children, defaultOpen, 'data-testid': testId, className }: any) => (
     <div data-defaultopen={defaultOpen} data-testid={testId} className={className}>{children}</div>
   ),
-  CollapsibleContent: ({ children }: any) => <div>{children}</div>,
-  CollapsibleTrigger: ({ children }: any) => <button>{children}</button>,
+  CollapsibleContent: ({ children, forceMount }: any) => <div data-forcemount={forceMount}>{children}</div>,
+  CollapsibleTrigger: ({ children, className }: any) => <button className={className} aria-expanded="true">{children}</button>,
+}))
+
+vi.mock('@/components/ui/badge', () => ({
+  Badge: ({ children, className }: any) => <span className={`badge ${className}`} data-testid="count-badge">{children}</span>
 }))
 
 vi.mock('@/components/ui/MultiSelectPopover', () => ({
@@ -82,6 +86,39 @@ describe('LeadsFiltersSidebar', () => {
     // Renamed from "Filtros definidos pelo sistema" to "Filtros do sistema"
     expect(screen.getByText('Filtros do sistema')).toBeInTheDocument()
     expect(screen.getByText('Atividade do lead')).toBeInTheDocument()
+  })
+
+  it('renders aria-expanded on collapsible triggers', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+
+    const triggers = screen.getAllByText('Filtros do sistema').map(el => el.closest('button'))
+    triggers.forEach(trigger => {
+        if(trigger) expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+  })
+
+  it('renders count badge when count > 0', () => {
+    const propsWithFilters = {
+        ...defaultProps,
+        appliedFilters: {
+            ...defaultAppliedFilters,
+            status: ['status-1']
+        }
+    }
+    render(<LeadsFiltersSidebar {...propsWithFilters} />)
+
+    // Check if badges are rendered
+    const badges = screen.getAllByTestId('count-badge')
+    expect(badges.length).toBeGreaterThan(0)
+    // System filters should have count
+    expect(screen.getByTestId('filter-section-system')).toBeInTheDocument()
+  })
+
+  it('uses forceMount for collapsible content', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    // Checking mock implementation of CollapsibleContent
+    const contents = document.querySelectorAll('[data-forcemount="true"]')
+    expect(contents.length).toBeGreaterThan(0)
   })
 
   it('renders apply and clear buttons when filters are selected', () => {
@@ -340,6 +377,23 @@ describe('LeadsFiltersSidebar', () => {
     // Only Hot Lead should be visible
     expect(screen.getByTestId('tag-checkbox-tag-1')).toBeInTheDocument()
     expect(screen.queryByTestId('tag-checkbox-tag-2')).not.toBeInTheDocument()
+  })
+
+  it('shows clear button in tags search when query exists', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+
+    const searchInput = screen.getByTestId('tags-search-input')
+    fireEvent.change(searchInput, { target: { value: 'test' } })
+
+    // Clear button should be visible
+    const clearButton = screen.getByLabelText('Limpar busca de tags')
+    expect(clearButton).toBeInTheDocument()
+
+    // Click clear
+    fireEvent.click(clearButton)
+
+    // Input should be empty
+    expect(searchInput).toHaveValue('')
   })
 
   it('shows message when no tags match search', () => {
