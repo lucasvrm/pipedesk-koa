@@ -502,7 +502,6 @@ export default function LeadDetailPage() {
               <CardContent className="px-4 pb-4 pt-0">
                 <LeadDetailQuickActions
                   leadId={lead.id}
-                  leadName={safeLeadName}
                   primaryContact={primaryContact}
                 />
               </CardContent>

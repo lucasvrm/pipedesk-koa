@@ -11,7 +11,6 @@ import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils/googleLinks'
 import { getRootFolderUrl } from '@/services/driveService'
 import { DriveApiError } from '@/lib/driveClient'
-import { Lead } from '@/lib/types'
 
 interface PrimaryContact {
   id?: string
@@ -22,7 +21,6 @@ interface PrimaryContact {
 
 interface LeadDetailQuickActionsProps {
   leadId: string
-  leadName?: string
   primaryContact?: PrimaryContact | null
   onScheduleClick?: () => void
 }
@@ -40,7 +38,6 @@ interface LeadDetailQuickActionsProps {
  */
 export function LeadDetailQuickActions({
   leadId,
-  leadName,
   primaryContact,
   onScheduleClick,
 }: LeadDetailQuickActionsProps) {
