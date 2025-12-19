@@ -15,9 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EntityDetailLayout } from '@/components/detail-layout/EntityDetailLayout'
-import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
-import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -35,20 +32,15 @@ import {
 } from "@/components/ui/breadcrumb"
 import {
   Buildings,
-  ChatCircle,
   CheckCircle,
   ClockCounterClockwise,
   Envelope,
   FileText,
-  PencilSimple,
   Phone,
   Plus,
-  Sparkle,
   Tag,
-  Trash,
   Users,
   X,
-  XCircle
 } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -56,8 +48,6 @@ import type { Tag as TagType, Contact } from '@/lib/types'
 import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
-import CommentsPanel from '@/components/CommentsPanel'
-import ActivityHistory from '@/components/ActivityHistory'
 import DriveSection from '@/components/DriveSection'
 import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { PageContainer } from '@/components/PageContainer'
@@ -70,12 +60,11 @@ import { toast } from 'sonner'
 import { useOperationTypes } from '@/services/operationTypeService'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
-import { QuickActionsMenu } from '@/components/QuickActionsMenu'
-import { getLeadQuickActions } from '@/hooks/useQuickActions'
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
+const TAB_TRIGGER_STYLE = "data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:shadow-none rounded-none"
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -420,163 +409,177 @@ export default function LeadDetailPage() {
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = safeAddressCity && safeAddressState ? `${safeAddressCity} - ${safeAddressState}` : safeAddressCity || safeAddressState || ''
 
-  const PIPELINE_STAGES = leadStatuses
-    .filter(s => s.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(s => ({
-      id: s.id,
-      label: safeString(s.label, s.code),
-      color: 'bg-primary' // TODO: Use s.color if available or map code to color
-    }))
-
-  const SIDEBAR_METRICS = [
-    { label: 'Origem', value: safeOriginLabel, icon: <Sparkle className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Criado em', value: createdAt, icon: <ClockCounterClockwise className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Cidade/UF', value: cityState || '-', icon: <Buildings className="h-3 w-3" />, color: 'lead' as const },
-    { label: 'Operação', value: operationTypeName || '-', icon: <Tag className="h-3 w-3" />, color: 'lead' as const }
-  ]
-
   return (
-    <PageContainer>
-      {/* Breadcrumbs */}
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/leads">Leads</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{safeLeadName}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <EntityDetailLayout
-        header={
-          <PipelineVisualizer
-            stages={PIPELINE_STAGES}
-            currentStageId={lead.leadStatusId}
-            onStageClick={(id) => handleStatusChange(id)}
+    <PageContainer className="p-0 space-y-0">
+      {/* Header with Breadcrumb + Quick Actions */}
+      <header className="flex items-center justify-between px-4 py-3 border-b bg-white">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/leads">Leads</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{safeLeadName}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        
+        {/* Quick Actions in header */}
+        <div className="flex items-center gap-1">
+          <LeadDetailQuickActions
+            leadId={lead.id}
+            primaryContact={primaryContact}
           />
-        }
-        sidebar={
-          <>
-            <KeyMetricsSidebar
-              title={
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span>{safeLeadName}</span>
-                  {renderNewBadge(lead.createdAt)}
-                  {renderUpdatedTodayBadge(lead.updatedAt)}
-                </div>
-              }
-              subtitle={safeTradeName}
-              statusBadge={statusBadge}
-              metrics={SIDEBAR_METRICS}
-              actions={
-                <QuickActionsMenu
-                  label="Ações"
-                  triggerVariant="outline"
-                  triggerSize="default"
-                  actions={getLeadQuickActions({
-                    lead,
-                    navigate,
-                  updateLead,
-                  deleteLead,
-                  profileId: profile?.id,
-                  onEdit: () => setEditOpen(true),
-                  onQualify: () => setQualifyOpen(true),
-                  onManageTags: () => setTagManagerOpen(true),
-                  statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
-                })}
-              />
-            }
-          />
+        </div>
+      </header>
 
-            {/* Quick Actions - Same as /leads list */}
-            <Card className="border-l-4 border-l-primary shadow-sm">
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm font-medium">Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                <LeadDetailQuickActions
-                  leadId={lead.id}
-                  primaryContact={primaryContact}
-                />
-              </CardContent>
-            </Card>
+      {/* Container das 3 Colunas - 120px accounts for: header (57px) + padding (16px top + bottom) + border (1px) + small buffer */}
+      <main className="flex gap-4 p-4 h-[calc(100vh-120px)] bg-slate-50">
+        
+        {/* COLUNA 1 - Dados do Lead (260px fixed) */}
+        <aside className="w-[260px] min-w-[260px] bg-white rounded-lg border overflow-y-auto">
+          <div className="p-4 space-y-4">
+            
+            {/* 1. Badge da fase atual */}
+            <div>
+              {statusBadge}
+            </div>
 
-            {/* TAGS SECTION - Persistent in Sidebar */}
-            <Card className="border-l-4 border-l-secondary shadow-sm">
-              <CardHeader className="py-3 px-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-primary" /> Tags
-                  </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTagManagerOpen(true)}>
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                {leadTags && leadTags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {leadTags.map(tag => {
-                      const safeColor = safeStringOptional(tag.color) ?? DEFAULT_TAG_COLOR
-                      const safeTagName = safeString(tag.name, 'Tag')
+            {/* 2. Título do Lead */}
+            <div>
+              <h1 className="text-lg font-semibold text-slate-900">
+                {safeLeadName}
+                {renderNewBadge(lead.createdAt)}
+                {renderUpdatedTodayBadge(lead.updatedAt)}
+              </h1>
+              <p className="text-sm text-slate-500">{safeTradeName || 'Lead'}</p>
+            </div>
 
-                      return (
-                        <div
-                          key={tag.id}
-                          className="group inline-flex items-center gap-1.5 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs transition-all hover:bg-muted"
+            {/* 3. Campos principais */}
+            <div className="space-y-3 pt-2 border-t">
+              
+              {/* Responsável */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Responsável</label>
+                <p className="text-sm text-slate-900 mt-0.5">{lead.owner?.name || 'Não atribuído'}</p>
+              </div>
+
+              {/* Origem */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Origem</label>
+                <p className="text-sm text-slate-900 mt-0.5">{safeOriginLabel || '-'}</p>
+              </div>
+
+              {/* Cidade/UF */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Cidade/UF</label>
+                <p className="text-sm text-slate-900 mt-0.5">{cityState || '-'}</p>
+              </div>
+
+              {/* Operação */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Operação</label>
+                <p className="text-sm text-slate-900 mt-0.5">{operationTypeName || '-'}</p>
+              </div>
+
+              {/* Data de criação */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Criado em</label>
+                <p className="text-sm text-slate-900 mt-0.5">{createdAt}</p>
+              </div>
+            </div>
+
+            {/* 4. Tags */}
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                  <Tag className="h-3 w-3" /> Tags
+                </label>
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setTagManagerOpen(true)}>
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              {leadTags && leadTags.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {leadTags.map(tag => {
+                    const safeColor = safeStringOptional(tag.color) ?? DEFAULT_TAG_COLOR
+                    const safeTagName = safeString(tag.name, 'Tag')
+
+                    return (
+                      <div
+                        key={tag.id}
+                        className="group inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-0.5 text-xs transition-all hover:bg-muted"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor }} />
+                        <span className="font-medium max-w-[80px] truncate" style={{ color: safeColor }}>{safeTagName}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleUnassignTag(tag.id)}
+                          title="Remover"
                         >
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor }} />
-                          <span className="font-medium max-w-[100px] truncate" style={{ color: safeColor }}>{safeTagName}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleUnassignTag(tag.id)}
-                            title="Remover"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div
-                    className="text-xs text-muted-foreground text-center py-2 border border-dashed rounded cursor-pointer hover:bg-muted/50"
-                    onClick={() => setTagManagerOpen(true)}
-                  >
-                    + Adicionar Tag
-                  </div>
-                )}
-                <SmartTagSelector
-                  entityId={lead.id}
-                  entityType="lead"
-                  selectedTagIds={leadTags?.map(tag => tag.id) || []}
-                  open={tagManagerOpen}
-                  onOpenChange={setTagManagerOpen}
-                />
-              </CardContent>
-            </Card>
-          </>
-        }
-        content={
-          <Tabs defaultValue="timeline" className="space-y-6">
-            <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
-              <TabsTrigger value="overview" className="py-2 px-4"><Buildings className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
-              <TabsTrigger value="documents" className="py-2 px-4"><FileText className="mr-2 h-4 w-4" /> Docs</TabsTrigger>
-              <TabsTrigger value="timeline" className="py-2 px-4"><ClockCounterClockwise className="mr-2 h-4 w-4" /> Contexto</TabsTrigger>
-            </TabsList>
+                          <X className="h-2.5 w-2.5" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div
+                  className="text-xs text-muted-foreground text-center py-2 border border-dashed rounded cursor-pointer hover:bg-muted/50"
+                  onClick={() => setTagManagerOpen(true)}
+                >
+                  + Adicionar Tag
+                </div>
+              )}
+              <SmartTagSelector
+                entityId={lead.id}
+                entityType="lead"
+                selectedTagIds={leadTags?.map(tag => tag.id) || []}
+                open={tagManagerOpen}
+                onOpenChange={setTagManagerOpen}
+              />
+            </div>
 
-            <TabsContent value="overview" className="space-y-6">
-              {/* Main Content Area - Reduced clutter since key info is in sidebar */}
-              <div className="grid grid-cols-1 gap-6">
+          </div>
+        </aside>
 
+        {/* COLUNA 2 - Timeline & Contexto (flex-1) */}
+        <section className="flex-1 bg-white rounded-lg border overflow-hidden flex flex-col">
+          
+          <Tabs defaultValue="contexto" className="flex flex-col h-full">
+            
+            {/* Header das Abas */}
+            <div className="border-b px-4">
+              <TabsList className="h-12 bg-transparent">
+                <TabsTrigger value="contexto" className={TAB_TRIGGER_STYLE}>
+                  <ClockCounterClockwise className="mr-2 h-4 w-4" /> Contexto
+                </TabsTrigger>
+                <TabsTrigger value="visao-geral" className={TAB_TRIGGER_STYLE}>
+                  <Buildings className="mr-2 h-4 w-4" /> Visão Geral
+                </TabsTrigger>
+                <TabsTrigger value="docs" className={TAB_TRIGGER_STYLE}>
+                  <FileText className="mr-2 h-4 w-4" /> Docs
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Conteúdo das Abas */}
+            <div className="flex-1 overflow-y-auto">
+              
+              {/* Aba Contexto - Timeline completa */}
+              <TabsContent value="contexto" className="h-full m-0 p-4">
+                <UnifiedTimeline entityId={lead.id} entityType="lead" />
+              </TabsContent>
+
+              {/* Aba Visão Geral - Dados + Buying Committee */}
+              <TabsContent value="visao-geral" className="h-full m-0 p-4 space-y-4 overflow-y-auto">
+                
+                {/* Dados Principais */}
                 <Card>
                   <CardHeader className="pb-4">
                     <CardTitle className="text-base">Dados Principais</CardTitle>
@@ -623,18 +626,18 @@ export default function LeadDetailPage() {
                   </CardContent>
                 </Card>
 
+                {/* Descrição */}
                 <Card>
                   <CardHeader>
-                  <CardTitle>Descrição</CardTitle>
-                  <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
-                </CardHeader>
-                <CardContent>
-                  <Textarea value={safeDescription} disabled className="min-h-[110px]" />
-                </CardContent>
-              </Card>
-              </div>
+                    <CardTitle>Descrição</CardTitle>
+                    <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea value={safeDescription} disabled className="min-h-[110px]" />
+                  </CardContent>
+                </Card>
 
-              <div className="space-y-6">
+                {/* Contatos / Buying Committee */}
                 <Card>
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between gap-2">
@@ -686,6 +689,7 @@ export default function LeadDetailPage() {
                   </CardContent>
                 </Card>
 
+                {/* Equipe */}
                 <Card>
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between gap-2">
@@ -727,22 +731,27 @@ export default function LeadDetailPage() {
                     )}
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="documents">
-              <DriveSection entityType="lead" entityId={lead.id} entityName={safeLeadName} />
-            </TabsContent>
+              {/* Aba Docs - Google Drive */}
+              <TabsContent value="docs" className="h-full m-0 p-4">
+                <DriveSection entityType="lead" entityId={lead.id} entityName={safeLeadName} />
+              </TabsContent>
 
-            <TabsContent value="timeline" className="min-h-[500px] space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Aqui você encontra o histórico completo de interações: anotações, eventos agendados, e-mails e atividades do lead.
-              </p>
-              <UnifiedTimeline entityId={lead.id} entityType="lead" />
-            </TabsContent>
+            </div>
           </Tabs>
-        }
-      />
+
+        </section>
+
+        {/* COLUNA 3 - Placeholder (próximo prompt) */}
+        <aside className="w-[240px] min-w-[240px] bg-white rounded-lg border overflow-y-auto p-4">
+          <div className="text-center text-slate-400 text-sm">
+            <p className="font-medium">Coluna 3</p>
+            <p className="text-xs mt-1">(Status & Ações - próximo prompt)</p>
+          </div>
+        </aside>
+
+      </main>
 
       {user && (
         <QualifyLeadDialog
