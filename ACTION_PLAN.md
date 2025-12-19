@@ -1,14 +1,115 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Lead Detail - UX Improvements - Contexto Tab + Quick Actions Labels)
+## 🚧 Status: ✅ Concluído (Lead Detail - Breadcrumbs, Sticky Topbar, Tabs, Temperature Badge)
 
 **Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - /leads/:id - Contexto como tab padrão + Quick Actions com labels visíveis
+**Escopo:** Frontend - /leads/:id - Alinhamento, sticky topbar, tabs padrão, badge de temperatura
 
 ---
 
-## 🆕 Iteração atual - Lead Detail UX: Contexto como Tab Padrão + Quick Actions Visíveis
+## 🆕 Iteração atual - Lead Detail: Breadcrumbs + Sticky Topbar + Tabs + Temperature Badge
+
+### 🎯 Objetivo
+1. **Alinhar breadcrumbs:** Padding horizontal consistente com o header global (px-6).
+2. **Topbar sticky:** Linha de breadcrumbs + Quick Actions fica visível ao rolar, abaixo do menu principal.
+3. **Padronizar tabs:** Tabs com o mesmo estilo visual do `/deals/:id`.
+4. **Badge de temperatura:** Mostrar temperatura (Quente/Morno/Frio) ao lado do status na primeira coluna.
+
+### ✅ Tarefas Concluídas
+- [x] **A) Alinhamento horizontal**
+  - Alterado padding do header de `px-4` para `px-6` para alinhar com o header global.
+  - Main container também usa `px-6` para consistência.
+
+- [x] **B) Topbar sticky**
+  - Adicionado `sticky top-16 z-40` ao header do Lead Detail.
+  - Aplicado `bg-background/95 backdrop-blur` para visibilidade durante scroll.
+  - Definida constante `HEADER_OFFSET_PX = 121` para cálculo de altura.
+
+- [x] **C) Padronizar tabs**
+  - Removido estilo antigo com `border-b` e `TAB_TRIGGER_STYLE`.
+  - Aplicado padrão DealDetailPage: `bg-muted/40 border rounded-lg p-1`.
+  - TabsTrigger usa `py-2 px-4` para consistência.
+
+- [x] **D) Badge de temperatura**
+  - Criado componente `LeadTemperatureBadge.tsx`.
+  - Exibe "Quente" (hot), "Morno" (warm), "Frio" (cold) em PT-BR.
+  - Retorna null quando `priorityBucket` é undefined/null.
+  - Cores apropriadas: vermelho (hot), âmbar (warm), azul (cold).
+
+- [x] **E) Integração**
+  - Badge de temperatura ao lado do status na primeira coluna.
+  - Layout com `flex items-center gap-2 flex-wrap`.
+
+- [x] **F) Testes unitários**
+  - `LeadTemperatureBadge.test.tsx`: 9 testes passando.
+  - Corrigidos mocks em testes existentes.
+
+### Arquivos Criados
+- `src/features/leads/components/LeadTemperatureBadge.tsx`
+- `tests/unit/features/leads/components/LeadTemperatureBadge.test.tsx`
+
+### Arquivos Modificados
+- `src/features/leads/pages/LeadDetailPage.tsx` - Sticky topbar, alinhamento, tabs, temperatura
+- `tests/unit/features/leads/LeadDetailPage.tags.test.tsx` - Fix mocks
+- `tests/unit/features/leads/components/LeadsSalesList.test.tsx` - Fix mocks
+
+### ✅ Checklist de QA manual
+
+#### Lead Detail (/leads/:id)
+- [ ] Breadcrumbs alinhados com a logomarca/menu e conteúdo.
+- [ ] Topbar (breadcrumbs + quick actions) fica sticky ao rolar, abaixo do header principal.
+- [ ] Topbar não sobrepõe o conteúdo das colunas.
+- [ ] Tabs (Contexto/Visão Geral/Docs) com visual igual ao `/deals/:id` (bg-muted/40, border, rounded).
+- [ ] Badge de temperatura aparece ao lado do status quando `priorityBucket` existe.
+- [ ] "Quente" mostra badge vermelho, "Morno" âmbar, "Frio" azul.
+- [ ] Se lead não tem `priorityBucket`, badge de temperatura não aparece.
+- [ ] Layout funciona em desktop e mobile.
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 2 |
+| Arquivos modificados | 3 |
+| Linhas adicionadas | ~120 |
+| Linhas removidas | ~15 |
+| Testes adicionados | 9 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX localizada, sem alteração de lógica de negócio ou API)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Alinhamento breadcrumbs | ✅ | `px-6` no header |
+| Topbar sticky | ✅ | `sticky top-16 z-40` + backdrop-blur |
+| Tabs padrão DealDetailPage | ✅ | `bg-muted/40 border rounded-lg p-1` |
+| Badge de temperatura | ✅ | `LeadTemperatureBadge` component |
+| Temperatura ao lado do status | ✅ | Integrado na primeira coluna |
+| Testes unitários | ✅ | 9 testes passando |
+| Sem alteração de lógica | ✅ | Apenas UI/layout |
+| Sem alteração de API | ✅ | Nenhuma mudança |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
+#### Decisões Técnicas
+1. **Por que usar constante `HEADER_OFFSET_PX`?**
+   - Evita "magic numbers" no código e facilita manutenção futura.
+   
+2. **Por que usar `backdrop-blur` no topbar sticky?**
+   - Melhora visibilidade do conteúdo que passa por trás durante scroll.
+
+3. **Por que extrair `BadgeVariant` e `TemperatureConfig` como tipos?**
+   - Melhora legibilidade e type safety no componente de temperatura.
+
+---
+
+## ✅ Iteração anterior - Lead Detail UX: Contexto como Tab Padrão + Quick Actions Visíveis
 
 ### 🎯 Objetivo
 1. **Tab Contexto como padrão:** Ao abrir `/leads/:id`, a aba "Contexto" (anteriormente "Atividades") é selecionada automaticamente.
