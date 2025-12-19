@@ -24,6 +24,7 @@ import { cn, safeString, safeStringOptional } from '@/lib/utils'
 interface BuyingCommitteeCardProps {
   contact: Contact
   onEdit?: (contact: Contact) => void
+  onClick?: (contact: Contact) => void
 }
 
 const ROLE_ICONS: Record<BuyingRole, React.ReactNode> = {
@@ -51,15 +52,37 @@ const SENTIMENT_COLORS: Record<ContactSentiment, string> = {
   unknown: 'border-slate-200 border-dashed'
 }
 
-export function BuyingCommitteeCard({ contact, onEdit }: BuyingCommitteeCardProps) {
+export function BuyingCommitteeCard({ contact, onEdit, onClick }: BuyingCommitteeCardProps) {
   const roleIcon = contact.buyingRole ? ROLE_ICONS[contact.buyingRole] : <Question className="text-muted-foreground" />
   const sentimentColor = contact.sentiment ? SENTIMENT_COLORS[contact.sentiment] : SENTIMENT_COLORS.unknown
   const safeName = safeString(contact.name, 'Contato')
   const safeRole = safeStringOptional(contact.role) ?? 'Sem cargo'
   const initials = safeName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onClick(contact)
+    }
+  }
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick(contact)
+    }
+  }
+
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group relative">
+    <div
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group relative",
+        onClick && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      )}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
       {/* Avatar with Sentiment Border */}
       <div className={cn("relative p-0.5 rounded-full border-2", sentimentColor)}>
         <Avatar className="h-10 w-10">
@@ -92,17 +115,17 @@ export function BuyingCommitteeCard({ contact, onEdit }: BuyingCommitteeCardProp
       {/* Actions (Hover only) */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {contact.email && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(`mailto:${contact.email}`)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); window.open(`mailto:${contact.email}`) }}>
             <Envelope className="h-3.5 w-3.5" />
           </Button>
         )}
         {contact.linkedin && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600" onClick={() => window.open(contact.linkedin, '_blank')}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600" onClick={(e) => { e.stopPropagation(); window.open(contact.linkedin, '_blank') }}>
             <LinkedinLogo className="h-3.5 w-3.5" />
           </Button>
         )}
         {onEdit && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(contact)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(contact) }}>
             <DotsThreeVertical className="h-3.5 w-3.5" />
           </Button>
         )}
