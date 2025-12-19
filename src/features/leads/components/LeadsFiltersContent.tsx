@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { User, Tag, LeadPriorityBucket } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -135,6 +135,17 @@ export function LeadsFiltersContent({
     []
   )
 
+  // Local search state for Tags section
+  const [tagsSearchQuery, setTagsSearchQuery] = useState('')
+
+  // Filtered tags based on search query
+  const filteredTagOptions = useMemo(() =>
+    tagOptions.filter(t =>
+      t.label.toLowerCase().includes(tagsSearchQuery.toLowerCase())
+    ),
+    [tagOptions, tagsSearchQuery]
+  )
+
   // Draft owner label for popover trigger
   const draftOwnerLabel = useMemo(() => {
     if (draftFilters.ownerMode === 'me') return 'Meus leads'
@@ -191,7 +202,7 @@ export function LeadsFiltersContent({
         <>
           <LeadsFilterSection
             title="Ordenação"
-            defaultOpen={true}
+            defaultOpen={false}
             testId="ordering-section"
           >
             <div className="space-y-1" role="radiogroup" aria-label="Ordenação">
@@ -369,9 +380,9 @@ export function LeadsFiltersContent({
                   pill: 'bg-red-500 text-white'
                 },
                 warm: {
-                  base: 'bg-amber-500/10 border-amber-500/30',
-                  active: 'bg-amber-500 text-red-900 border-amber-500',
-                  pill: 'bg-amber-500 text-red-900'
+                  base: 'bg-yellow-300/20 border-yellow-400/40',
+                  active: 'bg-yellow-300 text-red-700 border-yellow-400',
+                  pill: 'bg-yellow-300 text-red-700'
                 },
                 cold: {
                   base: 'bg-blue-500/10 border-blue-500/30',
@@ -405,10 +416,10 @@ export function LeadsFiltersContent({
           </div>
         </div>
 
-        {/* Origem - Collapsible, no internal scroll */}
+        {/* Origem - Collapsible, minimized by default */}
         <LeadsFilterSection
           title="Origem"
-          defaultOpen={true}
+          defaultOpen={false}
           testId="system-origin-toggle"
         >
           <div className="space-y-1">
@@ -440,41 +451,59 @@ export function LeadsFiltersContent({
           </div>
         </LeadsFilterSection>
 
-        {/* Tags - Collapsible, minimized by default, no internal scroll */}
+        {/* Tags - Collapsible with search, minimized by default */}
         {availableTags.length > 0 && (
           <LeadsFilterSection
             title="Tags"
             defaultOpen={false}
             testId="system-tags-toggle"
           >
-            <div className="space-y-1">
-              {tagOptions.map(option => {
-                const isSelected = draftFilters.selectedTags.includes(option.id)
-                return (
-                  <label
-                    key={option.id}
-                    className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => {
-                        const newTags = isSelected
-                          ? draftFilters.selectedTags.filter(t => t !== option.id)
-                          : [...draftFilters.selectedTags, option.id]
-                        setDraftFilters(prev => ({ ...prev, selectedTags: newTags }))
-                      }}
-                      data-testid={`tag-checkbox-${option.id}`}
-                    />
-                    {option.color && (
-                      <div
-                        className="h-2.5 w-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: option.color }}
-                      />
-                    )}
-                    <span className="text-sm">{option.label}</span>
-                  </label>
-                )
-              })}
+            <div className="space-y-2">
+              {/* Search input for tags */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar tag..."
+                  value={tagsSearchQuery}
+                  onChange={e => setTagsSearchQuery(e.target.value)}
+                  className="w-full h-8 px-3 text-sm border rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  data-testid="tags-search-input"
+                />
+              </div>
+              {/* Tag checkboxes */}
+              <div className="space-y-1">
+                {filteredTagOptions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-1">Nenhuma tag encontrada</p>
+                ) : (
+                  filteredTagOptions.map(option => {
+                    const isSelected = draftFilters.selectedTags.includes(option.id)
+                    return (
+                      <label
+                        key={option.id}
+                        className="flex items-center gap-2 cursor-pointer py-1 px-1 rounded hover:bg-muted transition-colors"
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => {
+                            const newTags = isSelected
+                              ? draftFilters.selectedTags.filter(t => t !== option.id)
+                              : [...draftFilters.selectedTags, option.id]
+                            setDraftFilters(prev => ({ ...prev, selectedTags: newTags }))
+                          }}
+                          data-testid={`tag-checkbox-${option.id}`}
+                        />
+                        {option.color && (
+                          <div
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: option.color }}
+                          />
+                        )}
+                        <span className="text-sm">{option.label}</span>
+                      </label>
+                    )
+                  })
+                )}
+              </div>
             </div>
           </LeadsFilterSection>
         )}
@@ -486,10 +515,10 @@ export function LeadsFiltersContent({
         defaultOpen={true}
         testId="filter-section-activity"
       >
-        {/* Dias sem interação - Single select via checkbox, collapsible */}
+        {/* Dias sem interação - Single select via checkbox, minimized by default */}
         <LeadsFilterSection
           title="Dias sem interação"
-          defaultOpen={true}
+          defaultOpen={false}
           testId="activity-days-toggle"
         >
           <div className="space-y-1">

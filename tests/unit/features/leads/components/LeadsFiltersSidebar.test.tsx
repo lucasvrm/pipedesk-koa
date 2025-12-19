@@ -267,6 +267,67 @@ describe('LeadsFiltersSidebar', () => {
     expect(screen.getByTestId('system-tags-toggle')).toBeInTheDocument()
   })
 
+  it('renders Tags section with search input', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    
+    expect(screen.getByTestId('tags-search-input')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar tag...')).toBeInTheDocument()
+  })
+
+  it('filters tags when search query is entered', () => {
+    const propsWithMultipleTags = {
+      ...defaultProps,
+      availableTags: [
+        { id: 'tag-1', name: 'Hot Lead', color: '#ff0000', companyId: 'company-1' },
+        { id: 'tag-2', name: 'Cold Lead', color: '#0000ff', companyId: 'company-1' },
+      ],
+    }
+    render(<LeadsFiltersSidebar {...propsWithMultipleTags} />)
+    
+    // Both tags should be visible initially
+    expect(screen.getByTestId('tag-checkbox-tag-1')).toBeInTheDocument()
+    expect(screen.getByTestId('tag-checkbox-tag-2')).toBeInTheDocument()
+    
+    // Type search query
+    const searchInput = screen.getByTestId('tags-search-input')
+    fireEvent.change(searchInput, { target: { value: 'Hot' } })
+    
+    // Only Hot Lead should be visible
+    expect(screen.getByTestId('tag-checkbox-tag-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('tag-checkbox-tag-2')).not.toBeInTheDocument()
+  })
+
+  it('shows message when no tags match search', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    
+    const searchInput = screen.getByTestId('tags-search-input')
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } })
+    
+    expect(screen.getByText('Nenhuma tag encontrada')).toBeInTheDocument()
+  })
+
+  it('Ordenação section is minimized by default (defaultOpen={false})', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} showNextActionFilter={true} />)
+    
+    const orderingSection = screen.getByTestId('ordering-section')
+    // The data-defaultopen attribute should be "false"
+    expect(orderingSection.getAttribute('data-defaultopen')).toBe('false')
+  })
+
+  it('Filtros do sistema parent section is open by default (defaultOpen={true})', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    
+    const systemSection = screen.getByTestId('filter-section-system')
+    expect(systemSection.getAttribute('data-defaultopen')).toBe('true')
+  })
+
+  it('Atividade do lead parent section is open by default (defaultOpen={true})', () => {
+    render(<LeadsFiltersSidebar {...defaultProps} />)
+    
+    const activitySection = screen.getByTestId('filter-section-activity')
+    expect(activitySection.getAttribute('data-defaultopen')).toBe('true')
+  })
+
   it('renders Next Action section as collapsible (minimized by default)', () => {
     render(<LeadsFiltersSidebar {...defaultProps} showNextActionFilter={true} />)
     
