@@ -1,6 +1,100 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Lead Detail UI/UX Refactoring)
+## 🚧 Status: ✅ Concluído (Lead Detail - Contatos + Quick Actions)
+
+**Data:** 2025-12-19  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Frontend - /leads/:id - Contatos melhorados + Quick Actions + remover Mapa de Relacionamentos
+
+---
+
+## 🆕 Iteração atual - Lead Detail Improvements
+
+### 🎯 Objetivo
+1. **EmptyState de contatos:** Adicionar botão "Vincular" no EmptyState quando não há contatos.
+2. **Renomear seção:** Alterar "Comitê de Compra" para "Contatos do Lead".
+3. **Contatos clicáveis:** Tornar BuyingCommitteeCard clicável, abrindo modal com informações do contato.
+4. **Remover Mapa de Relacionamentos:** Remover seção e queries desnecessárias.
+5. **Quick Actions:** Adicionar as mesmas ações rápidas existentes em /leads list.
+
+### ✅ Tarefas Concluídas
+- [x] **A) EmptyState com Novo + Vincular**
+  - Adicionado `secondaryAction` ao EmptyState com label "Vincular".
+  - `primaryAction` com label "Novo".
+  - Ambos abrem os modals corretos.
+
+- [x] **B) Renomear seção para "Contatos do Lead"**
+  - Atualizado CardTitle de "Comitê de Compra" para "Contatos do Lead".
+  - Atualizada descrição para "Adicione contatos para este lead."
+
+- [x] **C) Contatos clicáveis com modal**
+  - Adicionada prop `onClick` ao `BuyingCommitteeCard`.
+  - Implementado suporte a teclado (Enter/Space).
+  - Adicionado `cursor-pointer` e `role="button"` quando onClick é fornecido.
+  - `stopPropagation()` nos botões internos (email/linkedin/edit).
+  - Integrado `ContactPreviewModal` no `LeadDetailPage`.
+
+- [x] **D) Remover Mapa de Relacionamentos**
+  - Removida importação e uso de `RelationshipMap`.
+  - Removidos hooks `useCompany`, `useDeals`, `useTracks`.
+  - Removido `useMemo` de `relationshipData`.
+
+- [x] **E) Quick Actions no Lead Detail**
+  - Criado componente `LeadDetailQuickActions` com:
+    - WhatsApp (MessageCircle icon verde)
+    - Email (Mail icon azul)
+    - Ligar (Phone icon)
+    - Drive (HardDrive icon amarelo)
+    - Agendar Reunião (Calendar icon laranja)
+    - Copiar ID (Copy icon)
+  - Ações desabilitadas quando dados não disponíveis (ex: sem telefone).
+  - Mesma lógica e feedback do `/leads` list.
+
+- [x] **F) Testes unitários**
+  - `BuyingCommitteeCard.test.tsx`: 5 testes (clicável, keyboard, stopPropagation).
+  - `LeadDetailQuickActions.test.tsx`: 6 testes (renderização, desabilitação, callbacks).
+
+### Arquivos Criados
+- `src/features/leads/components/LeadDetailQuickActions.tsx`
+- `tests/unit/components/BuyingCommitteeCard.test.tsx`
+- `tests/unit/features/leads/components/LeadDetailQuickActions.test.tsx`
+
+### Arquivos Modificados
+- `src/components/BuyingCommitteeCard.tsx` - Adicionada prop onClick
+- `src/features/leads/pages/LeadDetailPage.tsx` - Todas as mudanças de UI
+
+### ✅ Checklist de QA manual
+
+#### Lead Detail (/leads/:id)
+- [ ] Quando não há contatos, EmptyState mostra "Novo" e "Vincular".
+- [ ] Clicar "Vincular" abre modal de vincular contato existente.
+- [ ] Seção de contatos diz "Contatos do Lead" (não "Comitê de Compra").
+- [ ] Clicar em um contato abre modal de preview.
+- [ ] Botão "Ver contato" no modal navega para /contacts/:id.
+- [ ] Clicar em email/linkedin no card NÃO abre o modal de preview.
+- [ ] Ações rápidas aparecem no sidebar (WhatsApp, Email, etc.).
+- [ ] Ações desabilitadas quando sem telefone/email.
+- [ ] "Copiar ID" copia o ID e mostra toast de sucesso.
+- [ ] Mapa de Relacionamentos NÃO aparece.
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 3 |
+| Arquivos modificados | 2 |
+| Linhas adicionadas | ~650 |
+| Linhas removidas | ~120 |
+| Testes adicionados | 11 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (mudança de UI/UX, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - UI Polish Sidebar/Sheet Filtros
 
 **Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  

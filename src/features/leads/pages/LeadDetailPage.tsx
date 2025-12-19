@@ -52,7 +52,7 @@ import {
 } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Tag as TagType } from '@/lib/types'
+import type { Tag as TagType, Contact } from '@/lib/types'
 import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
@@ -70,12 +70,10 @@ import { toast } from 'sonner'
 import { useOperationTypes } from '@/services/operationTypeService'
 import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
-import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/components/ui/RelationshipMap'
-import { useCompany } from '@/services/companyService'
-import { useDeals } from '@/services/dealService'
-import { useTracks } from '@/services/trackService'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getLeadQuickActions } from '@/hooks/useQuickActions'
+import { ContactPreviewModal } from '../components/ContactPreviewModal'
+import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
 
@@ -98,10 +96,6 @@ export default function LeadDetailPage() {
   const { data: operationTypes } = useOperationTypes()
   const { data: leadTags } = useEntityTags(id || '', 'lead')
   
-  // Fetch related data for RelationshipMap
-  const { data: company } = useCompany(lead?.qualifiedCompanyId)
-  const { data: allDeals } = useDeals()
-  const { data: allTracks } = useTracks()
   const tagOps = useTagOperations()
 
   const [qualifyOpen, setQualifyOpen] = useState(false)
@@ -118,6 +112,8 @@ export default function LeadDetailPage() {
   const [editingTag, setEditingTag] = useState<TagType | null>(null)
   const [editTagForm, setEditTagForm] = useState({ name: '', color: '#3b82f6' })
   const [deleteTag, setDeleteTag] = useState<TagType | null>(null)
+  const [previewContact, setPreviewContact] = useState<Contact | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
@@ -169,80 +165,17 @@ export default function LeadDetailPage() {
     return safeString(found?.name, OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType)
   }, [lead?.operationType, operationTypes])
 
-  // Build RelationshipMap data - Must be called before any early returns to follow Rules of Hooks
-  const relationshipData = useMemo(() => {
-    if (!lead) return { nodes: [], edges: [] }
+  // Get primary contact for quick actions
+  const primaryContact = useMemo(() => {
+    if (!lead?.contacts || lead.contacts.length === 0) return null
+    // Find primary contact or use the first one
+    const primary = lead.contacts.find(c => c.isPrimary) || lead.contacts[0]
+    return primary
+  }, [lead?.contacts])
 
-    const nodes: RelationshipNode[] = []
-    const edges: RelationshipEdge[] = []
-    const addedPlayerIds = new Set<string>() // Track added players for O(1) lookup
-
-    // Add lead node (always present)
-    nodes.push({
-      id: lead.id,
-      label: safeString(lead.legalName, 'Lead'),
-      type: 'lead'
-    })
-
-    // Add company node if lead is qualified
-    if (lead.qualifiedCompanyId && company) {
-      nodes.push({
-        id: company.id,
-        label: safeString(company.name, 'Empresa'),
-        type: 'company'
-      })
-      edges.push({
-        from: lead.id,
-        to: company.id
-      })
-
-      // Add deals associated with the company
-      const companyDeals = allDeals?.filter(deal => 
-        deal.companyId === company.id || deal.company_id === company.id
-      ) || []
-      companyDeals.forEach(deal => {
-        nodes.push({
-          id: deal.id,
-          label: safeString(deal.clientName, 'Negócio'),
-          type: 'deal'
-        })
-        edges.push({
-          from: company.id,
-          to: deal.id
-        })
-
-        // Add players/tracks for each deal
-        const dealTracks = allTracks?.filter(track => track.masterDealId === deal.id) || []
-        dealTracks.forEach(track => {
-          if (track.playerId && !addedPlayerIds.has(track.playerId)) {
-            addedPlayerIds.add(track.playerId)
-            nodes.push({
-              id: track.playerId,
-              label: safeString(track.playerName, 'Player'),
-              type: 'player'
-            })
-          }
-          if (track.playerId) {
-            edges.push({
-              from: deal.id,
-              to: track.playerId
-            })
-          }
-        })
-      })
-    }
-
-    return { nodes, edges }
-  }, [lead, company, allDeals, allTracks])
-
-  const handleNodeClick = (node: RelationshipNode) => {
-    const routes: Record<typeof node.type, string> = {
-      lead: `/leads/${node.id}`,
-      company: `/companies/${node.id}`,
-      deal: `/deals/${node.id}`,
-      player: `/players/${node.id}`
-    }
-    navigate(routes[node.type])
+  const handleOpenContactPreview = (contact: Contact) => {
+    setPreviewContact(contact)
+    setIsPreviewOpen(true)
   }
 
   if (isLoading) return (
@@ -561,6 +494,19 @@ export default function LeadDetailPage() {
             }
           />
 
+            {/* Quick Actions - Same as /leads list */}
+            <Card className="border-l-4 border-l-primary shadow-sm">
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm font-medium">Ações Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                <LeadDetailQuickActions
+                  leadId={lead.id}
+                  primaryContact={primaryContact}
+                />
+              </CardContent>
+            </Card>
+
             {/* TAGS SECTION - Persistent in Sidebar */}
             <Card className="border-l-4 border-l-secondary shadow-sm">
               <CardHeader className="py-3 px-4">
@@ -678,42 +624,21 @@ export default function LeadDetailPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-base">Descrição</CardTitle>
-                    <CardDescription>Contexto adicional sobre a lead</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Textarea value={safeDescription} disabled className="min-h-[110px]" />
-                  </CardContent>
-                </Card>
-
-                {/* Relationship Map - Show only if we have relationships beyond the current entity */}
-                {relationshipData.nodes.length > 1 && (
-                  <Card>
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-base">Mapa de Relacionamentos</CardTitle>
-                      <CardDescription>
-                        Visualização da cadeia Lead → Empresa → Negócio → Player
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[400px]">
-                        <RelationshipMap
-                          nodes={relationshipData.nodes}
-                          edges={relationshipData.edges}
-                          onNodeClick={handleNodeClick}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                  <CardHeader>
+                  <CardTitle>Descrição</CardTitle>
+                  <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea value={safeDescription} disabled className="min-h-[110px]" />
+                </CardContent>
+              </Card>
               </div>
 
               <div className="space-y-6">
                 <Card>
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Comitê de Compra</CardTitle>
+                      <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Contatos do Lead</CardTitle>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => setLinkContactOpen(true)}>
                           Vincular
@@ -723,18 +648,21 @@ export default function LeadDetailPage() {
                         </Button>
                       </div>
                     </div>
-                    <CardDescription>Mapeie influenciadores e decisores</CardDescription>
+                    <p className="text-sm text-muted-foreground">Adicione contatos para este lead.</p>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {lead.contacts && lead.contacts.length > 0 ? (
                       lead.contacts.map(contact => (
-                        <div key={contact.id} className="relative">
-                          <BuyingCommitteeCard contact={contact} />
+                        <div key={contact.id} className="relative group">
+                          <BuyingCommitteeCard 
+                            contact={contact} 
+                            onClick={() => handleOpenContactPreview(contact)}
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
                             className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
-                            onClick={() => handleRemoveContact(contact.id)}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveContact(contact.id) }}
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -744,10 +672,14 @@ export default function LeadDetailPage() {
                       <EmptyState
                         icon={<Users className="h-12 w-12" />}
                         title="Nenhum contato mapeado"
-                        description="Mapeie influenciadores e decisores do comitê de compra."
+                        description="Adicione contatos para este lead."
                         primaryAction={{
-                          label: "Adicionar Contato",
+                          label: "Novo",
                           onClick: () => setContactModalOpen(true)
+                        }}
+                        secondaryAction={{
+                          label: "Vincular",
+                          onClick: () => setLinkContactOpen(true)
                         }}
                       />
                     )}
@@ -1018,6 +950,12 @@ export default function LeadDetailPage() {
         onOpenChange={setDeleteOpen}
         onConfirm={handleDelete}
         isDeleting={deleteLead.isPending}
+      />
+
+      <ContactPreviewModal
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        contact={previewContact}
       />
     </PageContainer>
   )
