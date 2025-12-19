@@ -1,10 +1,10 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Conteúdo/UX - Prompt D)
+## 🚧 Status: ✅ Concluído (Scroll Independente - Prompt E)
 
 **Data:** 2025-12-18  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - Conteúdo/UX: remover busca, ordenação radio colapsável, filtros do sistema e atividade conforme regras
+**Escopo:** Frontend - Layout: scroll independente (lista + sidebar) sem scroll geral da página
 
 ---
 
@@ -19,6 +19,104 @@
 ---
 
 ## 🆕 Iteração atual - Conteúdo/UX (Prompt D)
+## 🆕 Iteração atual - Scroll Independente (Prompt E)
+
+### 🎯 Objetivo
+1. **Página sem scroll geral:** A página não rola verticalmente no desktop
+2. **Lista rola verticalmente:** O painel da lista tem scroll vertical próprio
+3. **Sidebar rola verticalmente:** O painel do sidebar tem scroll vertical próprio
+4. **Scroll horizontal isolado:** Scroll horizontal afeta apenas a tabela
+
+### ✅ Tarefas Concluídas
+- [x] **A) Estruturar layout para dois scrolls internos**
+  - Container principal: `h-[calc(100vh-4rem)] min-h-0 overflow-hidden`
+  - Container flex: `flex-1 min-h-0 flex gap-6 overflow-hidden items-stretch`
+  - Área de conteúdo: `flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col`
+  - Card principal: `flex-1 min-h-0 overflow-hidden flex flex-col`
+
+- [x] **B) Scroll vertical da lista no container correto**
+  - Container de conteúdo da lista: `flex-1 min-h-0 overflow-y-auto overflow-x-hidden`
+  - Tabela mantém `overflow-x-auto` para scroll horizontal isolado
+
+- [x] **C) Scroll vertical do sidebar no container correto**
+  - Container externo: `min-h-0 overflow-hidden` (removido sticky)
+  - Container interno (body): `flex-1 min-h-0 overflow-y-auto`
+  - Removido `maxHeight: calc(100vh - ...)` inline style (flex cuida da altura)
+
+- [x] **D) Testes atualizados**
+  - `LeadsListPage.sticky.test.tsx`: Adicionada seção "Independent Scroll"
+  - `LeadsFiltersSidebar.test.tsx`: Atualizado teste de sticky para flex layout
+  - Total: 46 testes passando
+
+### Arquivos Modificados
+- `src/features/leads/pages/LeadsListPage.tsx` - Layout flex com scroll independente
+- `src/features/leads/components/LeadsFiltersSidebar.tsx` - Removido sticky, min-h-0
+
+### Arquivos de Teste Atualizados
+- `tests/unit/pages/LeadsListPage.sticky.test.tsx` - 9 novos testes para scroll independente
+- `tests/unit/features/leads/components/LeadsFiltersSidebar.test.tsx` - Teste atualizado
+
+### Layout Desktop (Com Scroll Independente)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ HEADER PRINCIPAL (sticky top-0 z-50, h-16 = 4rem)                          │
+├────────────────────────────────────────────────────────────────────────────┤
+│ PÁGINA (h-[calc(100vh-4rem)] min-h-0 overflow-hidden)                      │
+│ ┌───────────────┬──────────────────────────────────────────────────────────┤
+│ │ SIDEBAR       │ CONTEÚDO PRINCIPAL                                       │
+│ │ (min-h-0      │ (flex-1 min-w-0 min-h-0 overflow-hidden)                │
+│ │ overflow-     │ ┌────────────────────────────────────────────────────────┤
+│ │ hidden)       │ │ CARD PRINCIPAL (flex-1 min-h-0 overflow-hidden)       │
+│ │               │ │ ┌──────────────────────────────────────────────────────┤
+│ │ ┌───────────┐ │ │ │ TOP BAR (não rola)                                   │
+│ │ │ BODY      │ │ │ ├──────────────────────────────────────────────────────┤
+│ │ │ (flex-1   │ │ │ │ CONTEÚDO (flex-1 min-h-0 overflow-y-auto            │
+│ │ │ min-h-0   │ │ │ │            overflow-x-hidden)                        │
+│ │ │ overflow- │ │ │ │ ┌────────────────────────────────────────────────────┤
+│ │ │ y-auto)   │ │ │ │ │ TABELA (overflow-x-auto)                           │
+│ │ │           │ │ │ │ │ ... dados da tabela com scroll horizontal ...     │
+│ │ │ Filtros   │ │ │ │ └────────────────────────────────────────────────────┤
+│ │ │ ...       │ │ │ │                                                      │
+│ │ │ Footer    │ │ │ ├──────────────────────────────────────────────────────┤
+│ │ └───────────┘ │ │ │ BOTTOM BAR (não rola)                                │
+│ │               │ │ └──────────────────────────────────────────────────────┤
+│ └───────────────┴──────────────────────────────────────────────────────────┤
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### ✅ Checklist de QA manual
+
+#### Desktop (/leads?view=sales)
+- [ ] A página NÃO rola (wheel no espaço fora dos painéis não move)
+- [ ] Scroll no painel da lista rola a lista
+- [ ] Scroll no painel do sidebar rola o sidebar
+- [ ] Sidebar permanece visível enquanto lista rola
+- [ ] Scroll horizontal move somente a tabela
+- [ ] Sidebar e lista têm bordas superiores alinhadas
+
+#### Mobile (/leads?view=sales)
+- [ ] Comportamento normal de scroll (mobile não usa este layout de painéis)
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas adicionadas | ~50 |
+| Linhas removidas | ~15 |
+| Arquivos modificados | 2 |
+| Testes adicionados | 10 |
+| Testes atualizados | 1 |
+| Total testes relacionados | 46 (passando) |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Alertas de segurança | 0 |
+
+**Risco:** 🟢 Baixo (mudança de layout CSS, sem alteração de lógica de negócio ou API)
+
+---
+
+## ✅ Iteração anterior - Conteúdo/UX (Prompt D)
 
 ### 🎯 Objetivo
 1. **Remover campo de busca:** Deixar somente a seção de Ordenação

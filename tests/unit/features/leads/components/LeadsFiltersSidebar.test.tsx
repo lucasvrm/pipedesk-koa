@@ -144,13 +144,15 @@ describe('LeadsFiltersSidebar', () => {
     expect(sidebar.className).toContain('md:flex')
   })
 
-  it('has sticky positioning classes when open', () => {
+  it('has flex layout with min-h-0 for independent scroll (replaces sticky)', () => {
     render(<LeadsFiltersSidebar {...defaultProps} isOpen={true} />)
     
     const sidebar = screen.getByTestId('leads-filters-sidebar')
-    expect(sidebar.className).toContain('md:sticky')
-    expect(sidebar.className).toContain('md:top-20')
-    // Note: self-start removed as alignment is now handled by items-start on parent flex container
+    // Note: sticky removed - sidebar now uses flex stretch with min-h-0 for independent scroll
+    // The sidebar scrolls independently within its container (no page scroll)
+    expect(sidebar.className).toContain('min-h-0')
+    expect(sidebar.className).toContain('overflow-hidden')
+    expect(sidebar.className).toContain('flex-col')
   })
 
   it('has complete border styling (not just border-r)', () => {
