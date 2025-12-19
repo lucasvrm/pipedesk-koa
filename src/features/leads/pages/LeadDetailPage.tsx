@@ -64,6 +64,7 @@ import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
+const TAB_TRIGGER_STYLE = "data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:shadow-none rounded-none"
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -435,7 +436,7 @@ export default function LeadDetailPage() {
         </div>
       </header>
 
-      {/* Container das 3 Colunas */}
+      {/* Container das 3 Colunas - 120px accounts for: header (57px) + padding (16px top + bottom) + border (1px) + small buffer */}
       <main className="flex gap-4 p-4 h-[calc(100vh-120px)] bg-slate-50">
         
         {/* COLUNA 1 - Dados do Lead (260px fixed) */}
@@ -555,13 +556,13 @@ export default function LeadDetailPage() {
             {/* Header das Abas */}
             <div className="border-b px-4">
               <TabsList className="h-12 bg-transparent">
-                <TabsTrigger value="contexto" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:shadow-none rounded-none">
+                <TabsTrigger value="contexto" className={TAB_TRIGGER_STYLE}>
                   <ClockCounterClockwise className="mr-2 h-4 w-4" /> Contexto
                 </TabsTrigger>
-                <TabsTrigger value="visao-geral" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:shadow-none rounded-none">
+                <TabsTrigger value="visao-geral" className={TAB_TRIGGER_STYLE}>
                   <Buildings className="mr-2 h-4 w-4" /> Visão Geral
                 </TabsTrigger>
-                <TabsTrigger value="docs" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:shadow-none rounded-none">
+                <TabsTrigger value="docs" className={TAB_TRIGGER_STYLE}>
                   <FileText className="mr-2 h-4 w-4" /> Docs
                 </TabsTrigger>
               </TabsList>
@@ -632,7 +633,7 @@ export default function LeadDetailPage() {
                     <p className="text-sm text-muted-foreground">Contexto adicional sobre a lead.</p>
                   </CardHeader>
                   <CardContent>
-                    <Textarea value={safeDescription} disabled className="min-h-[80px]" />
+                    <Textarea value={safeDescription} disabled className="min-h-[110px]" />
                   </CardContent>
                 </Card>
 
@@ -694,7 +695,7 @@ export default function LeadDetailPage() {
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Equipe</CardTitle>
                       <Button variant="outline" size="sm" onClick={() => setMemberModalOpen(true)}>
-                        Vincular usuário
+                        Vincular usuário existente
                       </Button>
                     </div>
                     <CardDescription>Controle de responsáveis e colaboradores</CardDescription>
