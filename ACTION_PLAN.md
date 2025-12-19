@@ -75,6 +75,33 @@ Refatorar a experiência do Lead Detail para:
 
 **Risco:** 🟢 Baixo (mudança de UI/UX, sem alteração de lógica de negócio ou API)
 
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Sidebar "always visible" (sticky) | ✅ | `EntityDetailLayout.tsx` - sticky + max-height |
+| Sidebar com scroll interno | ✅ | `overflow-y-auto` no wrapper interno |
+| Header com hierarquia visual | ✅ | Já existia, mantido |
+| Cards padronizados | ✅ | `CardTitle` (text-base) + `CardDescription` |
+| Tabs com espaçamento correto | ✅ | Indentação corrigida |
+| Testes de layout | ✅ | 6 testes em `EntityDetailLayout.test.tsx` |
+| Sem alteração de lógica de negócio | ✅ | Apenas layout/CSS |
+| Sem alteração de contrato de API | ✅ | Nenhuma mudança |
+| Mobile responsivo | ✅ | Layout 1 coluna em mobile |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
+#### Decisões Técnicas
+1. **Por que usar `style={{ maxHeight }}` ao invés de classes Tailwind?**
+   - O cálculo `calc(100vh - 4rem)` não é facilmente expressável em classes padrão do Tailwind.
+   
+2. **Por que usar `<aside>` e `<main>` ao invés de `<div>`?**
+   - Melhora acessibilidade e semântica HTML5.
+
+3. **Por que remover `border-b` dos CardHeaders?**
+   - Padronização visual - todos os cards agora usam o mesmo estilo.
+
 ---
 
 ## ✅ Iteração anterior - UI Polish Sidebar/Sheet Filtros
