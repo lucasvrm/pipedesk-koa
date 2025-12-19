@@ -119,7 +119,11 @@ vi.mock('@/services/tagService', () => {
 
 vi.mock('@/services/leadService', () => ({
   useLead: () => ({ data: leadFixture, isLoading: false }),
-  useUpdateLead: () => ({ mutateAsync: vi.fn() })
+  useUpdateLead: () => ({ mutateAsync: vi.fn() }),
+  useDeleteLead: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useLeadContacts: () => ({ addContact: vi.fn(), removeContact: vi.fn() }),
+  addLeadMember: vi.fn(),
+  removeLeadMember: vi.fn()
 }))
 
 vi.mock('@/hooks/useSystemMetadata', () => ({

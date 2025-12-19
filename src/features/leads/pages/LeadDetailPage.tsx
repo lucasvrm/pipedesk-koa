@@ -63,9 +63,9 @@ import { EmptyState } from '@/components/EmptyState'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
+import { LeadTemperatureBadge } from '../components/LeadTemperatureBadge'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
-const TAB_TRIGGER_STYLE = "data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:shadow-none rounded-none"
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -412,8 +412,8 @@ export default function LeadDetailPage() {
 
   return (
     <PageContainer className="p-0 space-y-0">
-      {/* Header with Breadcrumb + Quick Actions */}
-      <header className="flex items-center justify-between px-4 py-3 border-b bg-white">
+      {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
+      <header className="flex items-center justify-between px-6 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -437,16 +437,17 @@ export default function LeadDetailPage() {
         </div>
       </header>
 
-      {/* Container das 3 Colunas - 120px accounts for: header (57px) + padding (16px top + bottom) + border (1px) + small buffer */}
-      <main className="flex gap-4 p-4 h-[calc(100vh-120px)] bg-slate-50">
+      {/* Container das 3 Colunas - adjust for sticky header offset (h-16 = 64px + header ~57px = ~121px) */}
+      <main className="flex gap-4 px-6 py-4 min-h-[calc(100vh-121px)] bg-slate-50">
         
         {/* COLUNA 1 - Dados do Lead (260px fixed) */}
         <aside className="w-[260px] min-w-[260px] bg-white rounded-lg border overflow-y-auto">
           <div className="p-4 space-y-4">
             
-            {/* 1. Badge da fase atual */}
-            <div>
+            {/* 1. Badge da fase atual + Temperatura */}
+            <div className="flex items-center gap-2 flex-wrap">
               {statusBadge}
+              <LeadTemperatureBadge priorityBucket={lead.priorityBucket} />
             </div>
 
             {/* 2. Título do Lead */}
@@ -554,16 +555,16 @@ export default function LeadDetailPage() {
           
           <Tabs defaultValue="contexto" className="flex flex-col h-full">
             
-            {/* Header das Abas */}
-            <div className="border-b px-4">
-              <TabsList className="h-12 bg-transparent">
-                <TabsTrigger value="contexto" className={TAB_TRIGGER_STYLE}>
+            {/* Header das Abas - padrão DealDetailPage */}
+            <div className="p-4 pb-0">
+              <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
+                <TabsTrigger value="contexto" className="py-2 px-4">
                   <ClockCounterClockwise className="mr-2 h-4 w-4" /> Contexto
                 </TabsTrigger>
-                <TabsTrigger value="visao-geral" className={TAB_TRIGGER_STYLE}>
+                <TabsTrigger value="visao-geral" className="py-2 px-4">
                   <Buildings className="mr-2 h-4 w-4" /> Visão Geral
                 </TabsTrigger>
-                <TabsTrigger value="docs" className={TAB_TRIGGER_STYLE}>
+                <TabsTrigger value="docs" className="py-2 px-4">
                   <FileText className="mr-2 h-4 w-4" /> Docs
                 </TabsTrigger>
               </TabsList>
