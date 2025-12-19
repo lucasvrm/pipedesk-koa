@@ -1,5 +1,4 @@
 import { ReactNode } from 'react'
-import { PageContainer } from '@/components/PageContainer'
 import { cn } from '@/lib/utils'
 
 interface EntityDetailLayoutProps {
@@ -16,23 +15,29 @@ export function EntityDetailLayout({
   className
 }: EntityDetailLayoutProps) {
   return (
-    <PageContainer className={cn("pb-16 space-y-6", className)}>
+    <div className={cn("pb-16 space-y-6", className)}>
       {/* Top Header Area (Pipeline Visualizer, Breadcrumbs) */}
       <div className="w-full">
         {header}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column ("Golden Column") - Persistent Info */}
-        <div className="lg:col-span-3 xl:col-span-3 flex flex-col gap-4 sticky top-6">
-          {sidebar}
-        </div>
+        {/* Left Column ("Golden Column") - Persistent Info with Sticky + Internal Scroll */}
+        <aside 
+          className="lg:col-span-3 xl:col-span-3 flex flex-col gap-4 lg:sticky lg:top-6"
+          style={{ maxHeight: 'calc(100vh - 4rem)' }}
+          data-testid="entity-detail-sidebar"
+        >
+          <div className="flex flex-col gap-4 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+            {sidebar}
+          </div>
+        </aside>
 
         {/* Center/Right Column - Main Tabs Content */}
-        <div className="lg:col-span-9 xl:col-span-9 min-w-0">
+        <main className="lg:col-span-9 xl:col-span-9 min-w-0">
           {content}
-        </div>
+        </main>
       </div>
-    </PageContainer>
+    </div>
   )
 }
