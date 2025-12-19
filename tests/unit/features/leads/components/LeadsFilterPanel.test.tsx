@@ -10,7 +10,7 @@ vi.mock('@/components/ui/sheet', () => ({
   SheetHeader: ({ children }: any) => <div>{children}</div>,
   SheetTitle: ({ children }: any) => <h2>{children}</h2>,
   SheetDescription: ({ children }: any) => <p>{children}</p>,
-  SheetFooter: ({ children }: any) => <div data-testid="sheet-footer">{children}</div>,
+  SheetFooter: ({ children, 'data-testid': testId }: any) => <div data-testid={testId || "sheet-footer"}>{children}</div>,
 }))
 
 vi.mock('@/components/ui/scroll-area', () => ({
@@ -96,11 +96,36 @@ describe('LeadsFilterPanel', () => {
     expect(screen.queryByTestId('sheet-root')).not.toBeInTheDocument()
   })
 
-  it('renders apply and clear buttons in footer', () => {
+  it('renders apply and clear buttons in footer when filters are selected', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
     
+    // Footer is hidden when no filters are selected
+    expect(screen.queryByTestId('filter-panel-apply')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('filter-panel-clear')).not.toBeInTheDocument()
+    
+    // Select a filter to show footer
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
+    // Now footer should be visible
     expect(screen.getByTestId('filter-panel-apply')).toBeInTheDocument()
     expect(screen.getByTestId('filter-panel-clear')).toBeInTheDocument()
+  })
+
+  it('hides footer when no filters are selected', () => {
+    render(<LeadsFilterPanel {...defaultProps} />)
+    
+    // Footer should be hidden initially
+    expect(screen.queryByTestId('leads-filters-footer')).not.toBeInTheDocument()
+  })
+
+  it('shows footer when 1+ filters are selected', () => {
+    render(<LeadsFilterPanel {...defaultProps} />)
+    
+    // Select a filter
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
+    // Footer should now be visible
+    expect(screen.getByTestId('leads-filters-footer')).toBeInTheDocument()
   })
 
   it('renders owner popover trigger', () => {
@@ -129,6 +154,9 @@ describe('LeadsFilterPanel', () => {
     const onOpenChange = vi.fn()
     render(<LeadsFilterPanel {...defaultProps} onOpenChange={onOpenChange} />)
     
+    // First select a filter to show the footer
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+    
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
     
     expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -136,6 +164,9 @@ describe('LeadsFilterPanel', () => {
 
   it('calls setOwnerMode when apply button is clicked', () => {
     render(<LeadsFilterPanel {...defaultProps} />)
+    
+    // First select a filter to show the footer
+    fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
     
     fireEvent.click(screen.getByTestId('filter-panel-apply'))
     
@@ -151,10 +182,13 @@ describe('LeadsFilterPanel', () => {
     
     render(<LeadsFilterPanel {...defaultProps} appliedFilters={appliedWithFilters} />)
     
+    // Footer should be visible because there are filters
+    expect(screen.getByTestId('leads-filters-footer')).toBeInTheDocument()
+    
     fireEvent.click(screen.getByTestId('filter-panel-clear'))
     
-    // After clear, the apply button should show (0) filters
-    expect(screen.getByTestId('filter-panel-apply')).toHaveTextContent('Aplicar filtros')
+    // After clear, footer should be hidden (no filters selected)
+    expect(screen.queryByTestId('leads-filters-footer')).not.toBeInTheDocument()
   })
 
   it('renders section headers for filter categories', () => {
@@ -223,6 +257,9 @@ describe('LeadsFilterPanel', () => {
     it('applies default orderBy when apply button is clicked', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
       
+      // First select a filter to show the footer
+      fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
+      
       fireEvent.click(screen.getByTestId('filter-panel-apply'))
       
       expect(mockActions.setOrderBy).toHaveBeenCalledWith('priority')
@@ -230,6 +267,9 @@ describe('LeadsFilterPanel', () => {
 
     it('applies selected orderBy when ordering option is clicked', () => {
       render(<LeadsFilterPanel {...defaultProps} showNextActionFilter={true} />)
+      
+      // First select a filter to show the footer
+      fireEvent.click(screen.getByTestId('priority-checkbox-hot'))
       
       // Apply to verify the default ordering (priority is default)
       fireEvent.click(screen.getByTestId('filter-panel-apply'))

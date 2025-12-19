@@ -152,14 +152,18 @@ export function LeadsFiltersSidebar({
   // When open: hidden on mobile (< md), flex on md+ (hidden md:flex)
   const visibilityClass = isOpen ? 'hidden md:flex' : 'hidden'
 
+  // Show footer when there are filters selected (draft has any filter active)
+  const shouldShowFooter = draftFiltersCount > 0
+
   return (
     <aside
       className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden`}
       data-testid="leads-filters-sidebar"
     >
-      {/* Body - Scrollable with native scroll (includes footer) */}
+      {/* Body - Scrollable with native scroll */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
+        data-testid="leads-filters-sidebar-scroll"
       >
         <LeadsFiltersContent
           draftFilters={draftFilters}
@@ -170,16 +174,21 @@ export function LeadsFiltersSidebar({
           availableTags={availableTags}
           showNextActionFilter={showNextActionFilter}
         />
+      </div>
 
-        {/* Footer - Inside scroll area, at the end of content */}
-        <div className="border-t mt-4 pt-4">
+      {/* Footer - Fixed at bottom, only visible when filters are selected */}
+      {shouldShowFooter && (
+        <div 
+          className="shrink-0 border-t bg-card px-4 py-4"
+          data-testid="leads-filters-footer"
+        >
           <LeadsFiltersFooter
             draftFiltersCount={draftFiltersCount}
             onClear={handleClearDraft}
             onApply={handleApplyFilters}
           />
         </div>
-      </div>
+      )}
     </aside>
   )
 }
