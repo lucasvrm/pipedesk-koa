@@ -235,7 +235,7 @@ export default function LeadDetailPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{safeLeadName}</BreadcrumbPage>
+              <BreadcrumbPage className="text-amber-600">{safeLeadName}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -459,7 +459,7 @@ export default function LeadDetailPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{safeLeadName}</BreadcrumbPage>
+              <BreadcrumbPage className="text-amber-600">{safeLeadName}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -476,8 +476,8 @@ export default function LeadDetailPage() {
       {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
       <main className={`flex gap-4 px-6 py-4 min-h-[calc(100vh-${HEADER_OFFSET_PX}px)] bg-slate-50`}>
         
-        {/* COLUNA 1 - Dados do Lead (260px fixed) */}
-        <aside className="w-[260px] min-w-[260px] bg-white rounded-lg border overflow-y-auto">
+        {/* COLUNA 1 - Dados do Lead (286px fixed) */}
+        <aside className="w-[286px] min-w-[286px] bg-white rounded-lg border overflow-y-auto">
           <div className="p-4 space-y-4">
             
             {/* 1. Badge da fase atual + Temperatura */}
@@ -805,7 +805,7 @@ export default function LeadDetailPage() {
         </section>
 
         {/* COLUNA 3 - Status & Próximas Ações */}
-        <aside className="w-[240px] min-w-[240px] bg-white rounded-lg border overflow-y-auto">
+        <aside className="w-[286px] min-w-[286px] bg-white rounded-lg border overflow-y-auto">
           <div className="p-4 space-y-6">
             
             {/* ===== SEÇÃO 1: STATUS/FASES ===== */}
