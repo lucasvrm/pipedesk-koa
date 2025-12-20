@@ -23,6 +23,9 @@ interface SmartTagSelectorProps {
   onOpenChange: (open: boolean) => void
 }
 
+const SELECTED_ALPHA = '26'   // ~15% opacity
+const UNSELECTED_ALPHA = '14' // ~8% opacity
+
 export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], open, onOpenChange }: SmartTagSelectorProps) {
   const { data: tags } = useTags(entityType)
   const { create, assign, unassign, update, remove } = useTagOperations()
@@ -136,24 +139,28 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                 {filteredTags.map(tag => {
                   const isSelected = selectedTagIds.includes(tag.id)
                   const tagColor = tag.color || '#3b82f6'
-                  const backgroundMix = isSelected
-                    ? `color-mix(in srgb, ${tagColor} 22%, transparent)`
-                    : `color-mix(in srgb, ${tagColor} 14%, transparent)`
+                  const backgroundColor = isSelected ? `${tagColor}${SELECTED_ALPHA}` : `${tagColor}${UNSELECTED_ALPHA}`
+                  const textColor = isSelected ? tagColor : 'hsl(var(--foreground))'
                   return (
                     <CommandItem
                       key={tag.id}
                       value={tag.name}
                       onSelect={() => handleSelect(tag.id)}
-                      className={`flex items-center justify-between group cursor-pointer px-3 py-2 ${
-                        isSelected ? 'bg-muted/70 border border-primary/30 rounded-md' : 'hover:bg-muted/60'
-                      }`}
+                      className="flex items-center justify-between group cursor-pointer px-3 py-2 rounded-md border transition-colors"
+                      style={{
+                        backgroundColor,
+                        borderColor: tagColor,
+                        color: textColor
+                      }}
                     >
                       <div className="flex items-center gap-2">
                         <div
-                          className={`flex items-center justify-center w-4 h-4 border rounded transition-colors ${
-                            isSelected ? 'bg-primary text-primary-foreground' : ''
-                          }`}
-                          style={{ borderColor: tagColor }}
+                          className="flex items-center justify-center w-4 h-4 border rounded transition-colors"
+                          style={{
+                            borderColor: tagColor,
+                            backgroundColor: isSelected ? `${tagColor}33` : 'transparent',
+                            color: textColor
+                          }}
                         >
                           {isSelected && <Check className="w-3 h-3" />}
                         </div>
@@ -162,8 +169,8 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                           className="text-xs font-medium border px-2 py-1"
                           style={{
                             borderColor: tagColor,
-                            backgroundColor: backgroundMix,
-                            color: 'hsl(var(--foreground))'
+                            backgroundColor,
+                            color: textColor
                           }}
                         >
                           {tag.name}
