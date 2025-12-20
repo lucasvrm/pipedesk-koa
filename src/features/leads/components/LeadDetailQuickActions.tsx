@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2 } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CheckCircle, Pencil, UserPlus, UserCheck, Tags, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -7,6 +7,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils/googleLinks'
 import { getRootFolderUrl } from '@/services/driveService'
@@ -23,6 +31,15 @@ interface LeadDetailQuickActionsProps {
   leadId: string
   primaryContact?: PrimaryContact | null
   onScheduleClick?: () => void
+  // Kebab menu callbacks
+  onQualify?: () => void
+  onEdit?: () => void
+  onAddMember?: () => void
+  onChangeOwner?: () => void
+  onManageTags?: () => void
+  onDelete?: () => void
+  // Permission for change owner
+  canChangeOwner?: boolean
 }
 
 /**
@@ -40,6 +57,13 @@ export function LeadDetailQuickActions({
   leadId,
   primaryContact,
   onScheduleClick,
+  onQualify,
+  onEdit,
+  onAddMember,
+  onChangeOwner,
+  onManageTags,
+  onDelete,
+  canChangeOwner = false,
 }: LeadDetailQuickActionsProps) {
   const [isDriveLoading, setIsDriveLoading] = useState(false)
 
@@ -209,6 +233,80 @@ export function LeadDetailQuickActions({
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-wrap gap-2">
+        {/* Kebab Menu - Dropdown de ações secundárias */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <span className="inline-flex">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                data-testid="quick-action-kebab"
+                aria-label="Mais ações"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            {/* Ações do Lead */}
+            <DropdownMenuLabel>Ações do Lead</DropdownMenuLabel>
+            {onQualify && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQualify() }}>
+                <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
+                Qualificar
+              </DropdownMenuItem>
+            )}
+            {onEdit && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit() }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            )}
+
+            {/* Gerenciar */}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Gerenciar</DropdownMenuLabel>
+            {onAddMember && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddMember() }}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Adicionar Membro
+              </DropdownMenuItem>
+            )}
+            {onChangeOwner && (
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); if (canChangeOwner) onChangeOwner() }}
+                disabled={!canChangeOwner}
+              >
+                <UserCheck className="mr-2 h-4 w-4" />
+                Alterar Responsável
+              </DropdownMenuItem>
+            )}
+
+            {/* Organização */}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Organização</DropdownMenuLabel>
+            {onManageTags && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onManageTags() }}>
+                <Tags className="mr-2 h-4 w-4" />
+                Gerenciar Tags
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); onDelete() }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir Lead
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex">

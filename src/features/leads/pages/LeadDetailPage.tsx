@@ -51,6 +51,7 @@ import type { Tag as TagType, Contact } from '@/lib/types'
 import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
+import { ChangeOwnerDialog } from '../components/ChangeOwnerDialog'
 import DriveSection from '@/components/DriveSection'
 import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { PageContainer } from '@/components/PageContainer'
@@ -182,6 +183,7 @@ export default function LeadDetailPage() {
   const [memberModalOpen, setMemberModalOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [changeOwnerOpen, setChangeOwnerOpen] = useState(false)
   const [newContact, setNewContact] = useState({ name: '', email: '', phone: '', role: '', isPrimary: false })
   const [selectedContact, setSelectedContact] = useState<string>('')
   const [selectedMember, setSelectedMember] = useState('')
@@ -192,6 +194,16 @@ export default function LeadDetailPage() {
   const [deleteTag, setDeleteTag] = useState<TagType | null>(null)
   const [previewContact, setPreviewContact] = useState<Contact | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+
+  // Permission check: user can change owner if they are the current owner OR have admin/manager role
+  const canChangeOwner = useMemo(() => {
+    if (!lead || !profile) return false
+    // User is the current owner
+    const isOwner = lead.ownerUserId === profile.id
+    // User has admin or manager role (higher hierarchy)
+    const isAdminOrManager = profile.role === 'admin' || profile.role === 'manager'
+    return isOwner || isAdminOrManager
+  }, [lead, profile])
 
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
@@ -537,6 +549,13 @@ export default function LeadDetailPage() {
           <LeadDetailQuickActions
             leadId={lead.id}
             primaryContact={primaryContact}
+            onQualify={() => setQualifyOpen(true)}
+            onEdit={() => setEditOpen(true)}
+            onAddMember={() => setMemberModalOpen(true)}
+            onChangeOwner={() => setChangeOwnerOpen(true)}
+            onManageTags={() => setTagManagerOpen(true)}
+            onDelete={() => setDeleteOpen(true)}
+            canChangeOwner={canChangeOwner}
           />
         </div>
       </header>
@@ -1219,6 +1238,14 @@ export default function LeadDetailPage() {
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
         contact={previewContact}
+      />
+
+      <ChangeOwnerDialog
+        open={changeOwnerOpen}
+        onOpenChange={setChangeOwnerOpen}
+        lead={lead}
+        currentUserId={profile?.id}
+        availableUsers={users ?? []}
       />
     </PageContainer>
   )
