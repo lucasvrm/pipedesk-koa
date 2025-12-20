@@ -211,15 +211,13 @@ describe('LeadsFiltersSidebar', () => {
     expect(sidebar.className).toContain('md:flex')
   })
 
-  it('has flex layout with sticky positioning for independent scroll', () => {
+  it('has flex layout with min-h-0 for independent scroll (replaces sticky)', () => {
     render(<LeadsFiltersSidebar {...defaultProps} isOpen={true} />)
     
     const sidebar = screen.getByTestId('leads-filters-sidebar')
-    // Sidebar now uses sticky positioning with fixed height for independent scroll
-    // The sidebar stays fixed while the page scrolls
-    expect(sidebar.className).toContain('sticky')
-    expect(sidebar.className).toContain('top-6')
-    expect(sidebar.className).toContain('h-[calc(100vh-8rem)]')
+    // Note: sticky removed - sidebar now uses flex stretch with min-h-0 for independent scroll
+    // The sidebar scrolls independently within its container (no page scroll)
+    expect(sidebar.className).toContain('min-h-0')
     expect(sidebar.className).toContain('overflow-hidden')
     expect(sidebar.className).toContain('flex-col')
   })

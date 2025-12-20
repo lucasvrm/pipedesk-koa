@@ -645,7 +645,7 @@ export default function LeadsListPage() {
   return (
     <div className="h-[calc(100vh-4rem)] min-h-0 overflow-hidden p-6 bg-background flex flex-col">
       {/* Main container with optional sidebar layout */}
-      <div className="flex-1 flex gap-6 items-stretch min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 flex gap-6 overflow-hidden items-stretch">
         {/* Desktop Sidebar - controlled by toggle, only on non-mobile */}
         {!isMobile && (
           FEATURE_FLAGS.USE_NEW_FILTERS_SIDEBAR ? (
@@ -674,209 +674,182 @@ export default function LeadsListPage() {
         )}
 
         {/* Main content area */}
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+        <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col">
           {/* Container Unificado (Card Principal) */}
           <div 
-            className="flex-1 border rounded-xl bg-card shadow-sm flex flex-col min-h-0 overflow-hidden"
+            className="flex-1 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col"
             data-testid="leads-list-panel"
           >
-            <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden">
-              {/* Top Controls (sticky) */}
-              <div className="sticky top-0 z-20 bg-card">
-                <LeadsListControls
-                  position="top"
-                  currentView={currentView}
-                  onViewChange={handleViewChange}
-                  activeFiltersCount={activeFiltersCount}
-                  onOpenFilterPanel={handleToggleFilters}
-                  isFiltersOpen={isFiltersOpen}
-                  selectedIds={selectedIds}
-                  onBulkDelete={() => setIsBulkDeleteOpen(true)}
-                  onCreateLead={() => setIsCreateOpen(true)}
-                  totalLeads={totalLeads}
-                  itemsPerPage={itemsPerPage}
-                  onItemsPerPageChange={handleItemsPerPageChange}
-                  showPagination={showPagination}
-                  startItem={startItem}
-                  endItem={endItem}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
+            
+            {/* Top Controls (non-sticky) */}
+            <LeadsListControls
+              position="top"
+              currentView={currentView}
+              onViewChange={handleViewChange}
+              activeFiltersCount={activeFiltersCount}
+              onOpenFilterPanel={handleToggleFilters}
+              isFiltersOpen={isFiltersOpen}
+              selectedIds={selectedIds}
+              onBulkDelete={() => setIsBulkDeleteOpen(true)}
+              onCreateLead={() => setIsCreateOpen(true)}
+              totalLeads={totalLeads}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              showPagination={showPagination}
+              startItem={startItem}
+              endItem={endItem}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
 
-              {/* Conteúdo da Lista dentro do Card - área rolável */}
-              <div className="flex-1 min-h-0"> 
-                {isActiveLoading ? (
-                  <div className="p-6 space-y-4">
-                    <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
-                  </div>
-                ) : salesErrorUI ? (
-                  <div className="p-6">
-                    {salesErrorUI}
-                  </div>
-                ) : filtersEmptyState ? (
-                  <div className="p-12">
-                    {filtersEmptyState}
-                  </div>
-                ) : paginatedLeads.length === 0 ? (
-                  <div className="p-12">
-                    <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
-                      Nenhum lead encontrado.
-                      {hasFilters && (
-                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
-                          <Button variant="outline" size="sm" onClick={() => { filterActions.clearAll(); clearFilters(); }}>
-                            Limpar filtros
-                          </Button>
-                          {currentView !== 'grid' && (
-                            <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
-                              Ir para grade
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="animate-in fade-in duration-300">
-                    {currentView === 'sales' ? (
-                      <LeadsSalesList
-                        leads={paginatedLeads as LeadSalesViewItem[]}
-                        isLoading={isActiveLoading}
-                        orderBy={appliedFilters.orderBy}
-                        selectedIds={selectedIds}
-                        onSelectAll={toggleSelectAll}
-                        onSelectOne={toggleSelectOne}
-                        onNavigate={(id) => navigate(`/leads/${id}`)}
-                        onScheduleClick={handleScheduleClick}
-                        getLeadActions={(lead): QuickAction[] => {
-                          const id = lead.leadId ?? lead.lead_id ?? lead.id
-                          if (!id) return []
-
-                          return [
-                            {
-                              id: 'view',
-                              label: 'Detalhes',
-                              onClick: () => navigate(`/leads/${id}`)
-                            }
-                          ]
-                        }}
-                      />
-                    ) : currentView === 'kanban' ? (
-                      <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
-                    ) : (
-                      <div className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {paginatedLeads.map(lead => {
-                            const contact = getPrimaryContact(lead)
-                            const owner = (lead as any).owner
-                            const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
-                            return (
-                              <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
-                                <CardHeader className="pb-2 space-y-0">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div className="space-y-1">
-                                      <CardTitle className="text-lg line-clamp-1" title={safeLegalName}>{safeLegalName}</CardTitle>
-                                      {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
-                                    </div>
-                                    <div onClick={e => e.stopPropagation()} className="flex gap-1">
-                                      <QuickActionsMenu
-                                        actions={getLeadQuickActions({
-                                          lead,
-                                          navigate,
-                                          updateLead: updateLeadAdapter,
-                                          deleteLead,
-                                          profileId: profile?.id,
-                                          onEdit: () => openEdit(lead),
-                                          getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
-                                          statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
-                                        })}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {renderStatusBadge(lead.leadStatusId)}
-                                    {renderOriginBadge(lead.leadOriginId)}
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="pb-3 text-sm space-y-3">
-                                  <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
-                                    <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
-                                  </div>
-
-                                  <div className="space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                      <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
-                                      <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
-                                    </div>
-                                    <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
-                                  </div>
-
-                                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
-                                      {contact ? (
-                                        <div
-                                          className="font-medium truncate hover:text-primary hover:underline"
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            navigate(`/contacts/${contact.id}`)
-                                          }}
-                                        >
-                                          {safeString(contact.name, 'Contato')}
-                                        </div>
-                                      ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
-                                      {owner ? (
-                                        <div className="flex items-center gap-1.5">
-                                          <Avatar className="h-5 w-5">
-                                            <AvatarImage src={owner.avatar} />
-                                            <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
-                                          </Avatar>
-                                          <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
-                                        </div>
-                                      ) : <span>-</span>}
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )
-                          })}
-                        </div>
-                      </div>
+        {/* Conteúdo da Lista dentro do Card - área rolável */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"> 
+          {isActiveLoading ? (
+            <div className="p-6 space-y-4">
+              <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
+            </div>
+          ) : salesErrorUI ? (
+            <div className="p-6">
+              {salesErrorUI}
+            </div>
+          ) : filtersEmptyState ? (
+            <div className="p-12">
+              {filtersEmptyState}
+            </div>
+          ) : paginatedLeads.length === 0 ? (
+            <div className="p-12">
+              <div className="text-center py-8 text-muted-foreground border rounded-md bg-muted/10 p-8">
+                Nenhum lead encontrado.
+                {hasFilters && (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+                    <Button variant="outline" size="sm" onClick={() => { filterActions.clearAll(); clearFilters(); }}>
+                      Limpar filtros
+                    </Button>
+                    {currentView !== 'grid' && (
+                      <Button variant="ghost" size="sm" onClick={() => setViewMode('grid')}>
+                        Ir para grade
+                      </Button>
                     )}
                   </div>
                 )}
               </div>
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-300">
+              {currentView === 'sales' ? (
+                <LeadsSalesList
+                  leads={paginatedLeads as LeadSalesViewItem[]}
+                  isLoading={isActiveLoading}
+                  orderBy={appliedFilters.orderBy}
+                  selectedIds={selectedIds}
+                  onSelectAll={toggleSelectAll}
+                  onSelectOne={toggleSelectOne}
+                  onNavigate={(id) => navigate(`/leads/${id}`)}
+                  onScheduleClick={handleScheduleClick}
+                  getLeadActions={(lead): QuickAction[] => {
+                    const id = lead.leadId ?? lead.lead_id ?? lead.id
+                    if (!id) return []
 
-              {/* Bottom Controls (sticky) */}
-              {showPagination && (
-                <div className="sticky bottom-0 z-20 bg-card">
-                  <LeadsListControls
-                    position="bottom"
-                    currentView={currentView}
-                    onViewChange={handleViewChange}
-                    activeFiltersCount={activeFiltersCount}
-                    onOpenFilterPanel={handleToggleFilters}
-                    isFiltersOpen={isFiltersOpen}
-                    selectedIds={selectedIds}
-                    onBulkDelete={() => setIsBulkDeleteOpen(true)}
-                    onCreateLead={() => setIsCreateOpen(true)}
-                    totalLeads={totalLeads}
-                    itemsPerPage={itemsPerPage}
-                    onItemsPerPageChange={handleItemsPerPageChange}
-                    showPagination={showPagination}
-                    startItem={startItem}
-                    endItem={endItem}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                  />
+                    return [
+                      {
+                        id: 'view',
+                        label: 'Detalhes',
+                        onClick: () => navigate(`/leads/${id}`)
+                      }
+                    ]
+                  }}
+                />
+              ) : currentView === 'kanban' ? (
+                <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
+              ) : (
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {paginatedLeads.map(lead => {
+                      const contact = getPrimaryContact(lead)
+                      const owner = (lead as any).owner
+                      const safeLegalName = safeString(lead.legalName, 'Lead sem nome')
+                      return (
+                        <Card key={lead.id} className="cursor-pointer hover:border-primary/50 transition-colors group relative" onClick={() => navigate(`/leads/${lead.id}`)}>
+                          <CardHeader className="pb-2 space-y-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="space-y-1">
+                                <CardTitle className="text-lg line-clamp-1" title={safeLegalName}>{safeLegalName}</CardTitle>
+                                {lead.tradeName && <p className="text-xs text-muted-foreground line-clamp-1">{safeString(lead.tradeName, '')}</p>}
+                              </div>
+                              <div onClick={e => e.stopPropagation()} className="flex gap-1">
+                                <QuickActionsMenu
+                                  actions={getLeadQuickActions({
+                                    lead,
+                                    navigate,
+                                    updateLead: updateLeadAdapter,
+                                    deleteLead,
+                                    profileId: profile?.id,
+                                    onEdit: () => openEdit(lead),
+                                    getLeadStatusLabel: (id) => safeString(getLeadStatusById(id)?.label, id),
+                                    statusOptions: leadStatuses.filter(s => s.isActive).map(s => ({ id: s.id, label: safeString(s.label, s.code), code: s.code }))
+                                  })}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {renderStatusBadge(lead.leadStatusId)}
+                              {renderOriginBadge(lead.leadOriginId)}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-3 text-sm space-y-3">
+                            <div onClick={e => e.stopPropagation()} className="min-h-[24px]">
+                              <TagSelector entityId={lead.id} entityType="lead" variant="minimal" />
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                <span>{safeString(getLeadStatusById(lead.leadStatusId)?.label, lead.leadStatusId)}</span>
+                                <span className="font-semibold text-foreground">{LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0}%</span>
+                              </div>
+                              <Progress value={LEAD_STATUS_PROGRESS[getLeadStatusById(lead.leadStatusId)?.code as any] || 0} indicatorClassName={LEAD_STATUS_COLORS[getLeadStatusById(lead.leadStatusId)?.code as any] || 'bg-gray-500'} />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                              <div>
+                                <span className="text-xs text-muted-foreground block mb-1">Contato Principal</span>
+                                {contact ? (
+                                  <div
+                                    className="font-medium truncate hover:text-primary hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      navigate(`/contacts/${contact.id}`)
+                                    }}
+                                  >
+                                    {safeString(contact.name, 'Contato')}
+                                  </div>
+                                ) : <span className="text-xs text-muted-foreground italic">Sem contato</span>}
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground block mb-1">Responsável</span>
+                                {owner ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarImage src={owner.avatar} />
+                                      <AvatarFallback className="text-[8px]">{getInitials(safeString(owner.name, '??'))}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate text-xs">{safeString(owner.name, 'N/A').split(' ')[0]}</span>
+                                  </div>
+                                ) : <span>-</span>}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
+          )}
+        </div>
+
+
           </div>
         </div>
       </div>

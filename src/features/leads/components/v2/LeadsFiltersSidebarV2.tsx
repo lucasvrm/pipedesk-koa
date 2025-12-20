@@ -177,7 +177,7 @@ export function LeadsFiltersSidebarV2({
 
   return (
     <aside
-      className={`${visibilityClass} flex-col w-[280px] shrink-0 h-[calc(100vh-8rem)] max-h-[calc(100vh-8rem)] border rounded-xl bg-card shadow-sm overflow-hidden sticky top-6`}
+      className={`${visibilityClass} flex-col w-[280px] shrink-0 h-full max-h-full border rounded-xl bg-card shadow-sm overflow-hidden`}
       data-testid="leads-filters-sidebar-v2"
     >
       {/* Header sticky */}
