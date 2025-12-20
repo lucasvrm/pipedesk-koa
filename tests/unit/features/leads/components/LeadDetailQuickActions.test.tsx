@@ -42,6 +42,18 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => <>{children}</>,
 }))
 
+// Mock DropdownMenu to test kebab menu
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu-content">{children}</div>,
+  DropdownMenuItem: ({ children, onClick, disabled }: { children: React.ReactNode; onClick?: (e: React.MouseEvent) => void; disabled?: boolean }) => (
+    <button data-testid="dropdown-menu-item" onClick={onClick} disabled={disabled}>{children}</button>
+  ),
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu-label">{children}</div>,
+  DropdownMenuSeparator: () => <hr data-testid="dropdown-menu-separator" />,
+  DropdownMenuTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => <>{children}</>,
+}))
+
 describe('LeadDetailQuickActions', () => {
   const defaultProps = {
     leadId: 'lead-123',
@@ -72,6 +84,13 @@ describe('LeadDetailQuickActions', () => {
     expect(screen.getByTestId('quick-action-drive')).toBeInTheDocument()
     expect(screen.getByTestId('quick-action-schedule')).toBeInTheDocument()
     expect(screen.getByTestId('quick-action-copy-id')).toBeInTheDocument()
+  })
+
+  it('renders kebab menu button', () => {
+    render(<LeadDetailQuickActions {...defaultProps} />)
+    
+    expect(screen.getByTestId('quick-action-kebab')).toBeInTheDocument()
+    expect(screen.getByLabelText('Mais ações')).toBeInTheDocument()
   })
 
   it('renders with accessible labels', () => {
@@ -150,5 +169,76 @@ describe('LeadDetailQuickActions', () => {
     expect(screen.getByText('Drive')).toBeInTheDocument()
     expect(screen.getByText('Agendar')).toBeInTheDocument()
     expect(screen.getByText('Copiar ID')).toBeInTheDocument()
+  })
+
+  describe('Kebab Menu Actions', () => {
+    it('renders Qualificar menu item when onQualify is provided', () => {
+      const handleQualify = vi.fn()
+      render(<LeadDetailQuickActions {...defaultProps} onQualify={handleQualify} />)
+      
+      expect(screen.getByText('Qualificar')).toBeInTheDocument()
+    })
+
+    it('renders Editar menu item when onEdit is provided', () => {
+      const handleEdit = vi.fn()
+      render(<LeadDetailQuickActions {...defaultProps} onEdit={handleEdit} />)
+      
+      expect(screen.getByText('Editar')).toBeInTheDocument()
+    })
+
+    it('renders Alterar Responsável menu item when onChangeOwner is provided', () => {
+      const handleChangeOwner = vi.fn()
+      render(<LeadDetailQuickActions {...defaultProps} onChangeOwner={handleChangeOwner} canChangeOwner />)
+      
+      expect(screen.getByText('Alterar Responsável')).toBeInTheDocument()
+    })
+
+    it('disables Alterar Responsável when canChangeOwner is false', () => {
+      const handleChangeOwner = vi.fn()
+      render(<LeadDetailQuickActions {...defaultProps} onChangeOwner={handleChangeOwner} canChangeOwner={false} />)
+      
+      const changeOwnerItem = screen.getByText('Alterar Responsável').closest('button')
+      expect(changeOwnerItem).toBeDisabled()
+    })
+
+    it('renders Gerenciar Tags menu item when onManageTags is provided', () => {
+      const handleManageTags = vi.fn()
+      render(<LeadDetailQuickActions {...defaultProps} onManageTags={handleManageTags} />)
+      
+      expect(screen.getByText('Gerenciar Tags')).toBeInTheDocument()
+    })
+
+    it('renders Excluir Lead menu item when onDelete is provided', () => {
+      const handleDelete = vi.fn()
+      render(<LeadDetailQuickActions {...defaultProps} onDelete={handleDelete} />)
+      
+      expect(screen.getByText('Excluir Lead')).toBeInTheDocument()
+    })
+
+    it('calls onQualify when Qualificar is clicked', async () => {
+      const handleQualify = vi.fn()
+      const user = userEvent.setup()
+      
+      render(<LeadDetailQuickActions {...defaultProps} onQualify={handleQualify} />)
+      
+      await user.click(screen.getByText('Qualificar'))
+      
+      expect(handleQualify).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders dropdown menu labels for categories', () => {
+      render(
+        <LeadDetailQuickActions
+          {...defaultProps}
+          onQualify={() => {}}
+          onAddMember={() => {}}
+          onManageTags={() => {}}
+        />
+      )
+      
+      expect(screen.getByText('Ações do Lead')).toBeInTheDocument()
+      expect(screen.getByText('Gerenciar')).toBeInTheDocument()
+      expect(screen.getByText('Organização')).toBeInTheDocument()
+    })
   })
 })
