@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useComments } from '@/services/commentService'
 import { useActivities } from '@/services/activityService'
 import { fetchTimeline } from '@/services/timelineService'
-import { TimelineEntry, EntityType } from '@/types/integration'
-import { Comment } from '@/lib/types'
+import { EntityType } from '@/types/integration'
 
 export type TimelineItemType = 'comment' | 'activity' | 'system' | 'meeting' | 'email' | 'audit'
 
@@ -13,12 +12,60 @@ export interface TimelineItem {
   type: TimelineItemType
   date: string
   author: {
+    id?: string
     name: string
     avatar?: string
   }
   content: string
   title?: string
   metadata?: Record<string, unknown>
+  // Threads support
+  parentId?: string | null
+  replies?: TimelineItem[]
+  // Permissions
+  isEditable?: boolean
+  isDeletable?: boolean
+}
+
+/**
+ * Organizes timeline items into a hierarchical thread structure.
+ * Items with parentId are nested under their parent as replies.
+ */
+function organizeIntoThreads(items: TimelineItem[]): TimelineItem[] {
+  const itemsMap = new Map<string, TimelineItem>()
+  const rootItems: TimelineItem[] = []
+  
+  // First pass: create map with empty replies array
+  items.forEach(item => {
+    itemsMap.set(item.id, { ...item, replies: [] })
+  })
+  
+  // Second pass: organize hierarchy
+  items.forEach(item => {
+    const mappedItem = itemsMap.get(item.id)
+    if (!mappedItem) return
+    
+    if (item.parentId && itemsMap.has(item.parentId)) {
+      const parent = itemsMap.get(item.parentId)
+      if (parent) {
+        parent.replies = parent.replies || []
+        parent.replies.push(mappedItem)
+      }
+    } else {
+      rootItems.push(mappedItem)
+    }
+  })
+  
+  // Sort replies by date (ascending - oldest first in replies)
+  rootItems.forEach(item => {
+    if (item.replies?.length) {
+      item.replies.sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
+    }
+  })
+  
+  return rootItems
 }
 
 /**
@@ -79,11 +126,15 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
           date: entry.createdAt,
           title: entry.title,
           author: {
+            id: entry.createdBy?.id,
             name: entry.createdBy?.name || 'Sistema',
             avatar: entry.createdBy?.avatar
           },
           content: entry.description || entry.title,
-          metadata: entry.metadata
+          metadata: entry.metadata,
+          parentId: null,
+          isEditable: false,
+          isDeletable: false
         })
       })
     }
@@ -105,10 +156,14 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
           type: 'comment',
           date: timestamp || new Date(0).toISOString(),
           author: {
+            id: c.authorId,
             name: c.author?.name || 'Usuário',
             avatar: c.author?.avatar
           },
-          content: c.content
+          content: c.content,
+          parentId: c.parentId || null,
+          isEditable: true,
+          isDeletable: true
         })
       })
     }
@@ -134,17 +189,24 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
           type: 'system',
           date: a.created_at,
           author: {
+            id: a.user?.id,
             name: a.user?.name || 'Sistema',
             avatar: a.user?.avatar_url
           },
           content: content,
-          metadata: a.changes
+          metadata: a.changes,
+          parentId: null,
+          isEditable: false,
+          isDeletable: false
         })
       })
     }
 
-    // Sort by date desc
-    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    // Sort by date desc (most recent first)
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    
+    // Organize into threads
+    return organizeIntoThreads(items)
   }, [timelineResponse, comments, activities])
 
   const refetch = useCallback(async () => {

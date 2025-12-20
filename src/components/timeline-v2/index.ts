@@ -5,6 +5,11 @@ export { ActivityCard } from './ActivityCard'
 export { ComposerBar } from './ComposerBar'
 export { EditCommentModal } from './EditCommentModal'
 export { DeleteCommentModal } from './DeleteCommentModal'
+export { ThreadReplies } from './ThreadReplies'
+export { MentionsDropdown } from './MentionsDropdown'
+export { HorizontalTimeline } from './HorizontalTimeline'
+export { useTimelineFilter } from './hooks/useTimelineFilter'
+export { useTimelineMilestones } from './hooks/useTimelineMilestones'
 export type {
   TimelineItem,
   TimelineItemType,
@@ -12,3 +17,4 @@ export type {
   TimelineFilterState,
   CommentFormData
 } from './types'
+export type { TimelineMilestone } from './HorizontalTimeline'
