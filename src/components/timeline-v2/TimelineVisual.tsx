@@ -1,9 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
 import { AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { TimelineHeader } from './TimelineHeader'
 import { ActivitiesGrid } from './ActivitiesGrid'
 import { ComposerBar } from './ComposerBar'
+import { EditCommentModal } from './EditCommentModal'
+import { DeleteCommentModal } from './DeleteCommentModal'
 import type {
   TimelineItem,
   TimelineAuthor,
@@ -77,6 +80,12 @@ export function TimelineVisual({
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [replyingTo, setReplyingTo] = useState<TimelineItem | null>(null)
+  
+  // Estados para modais de edição e exclusão
+  const [editingComment, setEditingComment] = useState<TimelineItem | null>(null)
+  const [deletingComment, setDeletingComment] = useState<TimelineItem | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const filteredItems = useTimelineFilter(items, filterState)
 
@@ -96,8 +105,7 @@ export function TimelineVisual({
   const handleEdit = useCallback(
     (item: TimelineItem) => {
       if (onUpdateComment) {
-        // Placeholder - será implementado na Parte 2
-        console.log('Edit item:', item.id)
+        setEditingComment(item)
       }
     },
     [onUpdateComment]
@@ -106,11 +114,50 @@ export function TimelineVisual({
   const handleDelete = useCallback(
     (item: TimelineItem) => {
       if (onDeleteComment) {
-        // Placeholder - será implementado na Parte 2
-        console.log('Delete item:', item.id)
+        setDeletingComment(item)
       }
     },
     [onDeleteComment]
+  )
+
+  // Handler para salvar edição de comentário
+  const handleEditComment = useCallback(
+    async (commentId: string, content: string) => {
+      if (!onUpdateComment) return
+      setIsUpdating(true)
+      try {
+        await onUpdateComment(commentId, content)
+        toast.success('Comentário atualizado')
+        setEditingComment(null)
+        onRefetch?.()
+      } catch (error) {
+        console.error('Erro ao atualizar comentário:', error)
+        toast.error('Erro ao atualizar comentário')
+      } finally {
+        setIsUpdating(false)
+      }
+    },
+    [onUpdateComment, onRefetch]
+  )
+
+  // Handler para confirmar exclusão de comentário
+  const handleDeleteComment = useCallback(
+    async (commentId: string) => {
+      if (!onDeleteComment) return
+      setIsDeleting(true)
+      try {
+        await onDeleteComment(commentId)
+        toast.success('Comentário excluído')
+        setDeletingComment(null)
+        onRefetch?.()
+      } catch (error) {
+        console.error('Erro ao excluir comentário:', error)
+        toast.error('Erro ao excluir comentário')
+      } finally {
+        setIsDeleting(false)
+      }
+    },
+    [onDeleteComment, onRefetch]
   )
 
   const handleReply = useCallback((item: TimelineItem) => {
@@ -167,6 +214,23 @@ export function TimelineVisual({
         availableUsers={availableUsers}
         replyingTo={replyingTo}
         onCancelReply={handleCancelReply}
+      />
+
+      {/* Modais de edição e exclusão */}
+      <EditCommentModal
+        open={!!editingComment}
+        onOpenChange={(open) => !open && setEditingComment(null)}
+        comment={editingComment}
+        onSave={handleEditComment}
+        isSaving={isUpdating}
+      />
+
+      <DeleteCommentModal
+        open={!!deletingComment}
+        onOpenChange={(open) => !open && setDeletingComment(null)}
+        comment={deletingComment}
+        onConfirm={handleDeleteComment}
+        isDeleting={isDeleting}
       />
     </div>
   )
