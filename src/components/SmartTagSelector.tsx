@@ -1,6 +1,7 @@
 import { useState, type MouseEvent } from "react"
-import { Check, Plus, Tag as TagIcon, Trash, PencilSimple } from "@phosphor-icons/react"
+import { Check, Plus, Tag as TagIcon, Trash, Pencil } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -146,23 +147,28 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                       key={tag.id}
                       value={tag.name}
                       onSelect={() => handleSelect(tag.id)}
-                      className="flex items-center justify-between group cursor-pointer px-3 py-2 rounded-md border transition-colors"
+                      className={cn(
+                        "flex items-center justify-between group cursor-pointer px-3 py-2 rounded-md border transition-colors",
+                        "hover:bg-muted"
+                      )}
                       style={{
-                        backgroundColor,
+                        backgroundColor: isSelected ? backgroundColor : undefined,
                         borderColor: tagColor,
                         color: textColor
                       }}
                     >
                       <div className="flex items-center gap-2">
                         <div
-                          className="flex items-center justify-center w-4 h-4 border rounded transition-colors"
+                          className={cn(
+                            "flex items-center justify-center w-4 h-4 border rounded transition-colors",
+                            isSelected && "bg-primary border-primary"
+                          )}
                           style={{
-                            borderColor: tagColor,
-                            backgroundColor: isSelected ? `${tagColor}33` : 'transparent',
-                            color: textColor
+                            borderColor: isSelected ? undefined : tagColor,
+                            backgroundColor: isSelected ? undefined : 'transparent'
                           }}
                         >
-                          {isSelected && <Check className="w-3 h-3" />}
+                          {isSelected && <Check className="w-3 h-3 text-white" />}
                         </div>
                         <Badge
                           variant="outline"
@@ -182,7 +188,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                           variant="ghost" size="icon" className="h-6 w-6"
                           onClick={(e) => { e.stopPropagation(); setEditingTag(tag.id); setEditName(tag.name); }}
                         >
-                          <PencilSimple className="h-3 w-3 text-muted-foreground" />
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
                         </Button>
                         <Button
                           variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"

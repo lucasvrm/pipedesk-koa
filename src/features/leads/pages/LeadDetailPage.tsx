@@ -481,7 +481,7 @@ export default function LeadDetailPage() {
           <div className="p-4 space-y-4">
             
             {/* 1. Badge da fase atual + Temperatura */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               {statusBadge}
               <LeadPriorityBadge
                 priorityBucket={lead.priorityBucket}
