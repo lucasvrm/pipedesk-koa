@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActivityCard } from './ActivityCard'
+import { cn } from '@/lib/utils'
 import type { TimelineItem } from './types'
 
 interface ActivitiesGridProps {
@@ -13,6 +14,7 @@ interface ActivitiesGridProps {
   onEdit?: (item: TimelineItem) => void
   onDelete?: (item: TimelineItem) => void
   onReply?: (item: TimelineItem) => void
+  className?: string
 }
 
 function LoadingSkeleton() {
@@ -40,7 +42,7 @@ function LoadingSkeleton() {
 
 export const ActivitiesGrid = forwardRef<HTMLDivElement, ActivitiesGridProps>(
   function ActivitiesGrid(
-    { items, isLoading, currentUserId, onEdit, onDelete, onReply },
+    { items, isLoading, currentUserId, onEdit, onDelete, onReply, className },
     ref
   ) {
     if (isLoading) {
@@ -60,8 +62,8 @@ export const ActivitiesGrid = forwardRef<HTMLDivElement, ActivitiesGridProps>(
     }
 
     return (
-      <ScrollArea className="flex-1">
-        <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+      <ScrollArea className={cn("flex-1 min-h-0", className)}>
+        <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 max-w-full">
           {items.map((item) => (
             <div key={item.id} data-item-id={item.id} className="transition-all">
               <ActivityCard

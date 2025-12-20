@@ -172,7 +172,7 @@ export function ActivityCard({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          className="h-7 px-2 text-xs text-muted-foreground hover:bg-primary hover:text-white"
           onClick={onReply}
         >
           <Reply className="h-3.5 w-3.5 mr-1.5" />
