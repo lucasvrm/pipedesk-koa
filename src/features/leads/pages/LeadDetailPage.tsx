@@ -564,7 +564,7 @@ export default function LeadDetailPage() {
       <main className="flex-1 flex gap-4 px-6 py-4 bg-slate-50 overflow-hidden min-h-0">
         
         {/* COLUNA 1 - Dados do Lead (343px fixed) */}
-        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border flex-shrink-0 flex flex-col overflow-hidden">
+        <aside className="w-[343px] min-w-[343px] min-h-0 bg-white rounded-lg border flex-shrink-0 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             
             {/* 1. Badge da fase atual + Temperatura */}
@@ -697,9 +697,9 @@ export default function LeadDetailPage() {
         </aside>
 
         {/* COLUNA 2 - Timeline & Contexto (flex-1) */}
-        <section className="flex-1 min-w-0 h-full bg-white rounded-lg border flex flex-col overflow-hidden">
+        <section className="flex-1 min-w-0 min-h-0 bg-white rounded-lg border flex flex-col overflow-hidden">
           
-          <Tabs defaultValue="contexto" className="flex flex-col h-full overflow-hidden">
+          <Tabs defaultValue="contexto" className="flex flex-col h-full min-h-0 overflow-hidden">
             
             {/* Header das Abas - padrão DealDetailPage */}
             <div className="p-4 pb-0">
@@ -904,7 +904,7 @@ export default function LeadDetailPage() {
         </section>
 
         {/* COLUNA 3 - Status & Próximas Ações */}
-        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border flex-shrink-0 flex flex-col overflow-hidden">
+        <aside className="w-[343px] min-w-[343px] min-h-0 bg-white rounded-lg border flex-shrink-0 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             
             {/* ===== SEÇÃO 1: STATUS/FASES ===== */}
