@@ -24,6 +24,8 @@ interface FilterOption {
   activeColor: string
 }
 
+const ALL_TYPES: TimelineItemType[] = ['comment', 'email', 'meeting', 'audit', 'system']
+
 const FILTER_OPTIONS: FilterOption[] = [
   {
     type: 'comment',
@@ -83,8 +85,16 @@ export function TimelineHeader({
     }
   }
 
-  const handleSelectAll = () => {
-    onFilterChange({ ...filterState, activeTypes: [] })
+  // Toggle "Todos": se todos estão selecionados, desmarca todos; senão, marca todos
+  const handleToggleAll = () => {
+    const allSelected = filterState.activeTypes.length === ALL_TYPES.length
+    if (allSelected) {
+      // Desmarcar todos
+      onFilterChange({ ...filterState, activeTypes: [] })
+    } else {
+      // Marcar todos
+      onFilterChange({ ...filterState, activeTypes: [...ALL_TYPES] })
+    }
   }
 
   const handleTypeToggle = (type: TimelineItemType) => {
@@ -100,7 +110,8 @@ export function TimelineHeader({
     onFilterChange({ ...filterState, activeTypes: newTypes })
   }
 
-  const isAllSelected = filterState.activeTypes.length === 0
+  // "Todos" está ativo quando TODOS os tipos estão selecionados
+  const isAllSelected = filterState.activeTypes.length === ALL_TYPES.length
   const hasSearchQuery = filterState.searchQuery.trim() !== ''
 
   return (
@@ -169,11 +180,11 @@ export function TimelineHeader({
         {/* Divider */}
         <div className="w-px h-5 bg-border" />
 
-        {/* "Todos" button */}
+        {/* "Todos" button - toggle all */}
         <Button
           variant="outline"
           size="sm"
-          onClick={handleSelectAll}
+          onClick={handleToggleAll}
           className={cn(
             "h-7 px-2.5 text-xs gap-1.5 transition-colors",
             isAllSelected
