@@ -42,9 +42,11 @@ import { ScheduleMeetingDialog } from '@/features/calendar/components/ScheduleMe
 import { useLeadsFiltersSearchParams } from '../hooks/useLeadsFiltersSearchParams'
 import { LeadsFilterPanel } from '../components/LeadsFilterPanel'
 import { LeadsFiltersSidebar } from '../components/LeadsFiltersSidebar'
+import { LeadsFiltersSidebarV2 } from '../components/v2/LeadsFiltersSidebarV2'
 import { LeadsListControls } from '../components/LeadsListControls'
 import { useIsMobile } from '@/hooks/use-mobile'
 import type { LeadOrderBy } from '../components/LeadsSmartFilters'
+import { FEATURE_FLAGS } from '@/config/featureFlags'
 
 // View types used internally
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
@@ -646,16 +648,29 @@ export default function LeadsListPage() {
       <div className="flex-1 min-h-0 flex gap-6 overflow-hidden items-stretch">
         {/* Desktop Sidebar - controlled by toggle, only on non-mobile */}
         {!isMobile && (
-          <LeadsFiltersSidebar
-            appliedFilters={appliedFilters}
-            actions={filterActions}
-            users={users}
-            leadStatuses={activeLeadStatuses}
-            leadOrigins={activeLeadOrigins}
-            availableTags={tags}
-            showNextActionFilter={currentView === 'sales'}
-            isOpen={isDesktopFiltersOpen}
-          />
+          FEATURE_FLAGS.USE_NEW_FILTERS_SIDEBAR ? (
+            <LeadsFiltersSidebarV2
+              appliedFilters={appliedFilters}
+              actions={filterActions}
+              users={users}
+              leadStatuses={activeLeadStatuses}
+              leadOrigins={activeLeadOrigins}
+              availableTags={tags}
+              showNextActionFilter={currentView === 'sales'}
+              isOpen={isDesktopFiltersOpen}
+            />
+          ) : (
+            <LeadsFiltersSidebar
+              appliedFilters={appliedFilters}
+              actions={filterActions}
+              users={users}
+              leadStatuses={activeLeadStatuses}
+              leadOrigins={activeLeadOrigins}
+              availableTags={tags}
+              showNextActionFilter={currentView === 'sales'}
+              isOpen={isDesktopFiltersOpen}
+            />
+          )
         )}
 
         {/* Main content area */}
