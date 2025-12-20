@@ -115,7 +115,7 @@ export function TimelineHeader({
   const hasSearchQuery = filterState.searchQuery.trim() !== ''
 
   return (
-    <div className="flex-shrink-0 border-b bg-muted/20 px-3 py-2">
+    <div className="flex-shrink-0 border-b bg-muted/20 px-3 py-3">
       <div className="flex items-center gap-2 flex-wrap">
         {/* Search button with popover */}
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
