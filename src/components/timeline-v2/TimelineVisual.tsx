@@ -186,24 +186,26 @@ export function TimelineVisual({
   return (
     <div className="flex flex-col h-full border rounded-lg bg-card shadow-sm overflow-hidden">
       {/* Horizontal Timeline (milestones) - só aparece se há filtros selecionados */}
-      {showHorizontalTimeline && filterState.activeTypes.length > 0 && filteredMilestones.length > 0 && (
+      <div className="flex-shrink-0 px-4 pt-4 pb-2 space-y-4">
+        {showHorizontalTimeline && filterState.activeTypes.length > 0 && filteredMilestones.length > 0 && (
+          <div className="flex-shrink-0">
+            <HorizontalTimeline
+              milestones={filteredMilestones}
+              onMilestoneClick={handleMilestoneClick}
+            />
+          </div>
+        )}
+
         <div className="flex-shrink-0">
-          <HorizontalTimeline
-            milestones={filteredMilestones}
-            onMilestoneClick={handleMilestoneClick}
+          <TimelineHeader
+            filterState={filterState}
+            onFilterChange={setFilterState}
+            itemsCount={filteredItems.length}
           />
         </div>
-      )}
-
-      <div className="flex-shrink-0">
-        <TimelineHeader
-          filterState={filterState}
-          onFilterChange={setFilterState}
-          itemsCount={filteredItems.length}
-        />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-2">
         <ActivitiesGrid
           ref={gridRef}
           items={filteredItems}

@@ -236,9 +236,23 @@ describe('LeadDetailQuickActions', () => {
         />
       )
       
-      expect(screen.getByText('Ações do Lead')).toBeInTheDocument()
+      expect(screen.getByText('Ações')).toBeInTheDocument()
       expect(screen.getByText('Gerenciar')).toBeInTheDocument()
       expect(screen.getByText('Organização')).toBeInTheDocument()
+    })
+
+    it('renders new kebab actions when handlers are provided', () => {
+      render(
+        <LeadDetailQuickActions
+          {...defaultProps}
+          onQualify={() => {}}
+          onAddTask={() => {}}
+          onAddContact={() => {}}
+        />
+      )
+
+      expect(screen.getByText('Adicionar Tarefa')).toBeInTheDocument()
+      expect(screen.getByText('Adicionar Contato')).toBeInTheDocument()
     })
   })
 })
