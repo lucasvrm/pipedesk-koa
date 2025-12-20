@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLead, useUpdateLead, useLeadContacts, addLeadMember, removeLeadMember, useDeleteLead } from '@/services/leadService'
@@ -100,28 +100,9 @@ const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: 
 const LEAD_STATUS_CODES: LeadStatus[] = ['new', 'contacted', 'qualified', 'disqualified']
 const toSemanticStatus = (code?: string): SemanticStatus =>
   LEAD_STATUS_CODES.includes(code as LeadStatus) ? leadStatusMap(code as LeadStatus) : 'neutral'
-// Layout offset calculation: global header (h-16 = 64px) + sticky topbar (~57px) = ~121px
-const HEADER_OFFSET_PX = 121
 
 export default function LeadDetailPage() {
   const { id } = useParams()
-
-  // Disable page scroll - each column has its own scroll
-  useEffect(() => {
-    // Save original styles
-    const originalOverflow = document.documentElement.style.overflow
-    const originalBodyOverflow = document.body.style.overflow
-    
-    // Disable scroll on html and body
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overflow = 'hidden'
-    
-    // Cleanup: restore original styles on unmount
-    return () => {
-      document.documentElement.style.overflow = originalOverflow
-      document.body.style.overflow = originalBodyOverflow
-    }
-  }, [])
 
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -534,7 +515,7 @@ export default function LeadDetailPage() {
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
-    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-[100dvh]">
+    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-full">
       {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
       <header className="flex items-center justify-between px-6 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <Breadcrumb>
@@ -560,7 +541,7 @@ export default function LeadDetailPage() {
         </div>
       </header>
 
-      {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
+      {/* Container das 3 Colunas - uses flex-1 to fill remaining space */}
       <main className="flex-1 flex gap-4 px-6 py-4 bg-slate-50 overflow-hidden min-h-0">
         
         {/* COLUNA 1 - Dados do Lead (343px fixed) */}
