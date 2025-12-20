@@ -144,10 +144,10 @@ export function LeadsFiltersContentV2({
   availableTags = [],
   showNextActionFilter = false
 }: LeadsFiltersContentV2Props) {
-  // Defensive: ensure arrays are valid
-  const safeUsers = ensureArray<User>(users)
-  const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
-  const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
+  // Defensive: ensure arrays are valid (memoized)
+  const safeUsers = useMemo(() => ensureArray<User>(users), [users])
+  const safeLeadStatuses = useMemo(() => ensureArray<OptionItem>(leadStatuses), [leadStatuses])
+  const safeLeadOrigins = useMemo(() => ensureArray<OptionItem>(leadOrigins), [leadOrigins])
 
   // Convert options to CheckboxOption format
   const statusOptions = useMemo<CheckboxOption[]>(() => 

@@ -105,12 +105,15 @@ export function LeadsFiltersSidebarV2({
     return count
   }, [draftFilters, showNextActionFilter])
 
+  // Helper for efficient array comparison (defined outside useMemo to avoid recreation)
+  const arraysEqual = useCallback((a: string[], b: string[]) => {
+    if (a.length !== b.length) return false
+    const setA = new Set(a)
+    return b.every(item => setA.has(item))
+  }, [])
+
   // Check if there are changes (draft differs from applied)
   const hasChanges = useMemo(() => {
-    // Compare arrays by sorting and joining
-    const arraysEqual = (a: string[], b: string[]) => 
-      a.length === b.length && [...a].sort().join(',') === [...b].sort().join(',')
-
     if (draftFilters.ownerMode !== appliedFilters.ownerMode) return true
     if (!arraysEqual(draftFilters.selectedOwners, appliedFilters.ownerIds)) return true
     if (!arraysEqual(draftFilters.priority, appliedFilters.priority)) return true
@@ -121,7 +124,7 @@ export function LeadsFiltersSidebarV2({
     if (!arraysEqual(draftFilters.nextActions, appliedFilters.nextAction)) return true
     if (draftFilters.orderBy !== appliedFilters.orderBy) return true
     return false
-  }, [draftFilters, appliedFilters])
+  }, [draftFilters, appliedFilters, arraysEqual])
 
   // Clear all draft filters
   const handleClearAll = useCallback(() => {
@@ -167,6 +170,10 @@ export function LeadsFiltersSidebarV2({
 
   // Compute visibility class based on isOpen
   const visibilityClass = isOpen ? 'hidden md:flex' : 'hidden'
+
+  // Button should be disabled when there are no changes to apply AND no filters are selected
+  // This allows users to click "Apply" even when just resetting filters (hasChanges from clearing)
+  const isApplyDisabled = !hasChanges && draftFiltersCount === 0
 
   return (
     <aside
@@ -218,7 +225,7 @@ export function LeadsFiltersSidebarV2({
         <Button
           className="w-full"
           onClick={handleApplyFilters}
-          disabled={!hasChanges && draftFiltersCount === 0}
+          disabled={isApplyDisabled}
           data-testid="v2-apply-filters-btn"
         >
           Aplicar filtros
