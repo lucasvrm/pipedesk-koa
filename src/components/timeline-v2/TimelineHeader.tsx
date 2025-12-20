@@ -1,8 +1,9 @@
-import { Search } from 'lucide-react'
+import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { TimelineFilterState } from './types'
+import { cn } from '@/lib/utils'
+import type { TimelineFilterState, TimelineItemType } from './types'
 
 interface TimelineHeaderProps {
   filterState: TimelineFilterState
@@ -10,17 +11,44 @@ interface TimelineHeaderProps {
   itemsCount: number
 }
 
-type FilterOption = TimelineFilterState['activeFilter']
-
-interface FilterButton {
-  value: FilterOption
+interface FilterOption {
+  type: TimelineItemType
   label: string
+  icon: React.ReactNode
+  activeColor: string
 }
 
-const filterButtons: FilterButton[] = [
-  { value: 'all', label: 'Tudo' },
-  { value: 'comment', label: 'Comentários' },
-  { value: 'system', label: 'Sistema' }
+const FILTER_OPTIONS: FilterOption[] = [
+  {
+    type: 'comment',
+    label: 'Comentários',
+    icon: <MessageSquare className="h-3.5 w-3.5" />,
+    activeColor: 'bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200'
+  },
+  {
+    type: 'email',
+    label: 'Emails',
+    icon: <Mail className="h-3.5 w-3.5" />,
+    activeColor: 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200'
+  },
+  {
+    type: 'meeting',
+    label: 'Reuniões',
+    icon: <Calendar className="h-3.5 w-3.5" />,
+    activeColor: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200'
+  },
+  {
+    type: 'audit',
+    label: 'Alterações',
+    icon: <GitCommit className="h-3.5 w-3.5" />,
+    activeColor: 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200'
+  },
+  {
+    type: 'system',
+    label: 'Sistema',
+    icon: <Zap className="h-3.5 w-3.5" />,
+    activeColor: 'bg-slate-200 text-slate-700 border-slate-400 hover:bg-slate-300'
+  }
 ]
 
 export function TimelineHeader({
@@ -28,53 +56,95 @@ export function TimelineHeader({
   onFilterChange,
   itemsCount
 }: TimelineHeaderProps) {
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({
-      ...filterState,
-      searchQuery: e.target.value
-    })
+  const handleSearchChange = (value: string) => {
+    onFilterChange({ ...filterState, searchQuery: value })
   }
 
-  const handleFilterClick = (filter: FilterOption) => {
-    onFilterChange({
-      ...filterState,
-      activeFilter: filter
-    })
+  const handleTypeToggle = (type: TimelineItemType) => {
+    const currentTypes = filterState.activeTypes
+    let newTypes: TimelineItemType[]
+
+    if (currentTypes.includes(type)) {
+      // Remove type
+      newTypes = currentTypes.filter(t => t !== type)
+    } else {
+      // Add type
+      newTypes = [...currentTypes, type]
+    }
+
+    onFilterChange({ ...filterState, activeTypes: newTypes })
   }
+
+  const handleClearFilters = () => {
+    onFilterChange({ searchQuery: '', activeTypes: [] })
+  }
+
+  const hasActiveFilters = filterState.activeTypes.length > 0 || filterState.searchQuery.trim() !== ''
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 border-b bg-muted/20">
-      {/* Search Input */}
-      <div className="relative flex-1 max-w-sm">
+    <div className="flex-shrink-0 border-b bg-muted/20 p-3 space-y-3">
+      {/* Search bar */}
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          type="text"
           placeholder="Buscar no histórico..."
           value={filterState.searchQuery}
-          onChange={handleSearchChange}
-          className="pl-9 h-9"
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="pl-9 h-9 text-sm"
         />
-      </div>
-
-      {/* Filter Chips */}
-      <div className="flex items-center gap-1 bg-background p-0.5 rounded-md border">
-        {filterButtons.map((btn) => (
+        {filterState.searchQuery && (
           <Button
-            key={btn.value}
-            variant={filterState.activeFilter === btn.value ? 'secondary' : 'ghost'}
+            variant="ghost"
             size="sm"
-            onClick={() => handleFilterClick(btn.value)}
-            className="h-7 text-xs px-3"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            onClick={() => handleSearchChange('')}
           >
-            {btn.label}
+            <X className="h-4 w-4" />
           </Button>
-        ))}
+        )}
       </div>
 
-      {/* Items Counter */}
-      <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">
-        {itemsCount} {itemsCount === 1 ? 'item' : 'itens'}
-      </Badge>
+      {/* Filter chips (multiselect) */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {FILTER_OPTIONS.map((option) => {
+          const isActive = filterState.activeTypes.includes(option.type)
+          return (
+            <Button
+              key={option.type}
+              variant="outline"
+              size="sm"
+              onClick={() => handleTypeToggle(option.type)}
+              className={cn(
+                "h-7 px-2.5 text-xs gap-1.5 transition-colors",
+                isActive
+                  ? option.activeColor
+                  : "bg-background hover:bg-muted"
+              )}
+            >
+              {option.icon}
+              {option.label}
+            </Button>
+          )
+        })}
+
+        {/* Clear all button */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearFilters}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Limpar
+          </Button>
+        )}
+
+        {/* Results count */}
+        <Badge variant="secondary" className="ml-auto text-xs">
+          {itemsCount} {itemsCount === 1 ? 'item' : 'itens'}
+        </Badge>
+      </div>
     </div>
   )
 }

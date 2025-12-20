@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -46,7 +46,7 @@ export function TimelineVisual({
 }: TimelineVisualProps) {
   const [filterState, setFilterState] = useState<TimelineFilterState>({
     searchQuery: '',
-    activeFilter: 'all'
+    activeTypes: []
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [replyingTo, setReplyingTo] = useState<TimelineItem | null>(null)
@@ -62,6 +62,15 @@ export function TimelineVisual({
 
   const { filteredItems } = useTimelineFilter(items, filterState)
   const milestones = useTimelineMilestones(items)
+
+  // Filter milestones based on current filter state
+  const filteredMilestones = useMemo(() => {
+    if (filterState.activeTypes.length === 0) {
+      // Se nenhum filtro selecionado, mostrar todos exceto system
+      return milestones.filter(m => m.type !== 'system')
+    }
+    return milestones.filter(m => filterState.activeTypes.includes(m.type))
+  }, [milestones, filterState.activeTypes])
 
   const handleCreateComment = useCallback(
     async (data: CommentFormData) => {
@@ -182,9 +191,9 @@ export function TimelineVisual({
   return (
     <div className="flex flex-col h-full border rounded-lg bg-card shadow-sm overflow-hidden">
       {/* Horizontal Timeline (milestones) */}
-      {showHorizontalTimeline && milestones.length > 0 && (
+      {showHorizontalTimeline && filteredMilestones.length > 0 && (
         <HorizontalTimeline
-          milestones={milestones}
+          milestones={filteredMilestones}
           onMilestoneClick={handleMilestoneClick}
         />
       )}

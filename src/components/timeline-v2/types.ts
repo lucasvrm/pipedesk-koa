@@ -15,7 +15,7 @@ export interface TimelineItem {
   date: string // ISO 8601
   metadata?: Record<string, unknown>
 
-  // Para threads (Parte 3)
+  // Para threads
   parentId?: string | null
   replies?: TimelineItem[]
 
@@ -26,7 +26,7 @@ export interface TimelineItem {
 
 export interface TimelineFilterState {
   searchQuery: string
-  activeFilter: 'all' | 'comment' | 'communication' | 'system'
+  activeTypes: TimelineItemType[] // Array para multiselect
 }
 
 export interface CommentFormData {

@@ -50,42 +50,42 @@ function getTypeConfig(type: TimelineItemType): TypeStyleConfig {
       return {
         icon: <MessageSquare className="h-4 w-4" />,
         label: 'comentário',
-        borderClass: 'border-blue-200 dark:border-blue-800/50',
-        bgClass: 'bg-blue-50/50 dark:bg-blue-950/20',
-        badgeClass: 'border-blue-300 text-blue-600 dark:text-blue-400'
+        borderClass: 'border-yellow-300 dark:border-yellow-700/50',
+        bgClass: 'bg-yellow-50 dark:bg-yellow-950/30',
+        badgeClass: 'border-yellow-400 text-yellow-700 dark:text-yellow-400'
       }
     case 'email':
       return {
         icon: <Mail className="h-4 w-4" />,
         label: 'email',
-        borderClass: 'border-cyan-200 dark:border-cyan-800/50',
-        bgClass: 'bg-cyan-50/50 dark:bg-cyan-950/20',
-        badgeClass: 'border-cyan-300 text-cyan-600 dark:text-cyan-400'
+        borderClass: 'border-blue-200 dark:border-blue-800/50',
+        bgClass: 'bg-blue-50/50 dark:bg-blue-950/20',
+        badgeClass: 'border-blue-300 text-blue-600 dark:text-blue-400'
       }
     case 'meeting':
       return {
         icon: <Calendar className="h-4 w-4" />,
         label: 'reunião',
-        borderClass: 'border-violet-200 dark:border-violet-800/50',
-        bgClass: 'bg-violet-50/50 dark:bg-violet-950/20',
-        badgeClass: 'border-violet-300 text-violet-600 dark:text-violet-400'
+        borderClass: 'border-red-200 dark:border-red-800/50',
+        bgClass: 'bg-red-50/50 dark:bg-red-950/20',
+        badgeClass: 'border-red-300 text-red-600 dark:text-red-400'
       }
     case 'audit':
       return {
         icon: <GitCommit className="h-4 w-4" />,
         label: 'alteração',
-        borderClass: 'border-orange-200 dark:border-orange-800/50',
-        bgClass: 'bg-orange-50/50 dark:bg-orange-950/20',
-        badgeClass: 'border-orange-300 text-orange-600 dark:text-orange-400'
+        borderClass: 'border-amber-200 dark:border-amber-800/50',
+        bgClass: 'bg-amber-50/50 dark:bg-amber-950/20',
+        badgeClass: 'border-amber-300 text-amber-600 dark:text-amber-400'
       }
     case 'system':
     default:
       return {
         icon: <Zap className="h-4 w-4" />,
         label: 'sistema',
-        borderClass: 'border-border',
-        bgClass: 'bg-muted/50',
-        badgeClass: 'border-muted-foreground/30 text-muted-foreground'
+        borderClass: 'border-slate-300 dark:border-slate-700',
+        bgClass: 'bg-slate-100/50 dark:bg-slate-800/30',
+        badgeClass: 'border-slate-400 text-slate-500 dark:text-slate-400'
       }
   }
 }

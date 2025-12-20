@@ -19,24 +19,24 @@ interface HorizontalTimelineProps {
 
 const TYPE_COLORS: Record<TimelineItemType, { bg: string; border: string; text: string }> = {
   comment: {
+    bg: 'bg-yellow-400',
+    border: 'border-yellow-500',
+    text: 'text-yellow-700'
+  },
+  email: {
     bg: 'bg-blue-500',
     border: 'border-blue-400',
     text: 'text-blue-600'
   },
-  email: {
-    bg: 'bg-cyan-500',
-    border: 'border-cyan-400',
-    text: 'text-cyan-600'
-  },
   meeting: {
-    bg: 'bg-violet-500',
-    border: 'border-violet-400',
-    text: 'text-violet-600'
+    bg: 'bg-red-500',
+    border: 'border-red-400',
+    text: 'text-red-600'
   },
   audit: {
-    bg: 'bg-orange-500',
-    border: 'border-orange-400',
-    text: 'text-orange-600'
+    bg: 'bg-amber-500',
+    border: 'border-amber-400',
+    text: 'text-amber-600'
   },
   system: {
     bg: 'bg-slate-400',
