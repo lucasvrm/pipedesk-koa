@@ -215,6 +215,15 @@ export default function LeadDetailPage() {
     return isOwner || isAdminOrManager
   }, [lead, profile])
 
+  // Callbacks that need to be defined before early returns
+  const handleAddTask = useCallback(() => {
+    toast.info('Funcionalidade de tarefas em breve')
+  }, [])
+
+  const handleOpenContactDialog = useCallback(() => {
+    setContactModalOpen(true)
+  }, [])
+
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
       addLeadMember({ leadId: id || '', userId, role }),
@@ -431,10 +440,6 @@ export default function LeadDetailPage() {
     }
   }
 
-  const handleAddTask = useCallback(() => {
-    toast.info('Funcionalidade de tarefas em breve')
-  }, [])
-
   const handleCreateContact = async () => {
     if (!profile || !newContact.name) {
       toast.error('Preencha o nome do contato')
@@ -453,10 +458,6 @@ export default function LeadDetailPage() {
       toast.error('Erro ao adicionar contato')
     }
   }
-
-  const handleOpenContactDialog = useCallback(() => {
-    setContactModalOpen(true)
-  }, [])
 
   const handleAddMember = async () => {
     if (!selectedMember) return toast.error('Selecione um membro')
