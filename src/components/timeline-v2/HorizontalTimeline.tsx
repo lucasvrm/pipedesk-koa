@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -17,32 +17,12 @@ interface HorizontalTimelineProps {
   onMilestoneClick?: (id: string) => void
 }
 
-const TYPE_COLORS: Record<TimelineItemType, { bg: string; border: string; text: string }> = {
-  comment: {
-    bg: 'bg-yellow-400',
-    border: 'border-yellow-500',
-    text: 'text-yellow-700'
-  },
-  email: {
-    bg: 'bg-blue-500',
-    border: 'border-blue-400',
-    text: 'text-blue-600'
-  },
-  meeting: {
-    bg: 'bg-red-500',
-    border: 'border-red-400',
-    text: 'text-red-600'
-  },
-  audit: {
-    bg: 'bg-amber-500',
-    border: 'border-amber-400',
-    text: 'text-amber-600'
-  },
-  system: {
-    bg: 'bg-slate-400',
-    border: 'border-slate-300',
-    text: 'text-slate-500'
-  }
+const TYPE_COLORS: Record<TimelineItemType, { dot: string; text: string }> = {
+  comment: { dot: 'bg-yellow-400', text: 'text-yellow-700' },
+  email: { dot: 'bg-blue-500', text: 'text-blue-600' },
+  meeting: { dot: 'bg-red-500', text: 'text-red-600' },
+  audit: { dot: 'bg-amber-500', text: 'text-amber-600' },
+  system: { dot: 'bg-slate-400', text: 'text-slate-500' }
 }
 
 export function HorizontalTimeline({
@@ -51,31 +31,31 @@ export function HorizontalTimeline({
 }: HorizontalTimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Sort milestones by date (oldest first for horizontal display)
+  // Sort milestones by date (oldest first)
   const sortedMilestones = useMemo(() => {
-    return [...milestones].sort((a, b) => 
+    return [...milestones].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     )
   }, [milestones])
 
-  // Identify current (most recent) milestone
-  const currentMilestoneId = useMemo(() => {
-    if (sortedMilestones.length === 0) return null
-    return sortedMilestones[sortedMilestones.length - 1].id
+  // Scroll to end (most recent) on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
+    }
   }, [sortedMilestones])
 
-  const handleClick = (id: string) => {
-    onMilestoneClick?.(id)
-  }
+  // Current milestone is the most recent
+  const currentMilestoneId = sortedMilestones[sortedMilestones.length - 1]?.id
 
   if (milestones.length === 0) return null
 
   return (
-    <div className="relative px-4 py-4 border-b bg-muted/20 flex-shrink-0">
-      {/* Scroll container */}
+    <div className="border-b bg-muted/20 flex-shrink-0 h-[72px]">
+      {/* Horizontal scroll container - MUST be single line */}
       <div
         ref={scrollRef}
-        className="flex items-center gap-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent pb-1"
+        className="h-full flex flex-row items-center px-4 gap-0 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
       >
         {sortedMilestones.map((milestone, index) => {
           const colors = TYPE_COLORS[milestone.type] || TYPE_COLORS.system
@@ -85,46 +65,45 @@ export function HorizontalTimeline({
           return (
             <div
               key={milestone.id}
-              className="flex items-center flex-shrink-0"
+              className="flex flex-row items-center flex-shrink-0 h-full"
             >
-              {/* Milestone node */}
+              {/* Milestone button */}
               <button
                 type="button"
-                onClick={() => handleClick(milestone.id)}
+                onClick={() => onMilestoneClick?.(milestone.id)}
                 className={cn(
-                  "relative flex flex-col items-center min-w-[80px] px-1 group",
+                  "flex flex-col items-center justify-center h-full px-2 rounded hover:bg-muted/50 transition-colors",
                   onMilestoneClick && "cursor-pointer"
                 )}
+                style={{ minWidth: '72px', maxWidth: '88px' }}
               >
                 {/* Dot */}
                 <div
                   className={cn(
-                    "w-3 h-3 rounded-full transition-transform group-hover:scale-125",
-                    colors.bg,
-                    isCurrent && "ring-2 ring-offset-2 ring-primary scale-110",
+                    "w-3 h-3 rounded-full flex-shrink-0",
+                    colors.dot,
+                    isCurrent && "ring-2 ring-offset-1 ring-primary",
                     milestone.isImportant && "ring-2 ring-offset-1 ring-amber-400"
                   )}
                 />
-
                 {/* Label */}
                 <span
                   className={cn(
-                    "mt-1.5 text-[10px] font-medium truncate max-w-[70px] text-center",
+                    "mt-1 text-[10px] font-medium leading-tight text-center truncate w-full",
                     isCurrent ? "text-foreground font-semibold" : colors.text
                   )}
                 >
                   {milestone.label}
                 </span>
-
                 {/* Date */}
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-[9px] text-muted-foreground leading-tight">
                   {format(new Date(milestone.date), 'dd/MM', { locale: ptBR })}
                 </span>
               </button>
 
               {/* Connector line */}
               {!isLast && (
-                <div className="w-8 h-0.5 bg-border flex-shrink-0 mx-1" />
+                <div className="w-6 h-0.5 bg-border flex-shrink-0" />
               )}
             </div>
           )

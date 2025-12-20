@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLead, useUpdateLead, useLeadContacts, addLeadMember, removeLeadMember, useDeleteLead } from '@/services/leadService'
@@ -105,6 +105,24 @@ const HEADER_OFFSET_PX = 121
 
 export default function LeadDetailPage() {
   const { id } = useParams()
+
+  // Disable page scroll - each column has its own scroll
+  useEffect(() => {
+    // Save original styles
+    const originalOverflow = document.documentElement.style.overflow
+    const originalBodyOverflow = document.body.style.overflow
+    
+    // Disable scroll on html and body
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    
+    // Cleanup: restore original styles on unmount
+    return () => {
+      document.documentElement.style.overflow = originalOverflow
+      document.body.style.overflow = originalBodyOverflow
+    }
+  }, [])
+
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile, user } = useAuth()
@@ -516,7 +534,7 @@ export default function LeadDetailPage() {
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
-    <PageContainer className="p-0 space-y-0">
+    <PageContainer className="p-0 space-y-0 overflow-hidden h-screen">
       {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
       <header className="flex items-center justify-between px-6 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40">
         <Breadcrumb>
