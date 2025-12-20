@@ -71,11 +71,11 @@ export function HorizontalTimeline({
   if (milestones.length === 0) return null
 
   return (
-    <div className="relative px-4 py-3 border-b bg-muted/20 overflow-hidden min-h-[56px]">
+    <div className="relative px-4 py-3 border-b bg-muted/20 flex-shrink-0">
       {/* Scroll container */}
       <div
         ref={scrollRef}
-        className="flex items-center gap-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent pb-2 max-w-full"
+        className="flex items-center gap-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent pb-1"
       >
         {sortedMilestones.map((milestone, index) => {
           const colors = TYPE_COLORS[milestone.type] || TYPE_COLORS.system
@@ -85,7 +85,7 @@ export function HorizontalTimeline({
           return (
             <div
               key={milestone.id}
-              className="flex items-center flex-shrink-0 max-w-[100px]"
+              className="flex items-center flex-shrink-0"
             >
               {/* Milestone node */}
               <button

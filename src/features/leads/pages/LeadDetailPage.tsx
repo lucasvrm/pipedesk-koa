@@ -543,10 +543,10 @@ export default function LeadDetailPage() {
       </header>
 
       {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
-      <main className={`flex gap-4 px-6 py-4 min-h-[calc(100vh-${HEADER_OFFSET_PX}px)] bg-slate-50`}>
+      <main className="flex gap-4 px-6 py-4 h-[calc(100vh-121px)] bg-slate-50 overflow-hidden">
         
         {/* COLUNA 1 - Dados do Lead (343px fixed) */}
-        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border overflow-y-auto">
+        <aside className="w-[343px] min-w-[343px] h-full bg-white rounded-lg border overflow-y-auto flex-shrink-0">
           <div className="p-4 space-y-4">
             
             {/* 1. Badge da fase atual + Temperatura */}
@@ -679,7 +679,7 @@ export default function LeadDetailPage() {
         </aside>
 
         {/* COLUNA 2 - Timeline & Contexto (flex-1) */}
-        <section className="flex-1 bg-white rounded-lg border overflow-hidden flex flex-col">
+        <section className="flex-1 min-w-0 h-full bg-white rounded-lg border overflow-hidden flex flex-col">
           
           <Tabs defaultValue="contexto" className="flex flex-col h-full">
             
@@ -699,10 +699,10 @@ export default function LeadDetailPage() {
             </div>
 
             {/* Conteúdo das Abas */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-hidden">
               
               {/* Aba Contexto - Timeline completa */}
-              <TabsContent value="contexto" className="h-full m-0 p-4">
+              <TabsContent value="contexto" className="h-full m-0 p-4 flex flex-col overflow-hidden">
                 <TimelineVisual
                   entityId={lead.id}
                   entityType="lead"
@@ -886,7 +886,7 @@ export default function LeadDetailPage() {
         </section>
 
         {/* COLUNA 3 - Status & Próximas Ações */}
-        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border overflow-y-auto">
+        <aside className="w-[343px] min-w-[343px] h-full bg-white rounded-lg border overflow-y-auto flex-shrink-0">
           <div className="p-4 space-y-6">
             
             {/* ===== SEÇÃO 1: STATUS/FASES ===== */}
