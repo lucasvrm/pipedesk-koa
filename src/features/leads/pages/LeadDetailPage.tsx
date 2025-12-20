@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
@@ -69,6 +70,7 @@ import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
 const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: string }> = {
@@ -101,6 +103,14 @@ const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: 
 const LEAD_STATUS_CODES: LeadStatus[] = ['new', 'contacted', 'qualified', 'disqualified']
 const toSemanticStatus = (code?: string): SemanticStatus =>
   LEAD_STATUS_CODES.includes(code as LeadStatus) ? leadStatusMap(code as LeadStatus) : 'neutral'
+
+const getInitials = (name?: string | null) => {
+  if (!name) return ''
+  const parts = name.trim().split(' ').filter(Boolean)
+  if (!parts.length) return ''
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+}
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -377,6 +387,11 @@ export default function LeadDetailPage() {
   const safePrimaryContactName = safeStringOptional(primaryContact?.name)
   const safePrimaryContactPhone = safeStringOptional(primaryContact?.phone)
   const safePrimaryContactEmail = safeStringOptional(primaryContact?.email)
+  const ownerName = safeStringOptional(lead.owner?.name)
+  const ownerAvatarUrl =
+    (lead.owner as { avatar_url?: string; avatar?: string } | undefined)?.avatar_url ??
+    (lead.owner as { avatar?: string } | undefined)?.avatar
+  const ownerInitials = ownerName ? getInitials(ownerName) : '?'
 
   const handleStatusChange = async (value: string) => { // value is ID now
     if (!lead) return
@@ -416,6 +431,10 @@ export default function LeadDetailPage() {
     }
   }
 
+  const handleAddTask = useCallback(() => {
+    toast.info('Funcionalidade de tarefas em breve')
+  }, [])
+
   const handleCreateContact = async () => {
     if (!profile || !newContact.name) {
       toast.error('Preencha o nome do contato')
@@ -434,6 +453,10 @@ export default function LeadDetailPage() {
       toast.error('Erro ao adicionar contato')
     }
   }
+
+  const handleOpenContactDialog = useCallback(() => {
+    setContactModalOpen(true)
+  }, [])
 
   const handleAddMember = async () => {
     if (!selectedMember) return toast.error('Selecione um membro')
@@ -551,9 +574,11 @@ export default function LeadDetailPage() {
             primaryContact={primaryContact}
             onQualify={() => setQualifyOpen(true)}
             onEdit={() => setEditOpen(true)}
+            onAddContact={handleOpenContactDialog}
             onAddMember={() => setMemberModalOpen(true)}
             onChangeOwner={() => setChangeOwnerOpen(true)}
             onManageTags={() => setTagManagerOpen(true)}
+            onAddTask={handleAddTask}
             onDelete={() => setDeleteOpen(true)}
             canChangeOwner={canChangeOwner}
           />
@@ -570,11 +595,39 @@ export default function LeadDetailPage() {
             {/* 1. Badge da fase atual + Temperatura */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               {statusBadge}
-              <LeadPriorityBadge
-                priorityBucket={computedPriority.bucket}
-                priorityScore={computedPriority.score}
-                priorityDescription={computedPriority.description}
-              />
+              <div className="flex items-center gap-2">
+                <LeadPriorityBadge
+                  priorityBucket={computedPriority.bucket}
+                  priorityScore={computedPriority.score}
+                  priorityDescription={computedPriority.description}
+                />
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Avatar
+                          className="h-9 w-9 border"
+                          aria-label={ownerName ? `Responsável: ${ownerName}` : 'Responsável não atribuído'}
+                        >
+                          {ownerAvatarUrl ? (
+                            <AvatarImage src={ownerAvatarUrl} alt={ownerName ?? 'Responsável'} />
+                          ) : (
+                            <AvatarFallback className={ownerName
+                              ? 'bg-primary/10 text-primary-700 dark:text-primary-300'
+                              : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+                            }>
+                              {ownerName ? ownerInitials : '?'}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{ownerName ?? 'Responsável não atribuído'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
 
             {/* 2. Título do Lead */}
@@ -625,12 +678,6 @@ export default function LeadDetailPage() {
               <div>
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Cidade/UF</label>
                 <p className="text-sm text-slate-900 mt-0.5">{cityState || '-'}</p>
-              </div>
-
-              {/* Responsável */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Responsável</label>
-                <p className="text-sm text-slate-900 mt-0.5">{lead.owner?.name || 'Não atribuído'}</p>
               </div>
 
               {/* Data de criação */}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CheckCircle, Pencil, UserPlus, UserCheck, Tags, Trash2 } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CheckCircle, Pencil, CalendarPlus, Plus, Users, ArrowLeftRight, Tag, Trash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -37,6 +37,8 @@ interface LeadDetailQuickActionsProps {
   onAddMember?: () => void
   onChangeOwner?: () => void
   onManageTags?: () => void
+  onAddContact?: () => void
+  onAddTask?: () => void
   onDelete?: () => void
   // Permission for change owner
   canChangeOwner?: boolean
@@ -59,9 +61,11 @@ export function LeadDetailQuickActions({
   onScheduleClick,
   onQualify,
   onEdit,
+  onAddContact,
   onAddMember,
   onChangeOwner,
   onManageTags,
+  onAddTask,
   onDelete,
   canChangeOwner = false,
 }: LeadDetailQuickActionsProps) {
@@ -235,7 +239,7 @@ export function LeadDetailQuickActions({
       <div className="flex flex-wrap gap-2">
         {/* Kebab Menu - Dropdown de ações secundárias */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+         <DropdownMenuTrigger asChild>
             <span className="inline-flex">
               <Button
                 variant="outline"
@@ -250,11 +254,17 @@ export function LeadDetailQuickActions({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48">
             {/* Ações do Lead */}
-            <DropdownMenuLabel>Ações do Lead</DropdownMenuLabel>
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
             {onQualify && (
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQualify() }}>
                 <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
                 Qualificar
+              </DropdownMenuItem>
+            )}
+            {onAddTask && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddTask() }}>
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                Adicionar Tarefa
               </DropdownMenuItem>
             )}
             {onEdit && (
@@ -267,9 +277,15 @@ export function LeadDetailQuickActions({
             {/* Gerenciar */}
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Gerenciar</DropdownMenuLabel>
+            {onAddContact && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddContact() }}>
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Contato
+              </DropdownMenuItem>
+            )}
             {onAddMember && (
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddMember() }}>
-                <UserPlus className="mr-2 h-4 w-4" />
+                <Users className="mr-2 h-4 w-4" />
                 Adicionar Membro
               </DropdownMenuItem>
             )}
@@ -278,7 +294,7 @@ export function LeadDetailQuickActions({
                 onClick={(e) => { e.stopPropagation(); onChangeOwner() }}
                 disabled={!canChangeOwner}
               >
-                <UserCheck className="mr-2 h-4 w-4" />
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
                 Alterar Responsável
               </DropdownMenuItem>
             )}
@@ -288,7 +304,7 @@ export function LeadDetailQuickActions({
             <DropdownMenuLabel>Organização</DropdownMenuLabel>
             {onManageTags && (
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onManageTags() }}>
-                <Tags className="mr-2 h-4 w-4" />
+                <Tag className="mr-2 h-4 w-4" />
                 Gerenciar Tags
               </DropdownMenuItem>
             )}
@@ -297,9 +313,9 @@ export function LeadDetailQuickActions({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={(e) => { e.stopPropagation(); onDelete() }}
-                  className="text-destructive focus:text-destructive"
+                  className="text-amber-600 hover:text-amber-700 focus:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-red-900/20"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash className="mr-2 h-4 w-4" />
                   Excluir Lead
                 </DropdownMenuItem>
               </>

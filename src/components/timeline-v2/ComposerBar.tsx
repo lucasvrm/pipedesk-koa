@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Send, X } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -25,8 +25,15 @@ export function ComposerBar({
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 })
   const [showMentions, setShowMentions] = useState(false)
   const [selectedMentions, setSelectedMentions] = useState<string[]>([])
+  const [isExpanded, setIsExpanded] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (replyingTo) {
+      setIsExpanded(true)
+    }
+  }, [replyingTo])
 
   // Calculate dropdown position based on textarea cursor
   const calculateMentionPosition = useCallback(() => {
@@ -118,6 +125,23 @@ export function ComposerBar({
   )
 
   const isDisabled = !content.trim() || isSubmitting
+  const placeholder = isExpanded ? 'Escreva um comentário... Use @ para mencionar' : 'Escreva um comentário...'
+
+  const handleFocus = useCallback(() => {
+    setIsExpanded(true)
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      if (showMentions) return
+      const isInside = containerRef.current?.contains(document.activeElement) ?? false
+      if (!isInside && !content.trim() && !replyingTo) {
+        setIsExpanded(false)
+        setShowMentions(false)
+        setMentionSearch('')
+      }
+    }, 0)
+  }, [content, replyingTo, showMentions])
 
   return (
     <div ref={containerRef} className="relative p-4 border-t bg-background">
@@ -144,38 +168,44 @@ export function ComposerBar({
         searchQuery={mentionSearch}
         onSelect={handleSelectMention}
         position={mentionPosition}
-        isOpen={showMentions}
+        isOpen={isExpanded && showMentions}
         onClose={handleCloseMentions}
       />
 
-      <div className="flex gap-2">
+      <div className={isExpanded ? 'flex gap-2' : 'flex'}>
         <Textarea
           ref={textareaRef}
-          placeholder="Escreva um comentário... Use @ para mencionar"
+          placeholder={placeholder}
           value={content}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          className="min-h-[80px] resize-none text-sm"
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className={`resize-none text-sm ${isExpanded ? 'min-h-[80px]' : 'h-10 min-h-[40px]'}`}
           disabled={isSubmitting}
         />
-        <div className="flex flex-col justify-end">
-          <Button
-            size="icon"
-            onClick={handleSubmit}
-            disabled={isDisabled}
-            className="h-9 w-9"
-          >
-            {isSubmitting ? (
-              <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        {isExpanded && (
+          <div className="flex flex-col justify-end">
+            <Button
+              size="icon"
+              onClick={handleSubmit}
+              disabled={isDisabled}
+              className="h-9 w-9"
+            >
+              {isSubmitting ? (
+                <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        )}
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">
-        Ctrl+Enter para enviar · @ para mencionar
-      </p>
+      {isExpanded && (
+        <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">
+          Ctrl+Enter para enviar · @ para mencionar
+        </p>
+      )}
     </div>
   )
 }
