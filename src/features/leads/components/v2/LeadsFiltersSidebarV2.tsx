@@ -177,7 +177,7 @@ export function LeadsFiltersSidebarV2({
 
   return (
     <aside
-      className={`${visibilityClass} flex-col w-[280px] shrink-0 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden`}
+      className={`${visibilityClass} flex-col w-[280px] shrink-0 h-full max-h-full border rounded-xl bg-card shadow-sm overflow-hidden`}
       data-testid="leads-filters-sidebar-v2"
     >
       {/* Header sticky */}
@@ -208,7 +208,7 @@ export function LeadsFiltersSidebarV2({
       </div>
 
       {/* Scrollable content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <LeadsFiltersContentV2
           draftFilters={draftFilters}
           setDraftFilters={setDraftFilters}

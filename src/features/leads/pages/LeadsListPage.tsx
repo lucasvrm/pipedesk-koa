@@ -849,27 +849,7 @@ export default function LeadsListPage() {
           )}
         </div>
 
-        {/* Bottom Controls Bar - after content, same as top bar */}
-        <LeadsListControls
-          position="bottom"
-          currentView={currentView}
-          onViewChange={handleViewChange}
-          activeFiltersCount={activeFiltersCount}
-          onOpenFilterPanel={handleToggleFilters}
-          isFiltersOpen={isFiltersOpen}
-          selectedIds={selectedIds}
-          onBulkDelete={() => setIsBulkDeleteOpen(true)}
-          onCreateLead={() => setIsCreateOpen(true)}
-          totalLeads={totalLeads}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={handleItemsPerPageChange}
-          showPagination={showPagination}
-          startItem={startItem}
-          endItem={endItem}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Plus, LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
+import { cn } from '@/lib/utils'
 
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
 
@@ -91,7 +92,10 @@ export function LeadsListControls({
           <Button
             variant={isFiltersOpen ? 'default' : activeFiltersCount > 0 ? 'secondary' : 'outline'}
             size="sm"
-            className="h-9 gap-2"
+            className={cn(
+              "h-9 gap-2",
+              isFiltersOpen && "bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
             onClick={onOpenFilterPanel}
             aria-pressed={isFiltersOpen}
             data-testid={`filter-panel-trigger${testIdSuffix}`}

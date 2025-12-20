@@ -36,7 +36,16 @@ type CollapsedSections = {
  * ```
  */
 export function useFilterSectionsState() {
-  const [collapsed, setCollapsed] = useLocalStorage<CollapsedSections>(STORAGE_KEY, {})
+  const [collapsed, setCollapsed] = useLocalStorage<CollapsedSections>(STORAGE_KEY, {
+    prioridade: true,
+    status: true,
+    acao: true,
+    dias: true,
+    responsavel: true,
+    origem: true,
+    tags: true,
+    orderBy: true
+  })
 
   const toggleSection = useCallback((section: FilterSectionKey) => {
     setCollapsed(prev => ({ ...prev, [section]: !prev[section] }))
