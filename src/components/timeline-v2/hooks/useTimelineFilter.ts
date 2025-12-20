@@ -3,19 +3,27 @@ import type { TimelineItem, TimelineFilterState } from '../types'
 
 /**
  * Filters timeline items based on search query and selected types.
- * activeTypes is an array - if empty, shows all items.
+ * 
+ * Lógica:
+ * - activeTypes vazio ([]) = mostra NENHUM item (timeline vazia)
+ * - activeTypes com valores = mostra apenas os tipos selecionados
  */
 export function useTimelineFilter(
   items: TimelineItem[],
   filterState: TimelineFilterState
 ) {
   const filteredItems = useMemo(() => {
+    // Se nenhum tipo selecionado, retorna array vazio
+    if (filterState.activeTypes.length === 0) {
+      return []
+    }
+
     let result = items
 
     // Filter by type (multiselect)
-    if (filterState.activeTypes.length > 0) {
-      result = result.filter(item => filterState.activeTypes.includes(item.type))
-    }
+    result = result.filter(item => 
+      filterState.activeTypes.includes(item.type)
+    )
 
     // Filter by search query
     if (filterState.searchQuery.trim()) {

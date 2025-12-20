@@ -534,7 +534,7 @@ export default function LeadDetailPage() {
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
-    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-screen">
+    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-[100dvh]">
       {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
       <header className="flex items-center justify-between px-6 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <Breadcrumb>
@@ -561,11 +561,11 @@ export default function LeadDetailPage() {
       </header>
 
       {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
-      <main className="flex-1 flex gap-4 px-6 py-4 bg-slate-50 overflow-hidden">
+      <main className="flex-1 flex gap-4 px-6 py-4 bg-slate-50 overflow-hidden min-h-0">
         
         {/* COLUNA 1 - Dados do Lead (343px fixed) */}
-        <aside className="w-[343px] min-w-[343px] h-full bg-white rounded-lg border overflow-y-auto flex-shrink-0 sticky top-0">
-          <div className="p-4 space-y-4">
+        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border flex-shrink-0 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             
             {/* 1. Badge da fase atual + Temperatura */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -904,8 +904,8 @@ export default function LeadDetailPage() {
         </section>
 
         {/* COLUNA 3 - Status & Próximas Ações */}
-        <aside className="w-[343px] min-w-[343px] h-full bg-white rounded-lg border overflow-y-auto flex-shrink-0 sticky top-0">
-          <div className="p-4 space-y-6">
+        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border flex-shrink-0 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
             
             {/* ===== SEÇÃO 1: STATUS/FASES ===== */}
             <div>

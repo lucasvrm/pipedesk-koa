@@ -115,7 +115,7 @@ function ReplyCard({ reply, currentUserId, onEdit, onDelete }: ReplyCardProps) {
   }
 
   return (
-    <div className="rounded-md border border-muted/50 bg-muted/20 p-3 transition-all hover:bg-muted/30">
+    <div className="group rounded-md border border-muted/50 bg-muted/20 p-3 transition-all hover:bg-muted/30">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
