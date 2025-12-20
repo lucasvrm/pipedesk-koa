@@ -71,7 +71,7 @@ export function HorizontalTimeline({
   if (milestones.length === 0) return null
 
   return (
-    <div className="relative px-4 py-3 border-b bg-muted/20 flex-shrink-0">
+    <div className="relative px-4 py-4 border-b bg-muted/20 flex-shrink-0">
       {/* Scroll container */}
       <div
         ref={scrollRef}
@@ -92,7 +92,7 @@ export function HorizontalTimeline({
                 type="button"
                 onClick={() => handleClick(milestone.id)}
                 className={cn(
-                  "relative flex flex-col items-center min-w-[72px] group",
+                  "relative flex flex-col items-center min-w-[80px] px-1 group",
                   onMilestoneClick && "cursor-pointer"
                 )}
               >
