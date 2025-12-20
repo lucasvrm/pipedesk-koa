@@ -550,7 +550,7 @@ export default function LeadDetailPage() {
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
-    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-full">
+    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-[100dvh]">
       {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
       <header className="flex items-center justify-between px-6 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <Breadcrumb>

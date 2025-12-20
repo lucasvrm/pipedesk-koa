@@ -124,14 +124,13 @@ export function ComposerBar({
     [handleSubmit, showMentions]
   )
 
-  const isDisabled = !content.trim() || isSubmitting
-  const placeholder = isExpanded ? 'Escreva um comentário... Use @ para mencionar' : 'Escreva um comentário...'
-
+  // Safe handlers for expansion - never call setIsExpanded directly in render
   const handleFocus = useCallback(() => {
     setIsExpanded(true)
   }, [])
 
   const handleBlur = useCallback(() => {
+    // Delay to allow clicks on buttons before collapsing
     setTimeout(() => {
       if (showMentions) return
       const isInside = containerRef.current?.contains(document.activeElement) ?? false
@@ -140,11 +139,13 @@ export function ComposerBar({
         setShowMentions(false)
         setMentionSearch('')
       }
-    }, 0)
+    }, 150)
   }, [content, replyingTo, showMentions])
 
+  const placeholder = isExpanded ? 'Escreva um comentário... Use @ para mencionar' : 'Escreva um comentário...'
+
   return (
-    <div ref={containerRef} className="relative p-4 border-t bg-background">
+    <div ref={containerRef} className="relative p-4 border-t bg-background transition-all">
       {/* Replying indicator */}
       {replyingTo && (
         <div className="flex items-center justify-between mb-2 px-2 py-1.5 bg-muted/50 rounded-md text-xs text-muted-foreground">
@@ -172,7 +173,7 @@ export function ComposerBar({
         onClose={handleCloseMentions}
       />
 
-      <div className={isExpanded ? 'flex gap-2' : 'flex'}>
+      <div className={`flex gap-2 ${isExpanded ? 'items-end' : 'items-center'}`}>
         <Textarea
           ref={textareaRef}
           placeholder={placeholder}
@@ -181,24 +182,22 @@ export function ComposerBar({
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className={`resize-none text-sm ${isExpanded ? 'min-h-[80px]' : 'h-10 min-h-[40px]'}`}
+          className={`resize-none text-sm transition-all ${isExpanded ? 'min-h-[80px]' : 'h-10 min-h-[40px] py-2'}`}
           disabled={isSubmitting}
         />
         {isExpanded && (
-          <div className="flex flex-col justify-end">
-            <Button
-              size="icon"
-              onClick={handleSubmit}
-              disabled={isDisabled}
-              className="h-9 w-9"
-            >
-              {isSubmitting ? (
-                <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+          <Button
+            size="icon"
+            onClick={handleSubmit}
+            disabled={!content.trim() || isSubmitting}
+            className="h-9 w-9"
+          >
+            {isSubmitting ? (
+              <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
         )}
       </div>
       {isExpanded && (
