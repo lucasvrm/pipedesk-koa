@@ -90,11 +90,15 @@ export function LeadsListControls({
         <div className="flex items-center gap-2">
           {/* Filter button */}
           <Button
-            variant={isFiltersOpen ? 'default' : activeFiltersCount > 0 ? 'secondary' : 'outline'}
+            variant="outline"
             size="sm"
             className={cn(
               "h-9 gap-2",
-              isFiltersOpen && "bg-primary text-primary-foreground hover:bg-primary/90"
+              isFiltersOpen 
+                ? "bg-blue-600 text-white hover:bg-blue-700 border-blue-600" 
+                : activeFiltersCount > 0 
+                  ? "bg-secondary" 
+                  : ""
             )}
             onClick={onOpenFilterPanel}
             aria-pressed={isFiltersOpen}

@@ -157,7 +157,7 @@ export function LeadsFiltersSidebar({
 
   return (
     <aside
-      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden`}
+      className={`${visibilityClass} flex-col w-[320px] lg:w-[360px] shrink-0 h-[calc(100vh-8rem)] max-h-[calc(100vh-8rem)] border rounded-xl bg-card shadow-sm overflow-hidden sticky top-6`}
       data-testid="leads-filters-sidebar"
     >
       {/* Body - Scrollable with native scroll */}
