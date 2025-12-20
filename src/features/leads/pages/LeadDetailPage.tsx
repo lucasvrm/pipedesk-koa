@@ -70,27 +70,27 @@ const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: 
   success: {
     bg: 'bg-green-50 border border-green-200',
     dot: 'bg-green-600 border-green-600',
-    text: 'text-green-900'
+    text: 'text-green-700'
   },
   warning: {
     bg: 'bg-amber-50 border border-amber-200',
     dot: 'bg-amber-600 border-amber-600',
-    text: 'text-amber-900'
+    text: 'text-amber-700'
   },
   error: {
     bg: 'bg-red-50 border border-red-200',
     dot: 'bg-red-600 border-red-600',
-    text: 'text-red-900'
+    text: 'text-red-700'
   },
   info: {
     bg: 'bg-blue-50 border border-blue-200',
     dot: 'bg-blue-600 border-blue-600',
-    text: 'text-blue-900'
+    text: 'text-blue-700'
   },
   neutral: {
     bg: 'bg-slate-50 border border-slate-200',
     dot: 'bg-slate-600 border-slate-600',
-    text: 'text-slate-900'
+    text: 'text-slate-700'
   }
 }
 const LEAD_STATUS_CODES: LeadStatus[] = ['new', 'contacted', 'qualified', 'disqualified']
