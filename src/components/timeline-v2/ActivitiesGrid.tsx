@@ -1,6 +1,5 @@
 import { forwardRef } from 'react'
 import { MessageSquare } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActivityCard } from './ActivityCard'
@@ -62,23 +61,21 @@ export const ActivitiesGrid = forwardRef<HTMLDivElement, ActivitiesGridProps>(
     }
 
     return (
-      <ScrollArea className={cn("flex-1 min-h-0", className)}>
-        <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 max-w-full">
-          {items.map((item) => (
-            <div key={item.id} data-item-id={item.id} className="transition-all">
-              <ActivityCard
-                item={item}
-                currentUserId={currentUserId}
-                onEdit={onEdit ? () => onEdit(item) : undefined}
-                onDelete={onDelete ? () => onDelete(item) : undefined}
-                onReply={onReply ? () => onReply(item) : undefined}
-                onEditReply={onEdit}
-                onDeleteReply={onDelete}
-              />
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+      <div ref={ref} className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 p-4 h-full", className)}>
+        {items.map((item) => (
+          <div key={item.id} data-item-id={item.id} className="transition-all">
+            <ActivityCard
+              item={item}
+              currentUserId={currentUserId}
+              onEdit={onEdit ? () => onEdit(item) : undefined}
+              onDelete={onDelete ? () => onDelete(item) : undefined}
+              onReply={onReply ? () => onReply(item) : undefined}
+              onEditReply={onEdit}
+              onDeleteReply={onDelete}
+            />
+          </div>
+        ))}
+      </div>
     )
   }
 )

@@ -192,19 +192,23 @@ export function TimelineVisual({
     <div className="flex flex-col h-full border rounded-lg bg-card shadow-sm overflow-hidden">
       {/* Horizontal Timeline (milestones) */}
       {showHorizontalTimeline && filteredMilestones.length > 0 && (
-        <HorizontalTimeline
-          milestones={filteredMilestones}
-          onMilestoneClick={handleMilestoneClick}
-        />
+        <div className="flex-shrink-0">
+          <HorizontalTimeline
+            milestones={filteredMilestones}
+            onMilestoneClick={handleMilestoneClick}
+          />
+        </div>
       )}
 
-      <TimelineHeader
-        filterState={filterState}
-        onFilterChange={setFilterState}
-        itemsCount={filteredItems.length}
-      />
+      <div className="flex-shrink-0">
+        <TimelineHeader
+          filterState={filterState}
+          onFilterChange={setFilterState}
+          itemsCount={filteredItems.length}
+        />
+      </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <ActivitiesGrid
           ref={gridRef}
           items={filteredItems}
@@ -216,7 +220,7 @@ export function TimelineVisual({
         />
       </div>
 
-      <div className="flex-shrink-0 border-t">
+      <div className="flex-shrink-0 border-t bg-background">
         <ComposerBar
           onSubmit={handleCreateComment}
           isSubmitting={isSubmitting}
