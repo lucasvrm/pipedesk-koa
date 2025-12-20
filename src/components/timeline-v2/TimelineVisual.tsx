@@ -180,7 +180,7 @@ export function TimelineVisual({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 border rounded-lg bg-card shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full border rounded-lg bg-card shadow-sm overflow-hidden">
       {/* Horizontal Timeline (milestones) */}
       {showHorizontalTimeline && milestones.length > 0 && (
         <HorizontalTimeline
@@ -195,24 +195,27 @@ export function TimelineVisual({
         itemsCount={filteredItems.length}
       />
 
-      <ActivitiesGrid
-        ref={gridRef}
-        className="flex-1 min-h-0 overflow-hidden"
-        items={filteredItems}
-        isLoading={isLoading}
-        currentUserId={currentUserId}
-        onEdit={onUpdateComment ? handleEdit : undefined}
-        onDelete={onDeleteComment ? handleDelete : undefined}
-        onReply={handleReply}
-      />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ActivitiesGrid
+          ref={gridRef}
+          items={filteredItems}
+          isLoading={isLoading}
+          currentUserId={currentUserId}
+          onEdit={onUpdateComment ? handleEdit : undefined}
+          onDelete={onDeleteComment ? handleDelete : undefined}
+          onReply={handleReply}
+        />
+      </div>
 
-      <ComposerBar
-        onSubmit={handleCreateComment}
-        isSubmitting={isSubmitting}
-        availableUsers={availableUsers}
-        replyingTo={replyingTo}
-        onCancelReply={handleCancelReply}
-      />
+      <div className="flex-shrink-0 border-t">
+        <ComposerBar
+          onSubmit={handleCreateComment}
+          isSubmitting={isSubmitting}
+          availableUsers={availableUsers}
+          replyingTo={replyingTo}
+          onCancelReply={handleCancelReply}
+        />
+      </div>
 
       {/* Modais de edição e exclusão */}
       <EditCommentModal
