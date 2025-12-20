@@ -76,6 +76,19 @@ export async function deleteComment(commentId: string) {
   if (error) throw error
 }
 
+// Função para atualizar comentário
+export async function updateComment(commentId: string, content: string) {
+  const { data, error } = await supabase
+    .from('comments')
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq('id', commentId)
+    .select('*, author: profiles!comments_author_id_fkey(name, avatar_url)')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 // --- Hooks ---
 
 export function useComments(entityId: string | undefined, entityType: 'deal' | 'track' | 'task' | 'lead' | 'company') {
@@ -101,6 +114,25 @@ export function useDeleteComment() {
   return useMutation({
     mutationFn: ({ commentId }: { commentId: string; entityId?: string; entityType?: string }) => deleteComment(commentId),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['timeline'] })
+      queryClient.invalidateQueries({ queryKey: ['comments'] })
+      if (variables?.entityType && variables?.entityId) {
+        queryClient.invalidateQueries({ queryKey: ['comments', variables.entityType, variables.entityId] })
+      }
+    }
+  })
+}
+
+// Hook para atualizar comentário
+export function useUpdateComment() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ commentId, content }: { commentId: string; content: string; entityId?: string; entityType?: string }) => 
+      updateComment(commentId, content),
+    onSuccess: (_, variables) => {
+      // Invalidar queries de timeline e comentários
+      queryClient.invalidateQueries({ queryKey: ['timeline'] })
       queryClient.invalidateQueries({ queryKey: ['comments'] })
       if (variables?.entityType && variables?.entityId) {
         queryClient.invalidateQueries({ queryKey: ['comments', variables.entityType, variables.entityId] })
