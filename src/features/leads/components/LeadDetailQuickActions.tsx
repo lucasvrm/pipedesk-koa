@@ -275,7 +275,7 @@ export function LeadDetailQuickActions({
             )}
             {onChangeOwner && (
               <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); if (canChangeOwner) onChangeOwner() }}
+                onClick={(e) => { e.stopPropagation(); onChangeOwner() }}
                 disabled={!canChangeOwner}
               >
                 <UserCheck className="mr-2 h-4 w-4" />
