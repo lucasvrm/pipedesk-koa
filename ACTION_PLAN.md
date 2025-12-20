@@ -1,5 +1,6 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
+## 🚧 Status: ✅ Concluído (ChangeOwnerDialog Component)
 ## 🚧 Status: ✅ Concluído (Hook e Service para Alteração de Responsável)
 
 **Data:** 2025-12-20  
@@ -56,13 +57,83 @@
 
 ## Iteração anterior - Lead Detail: Prioridade + Header + Status + Tags
 
-**Data:** 2025-12-19  
+**Data:** 2025-12-20  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - /leads/:id - Alinhamento, sticky topbar, tabs padrão, badge de temperatura
+**Escopo:** Frontend - Componente ChangeOwnerDialog para alteração de responsável do lead
 
 ---
 
-## 🆕 Iteração atual - Lead Detail: Prioridade + Header + Status + Tags
+## 🆕 Iteração atual - ChangeOwnerDialog Component
+
+### 🎯 Objetivo
+Criar o componente de dialog para alteração de responsável do lead, com busca, seleção e opções de configuração.
+
+### ✅ Tarefas Concluídas
+- [x] Criar componente `ChangeOwnerDialog.tsx` com tipagem estrita (Props: open, onOpenChange, lead, currentUserId, availableUsers)
+- [x] Implementar UI do Dialog (Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter)
+- [x] Implementar Command para busca e seleção de usuários (Command, CommandInput, CommandList, CommandEmpty, CommandItem, CommandGroup)
+- [x] Implementar componentes de UI (Button, Checkbox, Avatar, AvatarImage, AvatarFallback, Badge, Label)
+- [x] Usar ícones do lucide-react (Loader2, Check, Search, UserPlus)
+- [x] Implementar estados internos (selectedUser, searchQuery, keepAsMember com default true)
+- [x] Implementar filtro de usuários (excluir owner atual, filtrar por nome/email, usar useMemo)
+- [x] Implementar lógica de confirmação com `useUpdateLead` e `addLeadMember`
+- [x] Tratar estados de UI: loading (Loader2), vazio (nenhum usuário disponível), busca sem resultados
+- [x] Botão "Confirmar" disabled até selecionar usuário
+- [x] Fechar dialog e resetar estado em caso de sucesso
+- [x] Mostrar toast de sucesso/erro via sonner
+- [x] Lint passa sem erros
+- [x] Build passa sem erros
+
+### Arquivos Criados
+- `src/features/leads/components/ChangeOwnerDialog.tsx`
+
+### ✅ Checklist de QA manual
+- [ ] Dialog abre corretamente quando `open={true}`
+- [ ] Busca filtra usuários por nome e email
+- [ ] Owner atual do lead não aparece na lista
+- [ ] Seleção de usuário mostra preview com avatar e informações
+- [ ] Checkbox "Manter responsável anterior como membro" funciona
+- [ ] Botão "Confirmar" fica disabled sem seleção
+- [ ] Loading indicator aparece durante mutação
+- [ ] Toast de sucesso aparece após confirmação
+- [ ] Dialog fecha e reseta estado após sucesso
+- [ ] Toast de erro aparece em caso de falha
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 1 |
+| Arquivos modificados | 1 |
+| Linhas adicionadas | ~285 |
+| Linhas removidas | 0 |
+| Testes adicionados | 0 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (novo componente isolado, sem alteração de lógica existente ou API)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Props tipadas (open, onOpenChange, lead, currentUserId, availableUsers) | ✅ | Interface `ChangeOwnerDialogProps` |
+| Dialog com shadcn/ui components | ✅ | Dialog, DialogContent, DialogHeader, etc. |
+| Command para busca de usuários | ✅ | Command, CommandInput, CommandList, etc. |
+| Estados internos (selectedUser, searchQuery, keepAsMember) | ✅ | useState hooks |
+| Filtro de usuários (excluir owner, busca por nome/email) | ✅ | useMemo com filtros |
+| Integração com useUpdateLead | ✅ | Mutation para alterar ownerUserId |
+| Opção keepAsMember | ✅ | Checkbox + addLeadMember |
+| Estado de loading | ✅ | Loader2 + disabled buttons |
+| Estado vazio | ✅ | CommandEmpty com mensagem |
+| Estado de erro | ✅ | toast.error via sonner |
+| Ícones lucide-react | ✅ | Loader2, Check, Search, UserPlus |
+| Evitar TooltipTrigger loop | ✅ | Não usa TooltipTrigger |
+
+---
+
+## Iteração anterior - Lead Detail: Prioridade + Header + Status + Tags
 
 ### 🎯 Objetivo
 1. Reutilizar o badge de prioridade existente do Sales View no Lead Detail e remover o componente duplicado.
