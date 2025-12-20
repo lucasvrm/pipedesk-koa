@@ -1,7 +1,10 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import { Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/helpers'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TimelineAuthor } from './types'
 
 interface MentionsDropdownProps {
@@ -15,23 +18,37 @@ interface MentionsDropdownProps {
 
 export function MentionsDropdown({
   users,
-  searchQuery,
+  searchQuery: externalSearchQuery,
   onSelect,
   position,
   isOpen,
   onClose
 }: MentionsDropdownProps) {
+  const [internalSearch, setInternalSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Combine external and internal search - prefer internal if has content
+  const effectiveSearch = internalSearch.trim() ? internalSearch : externalSearchQuery
 
   // Filter users by search query
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users
-    const query = searchQuery.toLowerCase()
-    return users.filter(user => 
+    if (!effectiveSearch.trim()) return users
+    const query = effectiveSearch.toLowerCase()
+    return users.filter(user =>
       user.name.toLowerCase().includes(query)
     )
-  }, [users, searchQuery])
+  }, [users, effectiveSearch])
+
+  // Reset on open
+  useEffect(() => {
+    if (isOpen) {
+      setInternalSearch('')
+      setSelectedIndex(0)
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+  }, [isOpen])
 
   // Reset selection when filtered list changes
   useEffect(() => {
@@ -39,19 +56,17 @@ export function MentionsDropdown({
   }, [filteredUsers])
 
   // Handle keyboard navigation
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!isOpen) return
-
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     switch (e.key) {
-      case 'ArrowDown':
+      case 'ArrowDown': 
         e.preventDefault()
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev < filteredUsers.length - 1 ? prev + 1 : 0
         )
         break
       case 'ArrowUp':
         e.preventDefault()
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev > 0 ? prev - 1 : filteredUsers.length - 1
         )
         break
@@ -66,92 +81,87 @@ export function MentionsDropdown({
         onClose?.()
         break
     }
-  }, [isOpen, filteredUsers, selectedIndex, onSelect, onClose])
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
+  }, [filteredUsers, selectedIndex, onSelect, onClose])
 
   // Scroll selected item into view
   useEffect(() => {
-    if (listRef.current) {
-      const selectedElement = listRef.current.children[selectedIndex] as HTMLElement
+    if (listRef.current && filteredUsers.length > 0) {
+      const selectedElement = listRef.current.querySelector(`[data-index="${selectedIndex}"]`)
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: 'nearest' })
       }
     }
-  }, [selectedIndex])
+  }, [selectedIndex, filteredUsers.length])
 
-  if (!isOpen || filteredUsers.length === 0) return null
-
-  // Highlight matching text in name
-  const highlightMatch = (name: string, query: string) => {
-    if (!query.trim()) return name
-    
-    const lowerName = name.toLowerCase()
-    const lowerQuery = query.toLowerCase()
-    const index = lowerName.indexOf(lowerQuery)
-    
-    if (index === -1) return name
-
-    return (
-      <>
-        {name.slice(0, index)}
-        <span className="font-bold text-primary">
-          {name.slice(index, index + query.length)}
-        </span>
-        {name.slice(index + query.length)}
-      </>
-    )
-  }
+  if (!isOpen) return null
 
   return (
     <div
-      className="absolute z-50 min-w-[200px] max-w-[280px] bg-popover border rounded-lg shadow-lg overflow-hidden"
+      className="absolute z-50 w-[280px] bg-popover border rounded-lg shadow-xl overflow-hidden"
       style={{
-        top: position.top,
-        left: position.left
+        bottom: '100%',
+        left: position.left,
+        marginBottom: 8
       }}
+      onKeyDown={handleKeyDown}
     >
-      {/* Header */}
-      <div className="px-3 py-2 border-b bg-muted/30">
-        <span className="text-xs text-muted-foreground">
-          {searchQuery ? `Buscando "${searchQuery}"` : 'Mencionar usuário'}
-        </span>
+      {/* Search input */}
+      <div className="p-2 border-b">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            placeholder="Buscar usuário..."
+            value={internalSearch}
+            onChange={(e) => setInternalSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
       </div>
 
       {/* Users list */}
-      <div ref={listRef} className="max-h-[200px] overflow-y-auto py-1">
-        {filteredUsers.map((user, index) => (
-          <button
-            key={user.id}
-            type="button"
-            className={cn(
-              "w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors",
-              "hover:bg-accent focus:bg-accent focus:outline-none",
-              index === selectedIndex && "bg-accent"
-            )}
-            onClick={() => onSelect(user)}
-            onMouseEnter={() => setSelectedIndex(index)}
-          >
-            <Avatar className="h-6 w-6 border">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="text-[10px] bg-muted">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate text-foreground">
-              {highlightMatch(user.name, searchQuery)}
-            </span>
-          </button>
-        ))}
-      </div>
+      <ScrollArea className="h-[240px]">
+        <div ref={listRef} className="py-1">
+          {filteredUsers.length === 0 ? (
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+              Nenhum usuário encontrado
+            </div>
+          ) : (
+            filteredUsers.map((user, index) => (
+              <button
+                key={user.id}
+                type="button"
+                data-index={index}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors",
+                  "hover:bg-accent focus:bg-accent focus:outline-none",
+                  index === selectedIndex && "bg-accent"
+                )}
+                onClick={() => onSelect(user)}
+                onMouseEnter={() => setSelectedIndex(index)}
+              >
+                <Avatar className="h-8 w-8 border">
+                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarFallback className="text-xs bg-muted">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate font-medium text-foreground">
+                  {user.name}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </ScrollArea>
 
       {/* Footer hint */}
-      <div className="px-3 py-1.5 border-t bg-muted/30">
+      <div className="px-3 py-2 border-t bg-muted/30 flex items-center justify-between">
         <span className="text-[10px] text-muted-foreground">
-          ↑↓ navegar · Enter selecionar · Esc fechar
+          ↑↓ navegar · Enter selecionar
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}
         </span>
       </div>
     </div>

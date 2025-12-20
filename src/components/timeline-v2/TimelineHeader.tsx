@@ -1,7 +1,13 @@
-import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap } from 'lucide-react'
+import { useState } from 'react'
+import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap, ListFilter } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { TimelineFilterState, TimelineItemType } from './types'
 
@@ -56,8 +62,29 @@ export function TimelineHeader({
   onFilterChange,
   itemsCount
 }: TimelineHeaderProps) {
-  const handleSearchChange = (value: string) => {
-    onFilterChange({ ...filterState, searchQuery: value })
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState(filterState.searchQuery)
+
+  const handleSearchSubmit = () => {
+    onFilterChange({ ...filterState, searchQuery: searchValue })
+    setSearchOpen(false)
+  }
+
+  const handleSearchClear = () => {
+    setSearchValue('')
+    onFilterChange({ ...filterState, searchQuery: '' })
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchSubmit()
+    } else if (e.key === 'Escape') {
+      setSearchOpen(false)
+    }
+  }
+
+  const handleSelectAll = () => {
+    onFilterChange({ ...filterState, activeTypes: [] })
   }
 
   const handleTypeToggle = (type: TimelineItemType) => {
@@ -65,47 +92,100 @@ export function TimelineHeader({
     let newTypes: TimelineItemType[]
 
     if (currentTypes.includes(type)) {
-      // Remove type
       newTypes = currentTypes.filter(t => t !== type)
     } else {
-      // Add type
       newTypes = [...currentTypes, type]
     }
 
     onFilterChange({ ...filterState, activeTypes: newTypes })
   }
 
-  const handleClearFilters = () => {
-    onFilterChange({ searchQuery: '', activeTypes: [] })
-  }
-
-  const hasActiveFilters = filterState.activeTypes.length > 0 || filterState.searchQuery.trim() !== ''
+  const isAllSelected = filterState.activeTypes.length === 0
+  const hasSearchQuery = filterState.searchQuery.trim() !== ''
 
   return (
-    <div className="flex-shrink-0 border-b bg-muted/20 p-3 space-y-3">
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar no histórico..."
-          value={filterState.searchQuery}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-9 h-9 text-sm"
-        />
-        {filterState.searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-            onClick={() => handleSearchChange('')}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Filter chips (multiselect) */}
+    <div className="flex-shrink-0 border-b bg-muted/20 px-3 py-2">
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Search button with popover */}
+        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={hasSearchQuery ? "default" : "outline"}
+              size="sm"
+              className="h-7 w-7 p-0"
+            >
+              <Search className="h-3.5 w-3.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-3" align="start">
+            <div className="space-y-3">
+              <div className="text-sm font-medium">Buscar no histórico</div>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Digite para buscar..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  className="pl-9"
+                  autoFocus
+                />
+                {searchValue && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => setSearchValue('')}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSearchClear}
+                  disabled={!searchValue && !hasSearchQuery}
+                >
+                  Limpar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSearchSubmit}
+                >
+                  Buscar
+                </Button>
+              </div>
+              {hasSearchQuery && (
+                <div className="text-xs text-muted-foreground">
+                  Buscando por: <span className="font-medium text-foreground">"{filterState.searchQuery}"</span>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-border" />
+
+        {/* "Todos" button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSelectAll}
+          className={cn(
+            "h-7 px-2.5 text-xs gap-1.5 transition-colors",
+            isAllSelected
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-background hover:bg-muted"
+          )}
+        >
+          <ListFilter className="h-3.5 w-3.5" />
+          Todos
+        </Button>
+
+        {/* Filter chips */}
         {FILTER_OPTIONS.map((option) => {
           const isActive = filterState.activeTypes.includes(option.type)
           return (
@@ -126,19 +206,6 @@ export function TimelineHeader({
             </Button>
           )
         })}
-
-        {/* Clear all button */}
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearFilters}
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5 mr-1" />
-            Limpar
-          </Button>
-        )}
 
         {/* Results count */}
         <Badge variant="secondary" className="ml-auto text-xs">
