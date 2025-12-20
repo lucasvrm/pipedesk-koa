@@ -534,9 +534,9 @@ export default function LeadDetailPage() {
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
-    <PageContainer className="p-0 space-y-0 overflow-hidden h-screen">
+    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-screen">
       {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
-      <header className="flex items-center justify-between px-6 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40">
+      <header className="flex items-center justify-between px-6 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -561,7 +561,7 @@ export default function LeadDetailPage() {
       </header>
 
       {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
-      <main className="flex gap-4 px-6 py-4 h-[calc(100vh-121px)] bg-slate-50 overflow-hidden">
+      <main className="flex-1 flex gap-4 px-6 py-4 bg-slate-50 overflow-hidden">
         
         {/* COLUNA 1 - Dados do Lead (343px fixed) */}
         <aside className="w-[343px] min-w-[343px] h-full bg-white rounded-lg border overflow-y-auto flex-shrink-0 sticky top-0">
