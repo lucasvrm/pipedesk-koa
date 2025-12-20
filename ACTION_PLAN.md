@@ -1,6 +1,60 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
-## 🚧 Status: ✅ Concluído (Lead Detail - Prioridade, Header, Status, Tags)
+## 🚧 Status: ✅ Concluído (Hook e Service para Alteração de Responsável)
+
+**Data:** 2025-12-20  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Frontend - src/services/leadService.ts - Interface, função e hook para alteração de responsável
+
+---
+
+## 🆕 Iteração atual - Hook e Service para Alteração de Responsável
+
+### 🎯 Objetivo
+1. Criar interface `ChangeLeadOwnerData` para tipar os dados enviados para a API.
+2. Criar função `changeLeadOwner` que encapsula a chamada HTTP para o endpoint de alteração de responsável.
+3. Criar hook `useChangeLeadOwner` com `useMutation` do React Query para gerenciar o estado da mutation.
+
+### ✅ Tarefas Concluídas
+- [x] Adicionada interface `ChangeLeadOwnerData` com campos: `leadId`, `newOwnerId`, `addPreviousOwnerAsMember`, `currentUserId`.
+- [x] Criada função `changeLeadOwner(data: ChangeLeadOwnerData): Promise<void>` com endpoint `POST /leads/${data.leadId}/change-owner`.
+- [x] Criado hook `useChangeLeadOwner()` usando `useMutation` com `onError` para logar erros no console.
+- [x] Build passa sem erros.
+
+### Arquivos Modificados
+- `src/services/leadService.ts` - Adicionados interface, função e hook
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos modificados | 1 |
+| Linhas adicionadas | ~35 |
+| Linhas removidas | 0 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (apenas adição de código, sem alteração de lógica existente)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Interface `ChangeLeadOwnerData` | ✅ | Campos: leadId, newOwnerId, addPreviousOwnerAsMember, currentUserId |
+| Função `changeLeadOwner` | ✅ | POST `/leads/${leadId}/change-owner` |
+| Hook `useChangeLeadOwner` | ✅ | useMutation + onError console.error |
+| Invalidar queries após sucesso | ✅ | Invalida `leads` e `leads-sales-view` |
+| Lint passa | ⚠️ | Erros pré-existentes (não relacionados às alterações) |
+| Build passa | ✅ | Build concluído com sucesso |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+- ⚠️ **Adaptado** - erros pré-existentes não corrigidos
+
+---
+
+## Iteração anterior - Lead Detail: Prioridade + Header + Status + Tags
 
 **Data:** 2025-12-19  
 **Autor:** GitHub Copilot Agent  

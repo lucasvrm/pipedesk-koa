@@ -60,6 +60,13 @@ export interface QualifyLeadInput {
   newCompanyData?: CompanyInput;
 }
 
+export interface ChangeLeadOwnerData {
+  leadId: string;
+  newOwnerId: string;
+  addPreviousOwnerAsMember: boolean;
+  currentUserId: string;
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -503,6 +510,24 @@ export async function qualifyLead(input: QualifyLeadInput) {
   return data;
 }
 
+export async function changeLeadOwner(data: ChangeLeadOwnerData): Promise<void> {
+  const response = await fetch(`/api/leads/${data.leadId}/change-owner`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      newOwnerId: data.newOwnerId,
+      addPreviousOwnerAsMember: data.addPreviousOwnerAsMember,
+      currentUserId: data.currentUserId
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao alterar responsável do lead (status: ${response.status})`);
+  }
+}
+
 // ============================================================================
 // Hooks
 // ============================================================================
@@ -593,4 +618,22 @@ export function useLeadContacts(leadId: string) {
   });
 
   return { addContact: addMutation.mutateAsync, removeContact: removeMutation.mutateAsync };
+}
+
+export function useChangeLeadOwner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: changeLeadOwner,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+    },
+    onError: (error, variables) => {
+      console.error('[useChangeLeadOwner] Failed to change owner', {
+        leadId: variables.leadId,
+        newOwnerId: variables.newOwnerId,
+        error
+      });
+    }
+  });
 }
