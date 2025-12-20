@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CheckCircle, Pencil, CalendarPlus, Plus, Users, ArrowLeftRight, Tag, Trash } from 'lucide-react'
+import { MessageCircle, Mail, HardDrive, Loader2, MoreVertical, CheckCircle, Pencil, CalendarPlus, Plus, ArrowLeftRight, Trash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -234,98 +234,79 @@ export function LeadDetailQuickActions({
     }
   }
 
+  // Wrapper to prevent click propagation and safely invoke actions
+  const handleAction = (action?: () => void) => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (action) action()
+  }
+
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-2">
         {/* Kebab Menu - Dropdown de ações secundárias */}
         <DropdownMenu>
-         <DropdownMenuTrigger asChild>
-            <span className="inline-flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                data-testid="quick-action-kebab"
-                aria-label="Mais ações"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </span>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              data-testid="quick-action-kebab"
+              aria-label="Mais ações"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            {/* Ações do Lead */}
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             {onQualify && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQualify() }}>
+              <DropdownMenuItem onClick={handleAction(onQualify)}>
                 <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
                 Qualificar
               </DropdownMenuItem>
             )}
             {onAddTask && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddTask() }}>
-                <CalendarPlus className="mr-2 h-4 w-4" />
-                Adicionar Tarefa
+              <DropdownMenuItem onClick={handleAction(onAddTask)}>
+                <CalendarPlus className="mr-2 h-4 w-4 text-blue-600" />
+                Nova Tarefa
               </DropdownMenuItem>
             )}
             {onEdit && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit() }}>
+              <DropdownMenuItem onClick={handleAction(onEdit)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
             )}
-
-            {/* Gerenciar */}
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Gerenciar</DropdownMenuLabel>
             {onAddContact && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddContact() }}>
+              <DropdownMenuItem onClick={handleAction(onAddContact)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Contato
-              </DropdownMenuItem>
-            )}
-            {onAddMember && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddMember() }}>
-                <Users className="mr-2 h-4 w-4" />
-                Adicionar Membro
+                Add Contato
               </DropdownMenuItem>
             )}
             {onChangeOwner && (
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); onChangeOwner() }}
-                disabled={!canChangeOwner}
-              >
+              <DropdownMenuItem onClick={handleAction(onChangeOwner)} disabled={!canChangeOwner}>
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
-                Alterar Responsável
+                Alterar Dono
               </DropdownMenuItem>
             )}
-
-            {/* Organização */}
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Organização</DropdownMenuLabel>
-            {onManageTags && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onManageTags() }}>
-                <Tag className="mr-2 h-4 w-4" />
-                Gerenciar Tags
-              </DropdownMenuItem>
-            )}
             {onDelete && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={(e) => { e.stopPropagation(); onDelete() }}
-                  className="text-amber-600 hover:text-amber-700 focus:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-red-900/20"
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Excluir Lead
-                </DropdownMenuItem>
-              </>
+              <DropdownMenuItem
+                onClick={handleAction(onDelete)}
+                className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Excluir Lead
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <div className="h-4 w-px bg-border mx-1" />
+
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
+            <span className="inline-flex">
               <Button
                 variant="outline"
                 size="sm"
@@ -338,7 +319,7 @@ export function LeadDetailQuickActions({
                 <MessageCircle className="h-3.5 w-3.5 text-green-600" />
                 <span>WhatsApp</span>
               </Button>
-            </div>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Enviar WhatsApp para o contato principal</p>
@@ -347,7 +328,7 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
+            <span className="inline-flex">
               <Button
                 variant="outline"
                 size="sm"
@@ -360,7 +341,7 @@ export function LeadDetailQuickActions({
                 <Mail className="h-3.5 w-3.5 text-blue-600" />
                 <span>E-mail</span>
               </Button>
-            </div>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Enviar e-mail para o contato principal</p>
@@ -369,29 +350,7 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handlePhone}
-                disabled={!primaryContact?.phone}
-                data-testid="quick-action-phone"
-                aria-label="Ligar"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                <span>Ligar</span>
-              </Button>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Ligar para o contato principal</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex">
+            <span className="inline-flex">
               <Button
                 variant="outline"
                 size="sm"
@@ -408,52 +367,10 @@ export function LeadDetailQuickActions({
                 )}
                 <span>Drive</span>
               </Button>
-            </div>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Abrir pasta do lead no Drive</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleSchedule}
-                data-testid="quick-action-schedule"
-                aria-label="Agendar Reunião"
-              >
-                <Calendar className="h-3.5 w-3.5 text-orange-600" />
-                <span>Agendar</span>
-              </Button>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Agendar reunião</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleCopyId}
-                data-testid="quick-action-copy-id"
-                aria-label="Copiar ID"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                <span>Copiar ID</span>
-              </Button>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Copiar ID do lead</p>
           </TooltipContent>
         </Tooltip>
       </div>
