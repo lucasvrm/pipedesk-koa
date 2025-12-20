@@ -61,7 +61,7 @@ export function ThreadReplies({
           {isCollapsed ? (
             <>
               <ChevronDown className="h-3 w-3 mr-1.5" />
-              {hiddenCount} resposta{hiddenCount > 1 ? 's' : ''} anterior{hiddenCount > 1 ? 'es' : ''}
+              {hiddenCount} resposta{hiddenCount > 1 ? 's' : ''} anteriore{hiddenCount > 1 ? 's' : ''}
             </>
           ) : (
             <>

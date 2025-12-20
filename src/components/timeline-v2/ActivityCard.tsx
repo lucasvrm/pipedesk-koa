@@ -217,9 +217,9 @@ export function ActivityCard({
       </div>
 
       {/* Thread Replies */}
-      {hasReplies && (
+      {hasReplies && item.replies && (
         <ThreadReplies
-          replies={item.replies!}
+          replies={item.replies}
           currentUserId={currentUserId}
           onEdit={onEditReply}
           onDelete={onDeleteReply}

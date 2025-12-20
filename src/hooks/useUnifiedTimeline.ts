@@ -42,11 +42,15 @@ function organizeIntoThreads(items: TimelineItem[]): TimelineItem[] {
   
   // Second pass: organize hierarchy
   items.forEach(item => {
-    const mappedItem = itemsMap.get(item.id)!
+    const mappedItem = itemsMap.get(item.id)
+    if (!mappedItem) return
+    
     if (item.parentId && itemsMap.has(item.parentId)) {
-      const parent = itemsMap.get(item.parentId)!
-      parent.replies = parent.replies || []
-      parent.replies.push(mappedItem)
+      const parent = itemsMap.get(item.parentId)
+      if (parent) {
+        parent.replies = parent.replies || []
+        parent.replies.push(mappedItem)
+      }
     } else {
       rootItems.push(mappedItem)
     }
