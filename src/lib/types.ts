@@ -257,6 +257,7 @@ export interface Comment {
   // Fallback para snake_case
   created_at?: string
   mentions: string[]
+  parentId?: string | null
 }
 
 export interface Notification {

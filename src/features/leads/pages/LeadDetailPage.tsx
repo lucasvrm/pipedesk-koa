@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLead, useUpdateLead, useLeadContacts, addLeadMember, removeLeadMember, useDeleteLead } from '@/services/leadService'
@@ -7,6 +7,8 @@ import { useUsers } from '@/services/userService'
 import { useAuth } from '@/contexts/AuthContext'
 import { logActivity } from '@/services/activityService'
 import { useEntityTags, useTagOperations } from '@/services/tagService'
+import { useCreateComment, useUpdateComment, useDeleteComment } from '@/services/commentService'
+import { useUnifiedTimeline } from '@/hooks/useUnifiedTimeline'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge, type SemanticStatus } from '@/components/ui/StatusBadge'
@@ -20,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
-import { UnifiedTimeline } from '@/components/UnifiedTimeline'
+import { TimelineVisual } from '@/components/timeline-v2/TimelineVisual'
 import { safeString, safeStringOptional } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
 import {
@@ -64,6 +66,7 @@ import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/Activit
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
+import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
 const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: string }> = {
@@ -119,6 +122,59 @@ export default function LeadDetailPage() {
   const { data: leadTags } = useEntityTags(id || '', 'lead')
   
   const tagOps = useTagOperations()
+
+  // Timeline V2 hooks and mutations
+  const { 
+    items: timelineItems, 
+    isLoading: timelineLoading, 
+    error: timelineError, 
+    refetch: refetchTimeline 
+  } = useUnifiedTimeline(id!, 'lead')
+  
+  const createComment = useCreateComment()
+  const updateComment = useUpdateComment()
+  const deleteComment = useDeleteComment()
+
+  const availableUsers = useMemo<TimelineAuthor[]>(() => 
+    users?.map(u => ({ 
+      id: u.id, 
+      name: u.name || 'Usuário', 
+      avatar: u.avatar_url 
+    })) || [],
+    [users]
+  )
+
+  const handleCreateComment = useCallback(async (data: CommentFormData) => {
+    if (!profile) return
+    await createComment.mutateAsync({
+      entityId: id!,
+      entityType: 'lead',
+      content: data.content,
+      authorId: profile.id,
+      mentions: data.mentions,
+      parentId: data.parentId
+    })
+    refetchTimeline()
+  }, [createComment, id, profile, refetchTimeline])
+
+  const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
+    await updateComment.mutateAsync({ 
+      commentId, 
+      content,
+      entityId: id,
+      entityType: 'lead'
+    })
+    refetchTimeline()
+  }, [updateComment, id, refetchTimeline])
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    await deleteComment.mutateAsync({ 
+      commentId,
+      entityId: id,
+      entityType: 'lead'
+    })
+    refetchTimeline()
+  }, [deleteComment, id, refetchTimeline])
 
   const [qualifyOpen, setQualifyOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
@@ -634,7 +690,19 @@ export default function LeadDetailPage() {
               
               {/* Aba Contexto - Timeline completa */}
               <TabsContent value="contexto" className="h-full m-0 p-4">
-                <UnifiedTimeline entityId={lead.id} entityType="lead" />
+                <TimelineVisual
+                  entityId={lead.id}
+                  entityType="lead"
+                  items={timelineItems}
+                  isLoading={timelineLoading}
+                  error={timelineError}
+                  onCreateComment={handleCreateComment}
+                  onUpdateComment={handleUpdateComment}
+                  onDeleteComment={handleDeleteComment}
+                  currentUserId={profile?.id || ''}
+                  availableUsers={availableUsers}
+                  onRefetch={refetchTimeline}
+                />
               </TabsContent>
 
               {/* Aba Visão Geral - Dados + Buying Committee */}

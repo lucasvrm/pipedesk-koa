@@ -24,7 +24,8 @@ export async function getComments(entityId: string, entityType: string): Promise
     author: item.author,
     content: item.content,
     createdAt: item.created_at,
-    mentions: item.mentions || []
+    mentions: item.mentions || [],
+    parentId: item.parent_id || null
   }))
 }
 
@@ -33,7 +34,8 @@ export async function createComment(data: {
   entityType: string
   content: string
   authorId: string
-  mentions: string[] 
+  mentions: string[]
+  parentId?: string | null
 }) {
   // 1. Criar o Comentário
   const { data: comment, error } = await supabase
@@ -43,7 +45,8 @@ export async function createComment(data: {
       entity_type: data.entityType,
       content: data.content,
       author_id: data.authorId,
-      mentions: data.mentions
+      mentions: data.mentions,
+      parent_id: data.parentId || null
     })
     .select('*, author:profiles!comments_author_id_fkey(name, avatar_url)')
     .single()

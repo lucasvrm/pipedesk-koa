@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,9 @@ import { ActivitiesGrid } from './ActivitiesGrid'
 import { ComposerBar } from './ComposerBar'
 import { EditCommentModal } from './EditCommentModal'
 import { DeleteCommentModal } from './DeleteCommentModal'
+import { HorizontalTimeline } from './HorizontalTimeline'
+import { useTimelineFilter } from './hooks/useTimelineFilter'
+import { useTimelineMilestones } from './hooks/useTimelineMilestones'
 import type {
   TimelineItem,
   TimelineAuthor,
@@ -26,41 +29,7 @@ interface TimelineVisualProps {
   currentUserId: string
   availableUsers: TimelineAuthor[]
   onRefetch?: () => void
-}
-
-// Hook inline for filter logic
-function useTimelineFilter(items: TimelineItem[], filterState: TimelineFilterState) {
-  return useMemo(() => {
-    let filtered = [...items]
-
-    // Filter by type
-    if (filterState.activeFilter !== 'all') {
-      if (filterState.activeFilter === 'comment') {
-        filtered = filtered.filter((item) => item.type === 'comment')
-      } else if (filterState.activeFilter === 'communication') {
-        filtered = filtered.filter(
-          (item) => item.type === 'email' || item.type === 'meeting'
-        )
-      } else if (filterState.activeFilter === 'system') {
-        filtered = filtered.filter(
-          (item) => item.type === 'audit' || item.type === 'system'
-        )
-      }
-    }
-
-    // Filter by search query
-    if (filterState.searchQuery.trim()) {
-      const query = filterState.searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (item) =>
-          item.content.toLowerCase().includes(query) ||
-          item.title?.toLowerCase().includes(query) ||
-          item.author.name.toLowerCase().includes(query)
-      )
-    }
-
-    return filtered
-  }, [items, filterState])
+  showHorizontalTimeline?: boolean
 }
 
 export function TimelineVisual({
@@ -72,7 +41,8 @@ export function TimelineVisual({
   onDeleteComment,
   currentUserId,
   availableUsers,
-  onRefetch
+  onRefetch,
+  showHorizontalTimeline = true
 }: TimelineVisualProps) {
   const [filterState, setFilterState] = useState<TimelineFilterState>({
     searchQuery: '',
@@ -86,8 +56,12 @@ export function TimelineVisual({
   const [deletingComment, setDeletingComment] = useState<TimelineItem | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Ref for scrolling to cards
+  const gridRef = useRef<HTMLDivElement>(null)
 
-  const filteredItems = useTimelineFilter(items, filterState)
+  const { filteredItems } = useTimelineFilter(items, filterState)
+  const milestones = useTimelineMilestones(items)
 
   const handleCreateComment = useCallback(
     async (data: CommentFormData) => {
@@ -130,8 +104,8 @@ export function TimelineVisual({
         toast.success('Comentário atualizado')
         setEditingComment(null)
         onRefetch?.()
-      } catch (error) {
-        console.error('Erro ao atualizar comentário:', error)
+      } catch (err) {
+        console.error('Erro ao atualizar comentário:', err)
         toast.error('Erro ao atualizar comentário')
       } finally {
         setIsUpdating(false)
@@ -150,8 +124,8 @@ export function TimelineVisual({
         toast.success('Comentário excluído')
         setDeletingComment(null)
         onRefetch?.()
-      } catch (error) {
-        console.error('Erro ao excluir comentário:', error)
+      } catch (err) {
+        console.error('Erro ao excluir comentário:', err)
         toast.error('Erro ao excluir comentário')
       } finally {
         setIsDeleting(false)
@@ -161,12 +135,26 @@ export function TimelineVisual({
   )
 
   const handleReply = useCallback((item: TimelineItem) => {
-    // Placeholder - será implementado na Parte 3
     setReplyingTo(item)
   }, [])
 
   const handleCancelReply = useCallback(() => {
     setReplyingTo(null)
+  }, [])
+
+  // Handler for milestone click - scroll to the corresponding card
+  const handleMilestoneClick = useCallback((milestoneId: string) => {
+    if (!gridRef.current) return
+    
+    const cardElement = gridRef.current.querySelector(`[data-item-id="${milestoneId}"]`)
+    if (cardElement) {
+      cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Add highlight effect
+      cardElement.classList.add('ring-2', 'ring-primary', 'ring-offset-2')
+      setTimeout(() => {
+        cardElement.classList.remove('ring-2', 'ring-primary', 'ring-offset-2')
+      }, 2000)
+    }
   }, [])
 
   // Error state
@@ -193,6 +181,14 @@ export function TimelineVisual({
 
   return (
     <div className="flex flex-col h-[600px] border rounded-lg bg-card shadow-sm">
+      {/* Horizontal Timeline (milestones) */}
+      {showHorizontalTimeline && milestones.length > 0 && (
+        <HorizontalTimeline
+          milestones={milestones}
+          onMilestoneClick={handleMilestoneClick}
+        />
+      )}
+
       <TimelineHeader
         filterState={filterState}
         onFilterChange={setFilterState}
@@ -200,6 +196,7 @@ export function TimelineVisual({
       />
 
       <ActivitiesGrid
+        ref={gridRef}
         items={filteredItems}
         isLoading={isLoading}
         currentUserId={currentUserId}

@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { MessageSquare } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,44 +38,45 @@ function LoadingSkeleton() {
   )
 }
 
-export function ActivitiesGrid({
-  items,
-  isLoading,
-  currentUserId,
-  onEdit,
-  onDelete,
-  onReply
-}: ActivitiesGridProps) {
-  if (isLoading) {
-    return <LoadingSkeleton />
-  }
+export const ActivitiesGrid = forwardRef<HTMLDivElement, ActivitiesGridProps>(
+  function ActivitiesGrid(
+    { items, isLoading, currentUserId, onEdit, onDelete, onReply },
+    ref
+  ) {
+    if (isLoading) {
+      return <LoadingSkeleton />
+    }
 
-  if (items.length === 0) {
+    if (items.length === 0) {
+      return (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <EmptyState
+            icon={<MessageSquare className="h-12 w-12" />}
+            title="Nenhuma atividade encontrada"
+            description="Comece adicionando um comentário ou realize alguma ação."
+          />
+        </div>
+      )
+    }
+
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <EmptyState
-          icon={<MessageSquare className="h-12 w-12" />}
-          title="Nenhuma atividade encontrada"
-          description="Comece adicionando um comentário ou realize alguma ação."
-        />
-      </div>
+      <ScrollArea className="flex-1">
+        <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+          {items.map((item) => (
+            <div key={item.id} data-item-id={item.id} className="transition-all">
+              <ActivityCard
+                item={item}
+                currentUserId={currentUserId}
+                onEdit={onEdit ? () => onEdit(item) : undefined}
+                onDelete={onDelete ? () => onDelete(item) : undefined}
+                onReply={onReply ? () => onReply(item) : undefined}
+                onEditReply={onEdit}
+                onDeleteReply={onDelete}
+              />
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     )
   }
-
-  return (
-    <ScrollArea className="flex-1">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        {items.map((item) => (
-          <ActivityCard
-            key={item.id}
-            item={item}
-            currentUserId={currentUserId}
-            onEdit={onEdit ? () => onEdit(item) : undefined}
-            onDelete={onDelete ? () => onDelete(item) : undefined}
-            onReply={onReply ? () => onReply(item) : undefined}
-          />
-        ))}
-      </div>
-    </ScrollArea>
-  )
-}
+)

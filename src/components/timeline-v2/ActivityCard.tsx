@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { ThreadReplies } from './ThreadReplies'
 import type { TimelineItem, TimelineItemType } from './types'
 
 interface ActivityCardProps {
@@ -31,6 +32,8 @@ interface ActivityCardProps {
   onEdit?: () => void
   onDelete?: () => void
   onReply?: () => void
+  onEditReply?: (item: TimelineItem) => void
+  onDeleteReply?: (item: TimelineItem) => void
 }
 
 interface TypeStyleConfig {
@@ -92,7 +95,9 @@ export function ActivityCard({
   currentUserId,
   onEdit,
   onDelete,
-  onReply
+  onReply,
+  onEditReply,
+  onDeleteReply
 }: ActivityCardProps) {
   const typeConfig = useMemo(() => getTypeConfig(item.type), [item.type])
 
@@ -100,6 +105,8 @@ export function ActivityCard({
   const canEdit = isOwner && item.isEditable !== false
   const canDelete = isOwner && item.isDeletable !== false
   const showMenu = canEdit || canDelete
+  const hasReplies = item.replies && item.replies.length > 0
+  const replyCount = item.replies?.length ?? 0
 
   const timeAgo = useMemo(() => {
     try {
@@ -167,10 +174,14 @@ export function ActivityCard({
           size="sm"
           className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
           onClick={onReply}
-          disabled // Desabilitado por enquanto — Parte 3
         >
           <Reply className="h-3.5 w-3.5 mr-1.5" />
           Responder
+          {replyCount > 0 && (
+            <span className="ml-1.5 text-[10px] text-muted-foreground">
+              ({replyCount})
+            </span>
+          )}
         </Button>
 
         {showMenu && (
@@ -195,7 +206,7 @@ export function ActivityCard({
                 </DropdownMenuItem>
               )}
               {canDelete && (
-                <DropdownMenuItem onClick={onDelete} variant="destructive">
+                <DropdownMenuItem onClick={onDelete} className="text-destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Excluir
                 </DropdownMenuItem>
@@ -204,6 +215,16 @@ export function ActivityCard({
           </DropdownMenu>
         )}
       </div>
+
+      {/* Thread Replies */}
+      {hasReplies && (
+        <ThreadReplies
+          replies={item.replies!}
+          currentUserId={currentUserId}
+          onEdit={onEditReply}
+          onDelete={onDeleteReply}
+        />
+      )}
     </div>
   )
 }
