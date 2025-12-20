@@ -4,13 +4,12 @@ import type { TimelineMilestone } from '../HorizontalTimeline'
 
 /**
  * Extracts milestones from timeline items for the horizontal timeline display.
- * Filters out system events and limits to most recent items.
+ * Returns all items - filtering is done by the parent component based on activeTypes.
  */
-export function useTimelineMilestones(items: TimelineItem[], maxItems = 10): TimelineMilestone[] {
+export function useTimelineMilestones(items: TimelineItem[], maxItems = 15): TimelineMilestone[] {
   return useMemo(() => {
     return items
-      .filter(item => item.type !== 'system') // Only relevant events
-      .slice(0, maxItems) // Limit quantity
+      .slice(0, maxItems)
       .map(item => ({
         id: item.id,
         label: getMilestoneLabel(item.type),
@@ -40,9 +39,9 @@ function isImportantEvent(item: TimelineItem): boolean {
     lowerContent.includes('ganhou') ||
     lowerContent.includes('perdeu') ||
     lowerContent.includes('qualificou') ||
-    (lowerContent.includes('status') && 
-      (lowerContent.includes('fechado') || 
-       lowerContent.includes('ganho') || 
+    (lowerContent.includes('status') &&
+      (lowerContent.includes('fechado') ||
+       lowerContent.includes('ganho') ||
        lowerContent.includes('perdido')))
   )
 }
