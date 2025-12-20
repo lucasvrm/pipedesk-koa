@@ -23,6 +23,9 @@ interface SmartTagSelectorProps {
   onOpenChange: (open: boolean) => void
 }
 
+const SELECTED_ALPHA = '26'   // ~15% opacity
+const UNSELECTED_ALPHA = '14' // ~8% opacity
+
 export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], open, onOpenChange }: SmartTagSelectorProps) {
   const { data: tags } = useTags(entityType)
   const { create, assign, unassign, update, remove } = useTagOperations()
@@ -136,7 +139,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                 {filteredTags.map(tag => {
                   const isSelected = selectedTagIds.includes(tag.id)
                   const tagColor = tag.color || '#3b82f6'
-                  const backgroundColor = isSelected ? `${tagColor}26` : `${tagColor}14`
+                  const backgroundColor = isSelected ? `${tagColor}${SELECTED_ALPHA}` : `${tagColor}${UNSELECTED_ALPHA}`
                   const textColor = isSelected ? tagColor : 'hsl(var(--foreground))'
                   return (
                     <CommandItem
