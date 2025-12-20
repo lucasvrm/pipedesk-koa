@@ -66,6 +66,7 @@ import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/Activit
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
+import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
@@ -250,6 +251,18 @@ export default function LeadDetailPage() {
     const primary = lead.contacts.find(c => c.isPrimary) || lead.contacts[0]
     return primary
   }, [lead?.contacts])
+
+  // Calculate priority if not returned from backend
+  const computedPriority = useMemo(() => {
+    if (!lead) return { bucket: 'cold' as const, score: 0, description: '' }
+    return calculateLeadPriority({
+      priorityScore: lead.priorityScore,
+      priorityBucket: lead.priorityBucket,
+      lastInteractionAt: lead.lastInteractionAt,
+      createdAt: lead.createdAt,
+      leadStatusId: lead.leadStatusId
+    })
+  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
 
   const handleOpenContactPreview = (contact: Contact) => {
     setPreviewContact(contact)
@@ -532,17 +545,17 @@ export default function LeadDetailPage() {
       {/* Container das 3 Colunas - uses HEADER_OFFSET_PX constant for height calculation */}
       <main className={`flex gap-4 px-6 py-4 min-h-[calc(100vh-${HEADER_OFFSET_PX}px)] bg-slate-50`}>
         
-        {/* COLUNA 1 - Dados do Lead (286px fixed) */}
-        <aside className="w-[286px] min-w-[286px] bg-white rounded-lg border overflow-y-auto">
+        {/* COLUNA 1 - Dados do Lead (343px fixed) */}
+        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border overflow-y-auto">
           <div className="p-4 space-y-4">
             
             {/* 1. Badge da fase atual + Temperatura */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               {statusBadge}
               <LeadPriorityBadge
-                priorityBucket={lead.priorityBucket}
-                priorityScore={lead.priorityScore}
-                priorityDescription={safeStringOptional(lead.priorityDescription)}
+                priorityBucket={computedPriority.bucket}
+                priorityScore={computedPriority.score}
+                priorityDescription={computedPriority.description}
               />
             </div>
 
@@ -873,7 +886,7 @@ export default function LeadDetailPage() {
         </section>
 
         {/* COLUNA 3 - Status & Próximas Ações */}
-        <aside className="w-[286px] min-w-[286px] bg-white rounded-lg border overflow-y-auto">
+        <aside className="w-[343px] min-w-[343px] bg-white rounded-lg border overflow-y-auto">
           <div className="p-4 space-y-6">
             
             {/* ===== SEÇÃO 1: STATUS/FASES ===== */}
@@ -980,7 +993,7 @@ export default function LeadDetailPage() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="w-full mt-3 text-slate-500 hover:text-slate-700"
+                className="w-full mt-3 text-slate-500 hover:bg-primary hover:text-white"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 Adicionar ação
