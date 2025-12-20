@@ -1,5 +1,17 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
+## 🚧 Status: 🟢 Em andamento (Leads List - Scroll/Sticky)
+
+**Data:** 2025-12-20  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Frontend - /leads (lista) - sticky header/footer e scroll interno
+
+### ✅ Tarefas Concluídas
+- [x] Container principal atualizado para `h-[calc(100vh-4rem)] min-h-0 overflow-hidden p-6 bg-background flex flex-col` evitando scroll do documento e habilitando sticky header/footer.
+
+### 🔜 Próximos passos
+- [ ] Validar sticky header/footer e scroll apenas na área da tabela em desktop e mobile.
+
 ## 🚧 Status: ✅ Concluído (Lead Detail - Prioridade, Header, Status, Tags)
 
 **Data:** 2025-12-19  
