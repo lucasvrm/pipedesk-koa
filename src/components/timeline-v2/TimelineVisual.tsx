@@ -196,7 +196,7 @@ export function TimelineVisual({
           </div>
         )}
 
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 py-4">
           <TimelineHeader
             filterState={filterState}
             onFilterChange={setFilterState}
@@ -205,7 +205,7 @@ export function TimelineVisual({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-2">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-6">
         <ActivitiesGrid
           ref={gridRef}
           items={filteredItems}
