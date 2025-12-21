@@ -30,6 +30,7 @@ import { TagManagerPopover } from './TagManagerPopover'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 import { LeadPriorityBadge } from './LeadPriorityBadge'
+import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -530,6 +531,18 @@ export function LeadSalesRow({
   const urgencyLevel = getUrgencyLevel(nextActionDueAt)
   const urgencyStyle = URGENCY_STYLES[urgencyLevel]
   const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
+
+  // Compute priority using the same logic as LeadDetailPage for consistency
+  const computedPriority = useMemo(() => {
+    return calculateLeadPriority({
+      priorityScore: priorityScore,
+      priorityBucket: priorityBucket,
+      lastInteractionAt: lastInteractionAt,
+      createdAt: createdAt ?? created_at,
+      leadStatusId: status
+    })
+  }, [priorityScore, priorityBucket, lastInteractionAt, createdAt, created_at, status])
+
   const normalizedTags = useMemo<LeadTag[]>(() => {
     if (!Array.isArray(tags)) return []
 
@@ -621,9 +634,9 @@ export function LeadSalesRow({
       <TableCell className="min-w-[200px] lg:w-[16%]">
         <div className="flex items-start gap-3 min-w-0">
           <LeadPriorityBadge
-            priorityBucket={priorityBucket}
-            priorityScore={priorityScore}
-            priorityDescription={priorityDescription}
+            priorityBucket={computedPriority.bucket}
+            priorityScore={computedPriority.score}
+            priorityDescription={computedPriority.description}
           />
           <div className="space-y-1 min-w-0">
             <div className="font-semibold leading-tight text-foreground truncate">{safeLegalName}</div>
@@ -632,8 +645,8 @@ export function LeadSalesRow({
             ) : (
               tradeName && <div className="text-xs text-muted-foreground">—</div>
             )}
-            {priorityScore !== undefined && priorityScore !== null && (
-              <div className="text-[11px] text-muted-foreground">Score: {priorityScore}</div>
+            {computedPriority.score !== undefined && computedPriority.score !== null && (
+              <div className="text-[11px] text-muted-foreground">Score: {computedPriority.score}</div>
             )}
           </div>
         </div>
