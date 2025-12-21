@@ -33,10 +33,12 @@ export function ComposerBar({
     if (replyingTo) {
       setIsExpanded(true)
       // Focus the textarea when replying to a comment
-      // Use setTimeout to ensure the textarea is rendered and expanded first
-      setTimeout(() => {
-        textareaRef.current?.focus()
-      }, 100)
+      // Use requestAnimationFrame to wait for DOM updates before focusing
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus()
+        })
+      })
     }
   }, [replyingTo])
 
