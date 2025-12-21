@@ -32,6 +32,13 @@ export function ComposerBar({
   useEffect(() => {
     if (replyingTo) {
       setIsExpanded(true)
+      // Focus the textarea when replying to a comment
+      // Use requestAnimationFrame to wait for DOM updates before focusing
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus()
+        })
+      })
     }
   }, [replyingTo])
 

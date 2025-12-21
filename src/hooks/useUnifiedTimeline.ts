@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useComments } from '@/services/commentService'
-import { useActivities } from '@/services/activityService'
+import { useActivities, ActivityLogEntry } from '@/services/activityService'
 import { fetchTimeline } from '@/services/timelineService'
 import { EntityType } from '@/types/integration'
 
@@ -25,6 +25,144 @@ export interface TimelineItem {
   // Permissions
   isEditable?: boolean
   isDeletable?: boolean
+}
+
+/**
+ * Formats activity content for better readability in the timeline.
+ * Provides user-friendly descriptions for different activity types.
+ */
+function formatActivityContent(activity: ActivityLogEntry): { content: string; title?: string } {
+  const action = activity.action || ''
+  const changes = activity.changes || {}
+
+  // Handle owner/responsible change
+  if (action.toLowerCase().includes('responsável alterado')) {
+    const previousOwnerName = changes.previousOwnerName || 'não definido'
+    const newOwnerName = changes.newOwnerName || 'desconhecido'
+    return {
+      title: 'Alteração de Responsável',
+      content: `Responsável alterado de ${previousOwnerName} para ${newOwnerName}`
+    }
+  }
+
+  // Handle status change
+  if (action.toLowerCase().includes('status alterado')) {
+    return {
+      title: 'Alteração de Status',
+      content: action
+    }
+  }
+
+  // Handle member addition
+  if (action.toLowerCase().includes('membro adicionado') || action.toLowerCase().includes('novo membro')) {
+    const memberName = changes.memberName || changes.userName || ''
+    return {
+      title: 'Novo Membro',
+      content: memberName ? `Novo membro adicionado: ${memberName}` : action
+    }
+  }
+
+  // Handle contact addition
+  if (action.toLowerCase().includes('contato') && action.toLowerCase().includes('adicionado')) {
+    return {
+      title: 'Contato Adicionado',
+      content: action
+    }
+  }
+
+  // Handle contact linking
+  if (action.toLowerCase().includes('contato') && action.toLowerCase().includes('vinculado')) {
+    return {
+      title: 'Contato Vinculado',
+      content: action
+    }
+  }
+
+  // Handle contact unlinking
+  if (action.toLowerCase().includes('contato') && action.toLowerCase().includes('desvinculado')) {
+    return {
+      title: 'Contato Desvinculado',
+      content: action
+    }
+  }
+
+  // Handle disqualification
+  if (action.toLowerCase().includes('desqualificado')) {
+    return {
+      title: 'Lead Desqualificado',
+      content: action
+    }
+  }
+
+  // Handle stage change (for deals/tracks)
+  if (action.toLowerCase().includes('estágio alterado') || action.toLowerCase().includes('movido para')) {
+    return {
+      title: 'Alteração de Estágio',
+      content: action
+    }
+  }
+
+  // Handle document upload
+  if (action.toLowerCase().includes('arquivo') || action.toLowerCase().includes('upload')) {
+    const fileName = changes.fileName || changes.file_name || ''
+    return {
+      title: 'Documento Enviado',
+      content: fileName ? `Arquivo enviado: ${fileName}` : action
+    }
+  }
+
+  // Handle won/lost status
+  if (action.toLowerCase().includes('marcado como ganho')) {
+    return {
+      title: 'Ganho',
+      content: action
+    }
+  }
+  if (action.toLowerCase().includes('marcado como perdido')) {
+    return {
+      title: 'Perdido',
+      content: action
+    }
+  }
+
+  // Handle priority change
+  if (action.toLowerCase().includes('prioridade alterada')) {
+    return {
+      title: 'Alteração de Prioridade',
+      content: action
+    }
+  }
+
+  // Handle comments
+  if (action.toLowerCase().includes('comentário')) {
+    const preview = changes.content_preview || ''
+    return {
+      title: 'Comentário',
+      content: preview ? `Comentário: "${preview}..."` : action
+    }
+  }
+
+  // Default: format changes as additional details
+  if (Object.keys(changes).length > 0) {
+    const details = Object.entries(changes)
+      .filter(([k, v]) => v && k !== 'updated_at' && !k.includes('Id'))
+      .map(([k, v]) => {
+        const key = k.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()
+        return `${key}: ${v}`
+      })
+      .join(', ')
+    
+    if (details) {
+      return {
+        title: 'Atividade',
+        content: `${action} (${details})`
+      }
+    }
+  }
+
+  return {
+    content: action
+  }
 }
 
 /**
@@ -174,26 +312,20 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
         if (seenIds.has(a.id)) return
         seenIds.add(a.id)
 
-        // Formata o conteúdo da atividade
-        let content = a.action;
-        if (a.changes && Object.keys(a.changes).length > 0) {
-           const details = Object.entries(a.changes)
-             .filter(([k, v]) => v && k !== 'updated_at')
-             .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
-             .join(', ');
-           if (details) content += ` (${details})`;
-        }
+        // Format activity content using the helper function
+        const formatted = formatActivityContent(a)
 
         items.push({
           id: a.id,
           type: 'system',
           date: a.created_at,
+          title: formatted.title,
           author: {
-            id: a.user?.id,
+            id: a.user_id,
             name: a.user?.name || 'Sistema',
             avatar: a.user?.avatar_url
           },
-          content: content,
+          content: formatted.content,
           metadata: a.changes,
           parentId: null,
           isEditable: false,

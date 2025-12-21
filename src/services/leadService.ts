@@ -302,7 +302,8 @@ export async function getLead(id: string): Promise<Lead> {
     .select(`
       *,
       lead_contacts(is_primary, contacts(*)),
-      lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url))
+      lead_members(role, added_at, user_id, profiles!lead_members_user_id_fkey(id, name, email, avatar_url)),
+      owner:profiles!leads_owner_user_id_fkey(id, name, email, avatar_url)
     `)
     .eq('id', id)
     .single();

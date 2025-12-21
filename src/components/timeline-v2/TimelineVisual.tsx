@@ -186,7 +186,7 @@ export function TimelineVisual({
   return (
     <div className="flex flex-col h-full border rounded-lg bg-card shadow-sm overflow-hidden">
       {/* Horizontal Timeline (milestones) - só aparece se há filtros selecionados */}
-      <div className="flex-shrink-0 px-4 pt-4 pb-2 space-y-4">
+      <div className="flex-shrink-0 px-4 pt-4 pb-2 space-y-2">
         {showHorizontalTimeline && filterState.activeTypes.length > 0 && filteredMilestones.length > 0 && (
           <div className="flex-shrink-0">
             <HorizontalTimeline
@@ -196,7 +196,7 @@ export function TimelineVisual({
           </div>
         )}
 
-        <div className="flex-shrink-0 py-4">
+        <div className="flex-shrink-0 py-2">
           <TimelineHeader
             filterState={filterState}
             onFilterChange={setFilterState}
@@ -205,7 +205,8 @@ export function TimelineVisual({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-6">
+      {/* Activities Grid - added pb-20 to prevent last cards from being hidden behind composer bar */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-20 pt-2">
         <ActivitiesGrid
           ref={gridRef}
           items={filteredItems}

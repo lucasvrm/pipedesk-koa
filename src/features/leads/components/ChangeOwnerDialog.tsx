@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, Check, Search, UserPlus } from 'lucide-react'
 import {
   Dialog,
@@ -22,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { useUpdateLead, addLeadMember } from '@/services/leadService'
+import { logActivity } from '@/services/activityService'
 import { Lead, User } from '@/lib/types'
 import { safeString } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -46,9 +48,7 @@ export function ChangeOwnerDialog({
   open,
   onOpenChange,
   lead,
-  // currentUserId is reserved for future use (e.g., permissions check, analytics)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  currentUserId: _currentUserId,
+  currentUserId,
   availableUsers,
 }: ChangeOwnerDialogProps) {
   // Internal states
@@ -56,6 +56,7 @@ export function ChangeOwnerDialog({
   const [searchQuery, setSearchQuery] = useState('')
   const [keepAsMember, setKeepAsMember] = useState(true)
 
+  const queryClient = useQueryClient()
   const updateLeadMutation = useUpdateLead()
 
   // Filter users: exclude current owner, filter by search query, show only active users
@@ -77,12 +78,17 @@ export function ChangeOwnerDialog({
     })
   }, [availableUsers, lead.ownerUserId, searchQuery])
 
-  const handleSelectUser = (user: User) => {
+  const handleSelectUser = useCallback((user: User) => {
     setSelectedUser(user)
-  }
+  }, [])
 
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
     if (!selectedUser) return
+
+    // Get the previous owner's name for the activity log
+    const previousOwner = availableUsers.find(u => u.id === lead.ownerUserId)
+    const previousOwnerName = previousOwner ? safeString(previousOwner.name, 'Responsável anterior') : 'Sem responsável'
+    const newOwnerName = safeString(selectedUser.name, 'Novo responsável')
 
     try {
       // If keepAsMember is true, add the previous owner as a member before changing
@@ -105,8 +111,28 @@ export function ChangeOwnerDialog({
         data: { ownerUserId: selectedUser.id },
       })
 
+      // Log activity for the owner change
+      if (currentUserId) {
+        await logActivity(
+          lead.id,
+          'lead',
+          `Responsável alterado de ${previousOwnerName} para ${newOwnerName}`,
+          currentUserId,
+          {
+            previousOwnerId: lead.ownerUserId,
+            previousOwnerName,
+            newOwnerId: selectedUser.id,
+            newOwnerName
+          }
+        )
+      }
+
+      // Invalidate timeline and activities queries to show the new activity
+      await queryClient.invalidateQueries({ queryKey: ['activities', lead.id] })
+      await queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] })
+
       toast.success('Responsável alterado', {
-        description: `${safeString(selectedUser.name, 'Usuário')} agora é o responsável pelo lead.`,
+        description: `${newOwnerName} agora é o responsável pelo lead.`,
       })
 
       // Reset state and close dialog
@@ -120,9 +146,9 @@ export function ChangeOwnerDialog({
         description: 'Não foi possível alterar o responsável. Tente novamente.',
       })
     }
-  }
+  }, [selectedUser, availableUsers, lead.id, lead.ownerUserId, keepAsMember, updateLeadMutation, currentUserId, queryClient, onOpenChange])
 
-  const handleOpenChange = (newOpen: boolean) => {
+  const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
       // Reset state when closing
       setSelectedUser(null)
@@ -130,7 +156,7 @@ export function ChangeOwnerDialog({
       setKeepAsMember(true)
     }
     onOpenChange(newOpen)
-  }
+  }, [onOpenChange])
 
   const isMutating = updateLeadMutation.isPending
   const hasNoUsers = filteredUsers.length === 0 && !searchQuery.trim()
@@ -149,7 +175,7 @@ export function ChangeOwnerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           {/* User Search and Selection */}
           <Command className="border rounded-lg" shouldFilter={false}>
             <CommandInput
@@ -157,7 +183,7 @@ export function ChangeOwnerDialog({
               value={searchQuery}
               onValueChange={setSearchQuery}
             />
-            <CommandList className="max-h-[240px]">
+            <CommandList className="max-h-[200px]">
               {hasNoUsers ? (
                 <CommandEmpty className="py-6 text-center">
                   <p className="text-sm text-muted-foreground">
@@ -235,30 +261,30 @@ export function ChangeOwnerDialog({
               </div>
             </div>
           )}
-
-          {/* Keep as Member Checkbox */}
-          {lead.ownerUserId && (
-            <div className="flex items-start space-x-3 pt-2">
-              <Checkbox
-                id="keepAsMember"
-                checked={keepAsMember}
-                onCheckedChange={(checked) => setKeepAsMember(checked === true)}
-                disabled={isMutating}
-              />
-              <div className="grid gap-1 leading-none">
-                <Label
-                  htmlFor="keepAsMember"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Manter responsável anterior como membro
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  O responsável atual continuará com acesso ao lead como colaborador.
-                </p>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Keep as Member Checkbox - outside scrollable area to always be visible */}
+        {lead.ownerUserId && (
+          <div className="flex items-start space-x-3 py-3 border-t">
+            <Checkbox
+              id="keepAsMember"
+              checked={keepAsMember}
+              onCheckedChange={(checked) => setKeepAsMember(checked === true)}
+              disabled={isMutating}
+            />
+            <div className="grid gap-1 leading-none">
+              <Label
+                htmlFor="keepAsMember"
+                className="text-sm font-medium cursor-pointer"
+              >
+                Manter responsável anterior como membro
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                O responsável atual continuará com acesso ao lead como colaborador.
+              </p>
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
           <Button
