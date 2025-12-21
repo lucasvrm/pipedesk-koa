@@ -128,8 +128,16 @@ export function ChangeOwnerDialog({
       }
 
       // Invalidate timeline and activities queries to show the new activity
-      await queryClient.invalidateQueries({ queryKey: ['activities', lead.id] })
-      await queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] })
+      // Run all invalidations in parallel since they are independent
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['activities', lead.id] }),
+        queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] }),
+        // Invalidate lead detail query to update owner badge immediately
+        queryClient.invalidateQueries({ queryKey: ['leads', lead.id] }),
+        // Invalidate leads list and sales view to reflect owner change across all views
+        queryClient.invalidateQueries({ queryKey: ['leads'] }),
+        queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
+      ])
 
       toast.success('Responsável alterado', {
         description: `${newOwnerName} agora é o responsável pelo lead.`,
@@ -240,28 +248,28 @@ export function ChangeOwnerDialog({
               )}
             </CommandList>
           </Command>
-
-          {/* Selected User Preview */}
-          {selectedUser && (
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-              <Avatar className="h-10 w-10">
-                <AvatarImage
-                  src={selectedUser.avatar}
-                  alt={safeString(selectedUser.name, 'Usuário')}
-                />
-                <AvatarFallback>
-                  {getInitials(safeString(selectedUser.name, 'NA'))}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Novo responsável:</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {safeString(selectedUser.name, 'Usuário')} ({safeString(selectedUser.email, '')})
-                </p>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Selected User Preview - outside scrollable area to always be visible after selection */}
+        {selectedUser && (
+          <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30">
+            <Avatar className="h-10 w-10">
+              <AvatarImage
+                src={selectedUser.avatar}
+                alt={safeString(selectedUser.name, 'Usuário')}
+              />
+              <AvatarFallback>
+                {getInitials(safeString(selectedUser.name, 'NA'))}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Novo responsável:</p>
+              <p className="text-sm text-muted-foreground truncate">
+                {safeString(selectedUser.name, 'Usuário')} ({safeString(selectedUser.email, '')})
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Keep as Member Checkbox - outside scrollable area to always be visible */}
         {lead.ownerUserId && (
