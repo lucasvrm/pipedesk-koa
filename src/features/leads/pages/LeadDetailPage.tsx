@@ -25,7 +25,19 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { TimelineVisual } from '@/components/timeline-v2/TimelineVisual'
 import { safeString, safeStringOptional } from '@/lib/utils'
-import { ChevronRight } from 'lucide-react'
+import { 
+  Building2, 
+  CheckCircle, 
+  ChevronRight, 
+  FileText, 
+  History, 
+  Mail, 
+  Phone, 
+  Plus, 
+  Tag, 
+  Users, 
+  X 
+} from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,18 +46,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import {
-  Buildings,
-  CheckCircle,
-  ClockCounterClockwise,
-  Envelope,
-  FileText,
-  Phone,
-  Plus,
-  Tag,
-  Users,
-  X,
-} from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Tag as TagType, Contact } from '@/lib/types'
@@ -113,80 +113,57 @@ const getInitials = (name?: string | null) => {
 }
 
 export default function LeadDetailPage() {
+  // 1. Router/Auth hooks
   const { id } = useParams()
-
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile, user } = useAuth()
-
-  // 🔹 Chamada ÚNICA ao hook de metadata
   const { leadStatuses, getLeadStatusById } = useSystemMetadata()
 
+  // 2. Query hooks (data fetching)
   const { data: lead, isLoading } = useLead(id!)
-  const updateLead = useUpdateLead()
-  const deleteLead = useDeleteLead()
-  const { addContact, removeContact } = useLeadContacts(id || '')
-  const createContact = useCreateContact()
   const { data: contacts } = useContacts()
   const { data: users } = useUsers()
   const { data: operationTypes } = useOperationTypes()
   const { data: leadTags } = useEntityTags(id || '', 'lead')
-  
-  const tagOps = useTagOperations()
-
-  // Timeline V2 hooks and mutations
   const { 
     items: timelineItems, 
     isLoading: timelineLoading, 
     error: timelineError, 
     refetch: refetchTimeline 
   } = useUnifiedTimeline(id!, 'lead')
-  
+
+  // 3. Mutation hooks (actions)
+  const updateLead = useUpdateLead()
+  const deleteLead = useDeleteLead()
+  const { addContact, removeContact } = useLeadContacts(id || '')
+  const createContact = useCreateContact()
+  const tagOps = useTagOperations()
   const createComment = useCreateComment()
   const updateComment = useUpdateComment()
   const deleteComment = useDeleteComment()
 
-  const availableUsers = useMemo<TimelineAuthor[]>(() => 
-    users?.map(u => ({ 
-      id: u.id, 
-      name: u.name || 'Usuário', 
-      avatar: u.avatar_url 
-    })) || [],
-    [users]
-  )
+  const addMemberMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
+      addLeadMember({ leadId: id || '', userId, role }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['leads', id] })
+      toast.success('Membro adicionado ao lead')
+      if (profile) logActivity(id!, 'lead', 'Novo membro adicionado ao lead', profile.id)
+    },
+    onError: () => toast.error('Não foi possível adicionar membro')
+  })
 
-  const handleCreateComment = useCallback(async (data: CommentFormData) => {
-    if (!profile) return
-    await createComment.mutateAsync({
-      entityId: id!,
-      entityType: 'lead',
-      content: data.content,
-      authorId: profile.id,
-      mentions: data.mentions,
-      parentId: data.parentId
-    })
-    refetchTimeline()
-  }, [createComment, id, profile, refetchTimeline])
+  const removeMemberMutation = useMutation({
+    mutationFn: ({ userId }: { userId: string }) => removeLeadMember(id || '', userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['leads', id] })
+      toast.success('Membro removido')
+    },
+    onError: () => toast.error('Não foi possível remover membro')
+  })
 
-  const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
-    await updateComment.mutateAsync({ 
-      commentId, 
-      content,
-      entityId: id,
-      entityType: 'lead'
-    })
-    refetchTimeline()
-  }, [updateComment, id, refetchTimeline])
-
-  const handleDeleteComment = useCallback(async (commentId: string) => {
-    await deleteComment.mutateAsync({ 
-      commentId,
-      entityId: id,
-      entityType: 'lead'
-    })
-    refetchTimeline()
-  }, [deleteComment, id, refetchTimeline])
-
+  // 4. State hooks (UI state)
   const [qualifyOpen, setQualifyOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [linkContactOpen, setLinkContactOpen] = useState(false)
@@ -205,12 +182,19 @@ export default function LeadDetailPage() {
   const [previewContact, setPreviewContact] = useState<Contact | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
-  // Permission check: user can change owner if they are the current owner OR have admin/manager role
+  // 5. Memoized values (derived state - use optional chaining for safety)
+  const availableUsers = useMemo<TimelineAuthor[]>(() => 
+    users?.map(u => ({ 
+      id: u.id, 
+      name: u.name || 'Usuário', 
+      avatar: u.avatar_url 
+    })) || [],
+    [users]
+  )
+
   const canChangeOwner = useMemo(() => {
     if (!lead || !profile) return false
-    // User is the current owner
     const isOwner = lead.ownerUserId === profile.id
-    // User has admin or manager role (higher hierarchy)
     const isAdminOrManager = profile.role === 'admin' || profile.role === 'manager'
     return isOwner || isAdminOrManager
   }, [lead, profile])
@@ -274,15 +258,12 @@ export default function LeadDetailPage() {
     return safeString(found?.name, OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType)
   }, [lead?.operationType, operationTypes])
 
-  // Get primary contact for quick actions
   const primaryContact = useMemo(() => {
     if (!lead?.contacts || lead.contacts.length === 0) return null
-    // Find primary contact or use the first one
     const primary = lead.contacts.find(c => c.isPrimary) || lead.contacts[0]
     return primary
   }, [lead?.contacts])
 
-  // Calculate priority if not returned from backend
   const computedPriority = useMemo(() => {
     if (!lead) return { bucket: 'cold' as const, score: 0, description: '' }
     return calculateLeadPriority({
@@ -294,11 +275,53 @@ export default function LeadDetailPage() {
     })
   }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
 
-  const handleOpenContactPreview = (contact: Contact) => {
+  // 6. Callback hooks (event handlers that need memoization)
+  const handleCreateComment = useCallback(async (data: CommentFormData) => {
+    if (!profile) return
+    await createComment.mutateAsync({
+      entityId: id!,
+      entityType: 'lead',
+      content: data.content,
+      authorId: profile.id,
+      mentions: data.mentions,
+      parentId: data.parentId
+    })
+    refetchTimeline()
+  }, [createComment, id, profile, refetchTimeline])
+
+  const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
+    await updateComment.mutateAsync({ 
+      commentId, 
+      content,
+      entityId: id,
+      entityType: 'lead'
+    })
+    refetchTimeline()
+  }, [updateComment, id, refetchTimeline])
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    await deleteComment.mutateAsync({ 
+      commentId,
+      entityId: id,
+      entityType: 'lead'
+    })
+    refetchTimeline()
+  }, [deleteComment, id, refetchTimeline])
+
+  const handleAddTask = useCallback(() => {
+    toast.info('Funcionalidade de tarefas em breve')
+  }, [])
+
+  const handleOpenContactDialog = useCallback(() => {
+    setContactModalOpen(true)
+  }, [])
+
+  const handleOpenContactPreview = useCallback((contact: Contact) => {
     setPreviewContact(contact)
     setIsPreviewOpen(true)
-  }
+  }, [])
 
+  // 7. Early returns (loading/error states)
   if (isLoading) return (
     <PageContainer>
       <Breadcrumb className="mb-6">
@@ -358,7 +381,7 @@ export default function LeadDetailPage() {
               {lead.qualifiedMasterDealId && (
                 <Button asChild>
                   <Link to={`/deals/${lead.qualifiedMasterDealId}`}>
-                    <Buildings className="mr-2 h-4 w-4" />
+                    <Building2 className="mr-2 h-4 w-4" />
                     Ver Negócio Associado
                   </Link>
                 </Button>
@@ -366,7 +389,7 @@ export default function LeadDetailPage() {
               {lead.qualifiedCompanyId && (
                 <Button variant="outline" asChild>
                   <Link to={`/companies/${lead.qualifiedCompanyId}`}>
-                    <Buildings className="mr-2 h-4 w-4" />
+                    <Building2 className="mr-2 h-4 w-4" />
                     Ver Empresa
                   </Link>
                 </Button>
@@ -753,10 +776,10 @@ export default function LeadDetailPage() {
             <div className="p-4 pb-0">
               <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
                 <TabsTrigger value="contexto" className="py-2 px-4">
-                  <ClockCounterClockwise className="mr-2 h-4 w-4" /> Contexto
+                  <History className="mr-2 h-4 w-4" /> Contexto
                 </TabsTrigger>
                 <TabsTrigger value="visao-geral" className="py-2 px-4">
-                  <Buildings className="mr-2 h-4 w-4" /> Visão Geral
+                  <Building2 className="mr-2 h-4 w-4" /> Visão Geral
                 </TabsTrigger>
                 <TabsTrigger value="docs" className="py-2 px-4">
                   <FileText className="mr-2 h-4 w-4" /> Docs
@@ -1153,7 +1176,7 @@ export default function LeadDetailPage() {
                         <p className="text-sm font-medium leading-tight">{safeString(contact.name, 'Contato')}</p>
                         <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo'}</p>
                         <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                          {contact.email && <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>}
+                          {contact.email && <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" /> {contact.email}</span>}
                           {contact.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {contact.phone}</span>}
                         </div>
                       </div>
