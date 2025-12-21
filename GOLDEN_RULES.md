@@ -194,3 +194,70 @@ Fora de escopo: <...>
 
 ## 11) Atualização do documento
 Atualize este arquivo quando novas “lições aprendidas” surgirem (incident/review) e mantenha-o curto.
+
+---
+
+## 12) Prevenir Erro 310 (hooks sempre no topo do componente)
+
+**Regra obrigatória:** toda a ordem de escrita do componente deve evitar hooks após condicionais/returns.
+
+✅ **FAÇA (sempre nesta ordem):**
+1. Imports
+2. Hooks de dados (useQuery, useMutation, custom hooks)
+3. `useMemo`
+4. `useCallback`
+5. `useState`
+6. `useEffect` (se houver)
+7. Condicionais e *early returns*
+8. Funções normais (handlers sem `useCallback`)
+9. Variáveis derivadas
+10. JSX `return`
+
+❌ **NÃO FAÇA (gera Erro #310):**
+
+```tsx
+// Hook depois de condicional
+if (!lead) return <div>Loading</div>
+const data = useMemo(() => ...) // ← ERRO #310
+
+// Hook dentro de condicional
+if (someCondition) {
+  const [state, setState] = useState() // ← ERRO #310
+}
+
+// Hook dentro de função/callback
+const handleClick = () => {
+  const data = useMemo(() => ...) // ← ERRO #310
+}
+```
+
+✅ **FAÇA:**
+
+```tsx
+// Hooks primeiro
+const data = useMemo(() => ...)
+const [state, setState] = useState()
+
+// Depois condicionais/returns
+if (!lead) return <div>Loading</div>
+
+// Depois funções normais
+const handleClick = () => {
+  // usar state, data, etc.
+}
+```
+
+🔍 **Como encontrar o problema:**
+- Procure por `useCallback`, `useMemo`, `useState`, `useEffect`.
+- Verifique se algum aparece **depois** de `if (...) return ...` ou dentro de condicionais/funções.
+- Mova **todos** os hooks para o topo do componente.
+
+📝 **Checklist de correção:**
+- [ ] Todos os `useState` no topo.
+- [ ] Todos os `useMemo` no topo.
+- [ ] Todos os `useCallback` no topo.
+- [ ] Todos os `useEffect` no topo.
+- [ ] Hooks de biblioteca (`useQuery`, etc.) no topo.
+- [ ] Nenhum hook depois de `if (...)` ou `return`.
+- [ ] Nenhum hook dentro de condicionais.
+- [ ] Nenhum hook dentro de funções/callbacks.

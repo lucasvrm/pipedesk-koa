@@ -38,6 +38,45 @@
 
 **Risco:** 🟢 Baixo (apenas adição de código, sem alteração de lógica existente)
 
+---
+
+## 🆕 Iteração atual - Regras de Ouro: Prevenir Erro 310
+
+### 🎯 Objetivo
+Documentar regra obrigatória para evitar Erro 310 (hooks após condicionais) nas `GOLDEN_RULES.md`.
+
+### ✅ Tarefas Concluídas
+- [x] Adicionada seção “Prevenir Erro 310 (hooks sempre no topo do componente)” descrevendo ordem obrigatória de hooks e exemplos de correto/incorreto.
+- [x] Incluída checklist para identificar e corrigir violações.
+
+### Arquivos Modificados
+- `GOLDEN_RULES.md` - Nova seção com regras contra Erro 310.
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos modificados | 1 |
+| Linhas adicionadas | ~67 |
+| Linhas removidas | 0 |
+| Testes adicionados | 0 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (documentação apenas)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|-----------------|--------|-------------|
+| Registrar regra para evitar Erro 310 | ✅ | Seção adicionada em `GOLDEN_RULES.md` |
+| Exemplos de correto/incorreto | ✅ | Incluídos com comentários explicativos |
+| Checklist de correção | ✅ | Lista de verificação para revisões |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
 ### 📝 ROADMAP Final
 
 | Item Solicitado | Status | Observações |
