@@ -535,9 +535,9 @@ export function LeadSalesRow({
   // Compute priority using the same logic as LeadDetailPage for consistency
   const computedPriority = useMemo(() => {
     return calculateLeadPriority({
-      priorityScore: priorityScore,
-      priorityBucket: priorityBucket,
-      lastInteractionAt: lastInteractionAt,
+      priorityScore,
+      priorityBucket,
+      lastInteractionAt,
       createdAt: createdAt ?? created_at,
       leadStatusId: status
     })

@@ -128,13 +128,16 @@ export function ChangeOwnerDialog({
       }
 
       // Invalidate timeline and activities queries to show the new activity
-      await queryClient.invalidateQueries({ queryKey: ['activities', lead.id] })
-      await queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] })
-      // Invalidate lead detail query to update owner badge immediately
-      await queryClient.invalidateQueries({ queryKey: ['leads', lead.id] })
-      // Invalidate leads list and sales view to reflect owner change across all views
-      await queryClient.invalidateQueries({ queryKey: ['leads'] })
-      await queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
+      // Run all invalidations in parallel since they are independent
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['activities', lead.id] }),
+        queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] }),
+        // Invalidate lead detail query to update owner badge immediately
+        queryClient.invalidateQueries({ queryKey: ['leads', lead.id] }),
+        // Invalidate leads list and sales view to reflect owner change across all views
+        queryClient.invalidateQueries({ queryKey: ['leads'] }),
+        queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
+      ])
 
       toast.success('Responsável alterado', {
         description: `${newOwnerName} agora é o responsável pelo lead.`,
