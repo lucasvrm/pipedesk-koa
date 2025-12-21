@@ -9,6 +9,34 @@
 
 ---
 
+## 🆕 Iteração atual - LeadDetailPage: Ordem de Hooks (React #310)
+
+**Data:** 2025-12-21  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Frontend - `src/features/leads/pages/LeadDetailPage.tsx`
+
+### 🎯 Objetivo
+- Corrigir o erro React #310 reorganizando todos os hooks antes dos early returns e respeitando a ordem exigida (roteamento/contexto → dados → memos → callbacks → states → mutations).
+
+### ✅ Tarefas Concluídas
+- [x] Reordenados hooks de rota, dados, memos, callbacks, estados e mutations para antes das condicionais de loading/lead.
+- [x] Movidos handlers normais e variáveis derivadas para após os early returns.
+- [x] Garantido que nenhum `useCallback` ou `useMemo` permaneça após os retornos condicionais.
+
+### Arquivos Modificados
+- `src/features/leads/pages/LeadDetailPage.tsx`
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos modificados | 1 |
+| Linhas tocadas (aprox.) | ~80 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+
+---
+
 ## 🆕 Iteração atual - Hook e Service para Alteração de Responsável
 
 ### 🎯 Objetivo

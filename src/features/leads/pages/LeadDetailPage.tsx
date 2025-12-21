@@ -155,6 +155,48 @@ export default function LeadDetailPage() {
     [users]
   )
 
+  const canChangeOwner = useMemo(() => {
+    if (!lead || !profile) return false
+    const isOwner = lead.ownerUserId === profile.id
+    const isAdminOrManager = profile.role === 'admin' || profile.role === 'manager'
+    return isOwner || isAdminOrManager
+  }, [lead, profile])
+
+  const statusBadge = useMemo(() => {
+    if (!lead) return null
+    const statusMeta = getLeadStatusById(lead.leadStatusId)
+    return (
+      <StatusBadge
+        semanticStatus={leadStatusMap(statusMeta?.code as any)}
+        label={safeString(statusMeta?.label, lead.leadStatusId)}
+        className="text-sm"
+      />
+    )
+  }, [lead, getLeadStatusById])
+
+  const operationTypeName = useMemo(() => {
+    if (!lead?.operationType) return ''
+    const found = operationTypes?.find(op => op.id === lead.operationType)
+    return safeString(found?.name, OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType)
+  }, [lead?.operationType, operationTypes])
+
+  const primaryContact = useMemo(() => {
+    if (!lead?.contacts || lead.contacts.length === 0) return null
+    const primary = lead.contacts.find(c => c.isPrimary) || lead.contacts[0]
+    return primary
+  }, [lead?.contacts])
+
+  const computedPriority = useMemo(() => {
+    if (!lead) return { bucket: 'cold' as const, score: 0, description: '' }
+    return calculateLeadPriority({
+      priorityScore: lead.priorityScore,
+      priorityBucket: lead.priorityBucket,
+      lastInteractionAt: lead.lastInteractionAt,
+      createdAt: lead.createdAt,
+      leadStatusId: lead.leadStatusId
+    })
+  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
+
   const handleCreateComment = useCallback(async (data: CommentFormData) => {
     if (!profile) return
     await createComment.mutateAsync({
@@ -187,6 +229,14 @@ export default function LeadDetailPage() {
     refetchTimeline()
   }, [deleteComment, id, refetchTimeline])
 
+  const handleAddTask = useCallback(() => {
+    toast.info('Funcionalidade de tarefas em breve')
+  }, [])
+
+  const handleOpenContactDialog = useCallback(() => {
+    setContactModalOpen(true)
+  }, [])
+
   const [qualifyOpen, setQualifyOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [linkContactOpen, setLinkContactOpen] = useState(false)
@@ -204,16 +254,6 @@ export default function LeadDetailPage() {
   const [deleteTag, setDeleteTag] = useState<TagType | null>(null)
   const [previewContact, setPreviewContact] = useState<Contact | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-
-  // Permission check: user can change owner if they are the current owner OR have admin/manager role
-  const canChangeOwner = useMemo(() => {
-    if (!lead || !profile) return false
-    // User is the current owner
-    const isOwner = lead.ownerUserId === profile.id
-    // User has admin or manager role (higher hierarchy)
-    const isAdminOrManager = profile.role === 'admin' || profile.role === 'manager'
-    return isOwner || isAdminOrManager
-  }, [lead, profile])
 
   const addMemberMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'collaborator' | 'watcher' }) =>
@@ -234,61 +274,6 @@ export default function LeadDetailPage() {
     },
     onError: () => toast.error('Não foi possível remover membro')
   })
-
-  const handleDelete = async () => {
-    if (!lead) return
-    try {
-      await deleteLead.mutateAsync(lead.id)
-      toast.success('Lead excluído com sucesso')
-      setDeleteOpen(false)
-      navigate('/leads')
-    } catch (error) {
-      toast.error('Erro ao excluir lead')
-    }
-  }
-
-  const statusBadge = useMemo(() => {
-    if (!lead) return null
-    const statusMeta = getLeadStatusById(lead.leadStatusId)
-    return (
-      <StatusBadge
-        semanticStatus={leadStatusMap(statusMeta?.code as any)}
-        label={safeString(statusMeta?.label, lead.leadStatusId)}
-        className="text-sm"
-      />
-    )
-  }, [lead, getLeadStatusById])
-
-  const operationTypeName = useMemo(() => {
-    if (!lead?.operationType) return ''
-    const found = operationTypes?.find(op => op.id === lead.operationType)
-    return safeString(found?.name, OPERATION_LABELS[lead.operationType as OperationType] || lead.operationType)
-  }, [lead?.operationType, operationTypes])
-
-  // Get primary contact for quick actions
-  const primaryContact = useMemo(() => {
-    if (!lead?.contacts || lead.contacts.length === 0) return null
-    // Find primary contact or use the first one
-    const primary = lead.contacts.find(c => c.isPrimary) || lead.contacts[0]
-    return primary
-  }, [lead?.contacts])
-
-  // Calculate priority if not returned from backend
-  const computedPriority = useMemo(() => {
-    if (!lead) return { bucket: 'cold' as const, score: 0, description: '' }
-    return calculateLeadPriority({
-      priorityScore: lead.priorityScore,
-      priorityBucket: lead.priorityBucket,
-      lastInteractionAt: lead.lastInteractionAt,
-      createdAt: lead.createdAt,
-      leadStatusId: lead.leadStatusId
-    })
-  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
-
-  const handleOpenContactPreview = (contact: Contact) => {
-    setPreviewContact(contact)
-    setIsPreviewOpen(true)
-  }
 
   if (isLoading) return (
     <PageContainer>
@@ -374,32 +359,24 @@ export default function LeadDetailPage() {
     )
   }
 
-  const safeLeadName = safeString(lead.legalName, 'Lead sem nome')
-  const safeTradeName = safeStringOptional(lead.tradeName)
-  const safeCnpj = safeStringOptional(lead.cnpj) ?? ''
-  const safeSegment = safeStringOptional(lead.segment) ?? ''
-  const safeWebsite = safeStringOptional(lead.website) ?? ''
-  const safeOperationType = safeStringOptional(lead.operationType) ?? ''
-  const safeAddressCity = safeStringOptional(lead.addressCity)
-  const safeAddressState = safeStringOptional(lead.addressState)
-  const safeDescription = safeStringOptional(lead.description) ?? ''
-  const companyId = lead.qualifiedCompanyId ?? primaryContact?.companyId ?? null
-  const safePrimaryContactName = safeStringOptional(primaryContact?.name)
-  const safePrimaryContactPhone = safeStringOptional(primaryContact?.phone)
-  const safePrimaryContactEmail = safeStringOptional(primaryContact?.email)
-  const ownerName = safeStringOptional(lead.owner?.name)
-  const ownerAvatarUrl =
-    (lead.owner as { avatar_url?: string; avatar?: string } | undefined)?.avatar_url ??
-    (lead.owner as { avatar?: string } | undefined)?.avatar
-  const ownerInitials = ownerName ? getInitials(ownerName) : '?'
+  const handleDelete = async () => {
+    if (!lead) return
+    try {
+      await deleteLead.mutateAsync(lead.id)
+      toast.success('Lead excluído com sucesso')
+      setDeleteOpen(false)
+      navigate('/leads')
+    } catch (error) {
+      toast.error('Erro ao excluir lead')
+    }
+  }
 
-  const handleStatusChange = async (value: string) => { // value is ID now
+  const handleStatusChange = async (value: string) => {
     if (!lead) return
     const statusMeta = getLeadStatusById(value)
     try {
       await updateLead.mutateAsync({ id: lead.id, data: { leadStatusId: value } })
       if (profile) {
-        // const statusMeta = getLeadStatusById(value) // Already fetched above
         logActivity(lead.id, 'lead', `Status alterado para ${safeString(statusMeta?.label, value)}`, profile.id)
       }
       toast.success('Status atualizado')
@@ -431,10 +408,6 @@ export default function LeadDetailPage() {
     }
   }
 
-  const handleAddTask = useCallback(() => {
-    toast.info('Funcionalidade de tarefas em breve')
-  }, [])
-
   const handleCreateContact = async () => {
     if (!profile || !newContact.name) {
       toast.error('Preencha o nome do contato')
@@ -453,10 +426,6 @@ export default function LeadDetailPage() {
       toast.error('Erro ao adicionar contato')
     }
   }
-
-  const handleOpenContactDialog = useCallback(() => {
-    setContactModalOpen(true)
-  }, [])
 
   const handleAddMember = async () => {
     if (!selectedMember) return toast.error('Selecione um membro')
@@ -545,6 +514,29 @@ export default function LeadDetailPage() {
     }
   }
 
+  const handleOpenContactPreview = (contact: Contact) => {
+    setPreviewContact(contact)
+    setIsPreviewOpen(true)
+  }
+
+  const safeLeadName = safeString(lead.legalName, 'Lead sem nome')
+  const safeTradeName = safeStringOptional(lead.tradeName)
+  const safeCnpj = safeStringOptional(lead.cnpj) ?? ''
+  const safeSegment = safeStringOptional(lead.segment) ?? ''
+  const safeWebsite = safeStringOptional(lead.website) ?? ''
+  const safeOperationType = safeStringOptional(lead.operationType) ?? ''
+  const safeAddressCity = safeStringOptional(lead.addressCity)
+  const safeAddressState = safeStringOptional(lead.addressState)
+  const safeDescription = safeStringOptional(lead.description) ?? ''
+  const companyId = lead.qualifiedCompanyId ?? primaryContact?.companyId ?? null
+  const safePrimaryContactName = safeStringOptional(primaryContact?.name)
+  const safePrimaryContactPhone = safeStringOptional(primaryContact?.phone)
+  const safePrimaryContactEmail = safeStringOptional(primaryContact?.email)
+  const ownerName = safeStringOptional(lead.owner?.name)
+  const ownerAvatarUrl =
+    (lead.owner as { avatar_url?: string; avatar?: string } | undefined)?.avatar_url ??
+    (lead.owner as { avatar?: string } | undefined)?.avatar
+  const ownerInitials = ownerName ? getInitials(ownerName) : '?'
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = safeAddressCity && safeAddressState ? `${safeAddressCity} - ${safeAddressState}` : safeAddressCity || safeAddressState || ''
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
