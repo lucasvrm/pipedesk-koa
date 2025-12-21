@@ -239,18 +239,16 @@ export function LeadDetailQuickActions({
       <div className="flex flex-wrap gap-2">
         {/* Kebab Menu - Dropdown de ações secundárias */}
         <DropdownMenu>
-         <DropdownMenuTrigger asChild>
-            <span className="inline-flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                data-testid="quick-action-kebab"
-                aria-label="Mais ações"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </span>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              data-testid="quick-action-kebab"
+              aria-label="Mais ações"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48">
             {/* Ações do Lead */}
@@ -325,20 +323,18 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleWhatsApp}
-                disabled={!primaryContact?.phone}
-                data-testid="quick-action-whatsapp"
-                aria-label="Enviar WhatsApp"
-              >
-                <MessageCircle className="h-3.5 w-3.5 text-green-600" />
-                <span>WhatsApp</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={handleWhatsApp}
+              disabled={!primaryContact?.phone}
+              data-testid="quick-action-whatsapp"
+              aria-label="Enviar WhatsApp"
+            >
+              <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+              <span>WhatsApp</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Enviar WhatsApp para o contato principal</p>
@@ -347,20 +343,18 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleEmail}
-                disabled={!primaryContact?.email}
-                data-testid="quick-action-email"
-                aria-label="Enviar E-mail"
-              >
-                <Mail className="h-3.5 w-3.5 text-blue-600" />
-                <span>E-mail</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={handleEmail}
+              disabled={!primaryContact?.email}
+              data-testid="quick-action-email"
+              aria-label="Enviar E-mail"
+            >
+              <Mail className="h-3.5 w-3.5 text-blue-600" />
+              <span>E-mail</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Enviar e-mail para o contato principal</p>
@@ -369,20 +363,18 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handlePhone}
-                disabled={!primaryContact?.phone}
-                data-testid="quick-action-phone"
-                aria-label="Ligar"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                <span>Ligar</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={handlePhone}
+              disabled={!primaryContact?.phone}
+              data-testid="quick-action-phone"
+              aria-label="Ligar"
+            >
+              <Phone className="h-3.5 w-3.5" />
+              <span>Ligar</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Ligar para o contato principal</p>
@@ -391,24 +383,22 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleOpenDriveFolder}
-                disabled={isDriveLoading}
-                data-testid="quick-action-drive"
-                aria-label="Drive"
-              >
-                {isDriveLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-600" />
-                ) : (
-                  <HardDrive className="h-3.5 w-3.5 text-yellow-600" />
-                )}
-                <span>Drive</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={handleOpenDriveFolder}
+              disabled={isDriveLoading}
+              data-testid="quick-action-drive"
+              aria-label="Drive"
+            >
+              {isDriveLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-600" />
+              ) : (
+                <HardDrive className="h-3.5 w-3.5 text-yellow-600" />
+              )}
+              <span>Drive</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Abrir pasta do lead no Drive</p>
@@ -417,19 +407,17 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleSchedule}
-                data-testid="quick-action-schedule"
-                aria-label="Agendar Reunião"
-              >
-                <Calendar className="h-3.5 w-3.5 text-orange-600" />
-                <span>Agendar</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={handleSchedule}
+              data-testid="quick-action-schedule"
+              aria-label="Agendar Reunião"
+            >
+              <Calendar className="h-3.5 w-3.5 text-orange-600" />
+              <span>Agendar</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Agendar reunião</p>
@@ -438,19 +426,17 @@ export function LeadDetailQuickActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleCopyId}
-                data-testid="quick-action-copy-id"
-                aria-label="Copiar ID"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                <span>Copiar ID</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={handleCopyId}
+              data-testid="quick-action-copy-id"
+              aria-label="Copiar ID"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              <span>Copiar ID</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Copiar ID do lead</p>
