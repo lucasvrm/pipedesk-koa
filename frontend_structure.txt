@@ -1,0 +1,371 @@
+Visão geral do monorepo pipedesk-koa (nível até 2)
+pipedesk-koa/
+├── .env.example
+├── .github/
+│   ├── agents/
+│   ├── dependabot.yml
+│   └── workflows/
+├── .gitignore
+├── .npmrc
+├── .spark-initial-sha
+├── ACTION_PLAN.md
+├── AGENTS.md
+├── GOLDEN_RULES.md
+├── LICENSE
+├── components.json
+├── docs/
+│   ├── DOCUMENTATION_AUDIT.md
+│   ├── DOCUMENTATION_CHANGELOG.md
+│   ├── README.md
+│   ├── archive/
+│   ├── data/
+│   ├── development/
+│   ├── features/
+│   ├── frontend/
+│   ├── getting-started/
+│   ├── guides/
+│   ├── incidents/
+│   ├── leads-field-coverage.csv
+│   ├── operations/
+│   ├── overview/
+│   ├── plans/
+│   ├── reports/
+│   ├── security/
+│   └── status/
+├── eslint.config.js
+├── index.html
+├── lint_output.txt
+├── package-lock.json
+├── package.json
+├── playwright.config.ts
+├── public/
+│   └── favicon.svg
+├── runtime.config.json
+├── scripts/
+│   └── ai-commit.ps1
+├── spark.meta.json
+├── src/
+│   ├── App.tsx
+│   ├── ErrorFallback.tsx
+│   ├── components/
+│   ├── config/
+│   ├── constants/
+│   ├── contexts/
+│   ├── features/
+│   ├── hooks/
+│   ├── index.css
+│   ├── lib/
+│   ├── main.css
+│   ├── main.tsx
+│   ├── pages/
+│   ├── services/
+│   ├── styles/
+│   ├── types/
+│   ├── utils/
+│   └── vite-env.d.ts
+├── supabase/
+│   ├── .gitignore
+│   ├── config.toml
+│   ├── functions/
+│   ├── migrations/
+│   └── sql/
+├── tailwind.config.js
+├── test-results/
+│   ├── .last-run.json
+│   └── leads-filters.png
+├── tests/
+│   ├── e2e/
+│   ├── setup.ts
+│   └── unit/
+├── theme.json
+├── tsconfig.json
+├── typecheck_output.txt
+├── vercel.json
+├── verification/
+│   └── verify_dashboard.py
+├── verify_ui.py
+├── vite.config.ts
+└── vitest.config.ts
+
+Detalhamento de src/ (nível até 3)
+src/
+├── App.tsx
+├── ErrorFallback.tsx
+├── components/
+│   ├── AINextSteps.tsx
+│   ├── ActivityHistory.tsx
+│   ├── ActivitySummarizer.tsx
+│   ├── AuditLogView.tsx
+│   ├── Auth/
+│   │   └── ProtectedRoute.tsx
+│   ├── BuyingCommitteeCard.tsx
+│   ├── CommentsPanel.tsx
+│   ├── CustomFieldsManager.tsx
+│   ├── CustomFieldsRenderer.tsx
+│   ├── Dashboar-AIDA.tsx
+│   ├── DataRoomView.tsx
+│   ├── DataToolbar.tsx
+│   ├── DataToolbarDemo.tsx
+│   ├── DocumentGenerator.tsx
+│   ├── DocumentManager.tsx
+│   ├── DriveSection.tsx
+│   ├── EmptyState.tsx
+│   ├── FolderBrowser.tsx
+│   ├── FolderManager.tsx
+│   ├── GlobalErrorBoundary.tsx
+│   ├── GlobalSearch.tsx
+│   ├── GoogleIntegrationDialog.tsx
+│   ├── HelpCenter.tsx
+│   ├── Layout.tsx
+│   ├── OnboardingTour.tsx
+│   ├── PageContainer.tsx
+│   ├── PhaseRuleEditor.tsx
+│   ├── PhaseValidationDialog.tsx
+│   ├── PhaseValidationManager.tsx
+│   ├── PipelineSettingsDialog.tsx
+│   ├── PlayerSelect.tsx
+│   ├── QuickActionsMenu.tsx
+│   ├── SLAConfigManager.tsx
+│   ├── SLAIndicator.tsx
+│   ├── SLAMonitoringService.tsx
+│   ├── SemanticSearch.tsx
+│   ├── SharedListFiltersBar.tsx
+│   ├── SharedListLayout.tsx
+│   ├── SmartTagSelector.tsx
+│   ├── TagSelector.tsx
+│   ├── UnifiedTimeline.tsx
+│   ├── WidgetErrorBoundary.tsx
+│   ├── detail-layout/
+│   │   ├── EntityDetailLayout.tsx
+│   │   ├── KeyMetricsSidebar.tsx
+│   │   └── PipelineVisualizer.tsx
+│   ├── layouts/
+│   │   ├── SharedListFiltersBar.tsx
+│   │   ├── SharedListLayout.tsx
+│   │   ├── SharedListSkeleton.tsx
+│   │   └── SharedListToolbar.tsx
+│   ├── timeline-v2/
+│   │   ├── ActivitiesGrid.tsx
+│   │   ├── ActivityCard.tsx
+│   │   ├── ComposerBar.tsx
+│   │   ├── DeleteCommentModal.tsx
+│   │   ├── EditCommentModal.tsx
+│   │   ├── HorizontalTimeline.tsx
+│   │   ├── MentionsDropdown.tsx
+│   │   ├── ThreadReplies.tsx
+│   │   ├── TimelineHeader.tsx
+│   │   ├── TimelineVisual.tsx
+│   │   ├── hooks/
+│   │   ├── index.ts
+│   │   └── types.ts
+│   ├── types/
+│   │   └── listLayout.ts
+│   └── ui/
+│       ├── ActivityBadges.tsx
+│       ├── MetricCard.tsx
+│       ├── MultiSelectPopover.tsx
+│       ├── RelationshipMap.example.tsx
+│       ├── RelationshipMap.tsx
+│       ├── StatusBadge.tsx
+│       ├── accordion.tsx
+│       ├── alert-dialog.tsx
+│       ├── alert.tsx
+│       ├── aspect-ratio.tsx
+│       ├── avatar.tsx
+│       ├── badge.tsx
+│       ├── breadcrumb.tsx
+│       ├── button.tsx
+│       ├── calendar.tsx
+│       ├── card.tsx
+│       ├── carousel.tsx
+│       ├── chart.tsx
+│       ├── checkbox.tsx
+│       ├── collapsible.tsx
+│       ├── command.tsx
+│       ├── context-menu.tsx
+│       ├── dialog.tsx
+│       ├── drawer.tsx
+│       ├── dropdown-menu.tsx
+│       ├── form.tsx
+│       ├── hover-card.tsx
+│       ├── input-otp.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── menubar.tsx
+│       ├── navigation-menu.tsx
+│       ├── pagination.tsx
+│       ├── popover.tsx
+│       ├── progress.tsx
+│       ├── radio-group.tsx
+│       ├── resizable.tsx
+│       ├── scroll-area.tsx
+│       ├── select.tsx
+│       ├── separator.tsx
+│       ├── sheet.tsx
+│       ├── sidebar.tsx
+│       ├── skeleton.tsx
+│       ├── slider.tsx
+│       ├── sonner.tsx
+│       ├── switch.tsx
+│       ├── table.tsx
+│       ├── tabs.tsx
+│       ├── textarea.tsx
+│       ├── toggle-group.tsx
+│       ├── toggle.tsx
+│       └── tooltip.tsx
+├── config/
+│   └── featureFlags.ts
+├── constants/
+│   └── dashboardDefaults.ts
+├── contexts/
+│   ├── AuthContext.tsx
+│   ├── DashboardFiltersContext.tsx
+│   ├── ImpersonationContext.tsx
+│   ├── PreferencesContext.tsx
+│   └── SystemMetadataContext.tsx
+├── features/
+│   ├── admin/
+│   │   └── components/
+│   ├── analytics/
+│   │   ├── components/
+│   │   └── utils/
+│   ├── calendar/
+│   │   └── components/
+│   ├── companies/
+│   │   └── pages/
+│   ├── contacts/
+│   │   └── pages/
+│   ├── dashboard/
+│   │   ├── components/
+│   │   ├── registry.tsx
+│   │   └── widgets/
+│   ├── deals/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   └── pages/
+│   ├── inbox/
+│   │   ├── components/
+│   │   └── hooks/
+│   ├── leads/
+│   │   ├── components/
+│   │   ├── constants/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   └── utils/
+│   ├── players/
+│   │   ├── components/
+│   │   └── pages/
+│   ├── rbac/
+│   │   ├── components/
+│   │   └── hooks/
+│   ├── shared/
+│   │   └── components/
+│   ├── tasks/
+│   │   ├── components/
+│   │   └── utils/
+│   └── tracks/
+│       ├── components/
+│       └── pages/
+├── hooks/
+│   ├── use-mobile.ts
+│   ├── useCustomFields.ts
+│   ├── useDashboardLayout.ts
+│   ├── useDriveDocuments.ts
+│   ├── useEnhancedAnalytics.ts
+│   ├── useFolders.ts
+│   ├── useIntegrations.ts
+│   ├── useKV.ts
+│   ├── useLabel.ts
+│   ├── useLeadMonthlyMetrics.ts
+│   ├── useLocalStorage.ts
+│   ├── useOperationalTeam.ts
+│   ├── useQuickActions.tsx
+│   ├── useRealtimeNotifications.ts
+│   ├── useSupabase.ts
+│   ├── useSystemMetadata.ts
+│   └── useUnifiedTimeline.ts
+├── index.css
+├── lib/
+│   ├── apiClient.ts
+│   ├── auth.ts
+│   ├── databaseTypes.ts
+│   ├── dbMappers.ts
+│   ├── driveClient.ts
+│   ├── errors.ts
+│   ├── helpers.ts
+│   ├── pdfWatermark.ts
+│   ├── permissions.ts
+│   ├── phaseValidation.ts
+│   ├── safeFetch.ts
+│   ├── statusMaps.ts
+│   ├── supabaseClient.ts
+│   ├── types.ts
+│   └── utils.ts
+├── main.css
+├── main.tsx
+├── pages/
+│   ├── AidaPage.tsx
+│   ├── ComponentsDemo.tsx
+│   ├── ContactsPage.tsx
+│   ├── DashboardPage.tsx
+│   ├── FolderManagerPage.tsx
+│   ├── HelpCenterPage.tsx
+│   ├── LoadingPage.tsx
+│   ├── Profile.tsx
+│   ├── TestDocsPage.tsx
+│   ├── admin/
+│   │   ├── DashboardSettings.tsx
+│   │   ├── GoogleIntegrationPage.tsx
+│   │   ├── PipelineSettings.tsx
+│   │   ├── SettingsPage.tsx
+│   │   ├── SyntheticDataAdminPage.tsx
+│   │   ├── TagSettings.tsx
+│   │   ├── UserManagementPage.tsx
+│   │   └── components/
+│   └── settings/
+│       └── CustomFieldsPage.tsx
+├── services/
+│   ├── activityService.ts
+│   ├── analyticsService.ts
+│   ├── calendarService.ts
+│   ├── commentService.ts
+│   ├── companyService.ts
+│   ├── contactService.ts
+│   ├── dashboardTemplateService.ts
+│   ├── dealService.ts
+│   ├── documentAutomationService.ts
+│   ├── driveService.ts
+│   ├── folderService.ts
+│   ├── googleDriveService.ts
+│   ├── leadService.ts
+│   ├── leadsSalesViewService.ts
+│   ├── magicLinkService.ts
+│   ├── notificationService.ts
+│   ├── operationTypeService.ts
+│   ├── pdGoogleDriveApi.ts
+│   ├── pipelineService.ts
+│   ├── playerService.ts
+│   ├── roleService.ts
+│   ├── settingsService.ts
+│   ├── slaService.ts
+│   ├── systemSettingsService.ts
+│   ├── tagService.ts
+│   ├── taskPriorityService.ts
+│   ├── taskService.ts
+│   ├── taskStatusService.ts
+│   ├── timelineService.ts
+│   ├── trackService.ts
+│   ├── trackStatusService.ts
+│   ├── transitionService.ts
+│   └── userService.ts
+├── styles/
+│   └── theme.css
+├── types/
+│   ├── integration.ts
+│   └── metadata.ts
+├── utils/
+│   ├── dateRangeUtils.ts
+│   ├── dateUtils.ts
+│   ├── googleLinks.ts
+│   └── security.ts
+└── vite-env.d.ts
