@@ -159,12 +159,12 @@ describe('Helpers - Utility Functions', () => {
       expect(getInitials('John Doe')).toBe('JD')
     })
 
-    it('should get initials from single word name', () => {
-      expect(getInitials('John')).toBe('J')
+    it('should get first two characters from single word name', () => {
+      expect(getInitials('John')).toBe('JO')
     })
 
-    it('should get first two initials from multi-word name', () => {
-      expect(getInitials('John Peter Doe')).toBe('JP')
+    it('should get first and last initials from multi-word name', () => {
+      expect(getInitials('John Peter Doe')).toBe('JD')
     })
 
     it('should handle lowercase names', () => {
@@ -172,7 +172,27 @@ describe('Helpers - Utility Functions', () => {
     })
 
     it('should handle names with extra spaces', () => {
-      expect(getInitials('  John   Doe  ')).not.toBe('')
+      expect(getInitials('  John   Doe  ')).toBe('JD')
+    })
+
+    it('should return ? for null name', () => {
+      expect(getInitials(null)).toBe('?')
+    })
+
+    it('should return ? for undefined name', () => {
+      expect(getInitials(undefined)).toBe('?')
+    })
+
+    it('should return ? for empty string', () => {
+      expect(getInitials('')).toBe('?')
+    })
+
+    it('should return ? for whitespace-only string', () => {
+      expect(getInitials('   ')).toBe('?')
+    })
+
+    it('should handle single character names', () => {
+      expect(getInitials('J')).toBe('J')
     })
   })
 

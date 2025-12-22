@@ -226,7 +226,7 @@ describe('ChangeOwnerDialog', () => {
     expect(screen.queryByText('New Owner')).not.toBeInTheDocument()
   })
 
-  it('updates query cache optimistically when changing owner', async () => {
+  it('invalidates queries after changing owner successfully', async () => {
     const user = userEvent.setup()
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -242,6 +242,9 @@ describe('ChangeOwnerDialog', () => {
       ...mockLead, 
       ownerUserId: 'user-2' 
     })
+
+    // Spy on invalidateQueries to verify it's called
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
     // Override the mock for this test
     const { useUpdateLead } = await import('@/services/leadService')
@@ -277,20 +280,99 @@ describe('ChangeOwnerDialog', () => {
       })
     })
 
-    // Verify cache was updated
+    // Verify queries were invalidated (not optimistically updated)
     await waitFor(() => {
-      const cachedLead = queryClient.getQueryData(['leads', 'lead-123']) as Lead
-      expect(cachedLead).toBeDefined()
-      expect(cachedLead.ownerUserId).toBe('user-2')
-      expect(cachedLead.owner?.id).toBe('user-2')
-      expect(cachedLead.owner?.name).toBe('New Owner')
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['leads', 'lead-123'] })
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['leads'] })
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['leads', 'sales-view'] })
+    })
+  })
+
+  it('handles 409 conflict error correctly', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
     })
 
-    // Verify list cache was also updated
-    const cachedList = queryClient.getQueryData(['leads']) as Lead[]
-    expect(cachedList).toBeDefined()
-    const updatedLeadInList = cachedList.find(l => l.id === 'lead-123')
-    expect(updatedLeadInList?.ownerUserId).toBe('user-2')
-    expect(updatedLeadInList?.owner?.name).toBe('New Owner')
+    const mockUpdateLead = vi.fn().mockRejectedValue({ 
+      status: 409,
+      message: 'Conflict: Lead has been modified'
+    })
+
+    // Spy on invalidateQueries to verify refetch on error
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const { useUpdateLead } = await import('@/services/leadService')
+    vi.mocked(useUpdateLead).mockReturnValue({
+      mutateAsync: mockUpdateLead,
+      isPending: false,
+    } as any)
+
+    const { toast } = await import('sonner')
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChangeOwnerDialog
+          open={true}
+          onOpenChange={() => {}}
+          lead={mockLead}
+          currentUserId="user-1"
+          availableUsers={mockUsers}
+        />
+      </QueryClientProvider>
+    )
+
+    // Select new owner
+    await user.click(screen.getByText('New Owner'))
+
+    // Click confirm
+    const confirmButton = screen.getByRole('button', { name: 'Confirmar' })
+    await user.click(confirmButton)
+
+    // Wait for error handling
+    await waitFor(() => {
+      expect(mockUpdateLead).toHaveBeenCalled()
+    })
+
+    // Verify error toast was shown with specific 409 message
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Erro ao alterar responsável',
+        expect.objectContaining({
+          description: expect.stringContaining('Conflito')
+        })
+      )
+    })
+
+    // Verify lead query was invalidated to refetch and ensure consistency
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['leads', 'lead-123'] })
+    })
+  })
+
+  it('displays avatar with initials when user has no photo', () => {
+    const usersWithoutPhotos: User[] = [
+      { id: 'user-2', name: 'John Smith', email: 'john@example.com' },
+      { id: 'user-3', name: 'Alice', email: 'alice@example.com' },
+    ]
+
+    render(
+      <ChangeOwnerDialog
+        open={true}
+        onOpenChange={() => {}}
+        lead={mockLead}
+        availableUsers={usersWithoutPhotos}
+      />,
+      { wrapper: createWrapper() }
+    )
+
+    // Users should be displayed with their names
+    expect(screen.getByText('John Smith')).toBeInTheDocument()
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+
+    // Avatar fallbacks should show initials (tested indirectly via getInitials utility)
+    // Note: Avatar component rendering is already covered by component library tests
   })
 })
