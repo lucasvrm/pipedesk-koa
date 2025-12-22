@@ -1,5 +1,0 @@
-pd-google (backend FastAPI) não está presente neste workspace. Nenhuma árvore de pastas local pôde ser listada.
-
-Referências úteis no frontend:
-- Integrações de Drive consomem o backend pd-google via endpoints documentados em `api_routes.txt`.
-- O repositório atual contém apenas o frontend (pipedesk-koa) e artefatos Supabase.
