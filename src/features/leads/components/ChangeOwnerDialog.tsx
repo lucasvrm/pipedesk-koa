@@ -111,6 +111,79 @@ export function ChangeOwnerDialog({
         data: { ownerUserId: selectedUser.id },
       })
 
+      // Optimistically update cache for immediate UI feedback
+      // Update the lead detail query
+      queryClient.setQueryData([...LEADS_KEY, lead.id], (oldData: Lead | undefined) => {
+        if (!oldData) return oldData
+        return {
+          ...oldData,
+          ownerUserId: selectedUser.id,
+          owner: {
+            id: selectedUser.id,
+            name: selectedUser.name,
+            email: selectedUser.email,
+            avatar: selectedUser.avatar
+          }
+        }
+      })
+
+      // Update leads list queries - patch the specific lead in the list
+      queryClient.setQueriesData({ queryKey: LEADS_KEY }, (oldData: Lead[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.map(item => 
+          item.id === lead.id 
+            ? { 
+                ...item, 
+                ownerUserId: selectedUser.id,
+                owner: {
+                  id: selectedUser.id,
+                  name: selectedUser.name,
+                  email: selectedUser.email,
+                  avatar: selectedUser.avatar
+                }
+              }
+            : item
+        )
+      })
+
+      // Update sales view queries - patch the specific lead in the sales view
+      queryClient.setQueriesData({ queryKey: LEADS_SALES_VIEW_KEY }, (oldData: Lead[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.map(item => 
+          item.id === lead.id 
+            ? { 
+                ...item, 
+                ownerUserId: selectedUser.id,
+                owner: {
+                  id: selectedUser.id,
+                  name: selectedUser.name,
+                  email: selectedUser.email,
+                  avatar: selectedUser.avatar
+                }
+              }
+            : item
+        )
+      })
+
+      queryClient.setQueriesData({ queryKey: LEADS_SALES_VIEW_ALT_KEY }, (oldData: any[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.map((item: any) => {
+          const itemId = item.id || item.leadId || item.lead_id
+          if (itemId === lead.id) {
+            return {
+              ...item,
+              ownerUserId: selectedUser.id,
+              owner: {
+                id: selectedUser.id,
+                name: selectedUser.name,
+                avatar: selectedUser.avatar
+              }
+            }
+          }
+          return item
+        })
+      })
+
       // Log activity for the owner change
       if (currentUserId) {
         await logActivity(
@@ -132,9 +205,8 @@ export function ChangeOwnerDialog({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['activities', lead.id] }),
         queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] }),
-        // Invalidate lead detail query to update owner badge immediately
+        // Invalidate to refresh from server (after optimistic update)
         queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, lead.id] }),
-        // Invalidate leads list and sales view to reflect owner change across all views
         queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
         queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY }),
         queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY })
