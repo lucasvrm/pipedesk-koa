@@ -350,7 +350,7 @@ export function Layout({ children }: LayoutProps) {
   );
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-6">
@@ -752,7 +752,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </header>
 
-      <main className="flex-1 overflow-hidden relative">{children}</main>
+      <main className="flex-1 overflow-auto relative">{children}</main>
 
       <GlobalSearch
         open={searchOpen}
