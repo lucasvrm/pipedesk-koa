@@ -89,9 +89,9 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
       <PopoverTrigger asChild>
         <span className="sr-only">Abrir seletor de tags</span>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[380px] p-0 shadow-lg border">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium">
+      <PopoverContent align="start" className="w-[480px] max-h-[80vh] p-0 shadow-lg border bg-background">
+        <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <TagIcon className="text-primary" />
             <span>Gerenciar Tags</span>
           </div>
@@ -101,15 +101,16 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
         </div>
 
         {editingTag ? (
-          <div className="p-4 space-y-3">
+          <div className="p-4 space-y-3 bg-background">
             <div className="space-y-1">
-              <p className="text-sm font-medium">Editar Tag</p>
+              <p className="text-sm font-medium text-foreground">Editar Tag</p>
               <p className="text-xs text-muted-foreground">Ajuste o nome e confirme para salvar.</p>
             </div>
             <Input
               value={editName}
               onChange={e => setEditName(e.target.value)}
               placeholder="Nome da tag"
+              className="bg-background text-foreground border-border"
               autoFocus
             />
             <div className="flex gap-2 justify-end">
@@ -118,17 +119,18 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
             </div>
           </div>
         ) : (
-          <Command className="rounded-b-lg">
+          <Command className="rounded-b-lg bg-background">
             <CommandInput
               placeholder="Buscar ou criar tag..."
               value={search}
               onValueChange={setSearch}
+              className="bg-background text-foreground border-border"
             />
-            <CommandList className="max-h-[320px]">
-              <CommandEmpty className="py-6 text-center text-sm">
+            <CommandList className="max-h-[480px] overflow-y-auto">
+              <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
                 {search && !exactMatch ? (
                   <div className="flex flex-col items-center gap-2">
-                    <p>Tag "{search}" não existe.</p>
+                    <p className="text-foreground">Tag "{search}" não existe.</p>
                     <Button variant="outline" size="sm" onClick={handleCreate}>
                       <Plus className="mr-2 h-4 w-4" /> Criar "{search}"
                     </Button>
@@ -136,7 +138,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                 ) : "Nenhuma tag encontrada."}
               </CommandEmpty>
 
-              <CommandGroup heading="Tags Disponíveis">
+              <CommandGroup heading="Tags Disponíveis" className="text-foreground">
                 {filteredTags.map(tag => {
                   const isSelected = selectedTagIds.includes(tag.id)
                   const tagColor = tag.color || '#3b82f6'
@@ -148,7 +150,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                       value={tag.name}
                       onSelect={() => handleSelect(tag.id)}
                       className={cn(
-                        "flex items-center justify-between group cursor-pointer px-3 py-2 rounded-md border transition-colors",
+                        "flex items-center justify-between group cursor-pointer px-3 py-2.5 rounded-md border transition-colors",
                         "hover:bg-muted"
                       )}
                       style={{
