@@ -59,7 +59,9 @@ export function ComposerBar({
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const height = entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height
+        // Use borderBoxSize if available, otherwise fall back to contentRect or getBoundingClientRect
+        const borderBoxHeight = entry.borderBoxSize?.[0]?.blockSize
+        const height = borderBoxHeight ?? entry.contentRect?.height ?? entry.target.getBoundingClientRect().height
         onHeightChange(height)
       }
     })
