@@ -74,9 +74,9 @@ function getTypeConfig(type: TimelineItemType): TypeStyleConfig {
       return {
         icon: <GitCommit className="h-4 w-4" />,
         label: 'alteração',
-        borderClass: 'border-amber-200 dark:border-amber-800/50',
+        borderClass: 'border-amber-500 dark:border-amber-600/50',
         bgClass: 'bg-amber-50/50 dark:bg-amber-950/20',
-        badgeClass: 'border-amber-300 text-amber-600 dark:text-amber-400'
+        badgeClass: 'bg-amber-600 text-white border-amber-700 dark:bg-amber-700 dark:border-amber-600'
       }
     case 'system':
     default:

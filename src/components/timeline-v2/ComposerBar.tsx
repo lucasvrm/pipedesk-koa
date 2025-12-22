@@ -11,6 +11,7 @@ interface ComposerBarProps {
   availableUsers: TimelineAuthor[]
   replyingTo?: TimelineItem | null
   onCancelReply?: () => void
+  onHeightChange?: (height: number) => void
 }
 
 export function ComposerBar({
@@ -18,7 +19,8 @@ export function ComposerBar({
   isSubmitting,
   availableUsers,
   replyingTo,
-  onCancelReply
+  onCancelReply,
+  onHeightChange
 }: ComposerBarProps) {
   const [content, setContent] = useState('')
   const [mentionSearch, setMentionSearch] = useState('')
@@ -41,6 +43,35 @@ export function ComposerBar({
       })
     }
   }, [replyingTo])
+
+  // Report height changes via ResizeObserver
+  useEffect(() => {
+    if (!onHeightChange || !containerRef.current) return
+
+    const element = containerRef.current
+    
+    // Guard for environments without ResizeObserver
+    if (typeof ResizeObserver === 'undefined') {
+      // Fallback: report initial height
+      onHeightChange(element.offsetHeight)
+      return
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height = entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height
+        onHeightChange(height)
+      }
+    })
+
+    observer.observe(element)
+    // Report initial height
+    onHeightChange(element.offsetHeight)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [onHeightChange])
 
   // Calculate dropdown position based on textarea cursor
   const calculateMentionPosition = useCallback(() => {
@@ -142,13 +173,14 @@ export function ComposerBar({
     setTimeout(() => {
       if (showMentions) return
       const isInside = containerRef.current?.contains(document.activeElement) ?? false
-      if (!isInside && !content.trim() && !replyingTo) {
+      // Minimize when focus leaves and no content is typed (even with replyingTo set)
+      if (!isInside && !content.trim()) {
         setIsExpanded(false)
         setShowMentions(false)
         setMentionSearch('')
       }
     }, 0)
-  }, [content, replyingTo, showMentions])
+  }, [content, showMentions])
 
   return (
     <div ref={containerRef} className="relative p-4 border-t bg-background">

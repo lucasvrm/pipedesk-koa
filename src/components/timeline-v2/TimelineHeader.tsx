@@ -49,7 +49,7 @@ const FILTER_OPTIONS: FilterOption[] = [
     type: 'audit',
     label: 'Alterações',
     icon: <GitCommit className="h-3.5 w-3.5" />,
-    activeColor: 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200'
+    activeColor: 'bg-amber-600 text-white border-amber-700 hover:bg-amber-700'
   },
   {
     type: 'system',

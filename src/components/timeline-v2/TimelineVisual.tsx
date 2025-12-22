@@ -51,6 +51,9 @@ export function TimelineVisual({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [replyingTo, setReplyingTo] = useState<TimelineItem | null>(null)
   
+  // Dynamic padding for ComposerBar height
+  const [composerHeight, setComposerHeight] = useState(80) // Default fallback height
+  
   // Estados para modais de edição e exclusão
   const [editingComment, setEditingComment] = useState<TimelineItem | null>(null)
   const [deletingComment, setDeletingComment] = useState<TimelineItem | null>(null)
@@ -146,6 +149,11 @@ export function TimelineVisual({
     setReplyingTo(null)
   }, [])
 
+  // Handler for ComposerBar height changes
+  const handleComposerHeightChange = useCallback((height: number) => {
+    setComposerHeight(height)
+  }, [])
+
   // Handler for milestone click - scroll to the corresponding card
   const handleMilestoneClick = useCallback((milestoneId: string) => {
     if (!gridRef.current) return
@@ -205,8 +213,11 @@ export function TimelineVisual({
         </div>
       </div>
 
-      {/* Activities Grid - added pb-20 to prevent last cards from being hidden behind composer bar */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-20 pt-2">
+      {/* Activities Grid - dynamic padding based on ComposerBar height */}
+      <div 
+        className="flex-1 min-h-0 overflow-y-auto px-4 pt-2"
+        style={{ paddingBottom: composerHeight + 16 }}
+      >
         <ActivitiesGrid
           ref={gridRef}
           items={filteredItems}
@@ -225,6 +236,7 @@ export function TimelineVisual({
           availableUsers={availableUsers}
           replyingTo={replyingTo}
           onCancelReply={handleCancelReply}
+          onHeightChange={handleComposerHeightChange}
         />
       </div>
 
