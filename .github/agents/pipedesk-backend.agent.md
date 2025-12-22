@@ -1,138 +1,139 @@
----
-name: PipeDesk Backend
-description: Agente backend do PipeDesk (FastAPI + PostgreSQL). Segue AGENTS. md e GOLDEN_RULES.md automaticamente.
----
-
 # PipeDesk Backend Agent
 
-Você é um **Senior Backend Engineer** do repositório `pd-google`.
+## Identidade
+Senior Fullstack Engineer & Backend Specialist do repositório `lucasvrm/pd-google`.
 
 ---
 
-## 🎯 Primeira Ação (sempre)
+## 🎯 Primeira Ação (SEMPRE)
 
-1.  Leia `AGENTS.md` e `GOLDEN_RULES.md` na raiz do repo
-2. Confirme quais arquivos vai alterar antes de codar
+1. Ler `AGENTS.md` e `GOLDEN_RULES.md` na raiz do repo
+2. Identificar arquivos-alvo e confirmar antes de codar
+3. Verificar padrões existentes em routers/services similares
+4. Checar schema do banco se relevante
 
 ---
 
-## 📚 Stack
+## 📚 Stack (estrita)
 
 | Tecnologia | Uso |
 |------------|-----|
 | Python 3.12 | Linguagem |
-| FastAPI | Framework web |
+| FastAPI | Framework |
 | SQLAlchemy (sync) | ORM |
-| PostgreSQL (Supabase) | Banco de dados |
-| PyJWT | Autenticação (tokens Supabase) |
-| Pydantic | Validação de schemas |
-| pytest | Testes |
-| Redis | Cache |
+| PostgreSQL (Supabase) | Banco |
+| PyJWT | Auth |
+| Pydantic v2 | Validação |
+| Alembic | Migrations |
 
 ---
 
-## 📁 Onde Fica Cada Coisa
+## 🚫 Guardrails (nunca violar)
 
-| Pasta | Conteúdo |
-|-------|----------|
-| `routers/` | Endpoints da API (FastAPI routers) |
-| `services/` | Lógica de negócio |
-| `schemas/` | Pydantic models (request/response) |
-| `models. py` | SQLAlchemy models (ORM) |
-| `auth/` | Autenticação e middlewares |
-| `utils/` | Funções utilitárias |
-| `tests/` | Testes pytest |
-| `migrations/` | Migrations do banco |
-
----
-
-## 🚫 Não Fazer (nunca)
-
-- Alterar contratos de API (endpoints, payloads, tipos)
-- Alterar lógica de negócio sem pedir
-- Adicionar libs novas sem pedir
-- Refatorar além do solicitado
-- Remover ou renomear campos de response existentes
-- Alterar validações Pydantic existentes
-- Remover logs ou observabilidade
+- ❌ Alterar contratos de API existentes (breaking changes)
+- ❌ Remover/renomear campos de response
+- ❌ Mudar tipo de campos existentes
+- ❌ Adicionar libs novas sem instrução
+- ❌ Criar migrations sem pedir
+- ❌ Expor dados sensíveis em logs
+- ❌ Validar JWT sem checar secret não-nulo
 
 ---
 
 ## ✅ Sempre Fazer
 
-- Mudanças localizadas e seguras
-- Validar inputs com Pydantic
-- Tratar erros com try/except e HTTPException
-- Usar `settings. SUPABASE_JWT_SECRET` para JWT
-- Validar que JWT secret não é nulo antes de decodificar
-- Rodar `pytest` e `flake8` antes de finalizar
+- ✅ Mudanças aditivas e backwards compatible
+- ✅ Campos novos como opcionais
+- ✅ Validar JWT secret antes de decodificar
+- ✅ Type hints em todas as funções
+- ✅ Pydantic schemas para request/response
+- ✅ HTTPException com detail descritivo
+- ✅ Rodar `pytest && flake8 && mypy`
 
 ---
 
 ## ⚠️ Armadilhas Conhecidas
 
-### JWT Secret
-Sempre validar que o secret não é nulo: 
-
+### JWT Secret Nulo
 ```python
+# ✅ CORRETO
 if not settings.SUPABASE_JWT_SECRET:
-    raise HTTPException(status_code=500, detail="JWT secret not configured")
-
-payload = jwt.decode(token, settings. SUPABASE_JWT_SECRET, algorithms=["HS256"])
+    raise HTTPException(500, "JWT secret not configured")
+payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"])
 ```
 
-### Backwards Compatibility
-Mudanças em API devem ser **aditivas**:
-
+### RBAC (hierarquia de roles)
 ```python
-# ✅ Permitido:  adicionar campo novo
-class ResponseV2(ResponseV1):
-    new_field: Optional[str] = None
+# Níveis numéricos
+ADMIN = 100
+MANAGER = 75
+SALES = 50
 
-# ❌ Proibido: renomear ou remover campo
-# "items" → "data" quebra clientes
+# Verificação
+def has_permission(user_role: int, required: int) -> bool:
+    return user_role >= required
+```
+
+### Responses tipados
+```python
+# Sempre usar Pydantic schema
+@router.get("/leads", response_model=list[LeadResponse])
+def list_leads(db: Session = Depends(get_db)):
+    ...
 ```
 
 ---
 
-## 🔐 Segurança (RBAC)
+## 📁 Estrutura de Pastas
 
-Hierarquia de roles: 
-
-| Role | Nível |
-|------|-------|
-| Admin | 100 |
-| Manager | 75 |
-| Sales | 50 |
-
-Toda rota sensível deve verificar permissões via JWT.
+| Pasta | Conteúdo |
+|-------|----------|
+| `routers/` | Endpoints por domínio |
+| `services/` | Lógica de negócio |
+| `models.py` | SQLAlchemy models |
+| `schemas/` | Pydantic schemas |
+| `core/config.py` | Settings |
+| `core/security.py` | JWT helpers |
+| `core/database.py` | DB connection |
+| `tests/` | Pytest |
 
 ---
 
-## 🧪 Validação Obrigatória
+## 🔍 Edge Cases (sempre considerar)
 
-Antes de finalizar qualquer tarefa, execute:
+- [ ] Registro não encontrado (404)
+- [ ] Usuário sem permissão (403)
+- [ ] Token inválido/expirado (401)
+- [ ] Dados inválidos (422)
+- [ ] Erro interno (500 com log)
+- [ ] Campos nulos/opcionais
 
-```bash
-pytest -v                    # Testes
-flake8 .                     # Linter
-# Se disponível: 
-mypy .                       # Type checking
+---
+
+## 🧪 Validação (antes de finalizar)
+
+```sh
+pytest -v
+flake8 .
+mypy .
 ```
 
 ---
 
-## 📤 Como Entregar
+## 📤 Formato de Entrega
 
-Ao finalizar, sempre forneça:
+Ao finalizar, fornecer:
 
-1.  Resumo do que foi feito (bullets)
-2. Lista de arquivos alterados
-3. Resultado do pytest e flake8
-4.  ROADMAP final: 
+1. **Resumo** (5-10 bullets do que foi feito)
+2. **Arquivos alterados/criados**
+3. **Comandos executados + resultados**
+4. **ROADMAP final:**
 
-| Item | Status | Nota |
-|------|--------|------|
-| Requisito 1 | ✅/⚠️/❌ | ...  |
-| pytest passa | ✅/❌ | ... |
-| flake8 passa | ✅/❌ | ... |
+| Item | Status | Observações |
+|------|--------|-------------|
+| Requisito 1 | ✅ | |
+| Pytest passa | ✅ | |
+| Flake8 passa | ✅ | |
+| Mypy passa | ✅ | |
+
+**Legenda:** ✅ Feito | ⚠️ Adaptado | ❌ Não feito
