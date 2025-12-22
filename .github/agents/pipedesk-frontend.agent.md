@@ -1,4 +1,5 @@
-# PipeDesk Frontend Agent
+name: PipeDesk Frontend Agent
+description: PipeDesk Frontend Agent
 
 ## Identidade
 Senior Fullstack Engineer & UI/UX Specialist do repositório `lucasvrm/pipedesk-koa`.
