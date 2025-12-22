@@ -26,6 +26,7 @@ import { useUpdateLead, addLeadMember, LEADS_KEY, LEADS_SALES_VIEW_KEY, LEADS_SA
 import { logActivity } from '@/services/activityService'
 import { Lead, User } from '@/lib/types'
 import { safeString } from '@/lib/utils'
+import { getInitials } from '@/lib/helpers'
 import { toast } from 'sonner'
 
 interface ChangeOwnerDialogProps {
@@ -35,13 +36,6 @@ interface ChangeOwnerDialogProps {
   /** Current user ID - reserved for future use (e.g., permissions, analytics) */
   currentUserId?: string
   availableUsers: User[]
-}
-
-function getInitials(name?: string): string {
-  if (!name) return 'NA'
-  const parts = name.trim().split(' ')
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
 export function ChangeOwnerDialog({
@@ -111,101 +105,32 @@ export function ChangeOwnerDialog({
         data: { ownerUserId: selectedUser.id },
       })
 
-      // Optimistically update cache for immediate UI feedback
-      // Update the lead detail query
-      queryClient.setQueryData([...LEADS_KEY, lead.id], (oldData: Lead | undefined) => {
-        if (!oldData) return oldData
-        return {
-          ...oldData,
-          ownerUserId: selectedUser.id,
-          owner: {
-            id: selectedUser.id,
-            name: selectedUser.name,
-            email: selectedUser.email,
-            avatar: selectedUser.avatar
-          }
-        }
-      })
-
-      // Update leads list queries - patch the specific lead in the list
-      queryClient.setQueriesData({ queryKey: LEADS_KEY }, (oldData: Lead[] | undefined) => {
-        if (!oldData) return oldData
-        return oldData.map(item => 
-          item.id === lead.id 
-            ? { 
-                ...item, 
-                ownerUserId: selectedUser.id,
-                owner: {
-                  id: selectedUser.id,
-                  name: selectedUser.name,
-                  email: selectedUser.email,
-                  avatar: selectedUser.avatar
-                }
-              }
-            : item
-        )
-      })
-
-      // Update sales view queries - patch the specific lead in the sales view
-      queryClient.setQueriesData({ queryKey: LEADS_SALES_VIEW_KEY }, (oldData: Lead[] | undefined) => {
-        if (!oldData) return oldData
-        return oldData.map(item => 
-          item.id === lead.id 
-            ? { 
-                ...item, 
-                ownerUserId: selectedUser.id,
-                owner: {
-                  id: selectedUser.id,
-                  name: selectedUser.name,
-                  email: selectedUser.email,
-                  avatar: selectedUser.avatar
-                }
-              }
-            : item
-        )
-      })
-
-      queryClient.setQueriesData({ queryKey: LEADS_SALES_VIEW_ALT_KEY }, (oldData: any[] | undefined) => {
-        if (!oldData) return oldData
-        return oldData.map((item: any) => {
-          const itemId = item.id || item.leadId || item.lead_id
-          if (itemId === lead.id) {
-            return {
-              ...item,
-              ownerUserId: selectedUser.id,
-              owner: {
-                id: selectedUser.id,
-                name: selectedUser.name,
-                avatar: selectedUser.avatar
-              }
-            }
-          }
-          return item
-        })
-      })
-
       // Log activity for the owner change
       if (currentUserId) {
-        await logActivity(
-          lead.id,
-          'lead',
-          `Responsável alterado de ${previousOwnerName} para ${newOwnerName}`,
-          currentUserId,
-          {
-            previousOwnerId: lead.ownerUserId,
-            previousOwnerName,
-            newOwnerId: selectedUser.id,
-            newOwnerName
-          }
-        )
+        try {
+          await logActivity(
+            lead.id,
+            'lead',
+            `Responsável alterado de ${previousOwnerName} para ${newOwnerName}`,
+            currentUserId,
+            {
+              previousOwnerId: lead.ownerUserId,
+              previousOwnerName,
+              newOwnerId: selectedUser.id,
+              newOwnerName
+            }
+          )
+        } catch (activityError) {
+          // Log activity errors but don't fail the operation
+          console.warn('[ChangeOwnerDialog] Could not log activity:', activityError)
+        }
       }
 
-      // Invalidate timeline and activities queries to show the new activity
-      // Run all invalidations in parallel since they are independent
+      // Invalidate all relevant queries to refresh from server
+      // This ensures UI is consistent with server state and handles any conflicts
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['activities', lead.id] }),
         queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] }),
-        // Invalidate to refresh from server (after optimistic update)
         queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, lead.id] }),
         queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
         queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY }),
@@ -221,11 +146,23 @@ export function ChangeOwnerDialog({
       setSearchQuery('')
       setKeepAsMember(true)
       onOpenChange(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ChangeOwnerDialog] Error changing owner:', error)
+      
+      // Handle specific error cases
+      const errorMessage = error?.message || ''
+      let description = 'Não foi possível alterar o responsável. Tente novamente.'
+      
+      if (errorMessage.includes('409') || error?.status === 409) {
+        description = 'Conflito ao alterar responsável. O lead pode ter sido modificado recentemente. Atualize a página e tente novamente.'
+      }
+      
       toast.error('Erro ao alterar responsável', {
-        description: 'Não foi possível alterar o responsável. Tente novamente.',
+        description,
       })
+      
+      // Refetch to ensure UI is consistent with server state
+      queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, lead.id] })
     }
   }, [selectedUser, availableUsers, lead.id, lead.ownerUserId, keepAsMember, updateLeadMutation, currentUserId, queryClient, onOpenChange])
 
