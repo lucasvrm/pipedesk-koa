@@ -69,6 +69,7 @@ import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/Activit
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
+import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -181,49 +182,64 @@ export default function LeadDetailPage() {
   const computedPriority = useMemo(() => {
     if (!lead) return { bucket: 'cold' as const, score: 0, description: '' }
     
-    // Use same normalization logic as LeadsSalesList to ensure consistency
-    const priorityBucketRaw = lead.priorityBucket
-    const priorityBucket: LeadPriorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
-    const priorityScore = typeof lead.priorityScore === 'number' && Number.isFinite(lead.priorityScore) ? lead.priorityScore : null
-    const priorityDescription = safeStringOptional(lead.priorityDescription) ?? ''
-    
-    return {
-      bucket: priorityBucket,
-      score: priorityScore ?? 0,
-      description: priorityDescription
-    }
-  }, [lead?.priorityScore, lead?.priorityBucket, lead?.priorityDescription])
+    // Use unified calculateLeadPriority utility for consistency across all views
+    return calculateLeadPriority({
+      priorityScore: lead.priorityScore,
+      priorityBucket: lead.priorityBucket,
+      lastInteractionAt: lead.lastInteractionAt,
+      createdAt: lead.createdAt,
+      leadStatusId: lead.leadStatusId
+    })
+  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
 
   const handleCreateComment = useCallback(async (data: CommentFormData) => {
     if (!profile) return
-    await createComment.mutateAsync({
-      entityId: id!,
-      entityType: 'lead',
-      content: data.content,
-      authorId: profile.id,
-      mentions: data.mentions,
-      parentId: data.parentId
-    })
-    refetchTimeline()
+    
+    try {
+      await createComment.mutateAsync({
+        entityId: id!,
+        entityType: 'lead',
+        content: data.content,
+        authorId: profile.id,
+        mentions: data.mentions,
+        parentId: data.parentId
+      })
+      refetchTimeline()
+    } catch (error) {
+      // Error handling - mutation will handle toast, but prevent unhandled rejection
+      console.error('[LeadDetailPage] Error creating comment:', error)
+      // Re-throw to let mutation error handling show the toast
+      throw error
+    }
   }, [createComment, id, profile, refetchTimeline])
 
   const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
-    await updateComment.mutateAsync({ 
-      commentId, 
-      content,
-      entityId: id,
-      entityType: 'lead'
-    })
-    refetchTimeline()
+    try {
+      await updateComment.mutateAsync({ 
+        commentId, 
+        content,
+        entityId: id,
+        entityType: 'lead'
+      })
+      refetchTimeline()
+    } catch (error) {
+      console.error('[LeadDetailPage] Error updating comment:', error)
+      throw error
+    }
   }, [updateComment, id, refetchTimeline])
 
   const handleDeleteComment = useCallback(async (commentId: string) => {
-    await deleteComment.mutateAsync({ 
-      commentId,
-      entityId: id,
-      entityType: 'lead'
-    })
-    refetchTimeline()
+    try {
+      await deleteComment.mutateAsync({ 
+        commentId,
+        entityId: id,
+        entityType: 'lead'
+      })
+      refetchTimeline()
+    } catch (error) {
+      console.error('[LeadDetailPage] Error deleting comment:', error)
+      throw error
+    }
   }, [deleteComment, id, refetchTimeline])
 
   const handleAddTask = useCallback(() => {

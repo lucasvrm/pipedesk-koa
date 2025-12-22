@@ -17,13 +17,29 @@ interface LeadPriorityResult {
 /**
  * Calculates lead priority if not already provided by the backend.
  * Uses the same logic as the Sales View.
+ * 
+ * Priority buckets based on score ranges:
+ * - hot: score >= 75
+ * - warm: 55 <= score < 75
+ * - cold: score < 55
  */
 export function calculateLeadPriority(lead: LeadPriorityInput): LeadPriorityResult {
-  // If bucket and score already exist, use them
-  if (lead.priorityBucket && lead.priorityScore !== null && lead.priorityScore !== undefined) {
+  // If bucket and score already exist, normalize bucket based on score for consistency
+  if (lead.priorityScore !== null && lead.priorityScore !== undefined) {
+    const score = lead.priorityScore
+    const bucket = getBucketFromScore(score)
+    return {
+      bucket,
+      score,
+      description: getDescriptionForBucket(bucket)
+    }
+  }
+  
+  // If only bucket exists without score, use it as-is
+  if (lead.priorityBucket) {
     return {
       bucket: lead.priorityBucket,
-      score: lead.priorityScore,
+      score: getDefaultScoreForBucket(lead.priorityBucket),
       description: getDescriptionForBucket(lead.priorityBucket)
     }
   }
@@ -57,6 +73,32 @@ export function calculateLeadPriority(lead: LeadPriorityInput): LeadPriorityResu
     bucket,
     score,
     description: getDescriptionForBucket(bucket)
+  }
+}
+
+/**
+ * Determines priority bucket from score.
+ * This is the single source of truth for score-to-bucket mapping.
+ */
+function getBucketFromScore(score: number): LeadPriorityBucket {
+  if (score >= 75) return 'hot'
+  if (score >= 55) return 'warm'
+  return 'cold'
+}
+
+/**
+ * Returns a default score for a bucket when only bucket is available.
+ */
+function getDefaultScoreForBucket(bucket: LeadPriorityBucket): number {
+  switch (bucket) {
+    case 'hot':
+      return 85
+    case 'warm':
+      return 65
+    case 'cold':
+      return 40
+    default:
+      return 50
   }
 }
 

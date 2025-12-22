@@ -66,8 +66,8 @@ export function LeadsSalesList({
   )
 
   const toRowData = (lead: LeadSalesViewItem) => {
+    // Extract raw values without normalization - let calculateLeadPriority handle consistency
     const priorityBucketRaw = lead.priorityBucket ?? lead.priority_bucket
-    const priorityBucket: LeadPriorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
     const priorityScoreRaw = lead.priorityScore ?? lead.priority_score
     const priorityScore = typeof priorityScoreRaw === 'number' && Number.isFinite(priorityScoreRaw) ? priorityScoreRaw : null
     const priorityDescription = safeStringOptional(lead.priorityDescription ?? lead.priority_description)
@@ -137,7 +137,7 @@ export function LeadsSalesList({
 
     return {
       ...lead,
-      priorityBucket,
+      priorityBucket: priorityBucketRaw,
       priorityScore,
       priorityDescription,
       legalName,

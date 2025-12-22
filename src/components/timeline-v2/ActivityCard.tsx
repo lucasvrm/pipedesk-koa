@@ -169,20 +169,25 @@ export function ActivityCard({
 
       {/* Actions */}
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs text-muted-foreground hover:bg-primary hover:text-white"
-          onClick={onReply}
-        >
-          <Reply className="h-3.5 w-3.5 mr-1.5" />
-          Responder
-          {replyCount > 0 && (
-            <span className="ml-1.5 text-[10px] text-muted-foreground">
-              ({replyCount})
-            </span>
-          )}
-        </Button>
+        {/* Only show reply button for comments - system activities and audits cannot have replies */}
+        {item.type === 'comment' ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:bg-primary hover:text-white"
+            onClick={onReply}
+          >
+            <Reply className="h-3.5 w-3.5 mr-1.5" />
+            Responder
+            {replyCount > 0 && (
+              <span className="ml-1.5 text-[10px] text-muted-foreground">
+                ({replyCount})
+              </span>
+            )}
+          </Button>
+        ) : (
+          <div className="h-7" />
+        )}
 
         {showMenu && (
           <DropdownMenu>
