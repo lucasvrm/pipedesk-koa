@@ -1,0 +1,22 @@
+Referência rápida dos principais tipos/interfaces expostos no frontend:
+
+src/lib/types.ts
+- Domínio base: UserRole, DealStatus, PlayerStage, OperationType, ViewType.
+- Usuários e RBAC: User, Permission, Role.
+- Configurações e metadados: LossReason, Product, DealSource, PlayerCategory, Holiday, CommunicationTemplate (com enum CommunicationTemplateType), TrackStatus, OperationTypeRecord, TaskStatusDefinition, TaskPriorityDefinition.
+- Deals e tracks: MasterDeal (com associações de product/source/lossReason/responsibles/tags), PlayerTrack, Task (com dependências e milestones), Tag.
+- Comentários/alertas: Comment, Notification.
+- Campos customizados e organização: CustomFieldDefinition, CustomFieldValue, Folder/EntityLocation, StageHistory, GoogleIntegration.
+- Leads: LeadStatus, LeadOrigin, LeadPriorityBucket, LeadNextAction, Lead, LeadMember; helpers LEAD_STATUS_PROGRESS/LEAD_STATUS_COLORS e funções getLeadStatusProgress/getLeadStatusColor.
+
+src/lib/databaseTypes.ts
+- Modelos em snake_case alinhados ao schema Supabase: MasterDealDB, ProfileDB, CompanyDB, PlayerTrackDB, TaskDB, UserDB, CommentDB, NotificationDB, CustomFieldDefinitionDB, CustomFieldValueDB, FolderDB, EntityLocationDB, StageHistoryDB, GoogleIntegrationDB.
+
+src/types/integration.ts
+- Integração com backend HTTP: EntityType ('lead' | 'deal' | 'contact'), TimelineUser, TimelineEntry, TimelineResponse, EventCreate, CalendarEventResponse, CalendarEventsResponse.
+
+src/types/metadata.ts
+- Metadados carregados do banco: Stage, OperationType, LossReason, SystemSettings, DealStatusMeta, RelationshipLevelMeta, CompanyTypeMeta, LeadStatusMeta, LeadOriginMeta, LeadMemberRoleMeta, UserRoleMetadata, SystemMetadata (agregador), EntityType union para labels e DateFilterType.
+
+src/components/types/listLayout.ts
+- Tipagem de layouts de lista: ListViewMode, ListPaginationConfig, SharedListLayoutProps, SharedListFiltersBarProps e constante ACTIONS_COLUMN_CLASSNAME.

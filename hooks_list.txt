@@ -1,0 +1,29 @@
+Hooks customizados encontrados:
+
+[Globais — src/hooks]
+- use-mobile.ts
+- useCustomFields.ts
+- useDashboardLayout.ts
+- useDriveDocuments.ts
+- useEnhancedAnalytics.ts
+- useFolders.ts
+- useIntegrations.ts
+- useKV.ts
+- useLabel.ts
+- useLeadMonthlyMetrics.ts
+- useLocalStorage.ts
+- useOperationalTeam.ts
+- useQuickActions.tsx
+- useRealtimeNotifications.ts
+- useSupabase.ts
+- useSystemMetadata.ts
+- useUnifiedTimeline.ts
+
+[Por feature]
+- src/features/deals/hooks/useDealComparison.ts
+- src/features/deals/hooks/usePlayerTracks.ts
+- src/features/deals/hooks/useStageHistory.ts
+- src/features/inbox/hooks/useNotifications.ts
+- src/features/leads/hooks/useFilterSectionsState.ts
+- src/features/leads/hooks/useLeadsFiltersSearchParams.ts
+- src/features/rbac/hooks/useUsers.ts

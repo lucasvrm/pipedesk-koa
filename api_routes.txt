@@ -1,0 +1,41 @@
+Lista de endpoints externos que o frontend consome (extraídos de src/services e src/lib):
+
+[Calendar API]
+- GET /calendar/events?time_min={iso}&limit={n}
+- POST /calendar/events (cria evento; payload aceita camelCase e snake_case)
+
+[Timeline API]
+- GET /timeline/{entityType}/{id}?limit={n}&offset={n}
+
+[Leads]
+- GET /api/leads/sales-view?owner={me|all}&owners={ids}&priority={codes}&status={codes}&origin={codes}&days_without_interaction={n}&search={text}&tags={ids}&next_action={codes}&order_by={field}&includeQualified=true
+- POST /api/leads/{leadId}/change-owner (body: newOwnerId, addPreviousOwnerAsMember, currentUserId)
+
+[Drive API - genérico (driveClient.ts)]
+- GET /api/drive/items?entityType={deal|lead|company|contact}&entityId={id}&page={n}&limit={n} ou ?folderId={id}
+- POST /api/drive/folders (cria pasta; suporta parentId opcional ou combinação entityType/entityId)
+- POST /api/drive/files (upload de arquivo; aceita folderId ou entityType/entityId)
+- DELETE /api/drive/files/{fileId}
+- DELETE /api/drive/folders/{folderId}?recursive=true
+
+[Drive API - por entidade (driveService.ts)]
+- GET /api/drive/{entityType}/{entityId}/root-folder-url
+- GET /api/drive/items?entityType={type}&entityId={id}&folderId={id}&page={n}&limit={n}
+- POST /api/drive/{entityType}/{entityId}/folder (cria subpasta; parent_id opcional)
+- POST /api/drive/{entityType}/{entityId}/upload (FormData com arquivo; parent_id opcional)
+- DELETE /api/drive/{entityType}/{entityId}/files/{fileId}
+- DELETE /api/drive/{entityType}/{entityId}/folders/{folderId}
+- POST /api/drive/{entityType}/{entityId}/repair (repara hierarquia)
+- POST /api/drive/sync-name (body: entity_type, entity_id)
+
+[Drive API - remoto pd-google (pdGoogleDriveApi.ts)]
+- GET /api/drive/{entityType}/{entityId}?folder_id={id}&include_deleted=true
+- POST /api/drive/{entityType}/{entityId}/folder (body: name, parent_id?)
+- POST /api/drive/{entityType}/{entityId}/upload (FormData com file, parent_id?)
+- PUT /api/drive/{entityType}/{entityId}/files/{fileId}/rename
+- DELETE /api/drive/{entityType}/{entityId}/files/{fileId}
+- DELETE /api/drive/{entityType}/{entityId}/folders/{folderId}
+- POST /api/drive/{entityType}/{entityId}/files/{fileId}/restore
+- POST /api/drive/{entityType}/{entityId}/folders/{folderId}/restore
+- GET /api/drive/search?entity_type={type}&entity_id={id}&q={texto}&created_from={iso}&created_to={iso}&include_deleted=true&page={n}&limit={n}
+- POST /api/drive/sync-name (body: entity_type, entity_id)
