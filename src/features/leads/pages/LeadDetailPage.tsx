@@ -55,10 +55,10 @@ import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { QualifyLeadDialog } from '../components/QualifyLeadDialog'
 import { ChangeOwnerDialog } from '../components/ChangeOwnerDialog'
 import DriveSection from '@/components/DriveSection'
-import { SmartTagSelector } from '@/components/SmartTagSelector'
 import { PageContainer } from '@/components/PageContainer'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
+import { KanbanTagsModal } from '../components/KanbanTagsModal'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
@@ -745,12 +745,11 @@ export default function LeadDetailPage() {
                   + Adicionar Tag
                 </div>
               )}
-              <SmartTagSelector
-                entityId={lead.id}
-                entityType="lead"
-                selectedTagIds={leadTags?.map(tag => tag.id) || []}
+              <KanbanTagsModal
                 open={tagManagerOpen}
                 onOpenChange={setTagManagerOpen}
+                leadId={lead.id}
+                leadName={safeLeadName}
               />
             </div>
 
