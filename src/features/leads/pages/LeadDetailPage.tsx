@@ -246,13 +246,14 @@ export default function LeadDetailPage() {
     toast.info('Funcionalidade de tarefas em breve')
   }, [])
 
-  const handleOpenContactDialog = useCallback(() => {
+  const handleOpenContactDialog = useCallback((tab: 'new' | 'link' = 'new') => {
+    setContactModalTab(tab)
     setContactModalOpen(true)
   }, [])
 
   const [qualifyOpen, setQualifyOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
-  const [linkContactOpen, setLinkContactOpen] = useState(false)
+  const [contactModalTab, setContactModalTab] = useState<'new' | 'link'>('new')
   const [memberModalOpen, setMemberModalOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -453,6 +454,14 @@ export default function LeadDetailPage() {
       toast.error('Selecione um contato')
       return
     }
+    
+    // Check if contact is already linked
+    const isAlreadyLinked = lead.contacts?.some(c => c.id === selectedContact)
+    if (isAlreadyLinked) {
+      toast.error('Contato já vinculado a este lead')
+      return
+    }
+    
     try {
       await addContact({ contactId: selectedContact })
       await queryClient.invalidateQueries({ queryKey: ['leads', id] })
@@ -462,7 +471,7 @@ export default function LeadDetailPage() {
       }
       toast.success('Contato vinculado')
       setSelectedContact('')
-      setLinkContactOpen(false)
+      setContactModalOpen(false)
     } catch (error) {
       toast.error('Não foi possível vincular o contato')
     }
@@ -855,10 +864,10 @@ export default function LeadDetailPage() {
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Contatos do Lead</CardTitle>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setLinkContactOpen(true)}>
+                        <Button variant="outline" size="sm" onClick={() => handleOpenContactDialog('link')}>
                           Vincular
                         </Button>
-                        <Button size="sm" onClick={() => setContactModalOpen(true)}>
+                        <Button size="sm" onClick={() => handleOpenContactDialog('new')}>
                           <Plus className="h-4 w-4" /> Novo
                         </Button>
                       </div>
@@ -890,11 +899,11 @@ export default function LeadDetailPage() {
                         description="Adicione contatos para este lead."
                         primaryAction={{
                           label: "Novo",
-                          onClick: () => setContactModalOpen(true)
+                          onClick: () => handleOpenContactDialog('new')
                         }}
                         secondaryAction={{
                           label: "Vincular",
-                          onClick: () => setLinkContactOpen(true)
+                          onClick: () => handleOpenContactDialog('link')
                         }}
                       />
                     )}
@@ -1084,97 +1093,137 @@ export default function LeadDetailPage() {
         />
       )}
 
-      <Dialog open={contactModalOpen} onOpenChange={setContactModalOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={contactModalOpen} onOpenChange={(open) => {
+        setContactModalOpen(open)
+        if (!open) {
+          // Reset state when closing
+          setNewContact({ name: '', email: '', phone: '', role: '', isPrimary: false })
+          setSelectedContact('')
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Adicionar novo contato</DialogTitle>
-            <DialogDescription>Crie e vincule um contato sem sair da lead.</DialogDescription>
+            <DialogTitle>Adicionar Contato</DialogTitle>
+            <DialogDescription>Crie um novo contato ou vincule um existente a este lead.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2 col-span-2">
-              <Label>Nome *</Label>
-              <Input value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input value={newContact.phone} onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })} />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <Label>Cargo / Função</Label>
-              <Input value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={newContact.isPrimary}
-                onCheckedChange={(checked) => setNewContact({ ...newContact, isPrimary: Boolean(checked) })}
-              />
-              <span className="text-sm">Definir como contato principal</span>
-            </div>
-          </div>
+          <Tabs value={contactModalTab} onValueChange={(v) => setContactModalTab(v as 'new' | 'link')} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="new">Criar Novo</TabsTrigger>
+              <TabsTrigger value="link">Vincular Existente</TabsTrigger>
+            </TabsList>
 
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setContactModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreateContact} disabled={!newContact.name}>
-              <Plus className="mr-2 h-4 w-4" /> Salvar contato
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <TabsContent value="new" className="flex-1 overflow-y-auto space-y-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label>Nome *</Label>
+                  <Input 
+                    value={newContact.name} 
+                    onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} 
+                    placeholder="Nome completo do contato"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input 
+                    value={newContact.email} 
+                    onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} 
+                    placeholder="email@exemplo.com"
+                    type="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefone</Label>
+                  <Input 
+                    value={newContact.phone} 
+                    onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })} 
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Cargo / Função</Label>
+                  <Input 
+                    value={newContact.role} 
+                    onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} 
+                    placeholder="Ex: Gerente de Compras"
+                  />
+                </div>
+                <div className="flex items-center gap-2 col-span-2">
+                  <Checkbox
+                    checked={newContact.isPrimary}
+                    onCheckedChange={(checked) => setNewContact({ ...newContact, isPrimary: Boolean(checked) })}
+                  />
+                  <span className="text-sm">Definir como contato principal</span>
+                </div>
+              </div>
 
-      <Dialog open={linkContactOpen} onOpenChange={setLinkContactOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Vincular contato existente</DialogTitle>
-            <DialogDescription>Pesquise contatos já cadastrados e vincule rapidamente.</DialogDescription>
-          </DialogHeader>
+              <DialogFooter className="gap-2 sm:justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => setContactModalOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreateContact} disabled={!newContact.name || createContact.isPending}>
+                  <Plus className="mr-2 h-4 w-4" /> Salvar contato
+                </Button>
+              </DialogFooter>
+            </TabsContent>
 
-          <div className="space-y-2">
-            <Label>Contato</Label>
-            <Command className="border rounded-lg">
-              <CommandInput placeholder="Busque por nome, email ou telefone" />
-              <CommandList className="max-h-64">
-                <CommandEmpty>Nenhum contato encontrado.</CommandEmpty>
-                <CommandGroup>
-                  {contacts?.map(contact => (
-                    <CommandItem
-                      key={contact.id}
-                      value={`${safeString(contact.name, '')} ${contact.email || ''} ${contact.phone || ''}`}
-                      onSelect={() => setSelectedContact(contact.id)}
-                      className={cn(
-                        'flex items-start gap-3 px-3 py-2',
-                        selectedContact === contact.id && 'bg-primary/5'
-                      )}
-                    >
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                        {safeString(contact.name, 'C').charAt(0)}
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-tight">{safeString(contact.name, 'Contato')}</p>
-                        <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo'}</p>
-                        <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                          {contact.email && <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>}
-                          {contact.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {contact.phone}</span>}
-                        </div>
-                      </div>
-                      {selectedContact === contact.id && <Badge className="ml-auto">Selecionado</Badge>}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </div>
+            <TabsContent value="link" className="flex-1 overflow-y-auto space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Selecionar Contato</Label>
+                <Command className="border rounded-lg bg-background">
+                  <CommandInput placeholder="Busque por nome, email ou telefone" className="border-none" />
+                  <CommandList className="max-h-[320px]">
+                    <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                      Nenhum contato encontrado.
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {contacts?.map(contact => {
+                        const isAlreadyLinked = lead.contacts?.some(c => c.id === contact.id)
+                        return (
+                          <CommandItem
+                            key={contact.id}
+                            value={`${safeString(contact.name, '')} ${contact.email || ''} ${contact.phone || ''}`}
+                            onSelect={() => !isAlreadyLinked && setSelectedContact(contact.id)}
+                            disabled={isAlreadyLinked}
+                            className={cn(
+                              'flex items-start gap-3 px-3 py-2',
+                              selectedContact === contact.id && 'bg-primary/5',
+                              isAlreadyLinked && 'opacity-50 cursor-not-allowed'
+                            )}
+                          >
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
+                              {safeString(contact.name, 'C').charAt(0)}
+                            </div>
+                            <div className="space-y-1 flex-1">
+                              <p className="text-sm font-medium leading-tight">{safeString(contact.name, 'Contato')}</p>
+                              <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo'}</p>
+                              <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                                {contact.email && <span className="inline-flex items-center gap-1"><Envelope className="h-3 w-3" /> {contact.email}</span>}
+                                {contact.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {contact.phone}</span>}
+                              </div>
+                            </div>
+                            {isAlreadyLinked ? (
+                              <Badge variant="secondary" className="ml-auto">Já vinculado</Badge>
+                            ) : selectedContact === contact.id ? (
+                              <Badge className="ml-auto">Selecionado</Badge>
+                            ) : null}
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
 
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setLinkContactOpen(false)}>Cancelar</Button>
-            <Button onClick={handleLinkContact} disabled={!selectedContact}>
-              <Plus className="mr-2 h-4 w-4" /> Vincular contato
-            </Button>
-          </DialogFooter>
+              <DialogFooter className="gap-2 sm:justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => setContactModalOpen(false)}>Cancelar</Button>
+                <Button 
+                  onClick={handleLinkContact} 
+                  disabled={!selectedContact}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Vincular contato
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
