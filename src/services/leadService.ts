@@ -5,6 +5,19 @@ import { syncRemoteEntityName } from './pdGoogleDriveApi'
 import { getSetting } from './systemSettingsService'
 
 // ============================================================================
+// Query Keys
+// ============================================================================
+
+/** Base key for all leads queries */
+export const LEADS_KEY = ['leads'] as const
+
+/** Key prefix for sales view leads queries (leadService implementation) */
+export const LEADS_SALES_VIEW_KEY = ['leads', 'sales-view'] as const
+
+/** Key prefix for sales view leads queries (leadsSalesViewService implementation) */
+export const LEADS_SALES_VIEW_ALT_KEY = ['leads-sales-view'] as const
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -562,8 +575,9 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: ({ data, userId }: { data: LeadInput, userId: string }) => createLead(data, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY });
     }
   });
 }
@@ -573,9 +587,10 @@ export function useUpdateLead() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string, data: LeadUpdate }) => updateLead(id, data),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads', data.id] });
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY });
+      queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, data.id] });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY });
     }
   });
 }
@@ -585,8 +600,9 @@ export function useDeleteLead() {
   return useMutation({
     mutationFn: deleteLead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY });
     }
   });
 }
@@ -596,8 +612,9 @@ export function useQualifyLead() {
   return useMutation({
     mutationFn: qualifyLead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['deals'] });
     }
@@ -610,12 +627,12 @@ export function useLeadContacts(leadId: string) {
 
   const addMutation = useMutation({
     mutationFn: (vars: { contactId: string, isPrimary?: boolean }) => addLeadContact(leadId, vars.contactId, vars.isPrimary),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads', leadId] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, leadId] })
   });
 
   const removeMutation = useMutation({
     mutationFn: (contactId: string) => removeLeadContact(leadId, contactId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads', leadId] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, leadId] })
   });
 
   return { addContact: addMutation.mutateAsync, removeContact: removeMutation.mutateAsync };
@@ -625,9 +642,14 @@ export function useChangeLeadOwner() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: changeLeadOwner,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+    onSuccess: (_, variables) => {
+      // Invalidate all leads queries
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY });
+      // Invalidate sales view queries (both implementations)
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY });
+      // Invalidate specific lead detail query to update owner badge immediately
+      queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, variables.leadId] });
     },
     onError: (error, variables) => {
       console.error('[useChangeLeadOwner] Failed to change owner', {

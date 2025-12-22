@@ -22,7 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import { useUpdateLead, addLeadMember } from '@/services/leadService'
+import { useUpdateLead, addLeadMember, LEADS_KEY, LEADS_SALES_VIEW_KEY, LEADS_SALES_VIEW_ALT_KEY } from '@/services/leadService'
 import { logActivity } from '@/services/activityService'
 import { Lead, User } from '@/lib/types'
 import { safeString } from '@/lib/utils'
@@ -133,10 +133,11 @@ export function ChangeOwnerDialog({
         queryClient.invalidateQueries({ queryKey: ['activities', lead.id] }),
         queryClient.invalidateQueries({ queryKey: ['timeline', 'lead', lead.id] }),
         // Invalidate lead detail query to update owner badge immediately
-        queryClient.invalidateQueries({ queryKey: ['leads', lead.id] }),
+        queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, lead.id] }),
         // Invalidate leads list and sales view to reflect owner change across all views
-        queryClient.invalidateQueries({ queryKey: ['leads'] }),
-        queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
+        queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
+        queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY }),
+        queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY })
       ])
 
       toast.success('Responsável alterado', {
@@ -171,8 +172,8 @@ export function ChangeOwnerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[480px] max-h-[80vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
             Alterar Responsável
@@ -183,8 +184,8 @@ export function ChangeOwnerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-          {/* User Search and Selection */}
+        {/* User Search and Selection - scrollable area */}
+        <div className="flex-1 min-h-0 py-2">
           <Command className="border rounded-lg" shouldFilter={false}>
             <CommandInput
               placeholder="Buscar usuário por nome ou e-mail..."
@@ -250,66 +251,69 @@ export function ChangeOwnerDialog({
           </Command>
         </div>
 
-        {/* Selected User Preview - outside scrollable area to always be visible after selection */}
-        {selectedUser && (
-          <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30">
-            <Avatar className="h-10 w-10">
-              <AvatarImage
-                src={selectedUser.avatar}
-                alt={safeString(selectedUser.name, 'Usuário')}
+        {/* Footer section - always visible */}
+        <div className="shrink-0 space-y-4 pt-2">
+          {/* Selected User Preview - appears above the checkbox when a user is selected */}
+          {selectedUser && (
+            <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30" data-testid="selected-owner-preview">
+              <Avatar className="h-10 w-10">
+                <AvatarImage
+                  src={selectedUser.avatar}
+                  alt={safeString(selectedUser.name, 'Usuário')}
+                />
+                <AvatarFallback>
+                  {getInitials(safeString(selectedUser.name, 'NA'))}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Novo responsável:</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {safeString(selectedUser.name, 'Usuário')} ({safeString(selectedUser.email, '')})
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Keep as Member Checkbox */}
+          {lead.ownerUserId && (
+            <div className="flex items-start space-x-3 py-2 border-t">
+              <Checkbox
+                id="keepAsMember"
+                checked={keepAsMember}
+                onCheckedChange={(checked) => setKeepAsMember(checked === true)}
+                disabled={isMutating}
               />
-              <AvatarFallback>
-                {getInitials(safeString(selectedUser.name, 'NA'))}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">Novo responsável:</p>
-              <p className="text-sm text-muted-foreground truncate">
-                {safeString(selectedUser.name, 'Usuário')} ({safeString(selectedUser.email, '')})
-              </p>
+              <div className="grid gap-1 leading-none">
+                <Label
+                  htmlFor="keepAsMember"
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Manter responsável anterior como membro
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  O responsável atual continuará com acesso ao lead como colaborador.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Keep as Member Checkbox - outside scrollable area to always be visible */}
-        {lead.ownerUserId && (
-          <div className="flex items-start space-x-3 py-3 border-t">
-            <Checkbox
-              id="keepAsMember"
-              checked={keepAsMember}
-              onCheckedChange={(checked) => setKeepAsMember(checked === true)}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
               disabled={isMutating}
-            />
-            <div className="grid gap-1 leading-none">
-              <Label
-                htmlFor="keepAsMember"
-                className="text-sm font-medium cursor-pointer"
-              >
-                Manter responsável anterior como membro
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                O responsável atual continuará com acesso ao lead como colaborador.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={isMutating}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!selectedUser || isMutating}
-          >
-            {isMutating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Confirmar
-          </Button>
-        </DialogFooter>
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!selectedUser || isMutating}
+            >
+              {isMutating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )

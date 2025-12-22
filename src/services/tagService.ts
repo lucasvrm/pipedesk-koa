@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Tag } from '@/lib/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSetting } from './systemSettingsService';
+import { LEADS_KEY, LEADS_SALES_VIEW_KEY, LEADS_SALES_VIEW_ALT_KEY } from './leadService';
 
 // Cores profissionais para tags
 export const TAG_COLORS = [
@@ -212,10 +213,11 @@ export function useTagOperations() {
         queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'track', entityId] });
       }
     } else if (entityType === 'lead') {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] });
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY });
       if (entityId) {
-        queryClient.invalidateQueries({ queryKey: ['leads', entityId] });
+        queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, entityId] });
         queryClient.invalidateQueries({ queryKey: ['tags', 'entity', 'lead', entityId] });
       }
     }

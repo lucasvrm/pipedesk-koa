@@ -254,19 +254,19 @@ export function LeadDetailQuickActions({
             {/* Ações do Lead */}
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             {onQualify && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQualify() }}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); requestAnimationFrame(() => onQualify()) }}>
                 <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
                 Qualificar
               </DropdownMenuItem>
             )}
             {onAddTask && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddTask() }}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); requestAnimationFrame(() => onAddTask()) }}>
                 <CalendarPlus className="mr-2 h-4 w-4" />
                 Adicionar Tarefa
               </DropdownMenuItem>
             )}
             {onEdit && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit() }}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); requestAnimationFrame(() => onEdit()) }}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
@@ -276,20 +276,20 @@ export function LeadDetailQuickActions({
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Gerenciar</DropdownMenuLabel>
             {onAddContact && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddContact() }}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); requestAnimationFrame(() => onAddContact()) }}>
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Contato
               </DropdownMenuItem>
             )}
             {onAddMember && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddMember() }}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); requestAnimationFrame(() => onAddMember()) }}>
                 <Users className="mr-2 h-4 w-4" />
                 Adicionar Membro
               </DropdownMenuItem>
             )}
             {onChangeOwner && (
               <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); onChangeOwner() }}
+                onSelect={(e) => { e.preventDefault(); requestAnimationFrame(() => onChangeOwner()) }}
                 disabled={!canChangeOwner}
               >
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
@@ -301,7 +301,16 @@ export function LeadDetailQuickActions({
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Organização</DropdownMenuLabel>
             {onManageTags && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onManageTags() }}>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                  // Use requestAnimationFrame to delay the action until after dropdown closes
+                  // This prevents the modal from being closed by the same event flow
+                  requestAnimationFrame(() => {
+                    onManageTags()
+                  })
+                }}
+              >
                 <Tag className="mr-2 h-4 w-4" />
                 Gerenciar Tags
               </DropdownMenuItem>
@@ -310,7 +319,7 @@ export function LeadDetailQuickActions({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={(e) => { e.stopPropagation(); onDelete() }}
+                  onSelect={(event) => { event.preventDefault(); requestAnimationFrame(() => onDelete()) }}
                   className="text-amber-600 hover:text-amber-700 focus:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-red-900/20"
                 >
                   <Trash className="mr-2 h-4 w-4" />

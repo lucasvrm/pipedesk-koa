@@ -46,8 +46,21 @@ vi.mock('@/components/ui/tooltip', () => ({
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu-content">{children}</div>,
-  DropdownMenuItem: ({ children, onClick, disabled }: { children: React.ReactNode; onClick?: (e: React.MouseEvent) => void; disabled?: boolean }) => (
-    <button data-testid="dropdown-menu-item" onClick={onClick} disabled={disabled}>{children}</button>
+  DropdownMenuItem: ({ children, onClick, onSelect, disabled }: { children: React.ReactNode; onClick?: (e: React.MouseEvent) => void; onSelect?: (e: Event) => void; disabled?: boolean }) => (
+    <button
+      data-testid="dropdown-menu-item"
+      onClick={(e) => {
+        if (onClick) onClick(e)
+        if (onSelect) {
+          // Simulate Radix onSelect behavior - create a synthetic Event with preventDefault
+          const syntheticEvent = { preventDefault: vi.fn() } as unknown as Event
+          onSelect(syntheticEvent)
+        }
+      }}
+      disabled={disabled}
+    >
+      {children}
+    </button>
   ),
   DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu-label">{children}</div>,
   DropdownMenuSeparator: () => <hr data-testid="dropdown-menu-separator" />,
@@ -69,6 +82,11 @@ describe('LeadDetailQuickActions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal('open', vi.fn())
+    // Mock requestAnimationFrame to execute callbacks immediately for testing
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0)
+      return 0
+    })
   })
 
   afterEach(() => {
@@ -253,6 +271,29 @@ describe('LeadDetailQuickActions', () => {
 
       expect(screen.getByText('Adicionar Tarefa')).toBeInTheDocument()
       expect(screen.getByText('Adicionar Contato')).toBeInTheDocument()
+    })
+
+    it('calls onManageTags exactly once when Gerenciar Tags is clicked', async () => {
+      const handleManageTags = vi.fn()
+      const user = userEvent.setup()
+      
+      render(<LeadDetailQuickActions {...defaultProps} onManageTags={handleManageTags} />)
+      
+      await user.click(screen.getByText('Gerenciar Tags'))
+      
+      // Verify handler is called exactly once (no double trigger that would cause modal to close)
+      expect(handleManageTags).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls onDelete exactly once when Excluir Lead is clicked', async () => {
+      const handleDelete = vi.fn()
+      const user = userEvent.setup()
+      
+      render(<LeadDetailQuickActions {...defaultProps} onDelete={handleDelete} />)
+      
+      await user.click(screen.getByText('Excluir Lead'))
+      
+      expect(handleDelete).toHaveBeenCalledTimes(1)
     })
   })
 })
