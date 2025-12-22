@@ -68,7 +68,6 @@ import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/Activit
 import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
-import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -188,14 +187,19 @@ export default function LeadDetailPage() {
 
   const computedPriority = useMemo(() => {
     if (!lead) return { bucket: 'cold' as const, score: 0, description: '' }
-    return calculateLeadPriority({
-      priorityScore: lead.priorityScore,
-      priorityBucket: lead.priorityBucket,
-      lastInteractionAt: lead.lastInteractionAt,
-      createdAt: lead.createdAt,
-      leadStatusId: lead.leadStatusId
-    })
-  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
+    
+    // Use same normalization logic as LeadsSalesList to ensure consistency
+    const priorityBucketRaw = lead.priorityBucket
+    const priorityBucket: LeadPriorityBucket = priorityBucketRaw === 'hot' || priorityBucketRaw === 'cold' ? priorityBucketRaw : 'warm'
+    const priorityScore = typeof lead.priorityScore === 'number' && Number.isFinite(lead.priorityScore) ? lead.priorityScore : null
+    const priorityDescription = safeStringOptional(lead.priorityDescription) ?? ''
+    
+    return {
+      bucket: priorityBucket,
+      score: priorityScore ?? 0,
+      description: priorityDescription
+    }
+  }, [lead?.priorityScore, lead?.priorityBucket, lead?.priorityDescription])
 
   const handleCreateComment = useCallback(async (data: CommentFormData) => {
     if (!profile) return
