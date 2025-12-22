@@ -84,4 +84,21 @@ describe('Layout navigation menu', () => {
 
     expect(await screen.findByText('Perfil')).toBeInTheDocument()
   })
+
+  it('allows scroll by not applying overflow-hidden to main container', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Layout>
+          <div>Content</div>
+        </Layout>
+      </MemoryRouter>
+    )
+
+    const rootDiv = container.firstChild as HTMLElement
+    expect(rootDiv).not.toHaveClass('overflow-hidden')
+    expect(rootDiv).not.toHaveClass('h-screen')
+    
+    const mainElement = container.querySelector('main')
+    expect(mainElement).toHaveClass('overflow-auto')
+  })
 })
