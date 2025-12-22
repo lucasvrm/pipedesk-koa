@@ -59,6 +59,7 @@ import { PageContainer } from '@/components/PageContainer'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { KanbanTagsModal } from '../components/KanbanTagsModal'
+import { TagsSectionCards } from '../components/TagsSectionCards'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
@@ -702,56 +703,18 @@ export default function LeadDetailPage() {
             </div>
 
             {/* 4. Tags */}
-            <div className="pt-2 border-t">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1">
-                  <Tag className="h-3 w-3" /> Tags
-                </label>
-                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setTagManagerOpen(true)}>
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-              {leadTags && leadTags.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {leadTags.map(tag => {
-                    const safeColor = safeStringOptional(tag.color) ?? DEFAULT_TAG_COLOR
-                    const safeTagName = safeString(tag.name, 'Tag')
-
-                    return (
-                      <div
-                        key={tag.id}
-                        className="group inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-0.5 text-xs transition-all hover:bg-muted"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: safeColor }} />
-                        <span className="font-medium max-w-[80px] truncate" style={{ color: safeColor }}>{safeTagName}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 -mr-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleUnassignTag(tag.id)}
-                          title="Remover"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div
-                  className="text-xs text-muted-foreground text-center py-2 border border-dashed rounded cursor-pointer hover:bg-muted/50"
-                  onClick={() => setTagManagerOpen(true)}
-                >
-                  + Adicionar Tag
-                </div>
-              )}
-              <KanbanTagsModal
-                open={tagManagerOpen}
-                onOpenChange={setTagManagerOpen}
-                leadId={lead.id}
-                leadName={safeLeadName}
-              />
-            </div>
+            <TagsSectionCards
+              tags={leadTags || []}
+              onRemove={handleUnassignTag}
+              onManage={() => setTagManagerOpen(true)}
+              isRemoving={tagOps.unassign.isPending}
+            />
+            <KanbanTagsModal
+              open={tagManagerOpen}
+              onOpenChange={setTagManagerOpen}
+              leadId={lead.id}
+              leadName={safeLeadName}
+            />
 
           </div>
         </aside>
