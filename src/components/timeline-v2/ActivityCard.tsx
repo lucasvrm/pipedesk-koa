@@ -228,6 +228,8 @@ export function ActivityCard({
           currentUserId={currentUserId}
           onEdit={onEditReply}
           onDelete={onDeleteReply}
+          onReply={onReply}
+          depth={1}
         />
       )}
     </div>

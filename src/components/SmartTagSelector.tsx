@@ -151,7 +151,7 @@ export function SmartTagSelector({ entityType, entityId, selectedTagIds = [], op
                       onSelect={() => handleSelect(tag.id)}
                       className={cn(
                         "flex items-center justify-between group cursor-pointer px-3 py-2.5 rounded-md border transition-colors",
-                        "hover:bg-muted"
+                        "hover:bg-muted hover:bg-slate-100 data-[selected=true]:bg-muted"
                       )}
                       style={{
                         backgroundColor: isSelected ? backgroundColor : undefined,

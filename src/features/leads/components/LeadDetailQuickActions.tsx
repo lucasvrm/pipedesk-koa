@@ -304,11 +304,14 @@ export function LeadDetailQuickActions({
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault()
-                  // Use setTimeout to ensure the dropdown has fully closed before opening the modal
-                  // This prevents the modal from being closed by the same event flow
-                  setTimeout(() => {
-                    onManageTags()
-                  }, 100)
+                  // Use requestAnimationFrame to ensure the dropdown menu state has fully settled
+                  // before opening the modal. This prevents the modal from closing due to the
+                  // dropdown's closing animation/state cleanup
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      onManageTags()
+                    })
+                  })
                 }}
               >
                 <Tag className="mr-2 h-4 w-4" />
