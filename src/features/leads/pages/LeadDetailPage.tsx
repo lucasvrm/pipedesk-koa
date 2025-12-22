@@ -25,6 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { TimelineVisual } from '@/components/timeline-v2/TimelineVisual'
 import { safeString, safeStringOptional } from '@/lib/utils'
+import { getInitials } from '@/lib/helpers'
 import { ChevronRight } from 'lucide-react'
 import {
   Breadcrumb,
@@ -102,14 +103,6 @@ const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: 
 const LEAD_STATUS_CODES: LeadStatus[] = ['new', 'contacted', 'qualified', 'disqualified']
 const toSemanticStatus = (code?: string): SemanticStatus =>
   LEAD_STATUS_CODES.includes(code as LeadStatus) ? leadStatusMap(code as LeadStatus) : 'neutral'
-
-const getInitials = (name?: string | null) => {
-  if (!name) return ''
-  const parts = name.trim().split(' ').filter(Boolean)
-  if (!parts.length) return ''
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-}
 
 export default function LeadDetailPage() {
   const { id } = useParams()
@@ -540,7 +533,7 @@ export default function LeadDetailPage() {
   const ownerAvatarUrl =
     (lead.owner as { avatar_url?: string; avatar?: string } | undefined)?.avatar_url ??
     (lead.owner as { avatar?: string } | undefined)?.avatar
-  const ownerInitials = ownerName ? getInitials(ownerName) : '?'
+  const ownerInitials = getInitials(ownerName)
   const createdAt = format(new Date(lead.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   const cityState = safeAddressCity && safeAddressState ? `${safeAddressCity} - ${safeAddressState}` : safeAddressCity || safeAddressState || ''
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')

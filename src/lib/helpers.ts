@@ -80,13 +80,21 @@ export function anonymizePlayerName(playerName: string, trackId: string, shouldA
   return `Player ${trackNumber}`
 }
 
-export function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(word => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+/**
+ * Gets initials from a name for avatar display.
+ * - Single name: First 2 characters (e.g., "John" → "JO")
+ * - Multiple names: First letter of first + first letter of last (e.g., "John Smith" → "JS")
+ * - Empty/null: Returns '?'
+ * 
+ * @param name - The full name to extract initials from
+ * @returns The initials in uppercase
+ */
+export function getInitials(name?: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(' ').filter(Boolean)
+  if (!parts.length) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
 export function isOverdue(deadline: string | null | undefined): boolean {
