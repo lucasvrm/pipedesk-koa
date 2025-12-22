@@ -564,7 +564,7 @@ export default function LeadDetailPage() {
   const updatedTodayBadge = renderUpdatedTodayBadge(lead.updatedAt, 'text-[11px]')
 
   return (
-    <PageContainer className="p-0 space-y-0 overflow-hidden flex flex-col h-full">
+    <PageContainer className="p-0 space-y-0 flex flex-col h-[calc(100vh-4rem)]">
       {/* Header with Breadcrumb + Quick Actions - sticky below global header */}
       <header className="flex items-center justify-between px-6 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <Breadcrumb>
@@ -781,7 +781,7 @@ export default function LeadDetailPage() {
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
               
               {/* Aba Contexto - Timeline completa */}
-              <TabsContent value="contexto" className="flex-1 m-0 p-4 min-h-0 flex flex-col overflow-hidden">
+              <TabsContent value="contexto" className="flex-1 m-0 p-4 min-h-0 flex flex-col">
                 <TimelineVisual
                   entityId={lead.id}
                   entityType="lead"
