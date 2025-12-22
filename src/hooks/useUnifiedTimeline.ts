@@ -22,6 +22,7 @@ export interface TimelineItem {
   // Threads support
   parentId?: string | null
   replies?: TimelineItem[]
+  depth?: number // Track nesting level for replies (0 = root, 1-4 = nested)
   // Permissions
   isEditable?: boolean
   isDeletable?: boolean
