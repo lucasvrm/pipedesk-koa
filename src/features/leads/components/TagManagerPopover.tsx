@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { useTags, useEntityTags, TAG_COLORS, assignTagToEntity, removeTagFromEntity, createTag } from '@/services/tagService'
+import { LEADS_KEY, LEADS_SALES_VIEW_KEY, LEADS_SALES_VIEW_ALT_KEY } from '@/services/leadService'
 import { Tag } from '@/lib/types'
 import { safeString } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -76,8 +77,9 @@ export function TagManagerPopover({ leadId, leadName, triggerContent }: TagManag
   const handleOpenChange = useCallback((isOpen: boolean) => {
     if (!isOpen && hasChangesRef.current) {
       // Invalidate the leads list and sales view only when the popover closes
-      queryClient.invalidateQueries({ queryKey: ['leads'] })
-      queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] })
+      queryClient.invalidateQueries({ queryKey: LEADS_KEY })
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY })
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY })
     }
     // Reset changes flag on any state change (opening resets for new session, closing resets after processing)
     hasChangesRef.current = false
