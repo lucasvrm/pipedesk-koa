@@ -225,4 +225,72 @@ describe('ChangeOwnerDialog', () => {
     expect(screen.getByText('Another User')).toBeInTheDocument()
     expect(screen.queryByText('New Owner')).not.toBeInTheDocument()
   })
+
+  it('updates query cache optimistically when changing owner', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    })
+
+    // Pre-populate cache with lead data
+    queryClient.setQueryData(['leads', 'lead-123'], mockLead)
+    queryClient.setQueryData(['leads'], [mockLead])
+
+    const mockUpdateLead = vi.fn().mockResolvedValue({ 
+      ...mockLead, 
+      ownerUserId: 'user-2' 
+    })
+
+    // Override the mock for this test
+    const { useUpdateLead } = await import('@/services/leadService')
+    vi.mocked(useUpdateLead).mockReturnValue({
+      mutateAsync: mockUpdateLead,
+      isPending: false,
+    } as any)
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChangeOwnerDialog
+          open={true}
+          onOpenChange={() => {}}
+          lead={mockLead}
+          currentUserId="user-1"
+          availableUsers={mockUsers}
+        />
+      </QueryClientProvider>
+    )
+
+    // Select new owner
+    await user.click(screen.getByText('New Owner'))
+
+    // Click confirm
+    const confirmButton = screen.getByRole('button', { name: 'Confirmar' })
+    await user.click(confirmButton)
+
+    // Wait for mutation to complete
+    await waitFor(() => {
+      expect(mockUpdateLead).toHaveBeenCalledWith({
+        id: 'lead-123',
+        data: { ownerUserId: 'user-2' }
+      })
+    })
+
+    // Verify cache was updated
+    await waitFor(() => {
+      const cachedLead = queryClient.getQueryData(['leads', 'lead-123']) as Lead
+      expect(cachedLead).toBeDefined()
+      expect(cachedLead.ownerUserId).toBe('user-2')
+      expect(cachedLead.owner?.id).toBe('user-2')
+      expect(cachedLead.owner?.name).toBe('New Owner')
+    })
+
+    // Verify list cache was also updated
+    const cachedList = queryClient.getQueryData(['leads']) as Lead[]
+    expect(cachedList).toBeDefined()
+    const updatedLeadInList = cachedList.find(l => l.id === 'lead-123')
+    expect(updatedLeadInList?.ownerUserId).toBe('user-2')
+    expect(updatedLeadInList?.owner?.name).toBe('New Owner')
+  })
 })
