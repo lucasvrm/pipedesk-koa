@@ -304,11 +304,11 @@ export function LeadDetailQuickActions({
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault()
-                  // Use requestAnimationFrame to delay the action until after dropdown closes
+                  // Use setTimeout to ensure the dropdown has fully closed before opening the modal
                   // This prevents the modal from being closed by the same event flow
-                  requestAnimationFrame(() => {
+                  setTimeout(() => {
                     onManageTags()
-                  })
+                  }, 100)
                 }}
               >
                 <Tag className="mr-2 h-4 w-4" />
