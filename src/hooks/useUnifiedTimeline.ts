@@ -168,6 +168,7 @@ function formatActivityContent(activity: ActivityLogEntry): { content: string; t
 /**
  * Organizes timeline items into a hierarchical thread structure.
  * Items with parentId are nested under their parent as replies.
+ * Supports up to 4 levels of nesting (depth 0-4).
  */
 function organizeIntoThreads(items: TimelineItem[]): TimelineItem[] {
   const itemsMap = new Map<string, TimelineItem>()
@@ -175,7 +176,7 @@ function organizeIntoThreads(items: TimelineItem[]): TimelineItem[] {
   
   // First pass: create map with empty replies array
   items.forEach(item => {
-    itemsMap.set(item.id, { ...item, replies: [] })
+    itemsMap.set(item.id, { ...item, replies: [], depth: 0 })
   })
   
   // Second pass: organize hierarchy
@@ -188,20 +189,26 @@ function organizeIntoThreads(items: TimelineItem[]): TimelineItem[] {
       if (parent) {
         parent.replies = parent.replies || []
         parent.replies.push(mappedItem)
+        // Set depth based on parent's depth
+        mappedItem.depth = (parent.depth ?? 0) + 1
       }
     } else {
       rootItems.push(mappedItem)
     }
   })
   
-  // Sort replies by date (ascending - oldest first in replies)
-  rootItems.forEach(item => {
+  // Recursively sort replies by date (ascending - oldest first in replies)
+  function sortRepliesRecursively(item: TimelineItem) {
     if (item.replies?.length) {
       item.replies.sort((a, b) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
       )
+      // Recursively sort nested replies
+      item.replies.forEach(reply => sortRepliesRecursively(reply))
     }
-  })
+  }
+  
+  rootItems.forEach(item => sortRepliesRecursively(item))
   
   return rootItems
 }
