@@ -75,6 +75,8 @@ export const ActivitiesGrid = forwardRef<HTMLDivElement, ActivitiesGridProps>(
             />
           </div>
         ))}
+        {/* Spacer to prevent last card from touching composer bar */}
+        <div aria-hidden className="h-4 col-span-full" />
       </div>
     )
   }
