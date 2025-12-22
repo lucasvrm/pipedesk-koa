@@ -177,13 +177,13 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-4xl bg-[#1a1a1f] border-white/10">
+      <DialogContent className="sm:max-w-4xl bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] bg-clip-text text-transparent">
-            <TagIcon className="h-5 w-5 text-[#FF6B6B]" />
+          <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
+            <TagIcon className="h-5 w-5 text-primary" />
             Tags do Lead
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             {leadName
               ? `Arraste entre as colunas ou clique para alternar tags de "${leadName}".`
               : 'Arraste entre as colunas ou clique para alternar tags.'}
@@ -195,30 +195,30 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
           <div
             className={cn(
               'flex-1 rounded-2xl p-4 transition-all',
-              'bg-emerald-500/5 border border-emerald-500/10',
-              dropZone === 'active' && dragState.fromColumn !== 'active' && 'ring-2 ring-emerald-500/50 bg-emerald-500/10'
+              'bg-success/5 border border-success/20',
+              dropZone === 'active' && dragState.fromColumn !== 'active' && 'ring-2 ring-success/50 bg-success/10'
             )}
             onDragOver={(e) => handleDragOver(e, 'active')}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, 'active')}
           >
             <div className="flex items-center gap-2 mb-4">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <h3 className="font-semibold text-white">
+              <div className="h-2 w-2 rounded-full bg-success" />
+              <h3 className="font-semibold text-foreground">
                 ATIVAS ({activeTags.length})
               </h3>
             </div>
 
             <div className="space-y-2 min-h-[300px]">
               {isLoading ? (
-                <div className="flex items-center justify-center py-8 text-white/40">
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
                   Carregando...
                 </div>
               ) : activeTags.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <TagIcon className="h-12 w-12 text-white/20 mb-3" />
-                  <p className="text-sm text-white/40">Nenhuma tag ativa</p>
-                  <p className="text-xs text-white/30 mt-1">
+                  <TagIcon className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground">Nenhuma tag ativa</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
                     Arraste tags da direita ou clique nelas
                   </p>
                 </div>
@@ -242,38 +242,38 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
           <div
             className={cn(
               'flex-1 rounded-2xl p-4 transition-all',
-              'bg-white/[0.02] border border-white/[0.06]',
-              dropZone === 'available' && dragState.fromColumn !== 'available' && 'ring-2 ring-white/30 bg-white/[0.05]'
+              'bg-muted/30 border border-border',
+              dropZone === 'available' && dragState.fromColumn !== 'available' && 'ring-2 ring-accent/50 bg-muted/50'
             )}
             onDragOver={(e) => handleDragOver(e, 'available')}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, 'available')}
           >
             <div className="flex items-center gap-2 mb-4">
-              <div className="h-2 w-2 rounded-full bg-white/30" />
-              <h3 className="font-semibold text-white">DISPONÍVEIS</h3>
+              <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <h3 className="font-semibold text-foreground">DISPONÍVEIS</h3>
               <div className="flex-1" />
               <div className="relative flex-shrink-0 w-48">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-white/40" />
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
-                  className="h-8 pl-8 bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm"
+                  className="h-8 pl-8 bg-muted border-border text-foreground placeholder:text-muted-foreground text-sm"
                 />
               </div>
             </div>
 
             <div className="space-y-2 min-h-[300px] overflow-y-auto max-h-[400px]">
               {isLoading ? (
-                <div className="flex items-center justify-center py-8 text-white/40">
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
                   Carregando...
                 </div>
               ) : filteredAvailableTags.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <TagIcon className="h-12 w-12 text-white/20 mb-3" />
-                  <p className="text-sm text-white/40">
+                  <TagIcon className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground">
                     {searchTerm ? 'Nenhuma tag encontrada' : 'Todas as tags estão ativas'}
                   </p>
                 </div>
@@ -294,8 +294,8 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
           </div>
         </div>
 
-        <DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t border-white/10">
-          <p className="text-xs text-white/40 flex-1">
+        <DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground flex-1">
             💡 Arraste as tags ou clique para alternar
           </p>
           <div className="flex gap-2">
@@ -303,14 +303,14 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
               variant="outline"
               onClick={handleCancel}
               disabled={isMutating}
-              className="border-white/10 text-white hover:bg-white/5"
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={isMutating}
-              className="bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] hover:opacity-90 text-white border-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             >
               {isMutating ? 'Salvando...' : 'Confirmar'}
             </Button>
@@ -347,8 +347,8 @@ function TagCard({ tag, isActive, isDragging, onClick, onDragStart, onDragEnd }:
         'group flex items-center gap-3 rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all',
         'hover:scale-[1.02] hover:shadow-lg',
         isActive
-          ? 'bg-white/5 border border-white/10'
-          : 'bg-white/[0.02] border border-white/5 hover:bg-white/[0.05]',
+          ? 'bg-card border border-border'
+          : 'bg-muted/50 border border-border hover:bg-muted',
         isDragging && 'opacity-50 scale-95'
       )}
       style={
@@ -365,11 +365,11 @@ function TagCard({ tag, isActive, isDragging, onClick, onDragStart, onDragEnd }:
         className="h-3 w-3 rounded-full flex-shrink-0"
         style={{ backgroundColor: safeColor }}
       />
-      <span className="flex-1 font-medium text-white text-sm">{safeName}</span>
+      <span className="flex-1 font-medium text-foreground text-sm">{safeName}</span>
       {isActive ? (
-        <ChevronRight className="h-4 w-4 text-white/30 group-hover:text-white/60 transition-colors" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       ) : (
-        <ChevronLeft className="h-4 w-4 text-white/30 group-hover:text-white/60 transition-colors" />
+        <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       )}
     </div>
   )

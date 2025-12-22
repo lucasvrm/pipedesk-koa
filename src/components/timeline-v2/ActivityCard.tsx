@@ -168,9 +168,8 @@ export function ActivityCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
-        {/* Only show reply button for comments - system activities and audits cannot have replies */}
-        {item.type === 'comment' ? (
+      {item.type === 'comment' && (
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
           <Button
             variant="ghost"
             size="sm"
@@ -185,11 +184,42 @@ export function ActivityCard({
               </span>
             )}
           </Button>
-        ) : (
-          <div className="h-7" />
-        )}
 
-        {showMenu && (
+          {showMenu && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="inline-flex">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={handleMenuClick}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={handleMenuClick}>
+                {canEdit && (
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
+
+      {item.type !== 'comment' && showMenu && (
+        <div className="flex items-center justify-end mt-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <span className="inline-flex">
@@ -218,8 +248,8 @@ export function ActivityCard({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Thread Replies */}
       {hasReplies && item.replies && (
