@@ -105,6 +105,28 @@ const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; textCol
   }
 }
 
+/**
+ * Priority-based background styles for next action cell
+ */
+const PRIORITY_BG_STYLES: Record<string, { bg: string; border: string }> = {
+  hot: {
+    bg: 'bg-red-50 dark:bg-red-950/30',
+    border: 'border-l-[5px] border-l-red-500'
+  },
+  warm: {
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    border: 'border-l-[5px] border-l-amber-500'
+  },
+  cold: {
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    border: 'border-l-[5px] border-l-blue-500'
+  },
+  default: {
+    bg: 'bg-gray-50 dark:bg-gray-800/30',
+    border: 'border-l-[5px] border-l-gray-300 dark:border-l-gray-600'
+  }
+}
+
 export function LeadSalesRow({
   id,
   leadId,
@@ -445,7 +467,7 @@ export function LeadSalesRow({
   const safeNextActionReason = safeNextAction ? safeStringOptional(safeNextAction.reason) : undefined
   const nextActionDueAt = safeNextAction?.dueAt ?? safeNextAction?.due_at ?? null
   const urgencyLevel = getUrgencyLevel(nextActionDueAt)
-  const urgencyStyle = URGENCY_STYLES[urgencyLevel]
+  const urgencyTextColor = URGENCY_STYLES[urgencyLevel].textColor
   const safeOwnerName = owner ? safeString(owner.name, 'Responsável não informado') : null
 
   // Compute priority using the same logic as LeadDetailPage for consistency
@@ -458,6 +480,10 @@ export function LeadSalesRow({
       leadStatusId: status
     })
   }, [priorityScore, priorityBucket, lastInteractionAt, createdAt, created_at, status])
+
+  // Use priority for background and border
+  const priorityKey = (computedPriority.bucket || 'default') as string
+  const priorityStyle = PRIORITY_BG_STYLES[priorityKey] || PRIORITY_BG_STYLES.default
 
   const parsedLastInteractionDate = lastInteractionAt
     ? (() => {
@@ -629,11 +655,11 @@ export function LeadSalesRow({
               <TooltipTrigger asChild>
                 <Badge 
                   variant="secondary" 
-                  className={`w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left ${urgencyStyle.border} ${urgencyStyle.bg}`}
+                  className={`w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left ${priorityStyle.border} ${priorityStyle.bg}`}
                 >
                   <div className="flex items-baseline gap-1 max-w-full">
                     <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
-                    <span className={`text-sm font-semibold truncate ${urgencyStyle.textColor}`}>{safeNextActionLabel}</span>
+                    <span className={`text-sm font-semibold truncate ${urgencyTextColor}`}>{safeNextActionLabel}</span>
                   </div>
                   {safeNextActionReason && (
                     <div className="flex items-baseline gap-1 max-w-full">
@@ -654,7 +680,7 @@ export function LeadSalesRow({
         ) : (
           <Badge 
             variant="secondary" 
-            className={`w-4/5 max-w-full flex items-center justify-center py-2 px-3 ${URGENCY_STYLES.none.border} ${URGENCY_STYLES.none.bg}`}
+            className={`w-4/5 max-w-full flex items-center justify-center py-2 px-3 ${priorityStyle.border} ${priorityStyle.bg}`}
           >
             <span className="text-sm text-muted-foreground">Sem próxima ação</span>
           </Badge>
