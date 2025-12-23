@@ -4,7 +4,7 @@ export { CompanyRelationshipSettingsSection } from './CompanyRelationshipSetting
 export { SystemMetadataSettingsSection } from './SystemMetadataSettingsSection';
 export { SystemSettingsSection } from './SystemSettingsSection';
 export { RoleMetadataManager } from './RoleMetadataManager';
-export { LeadTaskTemplatesSection } from './LeadTaskTemplatesSection';
+export { LeadTaskTemplatesSection, LeadTaskTemplatesContent } from './LeadTaskTemplatesSection';
 export { SettingsSidebarNav } from './SettingsSidebarNav';
 export type { SidebarNavItem } from './SettingsSidebarNav';
 export { SettingsSidebarLayout } from './SettingsSidebarLayout';
