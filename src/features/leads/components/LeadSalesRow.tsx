@@ -526,7 +526,6 @@ export function LeadSalesRow({
             <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1.5 -m-1.5 transition-colors"
               onClick={() => setIsContactModalOpen(true)}>
               <Avatar className="h-9 w-9 border">
-                <AvatarImage src={undefined} />
                 <AvatarFallback>{getInitials(primaryContactData?.name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">

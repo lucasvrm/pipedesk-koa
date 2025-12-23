@@ -94,7 +94,6 @@ export function LeadContactsModal({ open, onOpenChange, leadId, leadName, contac
                     {contacts.map(c => (
                       <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
                         <Avatar className="h-10 w-10 border">
-                          <AvatarImage src={undefined} />
                           <AvatarFallback>{getInitials(c.name)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -150,7 +149,9 @@ export function LeadContactsModal({ open, onOpenChange, leadId, leadName, contac
                   <div className="space-y-1">
                     {filtered.map(c => (
                       <button key={c.id} className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 text-left" onClick={() => handleLink(c)} disabled={isLinking}>
-                        <Avatar className="h-9 w-9 border"><AvatarFallback>{getInitials(c.name)}</AvatarFallback></Avatar>
+                        <Avatar className="h-9 w-9 border">
+                          <AvatarFallback>{getInitials(c.name)}</AvatarFallback>
+                        </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{c.name}</p>
                           {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
