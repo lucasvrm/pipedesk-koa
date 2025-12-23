@@ -178,7 +178,7 @@ export function LeadPriorityBadge({
                         'flex items-center gap-2 cursor-pointer transition-colors',
                         isSelected 
                           ? 'bg-accent text-accent-foreground' 
-                          : 'hover:bg-muted/50'
+                          : '!hover:bg-muted/50 focus:!bg-muted/50'
                       )}
                     >
                       <OptionIcon className={cn('!h-5 !w-5', optConfig.textClass)} />
