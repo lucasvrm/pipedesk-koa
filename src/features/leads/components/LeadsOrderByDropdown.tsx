@@ -2,13 +2,12 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { ArrowUpDown, ChevronDown } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, Check } from 'lucide-react'
 import { useMemo, useCallback } from 'react'
 import { LeadOrderBy, ORDER_BY_OPTIONS } from './LeadsSmartFilters'
+import { cn } from '@/lib/utils'
 
 interface LeadsOrderByDropdownProps {
   orderBy: LeadOrderBy
@@ -63,13 +62,29 @@ export function LeadsOrderByDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[240px]">
-        <DropdownMenuRadioGroup value={safeOrderBy} onValueChange={handleOrderByChange}>
-          {ORDER_BY_OPTIONS.map(option => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
+        <div className="p-1">
+          {ORDER_BY_OPTIONS.map(option => {
+            const isSelected = option.value === safeOrderBy
+            return (
+              <button
+                key={option.value}
+                onClick={() => handleOrderByChange(option.value)}
+                className={cn(
+                  'relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'select-none'
+                )}
+                role="menuitemradio"
+                aria-checked={isSelected}
+              >
+                <span className="flex-1 text-left">{option.label}</span>
+                {isSelected && (
+                  <Check className="h-4 w-4 text-destructive" />
+                )}
+              </button>
+            )
+          })}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

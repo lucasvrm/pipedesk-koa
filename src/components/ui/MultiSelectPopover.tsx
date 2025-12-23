@@ -17,6 +17,8 @@ export interface MultiSelectOption {
   label: string
   /** Optional color for visual indicator (e.g., tags) */
   color?: string
+  /** Optional icon component (e.g., lucide-react icons) */
+  icon?: React.ComponentType<{ className?: string }>
 }
 
 interface MultiSelectPopoverProps {
@@ -157,6 +159,7 @@ export function MultiSelectPopover({
             <CommandGroup>
               {options.map(option => {
                 const isSelected = selected.includes(option.id)
+                const IconComponent = option.icon
                 return (
                   <CommandItem
                     key={option.id}
@@ -169,6 +172,9 @@ export function MultiSelectPopover({
                     )}>
                       {isSelected && <Check className="h-3 w-3" />}
                     </div>
+                    {IconComponent && (
+                      <IconComponent className="h-4 w-4 mr-2 shrink-0" />
+                    )}
                     {option.color && (
                       <div 
                         className="h-2.5 w-2.5 rounded-full mr-2 shrink-0" 
