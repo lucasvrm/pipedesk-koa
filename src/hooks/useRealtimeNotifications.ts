@@ -9,7 +9,6 @@ import {
 } from '@/services/notificationService';
 import {
   NotificationPriority,
-  NOTIFICATION_PRIORITY_LABELS,
 } from '@/lib/types';
 
 // Cores do toast por prioridade
