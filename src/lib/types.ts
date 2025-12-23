@@ -260,15 +260,392 @@ export interface Comment {
   parentId?: string | null
 }
 
+// ============================================================================
+// NOTIFICATION SYSTEM - EXPANDED TYPES
+// ============================================================================
+
+/**
+ * Níveis de prioridade para notificações
+ * critical: SLA vencido, deadline perdido (vermelho)
+ * urgent: SLA em risco, deadline próximo (laranja)
+ * high: Lead quente, regressão de status (amarelo)
+ * normal: Menção, atribuição, mudança de status (azul)
+ * low: Ação em massa, nota interna (cinza)
+ */
+export type NotificationPriority = 'critical' | 'urgent' | 'high' | 'normal' | 'low';
+
+/**
+ * Categorias de notificação para agrupamento e filtros
+ */
+export type NotificationCategory = 
+  | 'mention'      // Menções em comentários
+  | 'assignment'   // Atribuições e reatribuições
+  | 'status'       // Mudanças de status
+  | 'sla'          // Alertas de SLA
+  | 'deadline'     // Prazos
+  | 'activity'     // Atividades gerais (comentários, notas)
+  | 'system'       // Notificações do sistema
+  | 'general';     // Outros
+
+/**
+ * Tipos de entidade que podem ter notificações
+ */
+export type NotificationEntityType = 
+  | 'lead' 
+  | 'deal' 
+  | 'track' 
+  | 'task' 
+  | 'company' 
+  | 'contact'
+  | 'comment';
+
+/**
+ * Tipos específicos de notificação (expandido)
+ */
+export type NotificationType =
+  // Existentes
+  | 'mention'
+  | 'assignment'
+  | 'status_change'
+  | 'sla_breach'
+  | 'deadline'
+  // Novos
+  | 'sla_warning'
+  | 'deadline_approaching'
+  | 'reassignment'
+  | 'status_regression'
+  | 'hot_lead_assigned'
+  | 'new_opportunity'
+  | 'thread_reply'
+  | 'internal_note'
+  | 'bulk_action_complete'
+  | 'audit_alert';
+
+/**
+ * Interface expandida de Notificação
+ */
 export interface Notification {
-  id: string
-  userId: string
-  type: 'mention' | 'assignment' | 'status_change' | 'sla_breach' | 'deadline'
-  title: string
-  message: string
-  link: string
-  read: boolean
-  createdAt: string
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link: string;
+  read: boolean;
+  createdAt: string;
+  
+  // Novos campos
+  priority: NotificationPriority;
+  category: NotificationCategory;
+  entityId?: string;
+  entityType?: NotificationEntityType;
+  groupKey?: string;
+  metadata?: NotificationMetadata;
+  expiresAt?: string;
+}
+
+/**
+ * Metadata flexível para notificações
+ */
+export interface NotificationMetadata {
+  // Autor da ação
+  actorId?: string;
+  actorName?: string;
+  actorAvatar?: string;
+  
+  // Valores para mudanças de status
+  oldValue?: string;
+  newValue?: string;
+  
+  // Contagem para agrupamento
+  groupCount?: number;
+  
+  // Entidade relacionada
+  entityName?: string;
+  
+  // Dados extras específicos por tipo
+  [key: string]: any;
+}
+
+/**
+ * Notificação agrupada para exibição no Inbox
+ */
+export interface GroupedNotification {
+  groupKey: string;
+  notifications: Notification[];
+  latestAt: string;
+  unreadCount: number;
+  totalCount: number;
+  
+  // Dados do grupo para exibição
+  title: string;
+  message: string;
+  category: NotificationCategory;
+  priority: NotificationPriority;
+  entityType?: NotificationEntityType;
+  entityId?: string;
+  link: string;
+}
+
+/**
+ * Preferências de notificação do usuário
+ */
+export interface UserNotificationPreferences {
+  id: string;
+  userId: string;
+  
+  // Modo Não Perturbe
+  dndEnabled: boolean;
+  
+  // Preferências por categoria
+  prefMention: boolean;
+  prefAssignment: boolean;
+  prefStatus: boolean;
+  prefSla: boolean;
+  prefDeadline: boolean;
+  prefActivity: boolean;
+  prefSystem: boolean;
+  
+  // Prioridade mínima (null = todas)
+  minPriority: NotificationPriority | null;
+  
+  // Canais (futuro)
+  channelInapp: boolean;
+  channelEmail: boolean;
+  channelPush: boolean;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Input para criar preferências
+ */
+export interface UserNotificationPreferencesInput {
+  dndEnabled?: boolean;
+  prefMention?: boolean;
+  prefAssignment?: boolean;
+  prefStatus?: boolean;
+  prefSla?: boolean;
+  prefDeadline?: boolean;
+  prefActivity?: boolean;
+  prefSystem?: boolean;
+  minPriority?: NotificationPriority | null;
+  channelInapp?: boolean;
+  channelEmail?: boolean;
+  channelPush?: boolean;
+}
+
+// ============================================================================
+// NOTIFICATION CONSTANTS & LABELS
+// ============================================================================
+
+/**
+ * Labels para prioridades
+ */
+export const NOTIFICATION_PRIORITY_LABELS: Record<NotificationPriority, string> = {
+  critical: 'Crítica',
+  urgent: 'Urgente',
+  high: 'Alta',
+  normal: 'Normal',
+  low: 'Baixa',
+};
+
+/**
+ * Cores para prioridades (Tailwind classes)
+ */
+export const NOTIFICATION_PRIORITY_COLORS: Record<NotificationPriority, {
+  bg: string;
+  text: string;
+  border: string;
+  dot: string;
+}> = {
+  critical: {
+    bg: 'bg-red-100 dark:bg-red-950/50',
+    text: 'text-red-700 dark:text-red-400',
+    border: 'border-red-200 dark:border-red-800',
+    dot: 'bg-red-500',
+  },
+  urgent: {
+    bg: 'bg-orange-100 dark:bg-orange-950/50',
+    text: 'text-orange-700 dark:text-orange-400',
+    border: 'border-orange-200 dark:border-orange-800',
+    dot: 'bg-orange-500',
+  },
+  high: {
+    bg: 'bg-amber-100 dark:bg-amber-950/50',
+    text: 'text-amber-700 dark:text-amber-400',
+    border: 'border-amber-200 dark:border-amber-800',
+    dot: 'bg-amber-500',
+  },
+  normal: {
+    bg: 'bg-blue-100 dark:bg-blue-950/50',
+    text: 'text-blue-700 dark:text-blue-400',
+    border: 'border-blue-200 dark:border-blue-800',
+    dot: 'bg-blue-500',
+  },
+  low: {
+    bg: 'bg-gray-100 dark:bg-gray-800/50',
+    text: 'text-gray-600 dark:text-gray-400',
+    border: 'border-gray-200 dark:border-gray-700',
+    dot: 'bg-gray-400',
+  },
+};
+
+/**
+ * Labels para categorias
+ */
+export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> = {
+  mention: 'Menções',
+  assignment: 'Atribuições',
+  status: 'Mudanças de Status',
+  sla: 'Alertas de SLA',
+  deadline: 'Prazos',
+  activity: 'Atividades',
+  system: 'Sistema',
+  general: 'Geral',
+};
+
+/**
+ * Ícones por categoria (nomes do lucide-react)
+ */
+export const NOTIFICATION_CATEGORY_ICONS: Record<NotificationCategory, string> = {
+  mention: 'MessageCircle',
+  assignment: 'UserCircle',
+  status: 'RefreshCw',
+  sla: 'AlertTriangle',
+  deadline: 'Clock',
+  activity: 'Activity',
+  system: 'Settings',
+  general: 'Bell',
+};
+
+/**
+ * Catálogo completo de tipos de notificação com metadados
+ */
+export const NOTIFICATION_TYPE_CATALOG: Record<NotificationType, {
+  label: string;
+  description: string;
+  category: NotificationCategory;
+  defaultPriority: NotificationPriority;
+}> = {
+  // Menções
+  mention: {
+    label: 'Menção em comentário',
+    description: 'Alguém marcou você em um comentário',
+    category: 'mention',
+    defaultPriority: 'normal',
+  },
+  thread_reply: {
+    label: 'Resposta em thread',
+    description: 'Alguém respondeu em uma thread que você criou',
+    category: 'mention',
+    defaultPriority: 'low',
+  },
+  
+  // Atribuições
+  assignment: {
+    label: 'Atribuição direta',
+    description: 'Você foi atribuído como responsável',
+    category: 'assignment',
+    defaultPriority: 'normal',
+  },
+  reassignment: {
+    label: 'Reatribuição',
+    description: 'A responsabilidade foi transferida',
+    category: 'assignment',
+    defaultPriority: 'normal',
+  },
+  new_opportunity: {
+    label: 'Nova oportunidade',
+    description: 'Um novo lead/deal foi criado para você',
+    category: 'assignment',
+    defaultPriority: 'high',
+  },
+  hot_lead_assigned: {
+    label: 'Lead quente atribuído',
+    description: 'Um lead de alta prioridade foi atribuído a você',
+    category: 'assignment',
+    defaultPriority: 'high',
+  },
+  
+  // Status
+  status_change: {
+    label: 'Mudança de status',
+    description: 'O status de um registro foi alterado',
+    category: 'status',
+    defaultPriority: 'normal',
+  },
+  status_regression: {
+    label: 'Regressão de status',
+    description: 'Um registro voltou para um estágio anterior',
+    category: 'status',
+    defaultPriority: 'high',
+  },
+  
+  // SLA
+  sla_breach: {
+    label: 'SLA vencido',
+    description: 'O prazo de SLA foi ultrapassado',
+    category: 'sla',
+    defaultPriority: 'critical',
+  },
+  sla_warning: {
+    label: 'SLA em risco',
+    description: 'O prazo de SLA está próximo',
+    category: 'sla',
+    defaultPriority: 'urgent',
+  },
+  
+  // Deadline
+  deadline: {
+    label: 'Prazo perdido',
+    description: 'Uma data limite foi ultrapassada',
+    category: 'deadline',
+    defaultPriority: 'critical',
+  },
+  deadline_approaching: {
+    label: 'Prazo se aproximando',
+    description: 'Uma data limite está próxima',
+    category: 'deadline',
+    defaultPriority: 'urgent',
+  },
+  
+  // Atividades
+  internal_note: {
+    label: 'Nota interna',
+    description: 'Uma nota foi adicionada ao seu registro',
+    category: 'activity',
+    defaultPriority: 'low',
+  },
+  
+  // Sistema
+  bulk_action_complete: {
+    label: 'Ação em massa concluída',
+    description: 'Uma operação em lote foi finalizada',
+    category: 'system',
+    defaultPriority: 'low',
+  },
+  audit_alert: {
+    label: 'Alerta de auditoria',
+    description: 'Uma alteração crítica foi detectada',
+    category: 'system',
+    defaultPriority: 'high',
+  },
+};
+
+/**
+ * Helper: Obter prioridade padrão de um tipo
+ */
+export function getDefaultPriorityForType(type: NotificationType): NotificationPriority {
+  return NOTIFICATION_TYPE_CATALOG[type]?.defaultPriority || 'normal';
+}
+
+/**
+ * Helper: Obter categoria de um tipo
+ */
+export function getCategoryForType(type: NotificationType): NotificationCategory {
+  return NOTIFICATION_TYPE_CATALOG[type]?.category || 'general';
 }
 
 export interface StageHistory {
