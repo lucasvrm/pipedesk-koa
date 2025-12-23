@@ -88,9 +88,12 @@ export function useResizableColumns({
       setColumns(prevColumns => prevColumns.map(col => {
         if (col.id !== activeColumnId) return col
         
+        // Use maxWidth if defined, otherwise allow up to 1200px
+        const effectiveMaxWidth = col.maxWidth ?? 1200
+        
         const newWidth = Math.max(
           col.minWidth,
-          Math.min(col.maxWidth ?? 600, startWidth.current + diff)
+          Math.min(effectiveMaxWidth, startWidth.current + diff)
         )
         
         return { ...col, width: newWidth }
