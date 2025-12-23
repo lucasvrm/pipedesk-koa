@@ -24,7 +24,7 @@ export function SettingsSidebarLayout({
       <CardContent className="p-0">
         <div className="flex" style={{ minHeight }}>
           {/* Sidebar */}
-          <div className="w-[220px] border-r bg-muted/30 p-4 shrink-0">
+          <div className="w-[280px] border-r bg-muted/30 p-4 shrink-0">
             <SettingsSidebarNav
               items={items}
               activeId={activeId}
