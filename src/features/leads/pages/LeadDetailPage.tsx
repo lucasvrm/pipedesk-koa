@@ -47,7 +47,7 @@ import {
   Users,
   X,
 } from '@phosphor-icons/react'
-import { format } from 'date-fns'
+import { format, parseISO, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Tag as TagType, Contact } from '@/lib/types'
 import { LeadStatus, OPERATION_LABELS, OperationType } from '@/lib/types'
@@ -202,16 +202,33 @@ export default function LeadDetailPage() {
       { id: '3', title: 'Agendar reunião de apresentação', date: 'Em 3 dias' },
     ]
     
+    // CRITICAL: Ensure nextAction appears first when defined
     if (lead?.nextAction?.label) {
+      let formattedDate = 'Sem prazo definido'
+      
+      if (lead.nextAction.dueAt) {
+        try {
+          const dueDate = typeof lead.nextAction.dueAt === 'string' 
+            ? parseISO(lead.nextAction.dueAt)
+            : lead.nextAction.dueAt
+          
+          if (isValid(dueDate)) {
+            formattedDate = format(dueDate, "d 'de' MMMM", { locale: ptBR })
+          }
+        } catch (error) {
+          console.warn('[LeadDetailPage] Error formatting nextAction date:', error)
+        }
+      }
+      
       const nextActionItem = {
         id: 'next-action',
         title: lead.nextAction.label,
-        date: lead.nextAction.dueAt 
-          ? format(new Date(lead.nextAction.dueAt), 'dd/MM/yyyy HH:mm')
-          : 'Sem prazo definido'
+        date: formattedDate
       }
+      
       return [nextActionItem, ...mockActions]
     }
+    
     return mockActions
   }, [lead?.nextAction])
 

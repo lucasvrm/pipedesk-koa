@@ -144,7 +144,11 @@ export function LeadsFiltersBar({
   }, [templatesData])
 
   const priorityOptions = useMemo<MultiSelectOption[]>(() =>
-    PRIORITY_OPTIONS.map(o => ({ id: o.value, label: o.label })),
+    PRIORITY_OPTIONS.map(o => ({ 
+      id: o.value, 
+      label: o.label,
+      icon: o.icon 
+    })),
     []
   )
 
