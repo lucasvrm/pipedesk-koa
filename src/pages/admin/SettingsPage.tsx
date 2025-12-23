@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Gear,
   Users,
@@ -12,8 +13,6 @@ import {
   Package,
   ShieldCheck,
   ListChecks,
-  ChartLine,
-  Robot,
   Lightbulb,
   MagnifyingGlass
 } from '@phosphor-icons/react';
@@ -22,10 +21,9 @@ import {
   DealPipelineSettingsSection,
   CompanyRelationshipSettingsSection,
   SystemSettingsSection,
-  ProductivitySettingsSection
+  ProductivitySettingsSection,
+  IntegrationsSettingsSection
 } from '@/pages/admin/components/settings-sections';
-import DocumentAutomationSettings from '@/pages/admin/components/DocumentAutomationSettings';
-import DashboardSettingsPage from '@/pages/admin/DashboardSettings';
 import { SettingsTable } from './components/SettingsTable';
 import { useSearchParams } from 'react-router-dom';
 
@@ -485,12 +483,12 @@ export default function NewSettingsPage() {
         >
           <HelpCard
             title="Integrações & Automação"
-            description="Configure dashboards personalizados e automatize a geração de documentos. Centralize todas as integrações e processos automatizados da plataforma."
+            description="Configure dashboards personalizados e automatize a geração de documentos."
           />
 
-          <Tabs
-            value={integrationsSection}
-            onValueChange={(value) => {
+          <IntegrationsSettingsSection
+            activeTab={integrationsSection as 'dashboards' | 'automation'}
+            onTabChange={(value) => {
               setIntegrationsSection(value);
               updateSearchParams('integrations', value);
             }}
