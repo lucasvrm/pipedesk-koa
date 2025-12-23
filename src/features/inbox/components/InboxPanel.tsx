@@ -85,12 +85,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const { profile } = useAuth();
   const navigate = useNavigate();
   
-  // State
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'all'>('all');
-  const [filterPriority, setFilterPriority] = useState<NotificationPriority | 'all'>('all');
-  
-  // Hooks
+  // Hooks de dados (ordem obrigatória: queries e mutations primeiro)
   const { data: groupedNotifications, isLoading } = useGroupedNotifications(profile?.id || null);
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const markAsRead = useMarkAsRead();
@@ -98,6 +93,11 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const markGroupAsRead = useMarkGroupAsRead();
   const deleteNotification = useDeleteNotification();
   const deleteAllRead = useDeleteAllRead();
+  
+  // State (após hooks de dados)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'all'>('all');
+  const [filterPriority, setFilterPriority] = useState<NotificationPriority | 'all'>('all');
 
   // Filtrar notificações
   const filteredNotifications = useMemo(() => {
