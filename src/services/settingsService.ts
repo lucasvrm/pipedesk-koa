@@ -429,9 +429,13 @@ function mapFromDb(item: any, type: SettingType): any {
         ...metadataBase,
         color: item.color,
       }
+    case 'lead_statuses':
+      return {
+        ...metadataBase,
+        color: item.color,
+      }
     case 'relationship_levels':
     case 'company_types':
-    case 'lead_statuses':
     case 'lead_origins':
     case 'lead_member_roles':
       return metadataBase
@@ -497,9 +501,13 @@ function mapToDb(item: any, type: SettingType): any {
         ...metadataBase,
         color: item.color,
       }
+    case 'lead_statuses':
+      return {
+        ...metadataBase,
+        color: item.color,
+      }
     case 'relationship_levels':
     case 'company_types':
-    case 'lead_statuses':
     case 'lead_origins':
     case 'lead_member_roles':
       return metadataBase
