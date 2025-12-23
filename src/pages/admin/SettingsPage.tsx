@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Gear,
   Users,
@@ -69,19 +68,13 @@ const CATEGORIES = {
 // Helper component for category help cards - COMPACTO
 function HelpCard({ title, description }: { title: string; description: string }) {
   return (
-    <Card className="bg-primary/5 border-primary/20">
-      <CardHeader className="py-2 px-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
-            <Lightbulb className="h-4 w-4 text-primary" weight="fill" />
-          </div>
-          <div>
-            <CardTitle className="text-xs font-medium">{title}</CardTitle>
-            <CardDescription className="text-[11px] mt-0.5">{description}</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-    </Card>
+    <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-primary/5 border border-primary/20">
+      <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" weight="fill" />
+      <div>
+        <p className="text-xs font-medium">{title}</p>
+        <p className="text-[11px] text-muted-foreground leading-tight">{description}</p>
+      </div>
+    </div>
   );
 }
 
