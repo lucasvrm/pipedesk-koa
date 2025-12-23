@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { X, Search, ChevronRight, ChevronLeft, Tag as TagIcon } from 'lucide-react'
 import {
   Dialog,
@@ -58,10 +58,6 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
   }, [availableTags, localActiveTags, searchTerm])
 
   // 4. useCallback
-  const initializeLocalState = useCallback(() => {
-    setLocalActiveTags(Array.from(assignedTagIds))
-  }, [assignedTagIds])
-
   const toggleTag = useCallback((tagId: string) => {
     setLocalActiveTags((prev) => {
       if (prev.includes(tagId)) {
@@ -158,17 +154,32 @@ export function KanbanTagsModal({ open, onOpenChange, leadId, leadName }: Kanban
     onOpenChange(false)
   }, [onOpenChange])
 
-  // 5. useEffect - Initialize local state when modal opens
+  // 5. useEffect - Sync local state when modal is open and data loads
+  useEffect(() => {
+    // Sync local state when modal is open and data finishes loading
+    if (open && !isLoadingAssigned && assignedTags.length > 0) {
+      // Only initialize if local state is empty to avoid overwriting user edits
+      setLocalActiveTags((prev) => {
+        if (prev.length === 0) {
+          return assignedTags.map((t) => t.id)
+        }
+        return prev
+      })
+    }
+  }, [open, isLoadingAssigned, assignedTags])
+
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
       if (newOpen) {
-        initializeLocalState()
+        // Initialize with currently assigned tags (handles case when data is already cached)
+        setLocalActiveTags(assignedTags.map((t) => t.id))
+        setSearchTerm('')
       } else {
         setSearchTerm('')
       }
       onOpenChange(newOpen)
     },
-    [initializeLocalState, onOpenChange]
+    [assignedTags, onOpenChange]
   )
 
   // 6. Condicionais e early returns
