@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, UserCog, Check, Loader2, ChevronRight, Mail, Shield } from 'lucide-react'
+import { User, UserCog, Check, Loader2, ChevronRight } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
@@ -162,39 +162,52 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
                 <div className="px-3 space-y-1">
                   {filteredUsers.map((user) => {
                     const isCurrentOwner = currentOwner?.id === user.id
+                    const userName = safeString(user.name, 'Usuário')
+                    const userEmail = safeString(user.email, '')
                     const roleLabel = ROLE_LABELS[user.role] || user.role
                     return (
                       <button
                         key={user.id}
-                        className={`w-full flex items-start gap-3 p-2.5 rounded-lg transition-colors text-left ${
+                        className={`w-full flex items-center gap-3 p-2 rounded-md transition-colors text-left overflow-hidden ${
                           isCurrentOwner ? 'bg-primary/5 border border-primary/20' : 'hover:bg-muted/50'
                         }`}
                         onClick={() => handleSelectOwner(user)}
                         disabled={isMutating || isCurrentOwner}
                       >
-                        <Avatar className="h-10 w-10 border">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarImage src={user.avatar} alt={userName} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(userName)}
+                          </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium truncate">
-                              {safeString(user.name, 'Usuário')}
-                            </p>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium truncate">
+                              {userName}
+                            </span>
                             {isCurrentOwner && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">Atual</Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                                Atual
+                              </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <Mail className="h-3 w-3" /> {safeString(user.email, '')}
-                          </p>
+                          {userEmail && (
+                            <span className="text-xs text-muted-foreground truncate block">
+                              {userEmail}
+                            </span>
+                          )}
                           {user.role && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Shield className="h-3 w-3" /> {roleLabel}
-                            </p>
+                            <span className="text-xs text-muted-foreground truncate block opacity-70">
+                              {roleLabel}
+                            </span>
                           )}
                         </div>
-                        {isCurrentOwner && <Check className="h-4 w-4 text-primary mt-1" />}
+                        {isCurrentOwner && (
+                          <Check className="h-4 w-4 text-primary shrink-0" />
+                        )}
+                        {isMutating && !isCurrentOwner && (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                        )}
                       </button>
                     )
                   })}
