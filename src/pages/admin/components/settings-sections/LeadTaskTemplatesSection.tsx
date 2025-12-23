@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -112,16 +112,17 @@ function SortableTemplateItem({
 }
 
 export function LeadTaskTemplatesSection() {
+  // 1. Hooks de dados
   const { data, isLoading, error } = useLeadTaskTemplates(true)
   const createMutation = useCreateLeadTaskTemplate()
   const updateMutation = useUpdateLeadTaskTemplate()
   const deleteMutation = useDeleteLeadTaskTemplate()
   const reorderMutation = useReorderLeadTaskTemplates()
 
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingTemplate, setEditingTemplate] = useState<LeadTaskTemplate | null>(null)
-  const [deletingTemplate, setDeletingTemplate] = useState<LeadTaskTemplate | null>(null)
+  // 2. useMemo
+  const templates = useMemo(() => data?.data || [], [data?.data])
 
+  // 3. useSensor (similar to useMemo)
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -129,8 +130,12 @@ export function LeadTaskTemplatesSection() {
     })
   )
 
-  const templates = data?.data || []
+  // 4. useState
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<LeadTaskTemplate | null>(null)
+  const [deletingTemplate, setDeletingTemplate] = useState<LeadTaskTemplate | null>(null)
 
+  // 5. Handlers
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
