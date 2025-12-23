@@ -194,6 +194,27 @@ export default function LeadDetailPage() {
     })
   }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
 
+  // Prepare actions list with nextAction at the first position if defined
+  const sidebarActions = useMemo(() => {
+    const mockActions = [
+      { id: '1', title: 'Ligar para cliente', date: 'Hoje, 14:00' },
+      { id: '2', title: 'Enviar proposta comercial', date: 'Amanhã' },
+      { id: '3', title: 'Agendar reunião de apresentação', date: 'Em 3 dias' },
+    ]
+    
+    if (lead?.nextAction?.label) {
+      const nextActionItem = {
+        id: 'next-action',
+        title: lead.nextAction.label,
+        date: lead.nextAction.dueAt 
+          ? format(new Date(lead.nextAction.dueAt), 'dd/MM/yyyy HH:mm')
+          : 'Sem prazo definido'
+      }
+      return [nextActionItem, ...mockActions]
+    }
+    return mockActions
+  }, [lead?.nextAction])
+
   const handleCreateComment = useCallback(async (data: CommentFormData) => {
     if (!profile) return
     
@@ -993,47 +1014,34 @@ export default function LeadDetailPage() {
 
             {/* ===== SEÇÃO 2: PRÓXIMAS AÇÕES ===== */}
             <div>
-              {/* Mock actions - will be replaced with real data */}
-              {(() => {
-                const mockActions = [
-                  { id: '1', title: 'Ligar para cliente', date: 'Hoje, 14:00' },
-                  { id: '2', title: 'Enviar proposta comercial', date: 'Amanhã' },
-                  { id: '3', title: 'Agendar reunião de apresentação', date: 'Em 3 dias' },
-                ]
-                
-                return (
-                  <>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                        Próximas Ações
-                      </h3>
-                      <span className="text-xs text-slate-400">{mockActions.length} pendentes</span>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Próximas Ações
+                </h3>
+                <span className="text-xs text-slate-400">{sidebarActions.length} pendentes</span>
+              </div>
+              
+              {/* Lista de Ações */}
+              <div className="space-y-2">
+                {sidebarActions.map((action) => (
+                  <div 
+                    key={action.id}
+                    className="flex items-start gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group"
+                  >
+                    <Checkbox id={`action-${action.id}`} className="mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <label 
+                        htmlFor={`action-${action.id}`} 
+                        className="text-sm text-slate-900 cursor-pointer block truncate"
+                      >
+                        {action.title}
+                      </label>
+                      <span className="text-xs text-slate-500">{action.date}</span>
                     </div>
-                    
-                    {/* Lista de Ações (dados mockados por enquanto) */}
-                    <div className="space-y-2">
-                      {mockActions.map((action) => (
-                        <div 
-                          key={action.id}
-                          className="flex items-start gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group"
-                        >
-                          <Checkbox id={`action-${action.id}`} className="mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <label 
-                              htmlFor={`action-${action.id}`} 
-                              className="text-sm text-slate-900 cursor-pointer block truncate"
-                            >
-                              {action.title}
-                            </label>
-                            <span className="text-xs text-slate-500">{action.date}</span>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )
-              })()}
+                    <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                ))}
+              </div>
 
               <Button 
                 variant="ghost" 

@@ -7,7 +7,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { cn } from '@/lib/utils'
 
@@ -30,8 +30,6 @@ interface LeadsListControlsProps {
   selectedIds: string[]
   /** Handler for bulk delete */
   onBulkDelete: () => void
-  /** Handler to open create lead modal */
-  onCreateLead: () => void
   /** Total number of leads */
   totalLeads: number
   /** Current items per page */
@@ -67,7 +65,6 @@ export function LeadsListControls({
   isFiltersOpen = false,
   selectedIds,
   onBulkDelete,
-  onCreateLead,
   totalLeads,
   itemsPerPage,
   onItemsPerPageChange,
@@ -151,14 +148,6 @@ export function LeadsListControls({
               <Kanban className="h-4 w-4" />
             </Button>
           </div>
-          
-          {/* Create Lead button */}
-          <RequirePermission permission="leads.create">
-            <Button onClick={onCreateLead} size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Lead
-            </Button>
-          </RequirePermission>
         </div>
       </div>
 

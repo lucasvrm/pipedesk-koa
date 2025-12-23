@@ -12,7 +12,7 @@ import {
   CommandList
 } from '@/components/ui/command'
 import { MultiSelectPopover, MultiSelectOption } from '@/components/ui/MultiSelectPopover'
-import { Check, ChevronDown, Users, Clock, MapPin, Tag as TagIcon, Filter, X } from 'lucide-react'
+import { Check, ChevronDown, Users, Clock, MapPin, Tag as TagIcon, Filter, X, Flame, Thermometer, Snowflake } from 'lucide-react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
 import { AppliedLeadsFilters, FilterActions } from '../hooks/useLeadsFiltersSearchParams'
@@ -43,10 +43,10 @@ const FALLBACK_NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
   { code: 'disqualify', label: 'Desqualificar / encerrar' }
 ]
 
-const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string }[] = [
-  { value: 'hot', label: 'Hot' },
-  { value: 'warm', label: 'Warm' },
-  { value: 'cold', label: 'Cold' }
+const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'hot', label: 'Hot', icon: Flame },
+  { value: 'warm', label: 'Warm', icon: Thermometer },
+  { value: 'cold', label: 'Cold', icon: Snowflake }
 ]
 
 const DAYS_PRESETS = [3, 7, 14] as const

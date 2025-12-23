@@ -512,7 +512,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Contato principal - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[190px] lg:w-[16%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[190px] lg:w-[11%]" onClick={(e) => e.stopPropagation()}>
         {(() => {
           const contacts = fullLead?.contacts || []
           const primaryContactData = contacts.find(c => c.isPrimary) || contacts[0]
@@ -616,7 +616,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Próxima ação - navigates to Lead Detail, with urgency styling */}
-      <TableCell className="min-w-[180px] lg:w-[14%]">
+      <TableCell className="min-w-[180px] lg:w-[17%]">
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -656,7 +656,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[180px] lg:w-[16%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[220px] lg:w-[24%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <TagsCellCompact
             tags={leadTags}
