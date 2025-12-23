@@ -105,7 +105,7 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
       <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start" onClick={(e) => e.stopPropagation()}>
+      <PopoverContent className="w-80 p-0" align="end" sideOffset={4} onClick={(e) => e.stopPropagation()}>
         {!showUserPicker ? (
           <div className="py-1">
             {/* View Owner Option */}
@@ -158,7 +158,7 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
                 {searchTerm ? 'Nenhum usuário encontrado.' : 'Nenhum usuário disponível.'}
               </div>
             ) : (
-              <ScrollArea className="h-[280px] -mx-3">
+              <ScrollArea className="h-[300px] -mx-3">
                 <div className="px-3 space-y-1">
                   {filteredUsers.map((user) => {
                     const isCurrentOwner = currentOwner?.id === user.id
@@ -178,13 +178,15 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium truncate">{user.name}</p>
+                            <p className="text-sm font-medium truncate">
+                              {safeString(user.name, 'Usuário')}
+                            </p>
                             {isCurrentOwner && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Atual</Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">Atual</Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <Mail className="h-3 w-3" /> {user.email}
+                            <Mail className="h-3 w-3" /> {safeString(user.email, '')}
                           </p>
                           {user.role && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
