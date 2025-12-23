@@ -26,12 +26,12 @@ import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils/googleLinks'
 import { getRootFolderUrl } from '@/services/driveService'
 import { DriveApiError } from '@/lib/driveClient'
-import { TagsCellCards } from './TagsCellCards'
+import { TagsCellCompact } from './TagsCellCompact'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 import { LeadPriorityBadge } from './LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
-import { useEntityTags, useTagOperations } from '@/services/tagService'
+import { useEntityTags } from '@/services/tagService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -133,7 +133,6 @@ export function LeadSalesRow({
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
   const { data: leadTags = [] } = useEntityTags(actualLeadId || '', 'lead')
-  const tagOps = useTagOperations()
 
   // 2. useState
   const [isDriveLoading, setIsDriveLoading] = useState(false)
@@ -145,18 +144,6 @@ export function LeadSalesRow({
   const currentStatus = status ? getLeadStatusById(status) : null
   const statusLabel = currentStatus?.label ?? 'Sem status'
   const statusColor = currentStatus?.code ?? 'default'
-
-  // Handler for removing tag
-  const handleRemoveTag = (tagId: string) => {
-    if (!actualLeadId) return
-    tagOps.unassign.mutate(
-      { tagId, entityId: actualLeadId, entityType: 'lead' },
-      {
-        onSuccess: () => toast.success('Tag removida'),
-        onError: () => toast.error('Erro ao remover tag')
-      }
-    )
-  }
 
   // Handler for status change
   const handleStatusChange = async (newStatusId: string) => {
@@ -617,14 +604,13 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[200px] lg:w-[18%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[180px] lg:w-[16%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
-          <TagsCellCards
+          <TagsCellCompact
             tags={leadTags}
             leadId={actualLeadId}
             leadName={safeLegalName}
-            onRemove={handleRemoveTag}
-            isRemoving={tagOps.unassign.isPending}
+            maxVisibleTags={3}
           />
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
