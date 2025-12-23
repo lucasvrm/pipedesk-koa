@@ -114,9 +114,9 @@ export function LeadPriorityBadge({
       )}
     >
       {updatePriority.isPending ? (
-        <Loader2 className="!h-8 !w-8 animate-spin" />
+        <Loader2 className="!h-7 !w-7 animate-spin" />
       ) : (
-        <Icon className="!h-8 !w-8" />
+        <Icon className="!h-7 !w-7" />
       )}
     </Badge>
   )
@@ -181,7 +181,7 @@ export function LeadPriorityBadge({
                           : 'hover:bg-muted/50'
                       )}
                     >
-                      <OptionIcon className={cn('!h-6 !w-6', optConfig.textClass)} />
+                      <OptionIcon className={cn('!h-5 !w-5', optConfig.textClass)} />
                       <span className="flex-1">{optConfig.label}</span>
                       {isSelected && <Check className="h-4 w-4" />}
                     </DropdownMenuItem>
