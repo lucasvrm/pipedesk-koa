@@ -4,3 +4,4 @@ export { CompanyRelationshipSettingsSection } from './CompanyRelationshipSetting
 export { SystemMetadataSettingsSection } from './SystemMetadataSettingsSection';
 export { SystemSettingsSection } from './SystemSettingsSection';
 export { RoleMetadataManager } from './RoleMetadataManager';
+export { LeadTaskTemplatesSection } from './LeadTaskTemplatesSection';
