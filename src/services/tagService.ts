@@ -122,11 +122,12 @@ export async function assignTagToEntity(tagId: string, entityId: string, entityT
   const enabled = await checkFeatureEnabled(moduleName);
   if (!enabled) throw new Error('FEATURE_DISABLED');
 
+  // Use maybeSingle() instead of single() to avoid 406 error when no record exists
   const { data: existing } = await supabase
     .from('entity_tags')
     .select('*')
     .match({ tag_id: tagId, entity_id: entityId, entity_type: entityType })
-    .single();
+    .maybeSingle();
 
   if (existing) return existing;
 
