@@ -9,8 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { CreateLeadModal } from '@/features/leads/components/CreateLeadModal'
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
-import { CreatePlayerDialog } from '@/features/deals/components/CreatePlayerDialog'
-import { CreateTaskDialog } from '@/features/tasks/components/CreateTaskDialog'
+import CreateTaskDialog from '@/features/tasks/components/CreateTaskDialog'
 import { toast } from 'sonner'
 
 type EntityType = 'lead' | 'deal' | 'company' | 'contact' | 'player' | 'task'
@@ -28,7 +27,7 @@ export function CreateNewDropdown() {
   const [openModal, setOpenModal] = useState<EntityType | null>(null)
 
   const handleOpenModal = (type: EntityType) => {
-    if (type === 'company' || type === 'contact') {
+    if (type === 'company' || type === 'contact' || type === 'player') {
       toast.info('Funcionalidade em desenvolvimento')
       return
     }
@@ -75,10 +74,6 @@ export function CreateNewDropdown() {
       />
       <CreateDealDialog 
         open={openModal === 'deal'} 
-        onOpenChange={(open) => !open && handleCloseModal()} 
-      />
-      <CreatePlayerDialog 
-        open={openModal === 'player'} 
         onOpenChange={(open) => !open && handleCloseModal()} 
       />
       <CreateTaskDialog 
