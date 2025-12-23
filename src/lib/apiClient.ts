@@ -107,3 +107,50 @@ export async function apiFetch<T>(
 
   return response.json() as Promise<T>;
 }
+
+/**
+ * REST client object with convenience methods for common HTTP verbs.
+ */
+export const apiClient = {
+  /**
+   * GET request
+   */
+  get: <T>(endpoint: string, options?: RequestInit) =>
+    apiFetch<T>(endpoint, { ...options, method: 'GET' }),
+
+  /**
+   * POST request
+   */
+  post: <T>(endpoint: string, data?: unknown, options?: RequestInit) =>
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  /**
+   * PUT request
+   */
+  put: <T>(endpoint: string, data?: unknown, options?: RequestInit) =>
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  /**
+   * PATCH request
+   */
+  patch: <T>(endpoint: string, data?: unknown, options?: RequestInit) =>
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  /**
+   * DELETE request
+   */
+  delete: <T = void>(endpoint: string, options?: RequestInit) =>
+    apiFetch<T>(endpoint, { ...options, method: 'DELETE' }),
+};

@@ -25,6 +25,7 @@ import { settingsService } from '@/services/settingsService';
 import { Users, TrendingUp, UserCircle, Plus, PencilIcon, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import type { LeadStatusMeta, LeadOriginMeta, LeadMemberRoleMeta } from '@/types/metadata';
+import { LeadTaskTemplatesSection } from './LeadTaskTemplatesSection';
 
 type SettingType = 'lead_statuses' | 'lead_origins' | 'lead_member_roles';
 
@@ -694,6 +695,9 @@ export function LeadSettingsSection() {
         data={leadMemberRoles as MetadataItem[]}
         onRefresh={refreshMetadata}
       />
+
+      {/* Lead Task Templates */}
+      <LeadTaskTemplatesSection />
     </div>
   );
 }
