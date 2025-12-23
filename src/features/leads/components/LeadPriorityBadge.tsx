@@ -1,68 +1,147 @@
-import { Flame } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import type { LeadPriorityBucket } from '@/lib/types'
-import { cn, safeStringOptional } from '@/lib/utils'
+import { useState } from 'react'
+import { Flame, Thermometer, Snowflake, ChevronDown, Check, Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+import { useUpdateLeadPriority } from '../hooks/useUpdateLeadPriority'
 
-type PriorityBucket = LeadPriorityBucket | null | undefined
+type PriorityBucket = 'hot' | 'warm' | 'cold'
 
 interface LeadPriorityBadgeProps {
-  priorityBucket?: PriorityBucket
+  leadId?: string
+  priorityBucket?: PriorityBucket | null
   priorityScore?: number | null
   priorityDescription?: string | null
+  editable?: boolean
   className?: string
 }
 
-const PRIORITY_COLORS: Record<LeadPriorityBucket, string> = {
-  hot: 'bg-destructive/20 text-destructive',
-  warm: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-100',
-  cold: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100'
-}
+const PRIORITY_CONFIG = {
+  hot: {
+    label: 'Alta',
+    icon: Flame,
+    bgClass: 'bg-red-100 dark:bg-red-950/50',
+    textClass: 'text-red-700 dark:text-red-400',
+    borderClass: 'border-red-200 dark:border-red-800',
+    hoverClass: 'hover:bg-red-200 dark:hover:bg-red-900/50',
+  },
+  warm: {
+    label: 'Média',
+    icon: Thermometer,
+    bgClass: 'bg-amber-100 dark:bg-amber-950/50',
+    textClass: 'text-amber-700 dark:text-amber-400',
+    borderClass: 'border-amber-200 dark:border-amber-800',
+    hoverClass: 'hover:bg-amber-200 dark:hover:bg-amber-900/50',
+  },
+  cold: {
+    label: 'Baixa',
+    icon: Snowflake,
+    bgClass: 'bg-blue-100 dark:bg-blue-950/50',
+    textClass: 'text-blue-700 dark:text-blue-400',
+    borderClass: 'border-blue-200 dark:border-blue-800',
+    hoverClass: 'hover:bg-blue-200 dark:hover:bg-blue-900/50',
+  },
+} as const
 
-const PRIORITY_LABELS: Record<LeadPriorityBucket, string> = {
-  hot: 'Prioridade Alta',
-  warm: 'Prioridade Média',
-  cold: 'Prioridade Baixa'
-}
-
-const PRIORITY_TOOLTIP_COLORS: Record<LeadPriorityBucket, string> = {
-  hot: 'bg-red-600 text-white',
-  warm: 'bg-yellow-400 text-gray-900',
-  cold: 'bg-blue-600 text-white'
-}
+const PRIORITY_OPTIONS: PriorityBucket[] = ['hot', 'warm', 'cold']
 
 export function LeadPriorityBadge({
+  leadId,
   priorityBucket,
   priorityScore,
   priorityDescription,
-  className
+  editable = false,
+  className,
 }: LeadPriorityBadgeProps) {
-  const safePriorityBucket: LeadPriorityBucket = priorityBucket ?? 'cold'
-  const safePriorityDescription = safeStringOptional(priorityDescription)
-  const hasScore = priorityScore !== undefined && priorityScore !== null
+  // 1. Hooks - ALWAYS at the top
+  const [isOpen, setIsOpen] = useState(false)
+  const updatePriority = useUpdateLeadPriority()
 
+  // 2. Derived values
+  const bucket = priorityBucket || 'cold'
+  const config = PRIORITY_CONFIG[bucket]
+  const Icon = config.icon
+
+  // 3. Handlers
+  const handleChange = async (newBucket: PriorityBucket) => {
+    if (!leadId || newBucket === bucket) {
+      setIsOpen(false)
+      return
+    }
+
+    try {
+      await updatePriority.mutateAsync({ leadId, priorityBucket: newBucket })
+    } finally {
+      setIsOpen(false)
+    }
+  }
+
+  // 4. JSX elements
+  const badgeContent = (
+    <Badge
+      variant="outline"
+      className={cn(
+        'gap-1.5 px-2 py-0.5 font-medium transition-colors',
+        config.bgClass,
+        config.textClass,
+        config.borderClass,
+        editable && 'cursor-pointer',
+        editable && config.hoverClass,
+        className
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span>{config.label}</span>
+      {priorityScore != null && (
+        <span className="text-xs opacity-70">({priorityScore})</span>
+      )}
+      {editable && !updatePriority.isPending && (
+        <ChevronDown className="h-3 w-3 opacity-50" />
+      )}
+      {updatePriority.isPending && (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      )}
+    </Badge>
+  )
+
+  // 5. Conditional returns AFTER hooks
+  if (!editable || !leadId) {
+    return badgeContent
+  }
+
+  // 6. Main return
   return (
-    <TooltipProvider delayDuration={200}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div
-            className={cn(
-              'h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold',
-              PRIORITY_COLORS[safePriorityBucket],
-              className
-            )}
-            aria-label={PRIORITY_LABELS[safePriorityBucket]}
-          >
-            <Flame className="h-[18px] w-[18px]" />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent className={cn('max-w-xs text-left space-y-1', PRIORITY_TOOLTIP_COLORS[safePriorityBucket])}>
-          <div className="font-semibold">{PRIORITY_LABELS[safePriorityBucket]}</div>
-          {hasScore && <div className="opacity-90">Score: {priorityScore}</div>}
-          {safePriorityDescription && (
-            <div className="opacity-90 text-xs leading-relaxed">{safePriorityDescription}</div>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild disabled={updatePriority.isPending}>
+        {badgeContent}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-36">
+        {PRIORITY_OPTIONS.map((option) => {
+          const optConfig = PRIORITY_CONFIG[option]
+          const OptionIcon = optConfig.icon
+          const isSelected = option === bucket
+
+          return (
+            <DropdownMenuItem
+              key={option}
+              onClick={() => handleChange(option)}
+              className={cn(
+                'flex items-center gap-2 cursor-pointer',
+                isSelected && 'bg-accent'
+              )}
+            >
+              <OptionIcon className={cn('h-4 w-4', optConfig.textClass)} />
+              <span className="flex-1">{optConfig.label}</span>
+              {isSelected && <Check className="h-4 w-4" />}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

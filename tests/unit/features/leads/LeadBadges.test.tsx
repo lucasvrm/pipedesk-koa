@@ -98,6 +98,13 @@ vi.mock('@/services/commentService', () => ({
   useDeleteComment: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false }))
 }))
 
+vi.mock('@/features/leads/hooks/useUpdateLeadPriority', () => ({
+  useUpdateLeadPriority: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false
+  }))
+}))
+
 vi.mock('@/hooks/useSystemMetadata', () => ({
   useSystemMetadata: vi.fn(() => ({
     leadStatuses: [
@@ -138,8 +145,8 @@ describe('Lead Badges - Priority and Owner Consistency', () => {
         />
       )
       
-      const badge = screen.getByLabelText('Prioridade Alta')
-      expect(badge).toBeInTheDocument()
+      expect(screen.getByText('Alta')).toBeInTheDocument()
+      expect(screen.getByText('(90)')).toBeInTheDocument()
     })
 
     it('should show cold priority badge when priorityBucket is cold', () => {
@@ -151,8 +158,8 @@ describe('Lead Badges - Priority and Owner Consistency', () => {
         />
       )
       
-      const badge = screen.getByLabelText('Prioridade Baixa')
-      expect(badge).toBeInTheDocument()
+      expect(screen.getByText('Baixa')).toBeInTheDocument()
+      expect(screen.getByText('(20)')).toBeInTheDocument()
     })
 
     it('should default to cold priority when priorityBucket is null/undefined', () => {
@@ -164,8 +171,7 @@ describe('Lead Badges - Priority and Owner Consistency', () => {
         />
       )
       
-      const badge = screen.getByLabelText('Prioridade Baixa')
-      expect(badge).toBeInTheDocument()
+      expect(screen.getByText('Baixa')).toBeInTheDocument()
     })
 
     it('should handle invalid priority bucket by defaulting to warm', () => {
@@ -220,8 +226,7 @@ describe('Lead Badges - Priority and Owner Consistency', () => {
       })
 
       // Verify priority badge is rendered (it should show hot priority)
-      const priorityBadge = screen.getByLabelText('Prioridade Alta')
-      expect(priorityBadge).toBeInTheDocument()
+      expect(screen.getByText('Alta')).toBeInTheDocument()
     })
   })
 

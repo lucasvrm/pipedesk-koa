@@ -612,9 +612,11 @@ export default function LeadDetailPage() {
               {statusBadge}
               <div className="flex items-center gap-2">
                 <LeadPriorityBadge
+                  leadId={lead.id}
                   priorityBucket={computedPriority.bucket}
                   priorityScore={computedPriority.score}
                   priorityDescription={computedPriority.description}
+                  editable={true}
                 />
                 <TooltipProvider delayDuration={150}>
                   <Tooltip>
