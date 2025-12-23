@@ -14,13 +14,13 @@ import { Button } from '@/components/ui/button'
 
 const LEADS_TABLE_COLUMNS: ColumnDef[] = [
   { id: 'checkbox', label: '', width: 40, minWidth: 40, maxWidth: 40 },
-  { id: 'empresa', label: 'Empresa', width: 200, minWidth: 120, maxWidth: 400 },
-  { id: 'contato', label: 'Contato principal', width: 190, minWidth: 120, maxWidth: 300 },
-  { id: 'status', label: 'Status', width: 130, minWidth: 80, maxWidth: 200 },
-  { id: 'interacoes', label: 'Interações', width: 140, minWidth: 100, maxWidth: 200 },
-  { id: 'proxima_acao', label: 'Próxima ação', width: 180, minWidth: 120, maxWidth: 300 },
-  { id: 'tags', label: 'Tags', width: 220, minWidth: 100, maxWidth: 400 },
-  { id: 'responsavel', label: 'Responsável', width: 160, minWidth: 100, maxWidth: 250 },
+  { id: 'empresa', label: 'Empresa', width: 200, minWidth: 120, maxWidth: 800 },
+  { id: 'contato', label: 'Contato principal', width: 190, minWidth: 120, maxWidth: 600 },
+  { id: 'status', label: 'Status', width: 130, minWidth: 80, maxWidth: 400 },
+  { id: 'interacoes', label: 'Interações', width: 140, minWidth: 100, maxWidth: 400 },
+  { id: 'proxima_acao', label: 'Próxima ação', width: 180, minWidth: 120, maxWidth: 600 },
+  { id: 'tags', label: 'Tags', width: 220, minWidth: 100, maxWidth: 800 },
+  { id: 'responsavel', label: 'Responsável', width: 160, minWidth: 100, maxWidth: 500 },
   { id: 'acoes', label: 'Ações', width: 60, minWidth: 60, maxWidth: 60 }
 ]
 
@@ -65,6 +65,12 @@ export function LeadsSalesList({
 
   // Helper to get column width by id
   const colWidth = (id: string) => getColumnWidth(id)
+
+  // Calculate total table width
+  const totalTableWidth = useMemo(() => 
+    columns.reduce((sum, col) => sum + col.width, 0),
+    [columns]
+  )
 
   const { validLeads, invalidLeadCount } = useMemo(() => {
     const valid = [] as LeadSalesViewItem[]
@@ -254,6 +260,19 @@ export function LeadsSalesList({
 
   const shouldLogRenderError = !import.meta.env.PROD || import.meta.env.VITE_VERCEL_ENV === 'preview'
 
+  // Create column widths object for skeleton
+  const skeletonColumnWidths = {
+    checkbox: colWidth('checkbox'),
+    empresa: colWidth('empresa'),
+    contato: colWidth('contato'),
+    status: colWidth('status'),
+    interacoes: colWidth('interacoes'),
+    proxima_acao: colWidth('proxima_acao'),
+    tags: colWidth('tags'),
+    responsavel: colWidth('responsavel'),
+    acoes: colWidth('acoes')
+  }
+
   return (
     <div className="rounded-lg border bg-card overflow-x-auto">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
@@ -275,7 +294,7 @@ export function LeadsSalesList({
         </Button>
       </div>
       
-      <Table style={{ tableLayout: 'fixed', width: columns.reduce((sum, col) => sum + col.width, 0) }}>
+      <Table style={{ tableLayout: 'fixed', minWidth: totalTableWidth, width: '100%' }}>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             {/* Checkbox - fixed width, no resize */}
@@ -368,20 +387,9 @@ export function LeadsSalesList({
         <TableBody>
           {isLoading && (
             <>
-              {Array.from({ length: 5 }).map((_, index) => {
-                const columnWidths = {
-                  checkbox: colWidth('checkbox'),
-                  empresa: colWidth('empresa'),
-                  contato: colWidth('contato'),
-                  status: colWidth('status'),
-                  interacoes: colWidth('interacoes'),
-                  proxima_acao: colWidth('proxima_acao'),
-                  tags: colWidth('tags'),
-                  responsavel: colWidth('responsavel'),
-                  acoes: colWidth('acoes')
-                }
-                return <LeadSalesRowSkeleton key={index} columnWidths={columnWidths} />
-              })}
+              {Array.from({ length: 5 }).map((_, index) => (
+                <LeadSalesRowSkeleton key={index} columnWidths={skeletonColumnWidths} />
+              ))}
             </>
           )}
 
