@@ -175,8 +175,8 @@ export function LeadPriorityBadge({
                       key={option}
                       onClick={() => handleChange(option)}
                       className={cn(
-                        'flex items-center gap-2 cursor-pointer',
-                        'hover:bg-accent/80',
+                        'flex items-center gap-2 cursor-pointer transition-colors',
+                        'hover:bg-muted',
                         isSelected && 'bg-accent text-accent-foreground'
                       )}
                     >

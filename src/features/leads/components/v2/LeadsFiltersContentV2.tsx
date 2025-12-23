@@ -2,7 +2,7 @@ import { useMemo, useCallback, useState, useEffect } from 'react'
 import { User, Tag, LeadPriorityBucket } from '@/lib/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { ChevronDown, Search, X } from 'lucide-react'
+import { ChevronDown, Search, X, Flame, Thermometer, Snowflake } from 'lucide-react'
 import { cn, safeString, ensureArray } from '@/lib/utils'
 import { useFilterSectionsState, FilterSectionKey } from '../../hooks/useFilterSectionsState'
 import { LeadOrderBy, ORDER_BY_OPTIONS } from '../LeadsSmartFilters'
@@ -36,10 +36,10 @@ const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
   { code: 'disqualify', label: 'Desqualificar / encerrar' }
 ]
 
-const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; emoji: string }[] = [
-  { value: 'hot', label: 'Hot', emoji: '🔥' },
-  { value: 'warm', label: 'Warm', emoji: '☀️' },
-  { value: 'cold', label: 'Cold', emoji: '❄️' }
+const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'hot', label: 'Hot', icon: Flame },
+  { value: 'warm', label: 'Warm', icon: Thermometer },
+  { value: 'cold', label: 'Cold', icon: Snowflake }
 ]
 
 const DAYS_PRESETS = [3, 7, 14] as const
@@ -289,6 +289,7 @@ export function LeadsFiltersContentV2({
         <div className="flex gap-2 flex-wrap px-1">
           {PRIORITY_OPTIONS.map(option => {
             const isActive = draftFilters.priority.includes(option.value)
+            const Icon = option.icon
             const styles = {
               hot: {
                 active: 'bg-red-900 text-white border-red-900',
@@ -309,12 +310,13 @@ export function LeadsFiltersContentV2({
                 type="button"
                 onClick={() => handlePriorityToggle(option.value)}
                 className={cn(
-                  'px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-all border-2',
+                  'px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-all border-2 flex items-center gap-1.5',
                   isActive ? styles[option.value].active : styles[option.value].inactive
                 )}
                 data-testid={`priority-pill-${option.value}`}
               >
-                {option.emoji} {option.label}
+                <Icon className="h-3.5 w-3.5" />
+                {option.label}
               </button>
             )
           })}

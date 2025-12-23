@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/command'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Users, Check, ChevronDown, Search, X } from 'lucide-react'
+import { Users, Check, ChevronDown, Search, X, Flame, Thermometer, Snowflake } from 'lucide-react'
 import { safeString, ensureArray, cn } from '@/lib/utils'
 import { LeadsFilterSection } from './LeadsFilterSection'
 import { LeadOrderBy, ORDER_BY_OPTIONS } from './LeadsSmartFilters'
@@ -46,10 +46,10 @@ const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
   { code: 'disqualify', label: 'Desqualificar / encerrar' }
 ]
 
-const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string }[] = [
-  { value: 'hot', label: 'Hot' },
-  { value: 'warm', label: 'Warm' },
-  { value: 'cold', label: 'Cold' }
+const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'hot', label: 'Hot', icon: Flame },
+  { value: 'warm', label: 'Warm', icon: Thermometer },
+  { value: 'cold', label: 'Cold', icon: Snowflake }
 ]
 
 const DAYS_PRESETS = [3, 7, 14] as const
@@ -406,6 +406,7 @@ export function LeadsFiltersContent({
           <div className="space-y-1 pl-4">
             {PRIORITY_OPTIONS.map(option => {
               const isActive = draftFilters.priority.includes(option.value)
+              const Icon = option.icon
               // Priority-specific styles
               const priorityStyles = {
                 hot: {
@@ -440,9 +441,10 @@ export function LeadsFiltersContent({
                     className={cn("group-hover:border-primary", isActive && "border-white")}
                   />
                   <span className={cn(
-                    'text-xs font-medium px-2 py-0.5 rounded-full',
+                    'text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1',
                     styles.pill
                   )}>
+                    <Icon className="h-3 w-3" />
                     {option.label}
                   </span>
                 </label>
