@@ -486,11 +486,15 @@ export function LeadSalesRow({
       {/* Empresa - navigates to Lead Detail */}
       <TableCell className="min-w-[200px] lg:w-[16%]">
         <div className="flex items-start gap-3 min-w-0">
-          <LeadPriorityBadge
-            priorityBucket={computedPriority.bucket}
-            priorityScore={computedPriority.score}
-            priorityDescription={computedPriority.description}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <LeadPriorityBadge
+              leadId={actualLeadId}
+              priorityBucket={computedPriority.bucket}
+              priorityScore={computedPriority.score}
+              priorityDescription={computedPriority.description}
+              editable={true}
+            />
+          </div>
           <div className="space-y-1 min-w-0">
             <div className="font-semibold leading-tight text-foreground truncate">{safeLegalName}</div>
             {safeTradeName ? (
