@@ -88,6 +88,7 @@ export interface LeadStatusMeta {
   id: string
   code: string
   label: string
+  color?: string
   description?: string
   isActive: boolean
   sortOrder: number
