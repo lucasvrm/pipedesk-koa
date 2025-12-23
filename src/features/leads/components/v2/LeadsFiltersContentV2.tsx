@@ -516,7 +516,7 @@ export function LeadsFiltersContentV2({
                   key={option.value}
                   className={cn(
                     'flex items-center gap-2 p-2 rounded cursor-pointer text-sm transition-colors',
-                    isSelected ? 'bg-accent' : 'hover:bg-muted'
+                    'hover:bg-muted'
                   )}
                 >
                   <input
@@ -530,10 +530,10 @@ export function LeadsFiltersContentV2({
                   <div
                     className={cn(
                       'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                      isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      isSelected ? 'border-destructive bg-destructive' : 'border-muted-foreground'
                     )}
                   >
-                    {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
                   </div>
                   <span className="flex-1">{option.label}</span>
                 </label>
