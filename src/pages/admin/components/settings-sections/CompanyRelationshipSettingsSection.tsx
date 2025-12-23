@@ -1,117 +1,90 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { settingsService } from '@/services/settingsService';
-import { Buildings, Handshake, Plus, PencilSimple, Trash } from '@phosphor-icons/react';
+import { Building2, Handshake, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CompanyTypeMeta, RelationshipLevelMeta } from '@/types/metadata';
+import { SettingsSidebarLayout, SettingsSectionHeader } from './';
+import type { SidebarNavItem } from './SettingsSidebarNav';
 
+type SectionId = 'types' | 'levels';
 type SettingType = 'company_types' | 'relationship_levels';
 
-// Base metadata item type that matches CompanyTypeMeta and RelationshipLevelMeta
-type MetadataItem = CompanyTypeMeta | RelationshipLevelMeta;
+interface MetadataItem {
+  id: string;
+  code: string;
+  label: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
 
-interface SettingFormData {
+interface FormData {
   code: string;
   label: string;
   description: string;
   sortOrder: number;
 }
 
-interface SettingsTableProps {
+const NAV_ITEMS: Omit<SidebarNavItem, 'count'>[] = [
+  { id: 'types', label: 'Tipos de Empresa', icon: Building2 },
+  { id: 'levels', label: 'Níveis de Relacionamento', icon: Handshake },
+];
+
+// ============================================================================
+// Generic Table
+// ============================================================================
+
+function GenericTable({
+  type,
+  title,
+  description,
+  data,
+  onRefresh
+}: {
   type: SettingType;
   title: string;
   description: string;
-  icon: React.ReactNode;
-  iconBgColor: string;
-  data: CompanyTypeMeta[] | RelationshipLevelMeta[];
+  data: MetadataItem[];
   onRefresh: () => void;
-}
-
-// Helper function to get proper singular titles for dialog
-function getDialogTitle(type: SettingType): string {
-  const titles: Record<SettingType, string> = {
-    company_types: 'Tipo de Empresa',
-    relationship_levels: 'Nível de Relacionamento'
-  };
-  return titles[type];
-}
-
-function SettingsTable({ type, title, description, icon, iconBgColor, data, onRefresh }: SettingsTableProps) {
+}) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MetadataItem | null>(null);
-  const [formData, setFormData] = useState<SettingFormData>({
-    code: '',
-    label: '',
-    description: '',
-    sortOrder: 0
-  });
+  const [formData, setFormData] = useState<FormData>({ code: '', label: '', description: '', sortOrder: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const resetForm = () => {
-    setFormData({
-      code: '',
-      label: '',
-      description: '',
-      sortOrder: 0
-    });
-    setEditingItem(null);
+  const dialogTitles: Record<SettingType, string> = {
+    company_types: 'Tipo de Empresa',
+    relationship_levels: 'Nível de Relacionamento'
   };
 
   const openDialog = (item?: MetadataItem) => {
     if (item) {
       setEditingItem(item);
-      setFormData({
-        code: item.code,
-        label: item.label,
-        description: item.description || '',
-        sortOrder: item.sortOrder
-      });
+      setFormData({ code: item.code, label: item.label, description: item.description || '', sortOrder: item.sortOrder });
     } else {
-      resetForm();
+      setEditingItem(null);
+      setFormData({ code: '', label: '', description: '', sortOrder: 0 });
     }
     setIsDialogOpen(true);
   };
 
   const handleSave = async () => {
-    // Validations
-    if (!formData.code.trim()) {
-      toast.error('Código é obrigatório');
-      return;
-    }
-
-    if (formData.code.includes(' ')) {
-      toast.error('Código não pode conter espaços');
-      return;
-    }
-
-    if (!formData.label.trim()) {
-      toast.error('Label é obrigatório');
-      return;
-    }
+    if (!formData.code.trim() || formData.code.includes(' ')) { toast.error('Código inválido'); return; }
+    if (!formData.label.trim()) { toast.error('Label obrigatório'); return; }
 
     setIsSubmitting(true);
-
     try {
       const payload = {
         code: formData.code.trim(),
@@ -124,241 +97,145 @@ function SettingsTable({ type, title, description, icon, iconBgColor, data, onRe
       if (editingItem) {
         const { error } = await settingsService.update(type, editingItem.id, payload);
         if (error) throw error;
-        toast.success('Atualizado com sucesso!');
+        toast.success('Atualizado!');
       } else {
         const { error } = await settingsService.create(type, payload);
         if (error) throw error;
-        toast.success('Criado com sucesso!');
+        toast.success('Criado!');
       }
-
       setIsDialogOpen(false);
-      resetForm();
       onRefresh();
     } catch (error) {
-      console.error('Error saving:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao salvar');
+      toast.error(error instanceof Error ? error.message : 'Erro');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, label: string) => {
-    if (!confirm(`Tem certeza que deseja excluir "${label}"?`)) return;
-
+    if (!confirm(`Excluir "${label}"?`)) return;
     try {
       const { error } = await settingsService.remove(type, id);
       if (error) throw error;
-      toast.success('Excluído com sucesso!');
+      toast.success('Excluído!');
       onRefresh();
     } catch (error) {
-      console.error('Error deleting:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao excluir');
+      toast.error('Erro ao excluir');
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${iconBgColor}`}>
-              {icon}
-            </div>
-            <div>
-              <CardTitle>{title}</CardTitle>
-              <CardDescription>{description}</CardDescription>
-            </div>
-          </div>
-          <Button size="sm" onClick={() => openDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Novo
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[150px]">Código</TableHead>
-                <TableHead>Label</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="w-[100px]">Ordem</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[120px] text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Nenhum registro encontrado.
+    <>
+      <SettingsSectionHeader title={title} description={description} onAdd={() => openDialog()} />
+
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[140px]">Código</TableHead>
+              <TableHead>Label</TableHead>
+              <TableHead className="hidden md:table-cell">Descrição</TableHead>
+              <TableHead className="w-[70px]">Ordem</TableHead>
+              <TableHead className="w-[80px]">Status</TableHead>
+              <TableHead className="w-[100px] text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum registro.</TableCell></TableRow>
+            ) : (
+              data.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell><Badge variant="outline" className="font-mono text-xs">{item.code}</Badge></TableCell>
+                  <TableCell className="font-medium">{item.label}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground hidden md:table-cell truncate max-w-[200px]">{item.description || '-'}</TableCell>
+                  <TableCell>{item.sortOrder}</TableCell>
+                  <TableCell><Badge variant={item.isActive ? 'default' : 'secondary'} className="text-xs">{item.isActive ? 'Ativo' : 'Inativo'}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDialog(item)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(item.id, item.label)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                data.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">
-                        {item.code}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{item.label}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {item.description || '-'}
-                    </TableCell>
-                    <TableCell>{item.sortOrder}</TableCell>
-                    <TableCell>
-                      <Badge variant={item.isActive ? 'default' : 'secondary'}>
-                        {item.isActive ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => openDialog(item)}
-                        >
-                          <PencilSimple className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(item.id, item.label)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingItem ? 'Editar' : 'Criar'} {getDialogTitle(type)}
-            </DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editingItem ? 'Editar' : 'Criar'} {dialogTitles[type]}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="code">
-                Código <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Ex: partner, cliente"
-                disabled={editingItem !== null}
-              />
-              <p className="text-xs text-muted-foreground">
-                Código único, sem espaços. Não pode ser alterado após criação.
-              </p>
+              <Label>Código *</Label>
+              <Input value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} disabled={!!editingItem} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="label">
-                Label <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="label"
-                value={formData.label}
-                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                placeholder="Ex: Parceiro, Cliente"
-              />
+              <Label>Label *</Label>
+              <Input value={formData.label} onChange={(e) => setFormData({ ...formData, label: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Descrição opcional"
-                rows={3}
-              />
+              <Label>Descrição</Label>
+              <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sortOrder">Ordem de Exibição</Label>
-              <Input
-                id="sortOrder"
-                type="number"
-                value={formData.sortOrder}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setFormData({ 
-                    ...formData, 
-                    sortOrder: value === '' ? 0 : parseInt(value, 10) || 0 
-                  });
-                }}
-                placeholder="0"
-              />
-              <p className="text-xs text-muted-foreground">
-                Números menores aparecem primeiro na listagem.
-              </p>
+              <Label>Ordem</Label>
+              <Input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })} className="w-24" />
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : 'Salvar'}
-            </Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
 export function CompanyRelationshipSettingsSection() {
   const { companyTypes, relationshipLevels, isLoading, refreshMetadata } = useSystemMetadata();
+  const [activeSection, setActiveSection] = useState<SectionId>('types');
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Carregando configurações de empresas...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Company Types */}
-      <SettingsTable
-        type="company_types"
-        title="Tipos de Empresa"
-        description="Categorização de empresas por tipo ou segmento de atuação"
-        icon={<Buildings className="h-5 w-5 text-blue-500" />}
-        iconBgColor="bg-blue-500/10"
-        data={companyTypes}
-        onRefresh={refreshMetadata}
-      />
+  const navItems: SidebarNavItem[] = NAV_ITEMS.map((item) => ({
+    ...item,
+    count: item.id === 'types' ? companyTypes.length : item.id === 'levels' ? relationshipLevels.length : undefined
+  }));
 
-      {/* Relationship Levels */}
-      <SettingsTable
-        type="relationship_levels"
-        title="Níveis de Relacionamento"
-        description="Classificação do grau de relacionamento com empresas parceiras"
-        icon={<Handshake className="h-5 w-5 text-green-500" />}
-        iconBgColor="bg-green-500/10"
-        data={relationshipLevels}
-        onRefresh={refreshMetadata}
-      />
-    </div>
+  return (
+    <SettingsSidebarLayout items={navItems} activeId={activeSection} onSelect={(id) => setActiveSection(id as SectionId)}>
+      {activeSection === 'types' && (
+        <GenericTable
+          type="company_types"
+          title="Tipos de Empresa"
+          description="Categorização de empresas por tipo ou segmento"
+          data={companyTypes as MetadataItem[]}
+          onRefresh={refreshMetadata}
+        />
+      )}
+      {activeSection === 'levels' && (
+        <GenericTable
+          type="relationship_levels"
+          title="Níveis de Relacionamento"
+          description="Classificação do grau de relacionamento com parceiros"
+          data={relationshipLevels as MetadataItem[]}
+          onRefresh={refreshMetadata}
+        />
+      )}
+    </SettingsSidebarLayout>
   );
 }
