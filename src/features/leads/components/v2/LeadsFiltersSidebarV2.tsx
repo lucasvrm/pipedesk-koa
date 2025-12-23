@@ -141,59 +141,20 @@ export function LeadsFiltersSidebarV2({
     })
   }, [])
 
-  // Apply filters - commit draft to applied state via URL
+  // Apply filters - commit draft to applied state via URL using batch update
   const handleApplyFilters = useCallback(() => {
-    console.log('🔥 [DEBUG] handleApplyFilters CALLED')
-    console.log('🔥 [DEBUG] draftFilters:', JSON.stringify(draftFilters, null, 2))
-    console.log('🔥 [DEBUG] appliedFilters:', JSON.stringify(appliedFilters, null, 2))
-    console.log('🔥 [DEBUG] actions object:', actions)
-    console.log('🔥 [DEBUG] showNextActionFilter:', showNextActionFilter)
-
-    try {
-      // Update owner
-      console.log('🔥 [DEBUG] Calling setOwnerMode:', draftFilters.ownerMode)
-      actions.setOwnerMode(draftFilters.ownerMode)
-      
-      if (draftFilters.ownerMode === 'custom') {
-        console.log('🔥 [DEBUG] Calling setOwnerIds:', draftFilters.selectedOwners)
-        actions.setOwnerIds(draftFilters.selectedOwners)
-      }
-      
-      // Update multi-select filters
-      console.log('🔥 [DEBUG] Calling setMulti priority:', draftFilters.priority)
-      actions.setMulti('priority', draftFilters.priority)
-      
-      console.log('🔥 [DEBUG] Calling setMulti status:', draftFilters.statuses)
-      actions.setMulti('status', draftFilters.statuses)
-      
-      console.log('🔥 [DEBUG] Calling setMulti origin:', draftFilters.origins)
-      actions.setMulti('origin', draftFilters.origins)
-      
-      console.log('🔥 [DEBUG] Calling setMulti tags:', draftFilters.selectedTags)
-      actions.setMulti('tags', draftFilters.selectedTags)
-      
-      if (showNextActionFilter) {
-        console.log('🔥 [DEBUG] Calling setMulti nextAction:', draftFilters.nextActions)
-        actions.setMulti('nextAction', draftFilters.nextActions)
-      }
-      
-      // Update days without interaction
-      console.log('🔥 [DEBUG] Calling setDaysWithoutInteraction:', draftFilters.daysWithoutInteraction)
-      actions.setDaysWithoutInteraction(draftFilters.daysWithoutInteraction)
-      
-      // Update orderBy
-      console.log('🔥 [DEBUG] Calling setOrderBy:', draftFilters.orderBy)
-      actions.setOrderBy(draftFilters.orderBy)
-      
-      // Reset page to 1 for fresh results
-      console.log('🔥 [DEBUG] Calling setPage: 1')
-      actions.setPage(1)
-      
-      console.log('🔥 [DEBUG] handleApplyFilters COMPLETED')
-    } catch (error) {
-      console.error('🔥 [DEBUG] handleApplyFilters ERROR:', error)
-    }
-  }, [draftFilters, actions, showNextActionFilter, appliedFilters])
+    actions.applyAll({
+      ownerMode: draftFilters.ownerMode,
+      ownerIds: draftFilters.ownerMode === 'custom' ? draftFilters.selectedOwners : [],
+      priority: draftFilters.priority,
+      status: draftFilters.statuses,
+      origin: draftFilters.origins,
+      tags: draftFilters.selectedTags,
+      nextAction: showNextActionFilter ? draftFilters.nextActions : [],
+      daysWithoutInteraction: draftFilters.daysWithoutInteraction,
+      orderBy: draftFilters.orderBy,
+    })
+  }, [draftFilters, actions, showNextActionFilter])
 
   // Compute visibility class based on isOpen
   const visibilityClass = isOpen ? 'hidden md:flex' : 'hidden'
@@ -201,8 +162,6 @@ export function LeadsFiltersSidebarV2({
   // Button should be disabled when there are no changes to apply AND no filters are selected
   // This allows users to click "Apply" even when just resetting filters (hasChanges from clearing)
   const isApplyDisabled = !hasChanges && draftFiltersCount === 0
-
-  console.log('🔥 [DEBUG] Render - isApplyDisabled:', isApplyDisabled, 'hasChanges:', hasChanges, 'draftFiltersCount:', draftFiltersCount)
 
   return (
     <aside
