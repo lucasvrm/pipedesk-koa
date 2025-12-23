@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, UserCog, Check, Loader2, ChevronRight } from 'lucide-react'
+import { User, UserCog, Check, Loader2, ChevronRight, Mail, Shield } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,14 @@ interface OwnerActionMenuProps {
   leadId: string
   currentOwner: OwnerInfo | null | undefined
   children: React.ReactNode
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrador',
+  manager: 'Gerente',
+  analyst: 'Analista',
+  client: 'Cliente',
+  newbusiness: 'New Business'
 }
 
 function getInitials(name?: string) {
@@ -96,7 +105,7 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
       <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start" onClick={(e) => e.stopPropagation()}>
+      <PopoverContent className="w-72 p-0" align="start" onClick={(e) => e.stopPropagation()}>
         {!showUserPicker ? (
           <div className="py-1">
             {/* View Owner Option */}
@@ -124,72 +133,66 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
             </button>
           </div>
         ) : (
-          <div className="p-2 space-y-2">
-            {/* Header with Back Button */}
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2"
-                onClick={() => {
-                  setShowUserPicker(false)
-                  setSearchTerm('')
-                }}
-              >
+          <div className="p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-7 px-2"
+                onClick={() => { setShowUserPicker(false); setSearchTerm('') }}>
                 ← Voltar
               </Button>
               <span className="text-sm font-medium">Selecionar responsável</span>
             </div>
 
-            {/* Search Input */}
             <Input
-              placeholder="Buscar usuário..."
+              placeholder="Buscar por nome ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-8 text-sm"
+              className="h-9"
             />
 
-            {/* Users List */}
             {isLoadingUsers ? (
-              <div className="flex items-center justify-center py-6">
+              <div className="flex justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-4 text-sm text-muted-foreground">
+              <div className="text-center py-6 text-sm text-muted-foreground">
                 {searchTerm ? 'Nenhum usuário encontrado.' : 'Nenhum usuário disponível.'}
               </div>
             ) : (
-              <ScrollArea className="h-[200px]">
-                <div className="space-y-0.5">
+              <ScrollArea className="h-[280px] -mx-3">
+                <div className="px-3 space-y-1">
                   {filteredUsers.map((user) => {
                     const isCurrentOwner = currentOwner?.id === user.id
+                    const roleLabel = ROLE_LABELS[user.role] || user.role
                     return (
                       <button
                         key={user.id}
-                        className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors text-left"
+                        className={`w-full flex items-start gap-3 p-2.5 rounded-lg transition-colors text-left ${
+                          isCurrentOwner ? 'bg-primary/5 border border-primary/20' : 'hover:bg-muted/50'
+                        }`}
                         onClick={() => handleSelectOwner(user)}
                         disabled={isMutating || isCurrentOwner}
                       >
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage src={user.avatar} alt={safeString(user.name, 'Usuário')} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(safeString(user.name, 'NA'))}
-                          </AvatarFallback>
+                        <Avatar className="h-10 w-10 border">
+                          <AvatarImage src={user.avatar} />
+                          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {safeString(user.name, 'Usuário')}
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{user.name}</p>
+                            {isCurrentOwner && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Atual</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <Mail className="h-3 w-3" /> {user.email}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {safeString(user.email, '')}
-                          </p>
+                          {user.role && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Shield className="h-3 w-3" /> {roleLabel}
+                            </p>
+                          )}
                         </div>
-                        {isCurrentOwner && (
-                          <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        )}
-                        {isMutating && !isCurrentOwner && (
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
-                        )}
+                        {isCurrentOwner && <Check className="h-4 w-4 text-primary mt-1" />}
                       </button>
                     )
                   })}
