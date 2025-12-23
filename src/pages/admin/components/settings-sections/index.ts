@@ -6,6 +6,7 @@ export { SystemSettingsSection } from './SystemSettingsSection';
 export { RoleMetadataManager } from './RoleMetadataManager';
 export { LeadTaskTemplatesSection, LeadTaskTemplatesContent } from './LeadTaskTemplatesSection';
 export { ProductivitySettingsSection } from './ProductivitySettingsSection';
+export { ProductsSettingsSection } from './ProductsSettingsSection';
 export { IntegrationsSettingsSection } from './IntegrationsSettingsSection';
 
 // Componentes de layout

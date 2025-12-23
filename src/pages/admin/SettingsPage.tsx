@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PageContainer } from '@/components/PageContainer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Gear,
   Users,
@@ -21,9 +19,9 @@ import {
   CompanyRelationshipSettingsSection,
   SystemSettingsSection,
   ProductivitySettingsSection,
+  ProductsSettingsSection,
   IntegrationsSettingsSection
 } from '@/pages/admin/components/settings-sections';
-import { SettingsTable } from './components/SettingsTable';
 import { useSearchParams } from 'react-router-dom';
 
 // Category configuration with colors and metadata
@@ -111,6 +109,9 @@ export default function NewSettingsPage() {
   const [crmSection, setCrmSection] = useState(
     getInitialSection('crm', 'leads')
   );
+  const [productsSection, setProductsSection] = useState(
+    getInitialSection('products', 'products')
+  );
   const [systemSection, setSystemSection] = useState(
     getInitialSection('system', 'defaults')
   );
@@ -151,6 +152,10 @@ export default function NewSettingsPage() {
 
     if (categoryFromParams === 'crm' && sectionFromParams) {
       setCrmSection(getInitialSection('crm', crmSection));
+    }
+
+    if (categoryFromParams === 'products' && sectionFromParams) {
+      setProductsSection(getInitialSection('products', productsSection));
     }
 
     if (categoryFromParams === 'system' && sectionFromParams) {
@@ -208,6 +213,7 @@ export default function NewSettingsPage() {
           updateSearchParams(value, fallbackSection);
 
           if (value === 'crm') setCrmSection(fallbackSection);
+          if (value === 'products') setProductsSection(fallbackSection);
           if (value === 'system') setSystemSection(fallbackSection);
           if (value === 'productivity') setProductivitySection(fallbackSection);
           if (value === 'integrations') setIntegrationsSection(fallbackSection);
@@ -301,131 +307,20 @@ export default function NewSettingsPage() {
         <TabsContent
           value="products"
           className="space-y-4 mt-4"
-          id={getSectionId('products', 'products')}
+          id={getSectionId('products', productsSection)}
         >
           <HelpCard
             title="Produtos & Operações"
             description="Defina os produtos financeiros disponíveis (CRI, CRA, CCB), configure tipos de operação, gerencie origens de deals e motivos de perda para análise de churn."
           />
 
-          <div id={getSectionId('products', 'products')}>
-            <SettingsTable
-              type="products"
-              title="Produtos"
-              description="Defina os produtos financeiros (ex: CRI, CRA, CCB) disponíveis."
-              columns={[
-                {
-                  key: 'name',
-                  label: 'Nome',
-                  width: '250px',
-                  render: (i) => <span className="font-medium">{i.name}</span>
-                },
-                {
-                  key: 'acronym',
-                  label: 'Sigla',
-                  width: '100px',
-                  render: (i) => (
-                    <Badge variant="outline">{i.acronym}</Badge>
-                  )
-                },
-                {
-                  key: 'defaultFeePercentage',
-                  label: 'Fee Padrão',
-                  width: '100px',
-                  render: (i) =>
-                    i.defaultFeePercentage ? `${i.defaultFeePercentage}%` : '-'
-                },
-                { key: 'description', label: 'Descrição' }
-              ]}
-            />
-          </div>
-
-          <div id={getSectionId('products', 'operation_types')}>
-            <SettingsTable
-              type="operation_types"
-              title="Tipos de Operação"
-              description="Configure os tipos de operação suportados para negócios e deals."
-              columns={[
-                {
-                  key: 'name',
-                  label: 'Tipo',
-                  width: '220px',
-                  render: (i) => (
-                    <span className="font-medium">{i.name}</span>
-                  )
-                },
-                {
-                  key: 'code',
-                  label: 'Código',
-                  width: '120px',
-                  render: (i) =>
-                    i.code ? (
-                      <Badge
-                        variant="outline"
-                        className="uppercase"
-                      >
-                        {i.code}
-                      </Badge>
-                    ) : (
-                      '-'
-                    )
-                },
-                { key: 'description', label: 'Descrição' }
-              ]}
-            />
-          </div>
-
-          <div id={getSectionId('products', 'deal_sources')}>
-            <SettingsTable
-              type="deal_sources"
-              title="Origens de Deal (Sources)"
-              description="Canais de aquisição de novos negócios."
-              columns={[
-                {
-                  key: 'name',
-                  label: 'Canal',
-                  width: '250px',
-                  render: (i) => (
-                    <span className="font-medium">{i.name}</span>
-                  )
-                },
-                {
-                  key: 'type',
-                  label: 'Tipo',
-                  width: '150px',
-                  render: (i) =>
-                    i.type && (
-                      <Badge
-                        variant="secondary"
-                        className="capitalize"
-                      >
-                        {i.type}
-                      </Badge>
-                    )
-                },
-                { key: 'description', label: 'Descrição' }
-              ]}
-            />
-          </div>
-
-          <div id={getSectionId('products', 'loss_reasons')}>
-            <SettingsTable
-              type="loss_reasons"
-              title="Motivos de Perda"
-              description="Razões padronizadas para cancelamento de deals (Churn)."
-              columns={[
-                {
-                  key: 'name',
-                  label: 'Motivo',
-                  width: '250px',
-                  render: (i) => (
-                    <span className="font-medium">{i.name}</span>
-                  )
-                },
-                { key: 'description', label: 'Descrição' }
-              ]}
-            />
-          </div>
+          <ProductsSettingsSection
+            activeTab={productsSection as 'products' | 'operation_types' | 'deal_sources' | 'loss_reasons'}
+            onTabChange={(value) => {
+              setProductsSection(value);
+              updateSearchParams('products', value);
+            }}
+          />
         </TabsContent>
 
         {/* Sistema & Segurança */}
@@ -476,7 +371,7 @@ export default function NewSettingsPage() {
         >
           <HelpCard
             title="Integrações & Automação"
-            description="Configure dashboards personalizados e automatize a geração de documentos."
+            description="Configure dashboards personalizados e automatize a geração de documentos. Centralize todas as integrações e processos automatizados da plataforma."
           />
 
           <IntegrationsSettingsSection
@@ -485,33 +380,7 @@ export default function NewSettingsPage() {
               setIntegrationsSection(value);
               updateSearchParams('integrations', value);
             }}
-            className="w-full"
-          >
-            <TabsList className="mb-3 h-9">
-              <TabsTrigger value="dashboards" className="text-sm h-8">
-                <ChartLine className="mr-1.5 h-3.5 w-3.5" /> Dashboards
-              </TabsTrigger>
-              <TabsTrigger value="automation" className="text-sm h-8">
-                <Robot className="mr-1.5 h-3.5 w-3.5" /> Automação de Documentos
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="dashboards"
-              className="space-y-4"
-              id={getSectionId('integrations', 'dashboards')}
-            >
-              <DashboardSettingsPage />
-            </TabsContent>
-
-            <TabsContent
-              value="automation"
-              className="space-y-4"
-              id={getSectionId('integrations', 'automation')}
-            >
-              <DocumentAutomationSettings />
-            </TabsContent>
-          </Tabs>
+          />
         </TabsContent>
       </Tabs>
     </PageContainer>
