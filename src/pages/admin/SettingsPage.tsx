@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PageContainer } from '@/components/PageContainer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,9 +11,6 @@ import {
   Package,
   ShieldCheck,
   ListChecks,
-  TagSimple,
-  CalendarBlank,
-  FileText,
   ChartLine,
   Robot,
   Lightbulb,
@@ -24,13 +20,12 @@ import {
   LeadSettingsSection,
   DealPipelineSettingsSection,
   CompanyRelationshipSettingsSection,
-  SystemSettingsSection
+  SystemSettingsSection,
+  ProductivitySettingsSection
 } from '@/pages/admin/components/settings-sections';
-import TagSettings from '@/pages/admin/TagSettings';
 import DocumentAutomationSettings from '@/pages/admin/components/DocumentAutomationSettings';
 import DashboardSettingsPage from '@/pages/admin/DashboardSettings';
 import { SettingsTable } from './components/SettingsTable';
-import { format } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 
 // Category configuration with colors and metadata
@@ -470,211 +465,16 @@ export default function NewSettingsPage() {
         >
           <HelpCard
             title="Produtividade"
-            description="Organize o trabalho da equipe com configurações de tarefas, tags, templates de comunicação e gerenciamento de feriados para cálculo de SLA."
+            description="Organize o trabalho da equipe com configurações de tarefas, tags, templates e feriados."
           />
-
-          <Tabs
-            value={productivitySection}
-            onValueChange={(value) => {
+          
+          <ProductivitySettingsSection
+            activeTab={productivitySection as 'tasks' | 'tags' | 'templates' | 'holidays'}
+            onTabChange={(value) => {
               setProductivitySection(value);
               updateSearchParams('productivity', value);
             }}
-            className="w-full"
-          >
-            <TabsList className="mb-4">
-              <TabsTrigger value="tasks">
-                <ListChecks className="mr-2 h-4 w-4" /> Tarefas
-              </TabsTrigger>
-              <TabsTrigger value="tags">
-                <TagSimple className="mr-2 h-4 w-4" /> Tags
-              </TabsTrigger>
-              <TabsTrigger value="templates">
-                <FileText className="mr-2 h-4 w-4" /> Templates
-              </TabsTrigger>
-              <TabsTrigger value="holidays">
-                <CalendarBlank className="mr-2 h-4 w-4" /> Feriados
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="tasks"
-              className="space-y-6"
-              id={getSectionId('productivity', 'tasks')}
-            >
-              <SettingsTable
-                type="task_statuses"
-                title="Status de Tarefas"
-                description="Padronize os status das tarefas e acompanhe a ativação de cada um."
-                columns={[
-                  {
-                    key: 'name',
-                    label: 'Status',
-                    width: '220px',
-                    render: (i) => (
-                      <span className="font-medium">{i.name}</span>
-                    )
-                  },
-                  {
-                    key: 'color',
-                    label: 'Cor',
-                    width: '120px',
-                    render: (i) => {
-                      const color = i.color || '#475569';
-                      return (
-                        <Badge
-                          style={{
-                            backgroundColor: color,
-                            color: '#fff'
-                          }}
-                        >
-                          {i.color || 'Sem cor'}
-                        </Badge>
-                      );
-                    }
-                  },
-                  { key: 'description', label: 'Descrição' }
-                ]}
-              />
-
-              <SettingsTable
-                type="task_priorities"
-                title="Prioridades de Tarefas"
-                description="Defina níveis de prioridade para organizar o fluxo de trabalho."
-                columns={[
-                  {
-                    key: 'name',
-                    label: 'Prioridade',
-                    width: '220px',
-                    render: (i) => (
-                      <span className="font-medium">{i.name}</span>
-                    )
-                  },
-                  {
-                    key: 'color',
-                    label: 'Cor',
-                    width: '120px',
-                    render: (i) => {
-                      const color = i.color || '#475569';
-                      return (
-                        <Badge
-                          style={{
-                            backgroundColor: color,
-                            color: '#fff'
-                          }}
-                        >
-                          {i.color || 'Sem cor'}
-                        </Badge>
-                      );
-                    }
-                  },
-                  { key: 'description', label: 'Descrição' }
-                ]}
-              />
-            </TabsContent>
-
-            <TabsContent
-              value="tags"
-              className="space-y-6"
-              id={getSectionId('productivity', 'tags')}
-            >
-              <TagSettings />
-            </TabsContent>
-
-            <TabsContent
-              value="templates"
-              className="space-y-6"
-              id={getSectionId('productivity', 'templates')}
-            >
-              <SettingsTable
-                type="communication_templates"
-                title="Templates de Mensagens"
-                description="Padronização de emails, whatsapps e documentos."
-                columns={[
-                  {
-                    key: 'title',
-                    label: 'Título',
-                    width: '200px',
-                    render: (i) => (
-                      <span className="font-medium">{i.title}</span>
-                    )
-                  },
-                  {
-                    key: 'type',
-                    label: 'Canal',
-                    width: '100px',
-                    render: (i) => (
-                      <Badge
-                        variant="outline"
-                        className="capitalize"
-                      >
-                        {i.type}
-                      </Badge>
-                    )
-                  },
-                  {
-                    key: 'category',
-                    label: 'Categoria',
-                    width: '150px',
-                    render: (i) => (
-                      <Badge variant="secondary">{i.category}</Badge>
-                    )
-                  },
-                  {
-                    key: 'subject',
-                    label: 'Assunto',
-                    render: (i) => (
-                      <span className="text-muted-foreground text-sm truncate max-w-[200px] block">
-                        {i.subject || '-'}
-                      </span>
-                    )
-                  }
-                ]}
-              />
-            </TabsContent>
-
-            <TabsContent
-              value="holidays"
-              className="space-y-6"
-              id={getSectionId('productivity', 'holidays')}
-            >
-              <SettingsTable
-                type="holidays"
-                title="Feriados & Dias Não Úteis"
-                description="Cadastro para cálculo correto de SLA."
-                columns={[
-                  {
-                    key: 'date',
-                    label: 'Data',
-                    width: '150px',
-                    render: (i) => format(new Date(i.date), 'dd/MM/yyyy')
-                  },
-                  {
-                    key: 'name',
-                    label: 'Feriado',
-                    render: (i) => (
-                      <span className="font-medium">{i.name}</span>
-                    )
-                  },
-                  {
-                    key: 'type',
-                    label: 'Tipo',
-                    width: '150px',
-                    render: (i) => (
-                      <Badge
-                        className={
-                          i.type === 'national'
-                            ? 'bg-blue-500'
-                            : 'bg-orange-500'
-                        }
-                      >
-                        {i.type === 'national' ? 'Nacional' : 'Regional'}
-                      </Badge>
-                    )
-                  }
-                ]}
-              />
-            </TabsContent>
-          </Tabs>
+          />
         </TabsContent>
 
         {/* Integrações & Automação */}
