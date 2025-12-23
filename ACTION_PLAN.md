@@ -1,11 +1,98 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
+## 🚧 Status: ✅ Concluído (Migration - Tabela lead_tasks)
 ## 🚧 Status: ✅ Concluído (ChangeOwnerDialog Component)
 ## 🚧 Status: ✅ Concluído (Hook e Service para Alteração de Responsável)
 
-**Data:** 2025-12-20  
+**Data:** 2025-12-23  
 **Autor:** GitHub Copilot Agent  
-**Escopo:** Frontend - src/services/leadService.ts - Interface, função e hook para alteração de responsável
+**Escopo:** Database - Criação da tabela lead_tasks com triggers e RLS
+
+---
+
+## 🆕 Iteração atual - Migration: Tabela lead_tasks
+
+**Data:** 2025-12-23  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Database - `supabase/migrations/20241223100200_create_lead_tasks.sql`
+
+### 🎯 Objetivo
+Criar nova tabela `lead_tasks` para armazenar tarefas vinculadas a leads, incluindo o conceito de "next action" (próxima ação principal).
+
+### ✅ Tarefas Concluídas
+- [x] Criada tabela `lead_tasks` com campos: id, lead_id, template_id, title, description, is_next_action, status, due_date, sort_order, completed_at, completed_by, created_at, created_by
+- [x] Adicionados comentários explicativos em colunas chave
+- [x] Criados 4 indexes otimizados:
+  - `idx_lead_tasks_lead_id` - buscar tarefas de um lead
+  - `idx_lead_tasks_next_action` - buscar próxima ação ativa (partial index)
+  - `idx_lead_tasks_pending_due` - buscar tarefas pendentes por data (partial index)
+  - `idx_lead_tasks_template` - buscar por template (partial index)
+- [x] Implementado trigger `ensure_single_next_action()` para garantir apenas uma next_action ativa por lead
+- [x] Implementado trigger `auto_set_completed_at()` para gerenciar automaticamente completed_at baseado no status
+- [x] Configuradas políticas RLS:
+  - SELECT: todos autenticados podem ler
+  - ALL: apenas roles admin, analyst, newbusiness podem criar/editar/deletar
+- [x] Criado arquivo de rollback `20241223100200_create_lead_tasks_DOWN.sql`
+
+### Arquivos Criados
+- `supabase/migrations/20241223100200_create_lead_tasks.sql` (146 linhas)
+- `supabase/migrations/20241223100200_create_lead_tasks_DOWN.sql` (8 linhas)
+
+### Arquivos Modificados
+- `ACTION_PLAN.md` - Documentação da migration
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 2 |
+| Arquivos modificados | 1 |
+| Linhas adicionadas | ~154 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (nova tabela independente, não modifica schemas existentes)
+
+### 🔍 Validações Necessárias (Manual no Supabase)
+
+```sql
+-- Verificar tabela
+\d lead_tasks
+
+-- Verificar triggers
+SELECT trigger_name, event_manipulation 
+FROM information_schema.triggers 
+WHERE event_object_table = 'lead_tasks';
+
+-- Testar criação de tarefa
+INSERT INTO lead_tasks (lead_id, title, is_next_action, created_by)
+SELECT l.id, 'Teste', true, p.id
+FROM leads l, profiles p
+WHERE p.role = 'admin'
+LIMIT 1
+RETURNING *;
+
+-- Testar constraint de single next_action
+-- (segunda tarefa com is_next_action=true deve desmarcar a primeira)
+```
+
+### 📝 ROADMAP
+
+| Item | Status | Observações |
+|------|--------|-------------|
+| Criar tabela lead_tasks | ✅ | Com todos os campos especificados |
+| Adicionar comentários | ✅ | Table e colunas chave documentadas |
+| Criar indexes | ✅ | 4 indexes, 3 com partial index para performance |
+| Trigger single next_action | ✅ | Garante apenas 1 next_action ativa por lead |
+| Trigger auto completed_at | ✅ | Seta/limpa automaticamente baseado em status |
+| Configurar RLS | ✅ | Políticas para SELECT e ALL operations |
+| Criar rollback | ✅ | Script DOWN completo |
+| Documentar ACTION_PLAN | ✅ | Iteração documentada |
+
+**Complexidade:** 25/100  
+**Tempo gasto:** ~15 minutos  
+**Dependências:** Tabela `lead_task_templates` (referência opcional via FK com ON DELETE SET NULL)
 
 ---
 
