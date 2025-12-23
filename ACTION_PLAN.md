@@ -1,5 +1,87 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
+## 🚧 Status: ✅ Concluído (Migration - lead_task_templates)
+
+**Data:** 2024-12-23  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Database Migration - Tabela `lead_task_templates` para Next Actions
+
+---
+
+## 🆕 Iteração atual - Migration: Tabela lead_task_templates
+
+**Data:** 2024-12-23  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Database - `supabase/migrations/20241223100100_create_lead_task_templates.sql`
+
+### 🎯 Objetivo
+Criar tabela de referência `lead_task_templates` para armazenar templates de tarefas pré-definidos usados no sistema de Next Actions. A tabela segue o mesmo padrão das tabelas existentes (`lead_statuses`, `lead_origins`, `lead_member_roles`).
+
+### ✅ Tarefas Concluídas
+- [x] Criada tabela `lead_task_templates` com estrutura padronizada (id, code, label, description, is_active, sort_order, created_at)
+- [x] Adicionados índices para performance: `idx_lead_task_templates_code` e `idx_lead_task_templates_active_order`
+- [x] Configurado RLS (Row Level Security) com políticas: SELECT para usuários autenticados, ALL para admins
+- [x] Inseridos 11 templates pré-definidos com seed data
+- [x] Criado arquivo de rollback `20241223100100_create_lead_task_templates_DOWN.sql`
+- [x] Documentada a migração no ACTION_PLAN.md
+
+### Arquivos Criados
+- `supabase/migrations/20241223100100_create_lead_task_templates.sql` - Migration principal
+- `supabase/migrations/20241223100100_create_lead_task_templates_DOWN.sql` - Rollback
+
+### Templates Pré-Definidos (11 registros)
+
+| sort_order | code | label |
+|------------|------|-------|
+| 1 | prepare_for_meeting | Preparar para reunião |
+| 2 | post_meeting_follow_up | Follow-up pós-reunião |
+| 3 | call_first_time | Fazer primeira ligação |
+| 4 | handoff_to_deal | Fazer handoff (para deal) |
+| 5 | qualify_to_company | Qualificar para empresa |
+| 6 | schedule_meeting | Agendar reunião |
+| 7 | call_again | Ligar novamente |
+| 8 | send_value_asset | Enviar material / valor |
+| 9 | send_follow_up | Enviar follow-up |
+| 10 | reengage_cold_lead | Reengajar lead frio |
+| 11 | disqualify | Desqualificar / encerrar |
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 2 |
+| Arquivos modificados | 1 (ACTION_PLAN.md) |
+| Nova tabela | 1 (lead_task_templates) |
+| Registros seed | 11 |
+| Políticas RLS | 2 |
+| Índices | 2 |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+
+**Risco:** 🟢 Baixo (nova tabela, não altera existentes)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Tabela lead_task_templates | ✅ | Estrutura padronizada seguindo referências existentes |
+| Campos obrigatórios (id, code, label, is_active, sort_order, created_at) | ✅ | Todos presentes |
+| Campo description opcional | ✅ | TEXT NULL |
+| Índice por code | ✅ | idx_lead_task_templates_code |
+| Índice por active/order | ✅ | idx_lead_task_templates_active_order com WHERE |
+| RLS habilitado | ✅ | Políticas de SELECT e ALL configuradas |
+| Política SELECT para autenticados | ✅ | Todos podem ler |
+| Política ALL para admins | ✅ | Apenas admins podem modificar |
+| Seed data (11 templates) | ✅ | INSERT com ON CONFLICT DO UPDATE |
+| Rollback file | ✅ | DROP policies e table |
+| Comentários na tabela | ✅ | COMMENT ON TABLE e COLUMN |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
+---
+
 ## 🚧 Status: ✅ Concluído (Migration - Tabela lead_tasks)
 ## 🚧 Status: ✅ Concluído (ChangeOwnerDialog Component)
 ## 🚧 Status: ✅ Concluído (Hook e Service para Alteração de Responsável)
