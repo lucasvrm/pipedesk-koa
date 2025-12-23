@@ -144,7 +144,6 @@ export function LeadSalesRow({
   // Get current status information
   const currentStatus = status ? getLeadStatusById(status) : null
   const statusLabel = currentStatus?.label ?? 'Sem status'
-  const statusColor = currentStatus?.code ?? 'default'
 
   // Helper to get status color with fallback
   const getStatusColor = (statusMeta: typeof currentStatus): string => {
@@ -429,26 +428,6 @@ export function LeadSalesRow({
       toast.error('Erro ao abrir agendamento', {
         description: 'Não foi possível abrir o calendário. Tente novamente.'
       })
-    }
-  }
-
-  // Map status codes to badge variants
-  const getStatusVariant = (code: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-    switch (code.toLowerCase()) {
-      case 'new':
-        return 'default'
-      case 'contacted':
-        return 'secondary'
-      case 'qualified':
-        return 'default'
-      case 'proposal':
-        return 'default'
-      case 'won':
-        return 'default'
-      case 'lost':
-        return 'destructive'
-      default:
-        return 'outline'
     }
   }
 
