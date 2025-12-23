@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from '@/components/ui/dropdown-menu'
 import { QuickAction } from '@/components/QuickActionsMenu'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
@@ -144,6 +145,35 @@ export function LeadSalesRow({
   const currentStatus = status ? getLeadStatusById(status) : null
   const statusLabel = currentStatus?.label ?? 'Sem status'
   const statusColor = currentStatus?.code ?? 'default'
+
+  // Helper to get status color with fallback
+  const getStatusColor = (statusMeta: typeof currentStatus): string => {
+    if (statusMeta?.color) return statusMeta.color
+    
+    // Fallback colors based on status code
+    switch (statusMeta?.code?.toLowerCase()) {
+      case 'new':
+      case 'novo':
+        return '#3b82f6' // blue-500
+      case 'contacted':
+      case 'contatado':
+        return '#8b5cf6' // violet-500
+      case 'qualified':
+      case 'qualificado':
+        return '#10b981' // green-500
+      case 'proposal':
+      case 'proposta':
+        return '#f59e0b' // amber-500
+      case 'won':
+      case 'ganho':
+        return '#22c55e' // green-500
+      case 'lost':
+      case 'perdido':
+        return '#ef4444' // red-500
+      default:
+        return '#6b7280' // gray-500
+    }
+  }
 
   // Handler for status change
   const handleStatusChange = async (newStatusId: string) => {
@@ -519,28 +549,49 @@ export function LeadSalesRow({
       <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Badge
-              variant={getStatusVariant(statusColor)}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+            <button
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{
+                backgroundColor: `${getStatusColor(currentStatus)}20`,
+                color: getStatusColor(currentStatus),
+                borderLeft: `3px solid ${getStatusColor(currentStatus)}`
+              }}
             >
               {statusLabel}
-            </Badge>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+              Alterar status
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
             {leadStatuses
               .filter((s) => s.isActive)
-              .map((statusOption) => (
-                <DropdownMenuItem
-                  key={statusOption.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleStatusChange(statusOption.id)
-                  }}
-                  className={status === statusOption.id ? 'bg-accent' : ''}
-                >
-                  {statusOption.label}
-                </DropdownMenuItem>
-              ))}
+              .map((opt) => {
+                const isSelected = status === opt.id
+                return (
+                  <DropdownMenuItem
+                    key={opt.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleStatusChange(opt.id)
+                    }}
+                    className="flex items-center gap-3 cursor-pointer"
+                  >
+                    <span
+                      className="h-3 w-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getStatusColor(opt) }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm">{opt.label}</span>
+                      {opt.description && (
+                        <p className="text-xs text-muted-foreground truncate">{opt.description}</p>
+                      )}
+                    </div>
+                    {isSelected && <Check className="h-4 w-4 text-primary" />}
+                  </DropdownMenuItem>
+                )
+              })}
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>

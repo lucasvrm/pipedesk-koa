@@ -208,6 +208,7 @@ export function SystemMetadataProvider({ children }: SystemMetadataProviderProps
         id: item.id,
         code: item.code,
         label: item.label,
+        color: item.color,
         description: item.description,
         isActive: item.is_active,
         sortOrder: item.sort_order,
