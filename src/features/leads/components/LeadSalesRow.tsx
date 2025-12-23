@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -28,11 +28,12 @@ import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils
 import { getRootFolderUrl } from '@/services/driveService'
 import { DriveApiError } from '@/lib/driveClient'
 import { TagsCellCompact } from './TagsCellCompact'
-import { ContactPreviewModal } from './ContactPreviewModal'
+import { LeadContactsModal } from './LeadContactsModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 import { LeadPriorityBadge } from './LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import { useEntityTags } from '@/services/tagService'
+import { useLead } from '@/services/leadService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -134,6 +135,7 @@ export function LeadSalesRow({
   const { getLeadStatusById, leadStatuses } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
   const { data: leadTags = [] } = useEntityTags(actualLeadId || '', 'lead')
+  const { data: fullLead } = useLead(actualLeadId || '')
 
   // 2. useState
   const [isDriveLoading, setIsDriveLoading] = useState(false)
@@ -505,23 +507,37 @@ export function LeadSalesRow({
 
       {/* Contato principal - does NOT navigate to Lead Detail */}
       <TableCell className="min-w-[190px] lg:w-[16%]" onClick={(e) => e.stopPropagation()}>
-        {primaryContact ? (
-          <div 
-            className="flex items-center gap-3 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
-            onClick={() => setIsContactModalOpen(true)}
-          >
-            <Avatar className="h-9 w-9 shrink-0 border">
-              <AvatarImage src={primaryContact.avatar || undefined} alt={safePrimaryContactName} />
-              <AvatarFallback>{getInitials(safePrimaryContactName)}</AvatarFallback>
-            </Avatar>
-            <div className="space-y-1 min-w-0">
-              <div className="font-medium text-sm leading-tight truncate">{safePrimaryContactName}</div>
-              {safePrimaryContactRole && <div className="text-xs text-muted-foreground truncate">{safePrimaryContactRole}</div>}
+        {(() => {
+          const contacts = fullLead?.contacts || []
+          const primaryContactData = contacts.find(c => c.isPrimary) || contacts[0]
+          const count = contacts.length
+
+          if (count === 0) {
+            return (
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground gap-1"
+                onClick={() => setIsContactModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                <span className="text-xs">Adicionar</span>
+              </Button>
+            )
+          }
+
+          return (
+            <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1.5 -m-1.5 transition-colors"
+              onClick={() => setIsContactModalOpen(true)}>
+              <Avatar className="h-9 w-9 border">
+                <AvatarFallback>{getInitials(primaryContactData?.name)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">{primaryContactData?.name || 'Sem nome'}</div>
+                {primaryContactData?.role && <div className="text-xs text-muted-foreground truncate">{primaryContactData.role}</div>}
+              </div>
+              {count > 1 && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">+{count - 1}</Badge>
+              )}
             </div>
-          </div>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
-        )}
+          )
+        })()}
       </TableCell>
 
       {/* Status - does NOT navigate to Lead Detail */}
@@ -762,18 +778,13 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Modals - rendered via portals so they can be inside TableRow */}
-      {primaryContact && (
-        <ContactPreviewModal
+      {actualLeadId && (
+        <LeadContactsModal
           open={isContactModalOpen}
           onOpenChange={setIsContactModalOpen}
-          contact={{
-            id: primaryContact.id,
-            name: primaryContact.name,
-            role: primaryContact.role,
-            email: primaryContact.email,
-            phone: primaryContact.phone,
-            avatar: primaryContact.avatar,
-          }}
+          leadId={actualLeadId}
+          leadName={safeLegalName}
+          contacts={fullLead?.contacts || []}
         />
       )}
     </TableRow>

@@ -627,12 +627,20 @@ export function useLeadContacts(leadId: string) {
 
   const addMutation = useMutation({
     mutationFn: (vars: { contactId: string, isPrimary?: boolean }) => addLeadContact(leadId, vars.contactId, vars.isPrimary),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, leadId] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, leadId] })
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY })
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY })
+    }
   });
 
   const removeMutation = useMutation({
     mutationFn: (contactId: string) => removeLeadContact(leadId, contactId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, leadId] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...LEADS_KEY, leadId] })
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_KEY })
+      queryClient.invalidateQueries({ queryKey: LEADS_SALES_VIEW_ALT_KEY })
+    }
   });
 
   return { addContact: addMutation.mutateAsync, removeContact: removeMutation.mutateAsync };
