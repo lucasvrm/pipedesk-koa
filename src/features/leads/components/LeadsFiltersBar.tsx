@@ -16,6 +16,7 @@ import { Check, ChevronDown, Users, Clock, MapPin, Tag as TagIcon, Filter, X } f
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
 import { AppliedLeadsFilters, FilterActions } from '../hooks/useLeadsFiltersSearchParams'
+import { useLeadTaskTemplates } from '@/hooks/useLeadTaskTemplates'
 
 interface OptionItem {
   id?: string
@@ -24,10 +25,11 @@ interface OptionItem {
 }
 
 /**
- * Canonical list of Next Action options for Sales View (view=sales).
- * These 11 codes are fixed and should NOT be derived from current page data.
+ * Fallback list of Next Action options for Sales View (view=sales).
+ * Used only if API call fails.
+ * @deprecated Use dynamic options from useLeadTaskTemplates instead.
  */
-export const NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
+const FALLBACK_NEXT_ACTION_OPTIONS: { code: string; label: string }[] = [
   { code: 'prepare_for_meeting', label: 'Preparar para reunião' },
   { code: 'post_meeting_follow_up', label: 'Follow-up pós-reunião' },
   { code: 'call_first_time', label: 'Fazer primeira ligação' },
@@ -84,11 +86,16 @@ export function LeadsFiltersBar({
   showNextActionFilter = false,
   activeFiltersCount
 }: LeadsFiltersBarProps) {
+  // HOOKS: All hooks at the top, before any conditionals (Erro 310 prevention)
+  // 1. Data fetching hooks
+  const { data: templatesData, isLoading: templatesLoading, isError: templatesError } = useLeadTaskTemplates(false)
+  
   // Defensive: ensure arrays are valid
   const safeUsers = ensureArray<User>(users)
   const safeLeadStatuses = ensureArray<OptionItem>(leadStatuses)
   const safeLeadOrigins = ensureArray<OptionItem>(leadOrigins)
 
+  // 2. useMemo hooks
   // Convert options to MultiSelectOption format
   const statusOptions = useMemo<MultiSelectOption[]>(() => 
     safeLeadStatuses
@@ -113,10 +120,28 @@ export function LeadsFiltersBar({
     [availableTags]
   )
 
-  const nextActionOptions = useMemo<MultiSelectOption[]>(() =>
-    NEXT_ACTION_OPTIONS.map(o => ({ id: o.code, label: o.label })),
-    []
-  )
+  // Build next action options dynamically from API or fallback
+  const nextActionOptions = useMemo<MultiSelectOption[]>(() => {
+    const options: MultiSelectOption[] = [
+      { id: '_none', label: 'Sem próxima ação' }
+    ]
+    
+    // Use API data if available, otherwise fallback to hardcoded values
+    const templates = templatesData?.data ?? []
+    const sourceOptions = templates.length > 0 ? templates : FALLBACK_NEXT_ACTION_OPTIONS
+    
+    sourceOptions.forEach((template) => {
+      options.push({
+        id: template.code,
+        label: template.label
+      })
+    })
+    
+    // Add custom task option at the end
+    options.push({ id: '_custom', label: 'Tarefa customizada' })
+    
+    return options
+  }, [templatesData])
 
   const priorityOptions = useMemo<MultiSelectOption[]>(() =>
     PRIORITY_OPTIONS.map(o => ({ id: o.value, label: o.label })),
@@ -132,6 +157,7 @@ export function LeadsFiltersBar({
     return 'Todos'
   }, [appliedFilters.ownerMode, appliedFilters.ownerIds])
 
+  // 3. Handlers (after all hooks)
   // Handler for user selection in owner popover
   const handleUserSelect = (userId: string) => {
     const isSelected = appliedFilters.ownerIds.includes(userId)
@@ -266,7 +292,7 @@ export function LeadsFiltersBar({
           options={nextActionOptions}
           selected={appliedFilters.nextAction}
           onSelectionChange={(ids) => actions.setMulti('nextAction', ids)}
-          placeholder="Próxima ação"
+          placeholder={templatesLoading ? 'Carregando...' : 'Próxima ação'}
           searchPlaceholder="Buscar ação..."
           emptyText="Nenhuma ação encontrada"
           clearLabel="Limpar"
@@ -275,6 +301,7 @@ export function LeadsFiltersBar({
           icon={<Clock className="h-3.5 w-3.5" />}
           align="start"
           maxHeight="220px"
+          disabled={templatesLoading}
         />
       )}
 
@@ -437,10 +464,22 @@ export function LeadsFiltersChips({
   // Next action chips (only for sales view)
   if (showNextActionFilter) {
     appliedFilters.nextAction.forEach(code => {
-      const action = NEXT_ACTION_OPTIONS.find(o => o.code === code)
+      let label = code
+      
+      // Handle special cases
+      if (code === '_none') {
+        label = 'Sem próxima ação'
+      } else if (code === '_custom') {
+        label = 'Tarefa customizada'
+      } else {
+        // Try to find in fallback options
+        const action = FALLBACK_NEXT_ACTION_OPTIONS.find(o => o.code === code)
+        label = action?.label || code
+      }
+      
       chips.push({
         key: `nextAction-${code}`,
-        label: `Ação: ${safeString(action?.label, code)}`,
+        label: `Ação: ${label}`,
         onRemove: () => actions.toggleMulti('nextAction', code)
       })
     })
