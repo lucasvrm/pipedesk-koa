@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus, Settings2, Trash2 } from 'lucide-react'
+import { GripVertical, Plus, Settings2, Trash2, ListTodo } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +42,7 @@ import {
   useReorderLeadTaskTemplates,
 } from '@/hooks/useLeadTaskTemplates'
 import { LeadTaskTemplateForm } from './LeadTaskTemplateForm'
+import { SettingsSectionHeader } from './SettingsSectionHeader'
 
 function SortableTemplateItem({
   template,
@@ -274,4 +275,103 @@ export function LeadTaskTemplatesSection() {
       </AlertDialog>
     </>
   )
+}
+
+// ============================================================================
+// Content-only version (for sidebar layout)
+// ============================================================================
+
+export function LeadTaskTemplatesContent() {
+  const { data, isLoading, error } = useLeadTaskTemplates(true);
+  const createMutation = useCreateLeadTaskTemplate();
+  const updateMutation = useUpdateLeadTaskTemplate();
+  const deleteMutation = useDeleteLeadTaskTemplate();
+  const reorderMutation = useReorderLeadTaskTemplates();
+
+  const templates = useMemo(() => data?.data || [], [data?.data]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<LeadTaskTemplate | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<LeadTaskTemplate | null>(null);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = templates.findIndex((t) => t.id === active.id);
+      const newIndex = templates.findIndex((t) => t.id === over.id);
+      const newOrder = arrayMove(templates, oldIndex, newIndex);
+      reorderMutation.mutate(newOrder.map((t) => t.id));
+    }
+  };
+
+  const handleCreate = () => { setEditingTemplate(null); setFormOpen(true); };
+  const handleEdit = (template: LeadTaskTemplate) => { setEditingTemplate(template); setFormOpen(true); };
+  const handleFormSubmit = (data: any) => {
+    if (editingTemplate) {
+      updateMutation.mutate({ id: editingTemplate.id, data }, { onSuccess: () => setFormOpen(false) });
+    } else {
+      createMutation.mutate(data, { onSuccess: () => setFormOpen(false) });
+    }
+  };
+  const handleDelete = () => {
+    if (deletingTemplate) {
+      deleteMutation.mutate(deletingTemplate.id, { onSuccess: () => setDeletingTemplate(null) });
+    }
+  };
+
+  if (error) return <p className="text-destructive">Erro ao carregar templates.</p>;
+
+  return (
+    <>
+      <SettingsSectionHeader
+        title="Templates de Tarefas"
+        description="Templates pré-definidos para tarefas de leads. Arraste para reordenar."
+        onAdd={handleCreate}
+        addLabel="Novo Template"
+      />
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
+        </div>
+      ) : templates.length === 0 ? (
+        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+          <ListTodo className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-muted-foreground">Nenhum template cadastrado.</p>
+        </div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={templates.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {templates.map((template) => (
+                <SortableTemplateItem key={template.id} template={template} onEdit={() => handleEdit(template)} onDelete={() => setDeletingTemplate(template)} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+
+      <LeadTaskTemplateForm open={formOpen} onOpenChange={setFormOpen} template={editingTemplate} onSubmit={handleFormSubmit} isSubmitting={createMutation.isPending || updateMutation.isPending} />
+
+      <AlertDialog open={!!deletingTemplate} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar template?</AlertDialogTitle>
+            <AlertDialogDescription>O template "{deletingTemplate?.label}" será desativado.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteMutation.isPending ? 'Desativando...' : 'Desativar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }
