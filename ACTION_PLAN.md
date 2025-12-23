@@ -1,5 +1,119 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
+## 🚧 Status: ✅ Concluído (Migration - Sistema de Notificações)
+
+**Data:** 2025-12-23  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Database Migrations - Expansão do sistema de notificações com prioridades, categorias, agrupamento e preferências do usuário
+
+---
+
+## 🆕 Iteração atual - Migrations: Sistema de Notificações
+
+**Data:** 2025-12-23  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Database - 5 migrations para expandir sistema de notificações
+
+### 🎯 Objetivo
+Expandir a tabela `notifications` e criar tabela `user_notification_preferences` para suportar:
+- Prioridades (critical, urgent, high, normal, low)
+- Categorias (mention, assignment, status, sla, deadline, activity, system, general)
+- Agrupamento de notificações similares
+- Metadados em JSONB
+- Preferências por usuário (DND mode, filtros por categoria e prioridade)
+- Função helper que respeita preferências ao criar notificações
+
+### ✅ Tarefas Concluídas
+- [x] Criadas 5 migrations SQL em ordem sequencial
+- [x] Expandida tabela `notifications` com 7 novas colunas
+- [x] Criados 5 índices para otimização de queries
+- [x] Criada tabela `user_notification_preferences` com 14 campos
+- [x] Configurado RLS para tabela de preferências (4 policies)
+- [x] Criada função `create_notification_if_allowed()` com lógica de filtros
+- [x] Adicionada policy DELETE para tabela `notifications`
+- [x] Documentados todos os campos com COMMENT ON
+- [x] Criada documentação completa em `/docs/data/notification-system-migrations.md`
+- [x] Criado README em `/supabase/migrations/README.md`
+
+### Arquivos Criados
+- `supabase/migrations/20251223_expand_notifications_table.sql` - Expansão da tabela notifications
+- `supabase/migrations/20251223_create_user_notification_preferences.sql` - Tabela de preferências
+- `supabase/migrations/20251223_rls_user_notification_preferences.sql` - Políticas RLS
+- `supabase/migrations/20251223_create_notification_with_preferences.sql` - Função helper
+- `supabase/migrations/20251223_add_delete_policy_notifications.sql` - Policy de DELETE
+- `docs/data/notification-system-migrations.md` - Documentação completa (10KB)
+- `supabase/migrations/README.md` - Guia de migrations
+
+### 📊 Novas Colunas em `notifications`
+
+| Coluna | Tipo | Default | Descrição |
+|--------|------|---------|-----------|
+| `priority` | TEXT | 'normal' | critical, urgent, high, normal, low |
+| `category` | TEXT | 'general' | mention, assignment, status, sla, etc. |
+| `entity_id` | UUID | NULL | ID da entidade relacionada |
+| `entity_type` | TEXT | NULL | lead, deal, track, task, company, contact, comment |
+| `group_key` | TEXT | NULL | Chave para agrupar notificações similares |
+| `metadata` | JSONB | '{}' | Dados extras (autor, valores antigos/novos) |
+| `expires_at` | TIMESTAMPTZ | NULL | Data de expiração opcional |
+
+### 📊 Tabela `user_notification_preferences`
+
+| Campo | Tipo | Default | Descrição |
+|-------|------|---------|-----------|
+| `dnd_enabled` | BOOLEAN | false | Modo Não Perturbe |
+| `pref_mention` | BOOLEAN | true | Habilita/desabilita menções |
+| `pref_assignment` | BOOLEAN | true | Habilita/desabilita atribuições |
+| `pref_status` | BOOLEAN | true | Habilita/desabilita mudanças de status |
+| `pref_sla` | BOOLEAN | true | Habilita/desabilita alertas SLA |
+| `pref_deadline` | BOOLEAN | true | Habilita/desabilita deadlines |
+| `pref_activity` | BOOLEAN | true | Habilita/desabilita atividades |
+| `pref_system` | BOOLEAN | true | Habilita/desabilita sistema |
+| `min_priority` | TEXT | NULL | Prioridade mínima (null = todas) |
+| `channel_inapp` | BOOLEAN | true | Canal in-app (preparado) |
+| `channel_email` | BOOLEAN | false | Canal email (preparado) |
+| `channel_push` | BOOLEAN | false | Canal push (preparado) |
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 7 (5 migrations + 2 docs) |
+| Arquivos modificados | 1 (ACTION_PLAN.md) |
+| Novas colunas (notifications) | 7 |
+| Nova tabela | 1 (user_notification_preferences) |
+| Novos índices | 6 (5 em notifications, 1 em preferences) |
+| Políticas RLS | 4 (preferences) + 1 (notifications DELETE) |
+| Nova função SQL | 1 (create_notification_if_allowed) |
+| Trigger | 1 (update_notification_prefs_updated_at) |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Complexidade | 25/100 |
+
+**Risco:** 🟢 Baixo (migrations aditivas, não quebram existentes)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Migration 1: Expandir notifications | ✅ | 7 novas colunas + 5 índices + comentários |
+| Migration 2: Criar user_notification_preferences | ✅ | Tabela com 14 campos + trigger updated_at |
+| Migration 3: RLS policies preferences | ✅ | 4 policies (SELECT, INSERT, UPDATE, DELETE) |
+| Migration 4: Função create_notification_if_allowed | ✅ | Com lógica de filtros por categoria e prioridade |
+| Migration 5: DELETE policy notifications | ✅ | Users can delete their own notifications |
+| Ordem de execução documentada | ✅ | README.md em migrations + doc principal |
+| Queries de verificação | ✅ | 7 queries diferentes na documentação |
+| Exemplos de uso | ✅ | Criar notificação, atualizar preferências, queries |
+| SQL de rollback | ✅ | Documentado na doc principal |
+| Idempotência (IF NOT EXISTS) | ✅ | Todas as alterações são idempotentes |
+| CHECK constraints | ✅ | Priorities, categories, entity_types validados |
+| Comentários em colunas | ✅ | COMMENT ON para documentação inline |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
+---
+
 ## 🚧 Status: ✅ Concluído (Migration - lead_task_templates)
 
 **Data:** 2024-12-23  
