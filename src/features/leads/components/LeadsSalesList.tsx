@@ -5,9 +5,24 @@ import { QuickAction } from '@/components/QuickActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowsDownUp } from '@phosphor-icons/react'
+import { ArrowDownUp, RotateCcw } from 'lucide-react'
 import { safeStringOptional, ensureArray } from '@/lib/utils'
 import { Lead } from '@/lib/types'
+import { useResizableColumns, ColumnDef } from '@/hooks/useResizableColumns'
+import { ResizableTableHead } from './ResizableTableHead'
+import { Button } from '@/components/ui/button'
+
+const LEADS_TABLE_COLUMNS: ColumnDef[] = [
+  { id: 'checkbox', label: '', width: 40, minWidth: 40, maxWidth: 40 },
+  { id: 'empresa', label: 'Empresa', width: 200, minWidth: 120, maxWidth: 400 },
+  { id: 'contato', label: 'Contato principal', width: 190, minWidth: 120, maxWidth: 300 },
+  { id: 'status', label: 'Status', width: 130, minWidth: 80, maxWidth: 200 },
+  { id: 'interacoes', label: 'Interações', width: 140, minWidth: 100, maxWidth: 200 },
+  { id: 'proxima_acao', label: 'Próxima ação', width: 180, minWidth: 120, maxWidth: 300 },
+  { id: 'tags', label: 'Tags', width: 220, minWidth: 100, maxWidth: 400 },
+  { id: 'responsavel', label: 'Responsável', width: 160, minWidth: 100, maxWidth: 250 },
+  { id: 'acoes', label: 'Ações', width: 60, minWidth: 60, maxWidth: 60 }
+]
 
 interface LeadsSalesListProps {
   leads: LeadSalesViewItem[]
@@ -34,6 +49,22 @@ export function LeadsSalesList({
 }: LeadsSalesListProps) {
   // Ensure leads is always an array to prevent React Error #185
   const safeLeads = ensureArray<LeadSalesViewItem>(leads)
+
+  // Add resizable columns hook
+  const {
+    columns,
+    isResizing,
+    activeColumnId,
+    getColumnWidth,
+    handleResizeStart,
+    resetToDefaults
+  } = useResizableColumns({
+    storageKey: 'leads-table-columns',
+    defaultColumns: LEADS_TABLE_COLUMNS
+  })
+
+  // Helper to get column width by id
+  const colWidth = (id: string) => getColumnWidth(id)
 
   const { validLeads, invalidLeadCount } = useMemo(() => {
     const valid = [] as LeadSalesViewItem[]
@@ -186,10 +217,24 @@ export function LeadsSalesList({
       const rowData = toRowData(lead)
       const actions = getLeadActions?.(lead)
 
+      // Create object of column widths to pass to Row
+      const columnWidths = {
+        checkbox: colWidth('checkbox'),
+        empresa: colWidth('empresa'),
+        contato: colWidth('contato'),
+        status: colWidth('status'),
+        interacoes: colWidth('interacoes'),
+        proxima_acao: colWidth('proxima_acao'),
+        tags: colWidth('tags'),
+        responsavel: colWidth('responsavel'),
+        acoes: colWidth('acoes')
+      }
+
       return (
         <LeadSalesRow
           key={id}
           {...rowData}
+          columnWidths={columnWidths}
           selected={selectedIds.includes(id)}
           onSelectChange={(checked) => handleSelectChange(lead, checked)}
           onClick={() => onNavigate(id)}
@@ -213,34 +258,130 @@ export function LeadsSalesList({
     <div className="rounded-lg border bg-card overflow-x-auto">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
         <div className="inline-flex items-center gap-2">
-          <ArrowsDownUp className="h-4 w-4" />
+          <ArrowDownUp className="h-4 w-4" />
           <span className="text-muted-foreground">Ordenado por</span>
           <span className="text-foreground font-semibold">{orderLabel}</span>
         </div>
+        
+        {/* Reset columns button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={resetToDefaults}
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <RotateCcw className="h-3 w-3 mr-1" />
+          Resetar colunas
+        </Button>
       </div>
-      <Table>
+      
+      <Table style={{ tableLayout: 'fixed', width: columns.reduce((sum, col) => sum + col.width, 0) }}>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[40px] shrink-0">
-              <Checkbox checked={allSelected} onCheckedChange={() => onSelectAll()} disabled={isLoading || safeLeads.length === 0} />
+            {/* Checkbox - fixed width, no resize */}
+            <TableHead className="shrink-0" style={{ width: colWidth('checkbox') }}>
+              <Checkbox 
+                checked={allSelected} 
+                onCheckedChange={() => onSelectAll()} 
+                disabled={isLoading || safeLeads.length === 0} 
+              />
             </TableHead>
-            <TableHead className="min-w-[200px] lg:w-[16%]">Empresa</TableHead>
-            <TableHead className="min-w-[190px] lg:w-[11%]">Contato principal</TableHead>
-            <TableHead className="min-w-0">Status</TableHead>
-            <TableHead className="min-w-0">Interações</TableHead>
-            <TableHead className="min-w-[180px] lg:w-[17%]">Próxima ação</TableHead>
-            <TableHead className="min-w-[220px] lg:w-[24%]">Tags</TableHead>
-            <TableHead className="min-w-[160px] lg:w-[12%]">Responsável</TableHead>
-            <TableHead className="w-[60px] shrink-0 whitespace-nowrap">Ações</TableHead>
+            
+            {/* Resizable columns */}
+            <ResizableTableHead
+              columnId="empresa"
+              width={colWidth('empresa')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'empresa'}
+              onResizeStart={handleResizeStart}
+            >
+              Empresa
+            </ResizableTableHead>
+            
+            <ResizableTableHead
+              columnId="contato"
+              width={colWidth('contato')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'contato'}
+              onResizeStart={handleResizeStart}
+            >
+              Contato principal
+            </ResizableTableHead>
+            
+            <ResizableTableHead
+              columnId="status"
+              width={colWidth('status')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'status'}
+              onResizeStart={handleResizeStart}
+            >
+              Status
+            </ResizableTableHead>
+            
+            <ResizableTableHead
+              columnId="interacoes"
+              width={colWidth('interacoes')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'interacoes'}
+              onResizeStart={handleResizeStart}
+            >
+              Interações
+            </ResizableTableHead>
+            
+            <ResizableTableHead
+              columnId="proxima_acao"
+              width={colWidth('proxima_acao')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'proxima_acao'}
+              onResizeStart={handleResizeStart}
+            >
+              Próxima ação
+            </ResizableTableHead>
+            
+            <ResizableTableHead
+              columnId="tags"
+              width={colWidth('tags')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'tags'}
+              onResizeStart={handleResizeStart}
+            >
+              Tags
+            </ResizableTableHead>
+            
+            <ResizableTableHead
+              columnId="responsavel"
+              width={colWidth('responsavel')}
+              isResizing={isResizing}
+              isActive={activeColumnId === 'responsavel'}
+              onResizeStart={handleResizeStart}
+            >
+              Responsável
+            </ResizableTableHead>
+            
+            {/* Actions - fixed width, no resize */}
+            <TableHead className="shrink-0 whitespace-nowrap" style={{ width: colWidth('acoes') }}>
+              Ações
+            </TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {isLoading && (
             <>
-              {Array.from({ length: 5 }).map((_, index) => (
-                <LeadSalesRowSkeleton key={index} />
-              ))}
+              {Array.from({ length: 5 }).map((_, index) => {
+                const columnWidths = {
+                  checkbox: colWidth('checkbox'),
+                  empresa: colWidth('empresa'),
+                  contato: colWidth('contato'),
+                  status: colWidth('status'),
+                  interacoes: colWidth('interacoes'),
+                  proxima_acao: colWidth('proxima_acao'),
+                  tags: colWidth('tags'),
+                  responsavel: colWidth('responsavel'),
+                  acoes: colWidth('acoes')
+                }
+                return <LeadSalesRowSkeleton key={index} columnWidths={columnWidths} />
+              })}
             </>
           )}
 

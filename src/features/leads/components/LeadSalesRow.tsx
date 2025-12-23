@@ -43,6 +43,7 @@ interface LeadSalesRowProps extends LeadSalesViewItem {
   onMenuClick?: () => void
   actions?: QuickAction[]
   onScheduleClick?: (lead: Lead) => void
+  columnWidths?: Record<string, number>
 }
 
 function getInitials(name?: string) {
@@ -127,7 +128,8 @@ export function LeadSalesRow({
   origin,
   createdAt,
   created_at,
-  onScheduleClick
+  onScheduleClick,
+  columnWidths
 }: LeadSalesRowProps) {
   // Get the actual lead ID from various possible fields
   const actualLeadId = id ?? leadId ?? lead_id
@@ -481,12 +483,16 @@ export function LeadSalesRow({
 
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleRowClick}>
-      <TableCell className="w-[40px] shrink-0" onClick={(e) => e.stopPropagation()}>
+      <TableCell 
+        className="shrink-0" 
+        style={{ width: columnWidths?.checkbox ?? 40 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <Checkbox checked={selected} onCheckedChange={(value) => onSelectChange?.(Boolean(value))} />
       </TableCell>
 
       {/* Empresa - navigates to Lead Detail */}
-      <TableCell className="min-w-[200px] lg:w-[16%]">
+      <TableCell style={{ width: columnWidths?.empresa ?? 200 }}>
         <div className="flex items-start gap-3 min-w-0">
           <div onClick={(e) => e.stopPropagation()}>
             <LeadPriorityBadge
@@ -512,7 +518,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Contato principal - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[190px] lg:w-[11%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell style={{ width: columnWidths?.contato ?? 190 }} onClick={(e) => e.stopPropagation()}>
         {(() => {
           const contacts = fullLead?.contacts || []
           const primaryContactData = contacts.find(c => c.isPrimary) || contacts[0]
@@ -547,7 +553,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Status - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-0" onClick={(e) => e.stopPropagation()}>
+      <TableCell style={{ width: columnWidths?.status ?? 130 }} onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -598,7 +604,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Interações - navigates to Lead Detail */}
-      <TableCell className="min-w-0">
+      <TableCell style={{ width: columnWidths?.interacoes ?? 140 }}>
         <div className="space-y-1 min-w-0">
           <div className="text-xs text-muted-foreground">Última interação</div>
           {parsedLastInteractionDate ? (
@@ -616,7 +622,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Próxima ação - navigates to Lead Detail, with urgency styling */}
-      <TableCell className="min-w-[180px] lg:w-[17%]">
+      <TableCell style={{ width: columnWidths?.proxima_acao ?? 180 }}>
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -656,7 +662,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[220px] lg:w-[24%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell style={{ width: columnWidths?.tags ?? 220 }} onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <TagsCellCompact
             tags={leadTags}
@@ -670,7 +676,7 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Responsável - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[160px] lg:w-[12%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell style={{ width: columnWidths?.responsavel ?? 160 }} onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
           <OwnerActionMenu leadId={actualLeadId} currentOwner={owner ? { id: owner.id, name: owner.name, avatar: owner.avatar } : null}>
             <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
@@ -701,7 +707,11 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Ações - All actions consolidated in kebab menu "..." */}
-      <TableCell className="w-[60px] shrink-0 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+      <TableCell 
+        className="shrink-0 whitespace-nowrap" 
+        style={{ width: columnWidths?.acoes ?? 60 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -816,18 +826,18 @@ export function LeadSalesRow({
   )
 }
 
-export function LeadSalesRowSkeleton() {
+export function LeadSalesRowSkeleton({ columnWidths }: { columnWidths?: Record<string, number> }) {
   return (
     <TableRow>
-      <TableCell className="w-[40px] shrink-0"><Skeleton className="h-4 w-4" /></TableCell>
-      <TableCell className="min-w-[200px] lg:w-[16%]"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="min-w-[190px] lg:w-[16%]"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-6 w-20" /></TableCell>
-      <TableCell className="min-w-0"><Skeleton className="h-10 w-full" /></TableCell>
-      <TableCell className="min-w-[180px] lg:w-[14%]"><Skeleton className="h-12 w-full" /></TableCell>
-      <TableCell className="min-w-[220px] lg:w-[22%]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="min-w-[160px] lg:w-[12%]"><Skeleton className="h-8 w-full" /></TableCell>
-      <TableCell className="w-[60px] shrink-0 whitespace-nowrap"><Skeleton className="h-8 w-8" /></TableCell>
+      <TableCell className="shrink-0" style={{ width: columnWidths?.checkbox ?? 40 }}><Skeleton className="h-4 w-4" /></TableCell>
+      <TableCell style={{ width: columnWidths?.empresa ?? 200 }}><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell style={{ width: columnWidths?.contato ?? 190 }}><Skeleton className="h-10 w-full" /></TableCell>
+      <TableCell style={{ width: columnWidths?.status ?? 130 }}><Skeleton className="h-6 w-20" /></TableCell>
+      <TableCell style={{ width: columnWidths?.interacoes ?? 140 }}><Skeleton className="h-10 w-full" /></TableCell>
+      <TableCell style={{ width: columnWidths?.proxima_acao ?? 180 }}><Skeleton className="h-12 w-full" /></TableCell>
+      <TableCell style={{ width: columnWidths?.tags ?? 220 }}><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell style={{ width: columnWidths?.responsavel ?? 160 }}><Skeleton className="h-8 w-full" /></TableCell>
+      <TableCell className="shrink-0 whitespace-nowrap" style={{ width: columnWidths?.acoes ?? 60 }}><Skeleton className="h-8 w-8" /></TableCell>
     </TableRow>
   )
 }
