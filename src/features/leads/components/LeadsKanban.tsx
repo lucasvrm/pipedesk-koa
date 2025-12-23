@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { Kanban } from '@phosphor-icons/react'
+import { Kanban } from 'lucide-react'
 import { MessageCircle, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, safeString, safeStringOptional } from '@/lib/utils'
@@ -21,14 +21,6 @@ import { useNavigate } from 'react-router-dom'
 interface LeadsKanbanProps {
   leads: Lead[]
   isLoading?: boolean
-}
-
-// TODO: Replace hardcoded colors with metadata colors
-const statusColors: Record<string, string> = {
-  new: 'border-t-blue-500',
-  contacted: 'border-t-amber-500',
-  qualified: 'border-t-emerald-500',
-  disqualified: 'border-t-rose-500'
 }
 
 export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
@@ -41,14 +33,14 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
     })
   )
 
-  // Use metadata for columns instead of hardcoded list
+  // Use metadata for columns with dynamic colors
   const columns = useMemo(() => {
     return leadStatuses.sort((a, b) => a.sortOrder - b.sortOrder).map(s => ({
       id: s.id,
-      status: s.id, // Using ID as status key
+      status: s.id,
       label: s.label,
       code: s.code,
-      color: statusColors[s.code] || 'border-t-gray-500' // Fallback color
+      color: s.color || '#6b7280'
     }))
   }, [leadStatuses])
 
@@ -298,10 +290,10 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[280px] flex flex-col min-h-[400px]',
-        isOver ? 'border-primary border-dashed bg-primary/10' : '',
-        column.color
+        'bg-muted/30 border border-border/60 rounded-lg flex-shrink-0 w-[280px] flex flex-col min-h-[400px] border-t-4',
+        isOver ? 'border-primary border-dashed bg-primary/10' : ''
       )}
+      style={{ borderTopColor: column.color }}
     >
       <div className="p-3 border-b bg-card/60 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center gap-2">
