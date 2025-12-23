@@ -220,6 +220,8 @@ export interface FilterActions {
   setOrderBy: (orderBy: AppliedLeadsFilters['orderBy']) => void
   /** Set page number */
   setPage: (page: number) => void
+  /** Apply multiple filter changes at once (batch update) - prevents race conditions */
+  applyAll: (filters: Partial<Omit<AppliedLeadsFilters, 'view'>>) => void
 }
 
 /**
@@ -242,6 +244,13 @@ export interface FilterActions {
  * actions.toggleMulti('status', 'some-status-id')
  * actions.setSearch('company name')
  * actions.clearAll()
+ * 
+ * // Apply multiple filters at once (recommended for "Apply" buttons)
+ * actions.applyAll({
+ *   status: ['status-1', 'status-2'],
+ *   priority: ['hot'],
+ *   origin: ['origin-1'],
+ * })
  * ```
  */
 export function useLeadsFiltersSearchParams() {
@@ -376,6 +385,14 @@ export function useLeadsFiltersSearchParams() {
 
     setPage: (page: number) => {
       updateParams((current) => ({ ...current, page }), false) // Don't reset page when setting page
+    },
+
+    applyAll: (filters: Partial<Omit<AppliedLeadsFilters, 'view'>>) => {
+      updateParams((current) => ({
+        ...current,
+        ...filters,
+        page: 1, // Always reset page when applying filters
+      }))
     },
   }), [updateParams])
 
