@@ -8,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
-import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { cn } from '@/lib/utils'
 
 type InternalViewMode = 'grid' | 'kanban' | 'sales'

@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { Flame, Thermometer, Snowflake, Check, Loader2 } from 'lucide-react'
+import { Flame, Thermometer, Snowflake, Check, Loader2, Eye, Edit } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useUpdateLeadPriority } from '../hooks/useUpdateLeadPriority'
 
@@ -24,6 +30,7 @@ interface LeadPriorityBadgeProps {
 const PRIORITY_CONFIG = {
   hot: {
     label: 'Alta',
+    tooltipLabel: 'Alta Prioridade',
     icon: Flame,
     bgClass: 'bg-red-100 dark:bg-red-950/50',
     textClass: 'text-red-700 dark:text-red-400',
@@ -32,6 +39,7 @@ const PRIORITY_CONFIG = {
   },
   warm: {
     label: 'Média',
+    tooltipLabel: 'Média Prioridade',
     icon: Thermometer,
     bgClass: 'bg-amber-100 dark:bg-amber-950/50',
     textClass: 'text-amber-700 dark:text-amber-400',
@@ -40,6 +48,7 @@ const PRIORITY_CONFIG = {
   },
   cold: {
     label: 'Baixa',
+    tooltipLabel: 'Baixa Prioridade',
     icon: Snowflake,
     bgClass: 'bg-blue-100 dark:bg-blue-950/50',
     textClass: 'text-blue-700 dark:text-blue-400',
@@ -61,6 +70,7 @@ export function LeadPriorityBadge({
   // 1. Hooks - ALWAYS at the top
   const [isOpen, setIsOpen] = useState(false)
   const updatePriority = useUpdateLeadPriority()
+  const navigate = useNavigate()
 
   // 2. Derived values
   const bucket = priorityBucket || 'cold'
@@ -81,12 +91,20 @@ export function LeadPriorityBadge({
     }
   }
 
+  const handleNavigateToDetails = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (leadId) {
+      navigate(`/leads/${leadId}`)
+    }
+    setIsOpen(false)
+  }
+
   // 4. JSX elements
   const badgeContent = (
     <Badge
       variant="outline"
       className={cn(
-        'rounded-full h-8 w-8 p-0 flex items-center justify-center transition-colors',
+        'rounded-full h-10 w-10 p-0 flex items-center justify-center transition-colors',
         config.bgClass,
         config.textClass,
         config.borderClass,
@@ -96,46 +114,86 @@ export function LeadPriorityBadge({
       )}
     >
       {updatePriority.isPending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-[18px] w-[18px] animate-spin" />
       ) : (
-        <Icon className="h-4 w-4" />
+        <Icon className="h-[18px] w-[18px]" />
       )}
     </Badge>
   )
 
   // 5. Conditional returns AFTER hooks
   if (!editable || !leadId) {
-    return badgeContent
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">
+              {badgeContent}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{config.tooltipLabel}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
   }
 
   // 6. Main return
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild disabled={updatePriority.isPending}>
-        {badgeContent}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-36">
-        {PRIORITY_OPTIONS.map((option) => {
-          const optConfig = PRIORITY_CONFIG[option]
-          const OptionIcon = optConfig.icon
-          const isSelected = option === bucket
-
-          return (
-            <DropdownMenuItem
-              key={option}
-              onClick={() => handleChange(option)}
-              className={cn(
-                'flex items-center gap-2 cursor-pointer',
-                isSelected && 'bg-accent'
-              )}
-            >
-              <OptionIcon className={cn('h-4 w-4', optConfig.textClass)} />
-              <span className="flex-1">{optConfig.label}</span>
-              {isSelected && <Check className="h-4 w-4" />}
+    <TooltipProvider>
+      <Tooltip>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild disabled={updatePriority.isPending}>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                {badgeContent}
+              </span>
+            </TooltipTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem onClick={handleNavigateToDetails}>
+              <Eye className="mr-2 h-4 w-4" />
+              Detalhes do Lead
             </DropdownMenuItem>
-          )
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Edit className="mr-2 h-4 w-4" />
+                Alterar prioridade
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {PRIORITY_OPTIONS.map((option) => {
+                  const optConfig = PRIORITY_CONFIG[option]
+                  const OptionIcon = optConfig.icon
+                  const isSelected = option === bucket
+
+                  return (
+                    <DropdownMenuItem
+                      key={option}
+                      onClick={() => handleChange(option)}
+                      className={cn(
+                        'flex items-center gap-2 cursor-pointer',
+                        'hover:bg-accent/80',
+                        isSelected && 'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      <OptionIcon className={cn('h-4 w-4', optConfig.textClass)} />
+                      <span className="flex-1">{optConfig.label}</span>
+                      {isSelected && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <TooltipContent>
+          <p>{config.tooltipLabel}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
