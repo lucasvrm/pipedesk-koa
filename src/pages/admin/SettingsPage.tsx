@@ -68,18 +68,18 @@ const CATEGORIES = {
   }
 } as const;
 
-// Helper component for category help cards
+// Helper component for category help cards - COMPACTO
 function HelpCard({ title, description }: { title: string; description: string }) {
   return (
     <Card className="bg-primary/5 border-primary/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-            <Lightbulb className="h-5 w-5 text-primary" weight="fill" />
+      <CardHeader className="py-2 px-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
+            <Lightbulb className="h-4 w-4 text-primary" weight="fill" />
           </div>
           <div>
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <CardDescription className="text-xs mt-1">{description}</CardDescription>
+            <CardTitle className="text-xs font-medium">{title}</CardTitle>
+            <CardDescription className="text-[11px] mt-0.5">{description}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -174,24 +174,23 @@ export default function NewSettingsPage() {
       setIntegrationsSection(getInitialSection('integrations', integrationsSection));
     }
 
-    // Always scroll to top for consistent UX
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   return (
     <PageContainer>
-      {/* Header */}
-      <div className="flex flex-col gap-4 mb-8">
-        <div className="flex items-center gap-4">
-          <div className="bg-primary/10 p-3 rounded-full">
-            <Gear className="h-8 w-8 text-primary" />
+      {/* Header - Compacto */}
+      <div className="flex flex-col gap-3 mb-5">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 p-2.5 rounded-full">
+            <Gear className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               Configurações do Sistema
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Gerencie metadados, parâmetros, permissões e integrações da plataforma
             </p>
           </div>
@@ -204,7 +203,7 @@ export default function NewSettingsPage() {
             placeholder="Buscar configurações..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-9"
           />
         </div>
       </div>
@@ -222,10 +221,10 @@ export default function NewSettingsPage() {
           if (value === 'productivity') setProductivitySection(fallbackSection);
           if (value === 'integrations') setIntegrationsSection(fallbackSection);
         }}
-        className="space-y-6"
+        className="space-y-4"
       >
-        {/* Category Navigation */}
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto py-1 gap-1">
+        {/* Category Navigation - 15% menor */}
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto py-0.5 gap-1">
           {Object.values(CATEGORIES).map((cat) => {
             const Icon = cat.icon;
             const colorClasses = {
@@ -240,7 +239,7 @@ export default function NewSettingsPage() {
               <TabsTrigger
                 key={cat.value}
                 value={cat.value}
-                className={`py-3 flex items-center gap-2 ${colorClasses}`}
+                className={`py-2 flex items-center gap-2 text-sm ${colorClasses}`}
               >
                 <Icon className="h-4 w-4" />
                 <span className="hidden sm:inline">{cat.label}</span>
@@ -253,7 +252,7 @@ export default function NewSettingsPage() {
         {/* CRM & Vendas */}
         <TabsContent
           value="crm"
-          className="space-y-6 mt-6"
+          className="space-y-4 mt-4"
           id={getSectionId('crm', crmSection)}
         >
           <HelpCard
@@ -269,21 +268,21 @@ export default function NewSettingsPage() {
             }}
             className="w-full"
           >
-            <TabsList className="mb-4">
-              <TabsTrigger value="leads">
-                <Users className="mr-2 h-4 w-4" /> Leads
+            <TabsList className="mb-3 h-9">
+              <TabsTrigger value="leads" className="text-sm h-8">
+                <Users className="mr-1.5 h-3.5 w-3.5" /> Leads
               </TabsTrigger>
-              <TabsTrigger value="deals">
-                <FlowArrow className="mr-2 h-4 w-4" /> Deals & Pipeline
+              <TabsTrigger value="deals" className="text-sm h-8">
+                <FlowArrow className="mr-1.5 h-3.5 w-3.5" /> Deals & Pipeline
               </TabsTrigger>
-              <TabsTrigger value="companies">
-                <Briefcase className="mr-2 h-4 w-4" /> Empresas & Contatos
+              <TabsTrigger value="companies" className="text-sm h-8">
+                <Briefcase className="mr-1.5 h-3.5 w-3.5" /> Empresas & Contatos
               </TabsTrigger>
             </TabsList>
 
             <TabsContent
               value="leads"
-              className="space-y-6"
+              className="space-y-4"
               id={getSectionId('crm', 'leads')}
             >
               <LeadSettingsSection />
@@ -291,7 +290,7 @@ export default function NewSettingsPage() {
 
             <TabsContent
               value="deals"
-              className="space-y-6"
+              className="space-y-4"
               id={getSectionId('crm', 'deals')}
             >
               <DealPipelineSettingsSection />
@@ -299,7 +298,7 @@ export default function NewSettingsPage() {
 
             <TabsContent
               value="companies"
-              className="space-y-6"
+              className="space-y-4"
               id={getSectionId('crm', 'companies')}
             >
               <CompanyRelationshipSettingsSection />
@@ -310,7 +309,7 @@ export default function NewSettingsPage() {
         {/* Produtos & Operações */}
         <TabsContent
           value="products"
-          className="space-y-6 mt-6"
+          className="space-y-4 mt-4"
           id={getSectionId('products', 'products')}
         >
           <HelpCard
@@ -441,7 +440,7 @@ export default function NewSettingsPage() {
         {/* Sistema & Segurança */}
         <TabsContent
           value="system"
-          className="space-y-6 mt-6"
+          className="space-y-4 mt-4"
           id={getSectionId('system', systemSection)}
         >
           <HelpCard
@@ -461,7 +460,7 @@ export default function NewSettingsPage() {
         {/* Produtividade */}
         <TabsContent
           value="productivity"
-          className="space-y-6 mt-6"
+          className="space-y-4 mt-4"
           id={getSectionId('productivity', productivitySection)}
         >
           <HelpCard
@@ -481,7 +480,7 @@ export default function NewSettingsPage() {
         {/* Integrações & Automação */}
         <TabsContent
           value="integrations"
-          className="space-y-6 mt-6"
+          className="space-y-4 mt-4"
           id={getSectionId('integrations', integrationsSection)}
         >
           <HelpCard
@@ -497,18 +496,18 @@ export default function NewSettingsPage() {
             }}
             className="w-full"
           >
-            <TabsList className="mb-4">
-              <TabsTrigger value="dashboards">
-                <ChartLine className="mr-2 h-4 w-4" /> Dashboards
+            <TabsList className="mb-3 h-9">
+              <TabsTrigger value="dashboards" className="text-sm h-8">
+                <ChartLine className="mr-1.5 h-3.5 w-3.5" /> Dashboards
               </TabsTrigger>
-              <TabsTrigger value="automation">
-                <Robot className="mr-2 h-4 w-4" /> Automação de Documentos
+              <TabsTrigger value="automation" className="text-sm h-8">
+                <Robot className="mr-1.5 h-3.5 w-3.5" /> Automação de Documentos
               </TabsTrigger>
             </TabsList>
 
             <TabsContent
               value="dashboards"
-              className="space-y-6"
+              className="space-y-4"
               id={getSectionId('integrations', 'dashboards')}
             >
               <DashboardSettingsPage />
@@ -516,7 +515,7 @@ export default function NewSettingsPage() {
 
             <TabsContent
               value="automation"
-              className="space-y-6"
+              className="space-y-4"
               id={getSectionId('integrations', 'automation')}
             >
               <DocumentAutomationSettings />
