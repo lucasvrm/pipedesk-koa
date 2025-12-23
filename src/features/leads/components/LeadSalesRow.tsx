@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays } from 'lucide-react'
@@ -26,11 +26,12 @@ import { toast } from 'sonner'
 import { getGmailComposeUrl, cleanPhoneNumber, getWhatsAppWebUrl } from '@/utils/googleLinks'
 import { getRootFolderUrl } from '@/services/driveService'
 import { DriveApiError } from '@/lib/driveClient'
-import { TagManagerPopover } from './TagManagerPopover'
+import { TagsCellCards } from './TagsCellCards'
 import { ContactPreviewModal } from './ContactPreviewModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 import { LeadPriorityBadge } from './LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
+import { useEntityTags, useTagOperations } from '@/services/tagService'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -100,69 +101,6 @@ const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; textCol
   }
 }
 
-const isConstructableResizeObserver = (() => {
-  if (typeof ResizeObserver !== 'function') return false
-  try {
-    // eslint-disable-next-line no-new
-    new ResizeObserver(() => {})
-    return true
-  } catch {
-    return false
-  }
-})()
-
-const shouldPolyfillResizeObserver = !isConstructableResizeObserver && typeof window !== 'undefined' && process.env.NODE_ENV === 'test'
-const canUseResizeObserver = isConstructableResizeObserver || shouldPolyfillResizeObserver
-
-if (shouldPolyfillResizeObserver) {
-  ;(window as unknown as Record<string, unknown>).ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  } as unknown as typeof ResizeObserver
-}
-
-type LeadTag = NonNullable<LeadSalesViewItem['tags']>[number]
-
-const AVERAGE_CHAR_WIDTH = 7
-const TAG_HORIZONTAL_PADDING = 22
-const TAG_GAP = 8
-const MORE_BADGE_WIDTH = 44
-
-export function truncateTags(tags: LeadTag[] = [], maxWidth: number): { visible: LeadTag[]; hiddenCount: number } {
-  if (!tags.length) {
-    return { visible: [], hiddenCount: 0 }
-  }
-
-  if (!maxWidth || maxWidth <= 0) {
-    return { visible: tags, hiddenCount: 0 }
-  }
-
-  const visible: LeadTag[] = []
-  let usedWidth = 0
-
-  for (let index = 0; index < tags.length; index += 1) {
-    const tag = tags[index]
-    const label = safeString(tag?.name, 'Tag')
-    const estimatedTagWidth = Math.min(maxWidth, label.length * AVERAGE_CHAR_WIDTH + TAG_HORIZONTAL_PADDING)
-    const gap = visible.length > 0 ? TAG_GAP : 0
-    const remaining = tags.length - (index + 1)
-    const reservedForMore = remaining > 0 ? MORE_BADGE_WIDTH : 0
-
-    if (usedWidth + gap + estimatedTagWidth + reservedForMore > maxWidth) {
-      break
-    }
-
-    visible.push(tag)
-    usedWidth += gap + estimatedTagWidth
-  }
-
-  return {
-    visible,
-    hiddenCount: Math.max(tags.length - visible.length, 0)
-  }
-}
-
 export function LeadSalesRow({
   id,
   leadId,
@@ -186,63 +124,39 @@ export function LeadSalesRow({
   origin,
   createdAt,
   created_at,
-  onScheduleClick,
-  tags
+  onScheduleClick
 }: LeadSalesRowProps) {
-  const { getLeadStatusById, leadStatuses } = useSystemMetadata()
-  const updateLeadMutation = useUpdateLead()
-  const [isDriveLoading, setIsDriveLoading] = useState(false)
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
-  const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
-  const tagContainerRef = useRef<HTMLButtonElement | null>(null)
-  const [tagColumnWidth, setTagColumnWidth] = useState(0)
-
-  useEffect(() => {
-    const updateWidth = () => {
-      if (tagContainerRef.current) {
-        setTagColumnWidth(tagContainerRef.current.getBoundingClientRect().width)
-      }
-    }
-
-    updateWidth()
-
-    let observer: ResizeObserver | undefined
-    let resizeListenerAttached = false
-
-    const attachWindowResize = () => {
-      if (!resizeListenerAttached) {
-        window.addEventListener('resize', updateWidth)
-        resizeListenerAttached = true
-      }
-    }
-
-    if (canUseResizeObserver && tagContainerRef.current) {
-      try {
-        observer = new ResizeObserver(() => updateWidth())
-        observer.observe(tagContainerRef.current)
-      } catch (error) {
-        console.warn('[LeadSalesRow] ResizeObserver unavailable, falling back to window resize', error)
-        attachWindowResize()
-      }
-    } else {
-      attachWindowResize()
-    }
-
-    return () => {
-      observer?.disconnect()
-      if (resizeListenerAttached) {
-        window.removeEventListener('resize', updateWidth)
-      }
-    }
-  }, [])
-
   // Get the actual lead ID from various possible fields
   const actualLeadId = id ?? leadId ?? lead_id
+
+  // 1. Hooks de dados (sempre no topo)
+  const { getLeadStatusById, leadStatuses } = useSystemMetadata()
+  const updateLeadMutation = useUpdateLead()
+  const { data: leadTags = [] } = useEntityTags(actualLeadId || '', 'lead')
+  const tagOps = useTagOperations()
+
+  // 2. useState
+  const [isDriveLoading, setIsDriveLoading] = useState(false)
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+  
+  const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
   // Get current status information
   const currentStatus = status ? getLeadStatusById(status) : null
   const statusLabel = currentStatus?.label ?? 'Sem status'
   const statusColor = currentStatus?.code ?? 'default'
+
+  // Handler for removing tag
+  const handleRemoveTag = (tagId: string) => {
+    if (!actualLeadId) return
+    tagOps.unassign.mutate(
+      { tagId, entityId: actualLeadId, entityType: 'lead' },
+      {
+        onSuccess: () => toast.success('Tag removida'),
+        onError: () => toast.error('Erro ao remover tag')
+      }
+    )
+  }
 
   // Handler for status change
   const handleStatusChange = async (newStatusId: string) => {
@@ -543,23 +457,6 @@ export function LeadSalesRow({
     })
   }, [priorityScore, priorityBucket, lastInteractionAt, createdAt, created_at, status])
 
-  const normalizedTags = useMemo<LeadTag[]>(() => {
-    if (!Array.isArray(tags)) return []
-
-    return tags
-      .filter((tag): tag is LeadTag => Boolean(tag && typeof tag === 'object'))
-      .map((tag) => ({
-        ...tag,
-        name: safeString(tag.name, 'Tag'),
-        color: safeStringOptional(tag.color)
-      }))
-  }, [tags])
-
-  const { visible: visibleTags, hiddenCount: hiddenTagCount } = useMemo(
-    () => truncateTags(normalizedTags, tagColumnWidth || 240),
-    [normalizedTags, tagColumnWidth]
-  )
-
   const parsedLastInteractionDate = lastInteractionAt
     ? (() => {
         const parsedDate = typeof lastInteractionAt === 'string'
@@ -581,48 +478,6 @@ export function LeadSalesRow({
     }
     onClick?.()
   }
-
-  const tagTriggerContent = (
-    <button
-      type="button"
-      ref={tagContainerRef}
-      className="w-full min-w-0 rounded-md border border-transparent bg-muted/30 px-2 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-      aria-label="Gerenciar tags do lead"
-    >
-      <div className="flex flex-wrap items-center gap-2 min-h-[24px]">
-        {visibleTags.length > 0 && (
-          <>
-            {visibleTags.map((tag) => {
-              const safeColor = safeStringOptional(tag.color) ?? '#888'
-              return (
-                <Badge
-                  key={tag.id ?? tag.name}
-                  variant="secondary"
-                  className="border text-xs font-medium gap-1 truncate max-w-[160px]"
-                  style={{
-                    backgroundColor: `${safeColor}15`,
-                    color: 'hsl(var(--foreground))',
-                    borderColor: safeColor,
-                    borderLeftWidth: '3px'
-                  }}
-                >
-                  <span className="truncate">{safeString(tag.name, 'Tag')}</span>
-                </Badge>
-              )
-            })}
-            {hiddenTagCount > 0 && (
-              <Badge
-                variant="outline"
-                className="border-dashed bg-muted text-xs font-semibold text-foreground"
-              >
-                +{hiddenTagCount}
-              </Badge>
-            )}
-          </>
-        )}
-      </div>
-    </button>
-  )
 
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleRowClick}>
@@ -762,12 +617,14 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Tags - does NOT navigate to Lead Detail */}
-      <TableCell className="min-w-[220px] lg:w-[22%]" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="min-w-[200px] lg:w-[18%]" onClick={(e) => e.stopPropagation()}>
         {actualLeadId ? (
-          <TagManagerPopover
+          <TagsCellCards
+            tags={leadTags}
             leadId={actualLeadId}
             leadName={safeLegalName}
-            triggerContent={tagTriggerContent}
+            onRemove={handleRemoveTag}
+            isRemoving={tagOps.unassign.isPending}
           />
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
