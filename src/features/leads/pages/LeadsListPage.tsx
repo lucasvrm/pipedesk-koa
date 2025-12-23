@@ -691,7 +691,6 @@ export default function LeadsListPage() {
               isFiltersOpen={isFiltersOpen}
               selectedIds={selectedIds}
               onBulkDelete={() => setIsBulkDeleteOpen(true)}
-              onCreateLead={() => setIsCreateOpen(true)}
               totalLeads={totalLeads}
               itemsPerPage={itemsPerPage}
               onItemsPerPageChange={handleItemsPerPageChange}
@@ -707,7 +706,7 @@ export default function LeadsListPage() {
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"> 
           {isActiveLoading ? (
             <div className="p-6 space-y-4">
-              <SharedListSkeleton columns={["", "Empresa", "Contato", "Operação", "Progresso", "Tags", "Origem", "Responsável", "Ações"]} />
+              <SharedListSkeleton columns={["", "Empresa", "Contato principal", "Status", "Interações", "Próxima ação", "Tags", "Responsável", "Ações"]} />
             </div>
           ) : salesErrorUI ? (
             <div className="p-6">

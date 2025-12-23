@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Flame, Thermometer, Snowflake, ChevronDown, Check, Loader2 } from 'lucide-react'
+import { Flame, Thermometer, Snowflake, Check, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -86,7 +86,7 @@ export function LeadPriorityBadge({
     <Badge
       variant="outline"
       className={cn(
-        'gap-1.5 px-2 py-0.5 font-medium transition-colors',
+        'rounded-full h-8 w-8 p-0 flex items-center justify-center transition-colors',
         config.bgClass,
         config.textClass,
         config.borderClass,
@@ -95,16 +95,10 @@ export function LeadPriorityBadge({
         className
       )}
     >
-      <Icon className="h-3.5 w-3.5" />
-      <span>{config.label}</span>
-      {priorityScore != null && (
-        <span className="text-xs opacity-70">({priorityScore})</span>
-      )}
-      {editable && !updatePriority.isPending && (
-        <ChevronDown className="h-3 w-3 opacity-50" />
-      )}
-      {updatePriority.isPending && (
-        <Loader2 className="h-3 w-3 animate-spin" />
+      {updatePriority.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Icon className="h-4 w-4" />
       )}
     </Badge>
   )

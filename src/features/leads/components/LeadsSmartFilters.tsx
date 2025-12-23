@@ -21,7 +21,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { MultiSelectPopover, MultiSelectOption } from '@/components/ui/MultiSelectPopover'
-import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon, Clock, MapPin } from 'lucide-react'
+import { Filter, Users, Check, ChevronDown, X, Tag as TagIcon, Clock, MapPin, Flame, Thermometer, Snowflake } from 'lucide-react'
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { LeadPriorityBucket } from '@/lib/types'
 import { safeString, ensureArray } from '@/lib/utils'
@@ -73,10 +73,10 @@ interface DraftFilters {
   nextActions: string[]
 }
 
-const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description: string }[] = [
-  { value: 'hot', label: 'Hot', description: 'Score alto, lead muito quente' },
-  { value: 'warm', label: 'Warm', description: 'Score moderado, lead engajado' },
-  { value: 'cold', label: 'Cold', description: 'Score baixo, lead frio' }
+const PRIORITY_OPTIONS: { value: LeadPriorityBucket; label: string; description: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'hot', label: 'Hot', description: 'Score alto, lead muito quente', icon: Flame },
+  { value: 'warm', label: 'Warm', description: 'Score moderado, lead engajado', icon: Thermometer },
+  { value: 'cold', label: 'Cold', description: 'Score baixo, lead frio', icon: Snowflake }
 ]
 
 export const ORDER_BY_OPTIONS: { value: LeadOrderBy; label: string }[] = [
@@ -561,17 +561,19 @@ export function LeadsSmartFilters({
                   <div className="flex gap-1 rounded-lg bg-muted p-1">
                     {PRIORITY_OPTIONS.map(option => {
                       const isActive = draftFilters.priority.includes(option.value)
+                      const Icon = option.icon
                       return (
                         <button
                           key={option.value}
                           onClick={() => handleDraftPriorityToggle(option.value)}
-                          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                             isActive
                               ? 'bg-background text-foreground shadow-sm'
                               : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
                           }`}
                           type="button"
                         >
+                          <Icon className="h-4 w-4" />
                           {option.label}
                         </button>
                       )
