@@ -6,8 +6,13 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight, Flame, Thermometer, Snowflake, UserCircle, CircleDot, MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
@@ -47,6 +52,12 @@ interface LeadsListControlsProps {
   totalPages: number
   /** Handler to change page */
   onPageChange: (page: number) => void
+  /** Bulk actions */
+  onBulkPriorityChange?: (priority: 'hot' | 'warm' | 'cold') => void
+  onBulkStatusChange?: (statusId: string) => void
+  onBulkOwnerChange?: (ownerId: string | null) => void
+  availableStatuses?: { id: string; label: string }[]
+  availableOwners?: { id: string; name: string }[]
 }
 
 /**
@@ -73,6 +84,11 @@ export function LeadsListControls({
   currentPage,
   totalPages,
   onPageChange,
+  onBulkPriorityChange,
+  onBulkStatusChange,
+  onBulkOwnerChange,
+  availableStatuses = [],
+  availableOwners = [],
 }: LeadsListControlsProps) {
   const testIdSuffix = position === 'bottom' ? '-bottom' : ''
   
@@ -110,11 +126,94 @@ export function LeadsListControls({
             )}
           </Button>
           
-          {/* Bulk delete button */}
+          {/* Bulk actions dropdown */}
           {selectedIds.length > 0 && (
-            <Button variant="destructive" size="sm" onClick={onBulkDelete}>
-              <Trash2 className="mr-2 h-4 w-4" /> Excluir ({selectedIds.length})
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm" className="gap-2">
+                  <MoreHorizontal className="h-4 w-4" />
+                  Ações ({selectedIds.length})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {/* Prioridade */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Flame className="mr-2 h-4 w-4" />
+                    Alterar Prioridade
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => onBulkPriorityChange?.('hot')}>
+                      <Flame className="mr-2 h-4 w-4 text-red-500" />
+                      Alta (Hot)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onBulkPriorityChange?.('warm')}>
+                      <Thermometer className="mr-2 h-4 w-4 text-amber-500" />
+                      Média (Warm)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onBulkPriorityChange?.('cold')}>
+                      <Snowflake className="mr-2 h-4 w-4 text-blue-500" />
+                      Baixa (Cold)
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                {/* Status */}
+                {availableStatuses && availableStatuses.length > 0 && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <CircleDot className="mr-2 h-4 w-4" />
+                      Alterar Status
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {availableStatuses.map(status => (
+                        <DropdownMenuItem 
+                          key={status.id} 
+                          onClick={() => onBulkStatusChange?.(status.id)}
+                        >
+                          {status.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
+
+                {/* Responsável */}
+                {availableOwners && availableOwners.length > 0 && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      Alterar Responsável
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="max-h-60 overflow-y-auto">
+                      <DropdownMenuItem onClick={() => onBulkOwnerChange?.(null)}>
+                        <span className="text-muted-foreground">Remover responsável</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {availableOwners.map(owner => (
+                        <DropdownMenuItem 
+                          key={owner.id} 
+                          onClick={() => onBulkOwnerChange?.(owner.id)}
+                        >
+                          {owner.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {/* Excluir */}
+                <DropdownMenuItem 
+                  onClick={onBulkDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir selecionados
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
         

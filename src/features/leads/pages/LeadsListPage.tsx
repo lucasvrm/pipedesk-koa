@@ -494,6 +494,51 @@ export default function LeadsListPage() {
     }
   }
 
+  const handleBulkPriorityChange = async (priority: 'hot' | 'warm' | 'cold') => {
+    if (selectedIds.length === 0) return
+    try {
+      await Promise.all(
+        selectedIds.map(id => 
+          updateLead.mutateAsync({ id, data: { priorityBucket: priority } })
+        )
+      )
+      toast.success(`Prioridade alterada para ${selectedIds.length} leads`)
+      setSelectedIds([])
+    } catch (error) {
+      toast.error('Erro ao alterar prioridade')
+    }
+  }
+
+  const handleBulkStatusChange = async (statusId: string) => {
+    if (selectedIds.length === 0) return
+    try {
+      await Promise.all(
+        selectedIds.map(id => 
+          updateLead.mutateAsync({ id, data: { leadStatusId: statusId } })
+        )
+      )
+      toast.success(`Status alterado para ${selectedIds.length} leads`)
+      setSelectedIds([])
+    } catch (error) {
+      toast.error('Erro ao alterar status')
+    }
+  }
+
+  const handleBulkOwnerChange = async (ownerId: string | null) => {
+    if (selectedIds.length === 0) return
+    try {
+      await Promise.all(
+        selectedIds.map(id => 
+          updateLead.mutateAsync({ id, data: { ownerId } })
+        )
+      )
+      toast.success(`Responsável alterado para ${selectedIds.length} leads`)
+      setSelectedIds([])
+    } catch (error) {
+      toast.error('Erro ao alterar responsável')
+    }
+  }
+
   const clearFilters = useCallback(() => {
     handleSearchChange('')
     setStatusFilter('all')
@@ -700,6 +745,11 @@ export default function LeadsListPage() {
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
+              onBulkPriorityChange={handleBulkPriorityChange}
+              onBulkStatusChange={handleBulkStatusChange}
+              onBulkOwnerChange={handleBulkOwnerChange}
+              availableStatuses={activeLeadStatuses.map(s => ({ id: s.id, label: s.label }))}
+              availableOwners={users.map(u => ({ id: u.id, name: u.name }))}
             />
 
         {/* Conteúdo da Lista dentro do Card - área rolável */}
