@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check, Plus } from 'lucide-react'
+import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check, Plus, ListTodo } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -34,6 +34,7 @@ import { LeadPriorityBadge } from './LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import { useEntityTags } from '@/services/tagService'
 import { useLead } from '@/services/leadService'
+import { LeadTasksModal } from './LeadTasksModal'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -140,6 +141,7 @@ export function LeadSalesRow({
   // 2. useState
   const [isDriveLoading, setIsDriveLoading] = useState(false)
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+  const [tasksModalOpen, setTasksModalOpen] = useState(false)
   
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
@@ -760,6 +762,17 @@ export function LeadSalesRow({
               Agendar Reunião
             </DropdownMenuItem>
             
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation()
+                setTasksModalOpen(true)
+              }}
+              data-testid="action-tasks"
+            >
+              <ListTodo className="mr-2 h-4 w-4 text-purple-600" />
+              Gerenciar Tarefas
+            </DropdownMenuItem>
+            
             <DropdownMenuSeparator />
             
             <DropdownMenuItem 
@@ -783,13 +796,21 @@ export function LeadSalesRow({
 
       {/* Modals - rendered via portals so they can be inside TableRow */}
       {actualLeadId && (
-        <LeadContactsModal
-          open={isContactModalOpen}
-          onOpenChange={setIsContactModalOpen}
-          leadId={actualLeadId}
-          leadName={safeLegalName}
-          contacts={fullLead?.contacts || []}
-        />
+        <>
+          <LeadContactsModal
+            open={isContactModalOpen}
+            onOpenChange={setIsContactModalOpen}
+            leadId={actualLeadId}
+            leadName={safeLegalName}
+            contacts={fullLead?.contacts || []}
+          />
+          <LeadTasksModal
+            open={tasksModalOpen}
+            onOpenChange={setTasksModalOpen}
+            leadId={actualLeadId}
+            leadName={safeLegalName}
+          />
+        </>
       )}
     </TableRow>
   )
