@@ -60,6 +60,7 @@ import { LeadEditSheet } from '../components/LeadEditSheet'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { KanbanTagsModal } from '../components/KanbanTagsModal'
 import { TagsSectionCards } from '../components/TagsSectionCards'
+import { LeadTasksModal } from '../components/LeadTasksModal'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
@@ -244,7 +245,7 @@ export default function LeadDetailPage() {
   }, [deleteComment, id, refetchTimeline])
 
   const handleAddTask = useCallback(() => {
-    toast.info('Funcionalidade de tarefas em breve')
+    setTasksModalOpen(true)
   }, [])
 
   const handleOpenContactDialog = useCallback((tab: 'new' | 'link' = 'new') => {
@@ -259,6 +260,7 @@ export default function LeadDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [changeOwnerOpen, setChangeOwnerOpen] = useState(false)
+  const [tasksModalOpen, setTasksModalOpen] = useState(false)
   const [newContact, setNewContact] = useState({ name: '', email: '', phone: '', role: '', isPrimary: false })
   const [selectedContact, setSelectedContact] = useState<string>('')
   const [selectedMember, setSelectedMember] = useState('')
@@ -1311,6 +1313,13 @@ export default function LeadDetailPage() {
         lead={lead}
         currentUserId={profile?.id}
         availableUsers={users ?? []}
+      />
+
+      <LeadTasksModal
+        open={tasksModalOpen}
+        onOpenChange={setTasksModalOpen}
+        leadId={lead.id}
+        leadName={safeLeadName}
       />
     </PageContainer>
   )
