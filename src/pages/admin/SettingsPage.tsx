@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   ListChecks,
   Lightbulb,
-  MagnifyingGlass
+  MagnifyingGlass,
+  Robot
 } from '@phosphor-icons/react';
 import {
   LeadSettingsSection,
