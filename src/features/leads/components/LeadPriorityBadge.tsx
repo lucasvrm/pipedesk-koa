@@ -58,13 +58,16 @@ export function LeadPriorityBadge({
   editable = false,
   className,
 }: LeadPriorityBadgeProps) {
+  // 1. Hooks - ALWAYS at the top
   const [isOpen, setIsOpen] = useState(false)
   const updatePriority = useUpdateLeadPriority()
 
+  // 2. Derived values
   const bucket = priorityBucket || 'cold'
   const config = PRIORITY_CONFIG[bucket]
   const Icon = config.icon
 
+  // 3. Handlers
   const handleChange = async (newBucket: PriorityBucket) => {
     if (!leadId || newBucket === bucket) {
       setIsOpen(false)
@@ -78,6 +81,7 @@ export function LeadPriorityBadge({
     }
   }
 
+  // 4. JSX elements
   const badgeContent = (
     <Badge
       variant="outline"
@@ -105,12 +109,12 @@ export function LeadPriorityBadge({
     </Badge>
   )
 
-  // Modo somente leitura
+  // 5. Conditional returns AFTER hooks
   if (!editable || !leadId) {
     return badgeContent
   }
 
-  // Modo editável
+  // 6. Main return
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild disabled={updatePriority.isPending}>
