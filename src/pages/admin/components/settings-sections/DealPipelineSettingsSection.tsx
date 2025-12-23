@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { settingsService } from '@/services/settingsService';
-import { ChartLineUp, GitBranch, Pencil, Trash2 } from 'lucide-react';
+import { TrendingUp, GitBranch, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DealStatusMeta } from '@/types/metadata';
 import { SettingsSidebarLayout, SettingsSectionHeader } from './';
@@ -29,7 +29,7 @@ interface FormData {
 }
 
 const NAV_ITEMS: Omit<SidebarNavItem, 'count'>[] = [
-  { id: 'statuses', label: 'Status de Deals', icon: ChartLineUp },
+  { id: 'statuses', label: 'Status de Deals', icon: TrendingUp },
   { id: 'stages', label: 'Estágios do Pipeline', icon: GitBranch },
 ];
 
