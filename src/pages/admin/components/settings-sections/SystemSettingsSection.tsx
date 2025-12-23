@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -14,27 +13,26 @@ import {
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { getSystemSetting, updateSystemSetting } from '@/services/settingsService';
 import { usePermissions } from '@/services/roleService';
-import { Gear, ShieldCheck, ShieldStar } from '@phosphor-icons/react';
+import { Settings, ShieldCheck, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { RoleMetadataManager } from './RoleMetadataManager';
 import RolesManager from '@/features/rbac/components/RolesManager';
+import { SettingsSidebarLayout, SettingsSectionHeader } from './';
+import type { SidebarNavItem } from './SettingsSidebarNav';
 
-type SystemSettingsTab = 'defaults' | 'roles' | 'permissions';
+type SectionId = 'defaults' | 'roles' | 'permissions';
 
 interface SystemSettingsSectionProps {
-  activeTab?: SystemSettingsTab;
-  onTabChange?: (tab: SystemSettingsTab) => void;
+  activeTab?: SectionId;
+  onTabChange?: (tab: SectionId) => void;
 }
 
 interface SystemSettingsFormData {
-  // Business Defaults
   default_deal_status_code: string;
-  default_track_stage_code: string; // stores stage.id
+  default_track_stage_code: string;
   default_track_probability: number;
   default_lead_origin_code: string;
   default_lead_member_role_code: string;
-  
-  // Synthetic Users Configuration
   synthetic_default_password: string;
   synthetic_default_role_code: string;
   synthetic_total_users: number;
@@ -43,25 +41,165 @@ interface SystemSettingsFormData {
   synthetic_name_prefix: string;
 }
 
-interface SystemSettingValue {
-  code?: string;
-  value?: string | number;
-  id?: string;
+const NAV_ITEMS: Omit<SidebarNavItem, 'count'>[] = [
+  { id: 'defaults', label: 'Defaults do Sistema', icon: Settings },
+  { id: 'roles', label: 'Papéis de Usuários', icon: ShieldCheck },
+  { id: 'permissions', label: 'Permissões (RBAC)', icon: Shield },
+];
+
+// ============================================================================
+// Defaults Section
+// ============================================================================
+
+function DefaultsSection({
+  formData,
+  setFormData,
+  onSave,
+  isSaving,
+  dealStatuses,
+  stages,
+  leadOrigins,
+  leadMemberRoles,
+  userRoleMetadata
+}: {
+  formData: SystemSettingsFormData;
+  setFormData: (data: SystemSettingsFormData) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  dealStatuses: any[];
+  stages: any[];
+  leadOrigins: any[];
+  leadMemberRoles: any[];
+  userRoleMetadata: any[];
+}) {
+  return (
+    <>
+      <SettingsSectionHeader
+        title="Defaults do Sistema"
+        description="Configure valores padrão para criação de deals, leads e tracks"
+      />
+
+      {/* Business Defaults */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Defaults de Negócio</CardTitle>
+          <CardDescription>Valores iniciais para novos registros</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Status Padrão de Deal</Label>
+            <Select value={formData.default_deal_status_code} onValueChange={(v) => setFormData({ ...formData, default_deal_status_code: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                {dealStatuses.map((s) => <SelectItem key={s.id} value={s.code}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Etapa Padrão do Pipeline</Label>
+            <Select value={formData.default_track_stage_code} onValueChange={(v) => setFormData({ ...formData, default_track_stage_code: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Probabilidade Padrão (%)</Label>
+            <Input type="number" min="0" max="100" value={formData.default_track_probability} onChange={(e) => setFormData({ ...formData, default_track_probability: Number(e.target.value) })} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Origem Padrão de Lead</Label>
+            <Select value={formData.default_lead_origin_code} onValueChange={(v) => setFormData({ ...formData, default_lead_origin_code: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                {leadOrigins.map((o) => <SelectItem key={o.id} value={o.code}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Papel Padrão de Membro</Label>
+            <Select value={formData.default_lead_member_role_code} onValueChange={(v) => setFormData({ ...formData, default_lead_member_role_code: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                {leadMemberRoles.map((r) => <SelectItem key={r.id} value={r.code}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Synthetic Users */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Usuários Sintéticos</CardTitle>
+          <CardDescription>Parâmetros para geração de usuários de teste</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Senha Padrão</Label>
+            <Input type="password" value={formData.synthetic_default_password} onChange={(e) => setFormData({ ...formData, synthetic_default_password: e.target.value })} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Role Padrão</Label>
+            <Select value={formData.synthetic_default_role_code} onValueChange={(v) => setFormData({ ...formData, synthetic_default_role_code: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                {userRoleMetadata.map((r) => <SelectItem key={r.id} value={r.code}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Total de Usuários</Label>
+            <Input type="number" min="0" value={formData.synthetic_total_users} onChange={(e) => setFormData({ ...formData, synthetic_total_users: Number(e.target.value) })} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tamanho do Lote</Label>
+            <Input type="number" min="1" value={formData.synthetic_batch_size} onChange={(e) => setFormData({ ...formData, synthetic_batch_size: Number(e.target.value) })} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Domínio de E-mail</Label>
+            <Input value={formData.synthetic_email_domain} onChange={(e) => setFormData({ ...formData, synthetic_email_domain: e.target.value })} placeholder="@example.com" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Prefixo de Nome</Label>
+            <Input value={formData.synthetic_name_prefix} onChange={(e) => setFormData({ ...formData, synthetic_name_prefix: e.target.value })} placeholder="Synth User" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={onSave} disabled={isSaving} size="lg">
+          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+        </Button>
+      </div>
+    </>
+  );
 }
 
-type FormDataKey = keyof SystemSettingsFormData;
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettingsSectionProps) {
-  const { 
-    dealStatuses, 
-    stages, 
-    leadOrigins, 
-    leadMemberRoles, 
+  const {
+    dealStatuses,
+    stages,
+    leadOrigins,
+    leadMemberRoles,
     userRoleMetadata,
-    isLoading: metadataLoading 
+    isLoading: metadataLoading
   } = useSystemMetadata();
 
-  // Fetch all permissions from the permissions table
   const { data: allPermissions, isLoading: permissionsLoading } = usePermissions();
 
   const [formData, setFormData] = useState<SystemSettingsFormData>({
@@ -80,71 +218,41 @@ export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettings
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Move internalTab state before any conditional returns to comply with React's Rules of Hooks
-  const [internalTab, setInternalTab] = useState<SystemSettingsTab>('defaults');
+  const [internalSection, setInternalSection] = useState<SectionId>('defaults');
 
-  const currentTab = useMemo<SystemSettingsTab>(
-    () => activeTab ?? internalTab,
-    [activeTab, internalTab]
-  );
+  const currentSection = useMemo<SectionId>(() => activeTab ?? internalSection, [activeTab, internalSection]);
 
-  // Load current settings on mount
   useEffect(() => {
     loadSettings();
   }, []);
 
-  // Sync internal tab with active tab prop
   useEffect(() => {
-    if (activeTab) {
-      setInternalTab(activeTab);
-    }
+    if (activeTab) setInternalSection(activeTab);
   }, [activeTab]);
 
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      const settingsKeys = [
-        'default_deal_status_code',
-        'default_track_stage_code',
-        'default_track_probability',
-        'default_lead_origin_code',
-        'default_lead_member_role_code',
-        'synthetic_default_password',
-        'synthetic_default_role_code',
-        'synthetic_total_users',
-        'synthetic_batch_size',
-        'synthetic_email_domain',
-        'synthetic_name_prefix'
+      const keys = [
+        'default_deal_status_code', 'default_track_stage_code', 'default_track_probability',
+        'default_lead_origin_code', 'default_lead_member_role_code',
+        'synthetic_default_password', 'synthetic_default_role_code', 'synthetic_total_users',
+        'synthetic_batch_size', 'synthetic_email_domain', 'synthetic_name_prefix'
       ];
-
-      const results = await Promise.all(
-        settingsKeys.map(key => getSystemSetting(key))
-      );
-
-      const newFormData = { ...formData };
-      settingsKeys.forEach((key, index) => {
-        const result = results[index];
-        if (result.data !== null) {
-          const value = result.data as SystemSettingValue;
-          // Handle different value structures
-          if (value && typeof value === 'object') {
-            if ('code' in value && value.code) {
-              (newFormData as any)[key] = value.code;
-            } else if ('id' in value && value.id) {
-              (newFormData as any)[key] = value.id;
-            } else if ('value' in value) {
-              (newFormData as any)[key] = value.value;
-            }
-          } else {
-            (newFormData as any)[key] = value;
-          }
+      const results = await Promise.all(keys.map(k => getSystemSetting(k)));
+      const newData = { ...formData };
+      keys.forEach((key, i) => {
+        const val = results[i].data;
+        if (val && typeof val === 'object') {
+          if ('code' in val) (newData as any)[key] = val.code;
+          else if ('id' in val) (newData as any)[key] = val.id;
+          else if ('value' in val) (newData as any)[key] = val.value;
+        } else if (val !== null) {
+          (newData as any)[key] = val;
         }
       });
-
-      setFormData(newFormData);
-    } catch (error) {
-      console.error('Error loading settings:', error);
+      setFormData(newData);
+    } catch (e) {
       toast.error('Erro ao carregar configurações');
     } finally {
       setIsLoading(false);
@@ -154,411 +262,89 @@ export function SystemSettingsSection({ activeTab, onTabChange }: SystemSettings
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save all settings in parallel for better performance
       await Promise.all([
-        // Business Defaults
-        updateSystemSetting(
-          'default_deal_status_code',
-          { code: formData.default_deal_status_code },
-          'Status padrão ao criar deal'
-        ),
-        updateSystemSetting(
-          'default_track_stage_code',
-          { id: formData.default_track_stage_code }, // stages use id, not code
-          'Etapa padrão da pipeline'
-        ),
-        updateSystemSetting(
-          'default_track_probability',
-          { value: Number(formData.default_track_probability) },
-          'Probabilidade padrão (%)'
-        ),
-        updateSystemSetting(
-          'default_lead_origin_code',
-          { code: formData.default_lead_origin_code },
-          'Origem padrão de lead'
-        ),
-        updateSystemSetting(
-          'default_lead_member_role_code',
-          { code: formData.default_lead_member_role_code },
-          'Papel padrão de membro de lead'
-        ),
-        // Synthetic Users Configuration
-        updateSystemSetting(
-          'synthetic_default_password',
-          { value: formData.synthetic_default_password },
-          'Senha padrão para usuários sintéticos'
-        ),
-        updateSystemSetting(
-          'synthetic_default_role_code',
-          { code: formData.synthetic_default_role_code },
-          'Role padrão para usuários sintéticos'
-        ),
-        updateSystemSetting(
-          'synthetic_total_users',
-          { value: Number(formData.synthetic_total_users) },
-          'Quantidade alvo de usuários sintéticos'
-        ),
-        updateSystemSetting(
-          'synthetic_batch_size',
-          { value: Number(formData.synthetic_batch_size) },
-          'Tamanho do lote de criação de usuários sintéticos'
-        ),
-        updateSystemSetting(
-          'synthetic_email_domain',
-          { value: formData.synthetic_email_domain },
-          'Domínio de e-mail para usuários sintéticos'
-        ),
-        updateSystemSetting(
-          'synthetic_name_prefix',
-          { value: formData.synthetic_name_prefix },
-          'Prefixo de nome para usuários sintéticos'
-        )
+        updateSystemSetting('default_deal_status_code', { code: formData.default_deal_status_code }, 'Status padrão de deal'),
+        updateSystemSetting('default_track_stage_code', { id: formData.default_track_stage_code }, 'Etapa padrão'),
+        updateSystemSetting('default_track_probability', { value: formData.default_track_probability }, 'Probabilidade padrão'),
+        updateSystemSetting('default_lead_origin_code', { code: formData.default_lead_origin_code }, 'Origem padrão'),
+        updateSystemSetting('default_lead_member_role_code', { code: formData.default_lead_member_role_code }, 'Papel padrão'),
+        updateSystemSetting('synthetic_default_password', { value: formData.synthetic_default_password }, 'Senha sintética'),
+        updateSystemSetting('synthetic_default_role_code', { code: formData.synthetic_default_role_code }, 'Role sintética'),
+        updateSystemSetting('synthetic_total_users', { value: formData.synthetic_total_users }, 'Total sintéticos'),
+        updateSystemSetting('synthetic_batch_size', { value: formData.synthetic_batch_size }, 'Batch size'),
+        updateSystemSetting('synthetic_email_domain', { value: formData.synthetic_email_domain }, 'Domínio email'),
+        updateSystemSetting('synthetic_name_prefix', { value: formData.synthetic_name_prefix }, 'Prefixo nome'),
       ]);
-
-      toast.success('Configurações salvas com sucesso!');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Erro ao salvar configurações');
+      toast.success('Configurações salvas!');
+    } catch (e) {
+      toast.error('Erro ao salvar');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleTabChange = (value: SystemSettingsTab) => {
-    if (!activeTab) {
-      setInternalTab(value);
-    }
-    onTabChange?.(value);
+  const handleSectionChange = (id: string) => {
+    const section = id as SectionId;
+    if (!activeTab) setInternalSection(section);
+    onTabChange?.(section);
   };
 
   if (isLoading || metadataLoading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Carregando configurações do sistema...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
+  const navItems: SidebarNavItem[] = NAV_ITEMS.map((item) => ({
+    ...item,
+    count: item.id === 'roles' ? userRoleMetadata.length : undefined
+  }));
+
+  const renderContent = () => {
+    switch (currentSection) {
+      case 'defaults':
+        return (
+          <DefaultsSection
+            formData={formData}
+            setFormData={setFormData}
+            onSave={handleSave}
+            isSaving={isSaving}
+            dealStatuses={dealStatuses}
+            stages={stages}
+            leadOrigins={leadOrigins}
+            leadMemberRoles={leadMemberRoles}
+            userRoleMetadata={userRoleMetadata}
+          />
+        );
+      case 'roles':
+        return (
+          <>
+            <SettingsSectionHeader title="Papéis de Usuários" description="Configure labels, badges e permissões para cada role" />
+            <RoleMetadataManager allPermissions={allPermissions ?? []} />
+          </>
+        );
+      case 'permissions':
+        return (
+          <>
+            <SettingsSectionHeader title="Permissões Avançadas (RBAC)" description="Gerenciamento granular de permissões" />
+            <RolesManager />
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <Tabs
-      value={currentTab}
-      onValueChange={(value) => handleTabChange(value as SystemSettingsTab)}
-      className="w-full space-y-6"
+    <SettingsSidebarLayout
+      items={navItems}
+      activeId={currentSection}
+      onSelect={handleSectionChange}
+      minHeight="600px"
     >
-      <TabsList className="mb-4">
-        <TabsTrigger value="defaults">
-          <Gear className="mr-2 h-4 w-4" /> Defaults do Sistema
-        </TabsTrigger>
-        <TabsTrigger value="roles">
-          <ShieldStar className="mr-2 h-4 w-4" /> Papéis de Usuários
-        </TabsTrigger>
-        <TabsTrigger value="permissions">
-          <ShieldCheck className="mr-2 h-4 w-4" /> Permissões Avançadas (RBAC)
-        </TabsTrigger>
-      </TabsList>
-
-      {/* Defaults Tab */}
-      <TabsContent value="defaults" className="space-y-6">
-        {/* Business Defaults Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Gear className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <CardTitle>Defaults de Negócio</CardTitle>
-                <CardDescription>
-                  Configure valores padrão para criação de deals, leads e rastreamento
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Default Deal Status */}
-            <div className="space-y-2">
-              <Label htmlFor="default_deal_status_code">Status Padrão de Deal</Label>
-              <Select
-                value={formData.default_deal_status_code}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, default_deal_status_code: value })
-                }
-              >
-                <SelectTrigger id="default_deal_status_code">
-                  <SelectValue placeholder="Selecione um status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dealStatuses.map((status) => (
-                    <SelectItem key={status.id} value={status.code}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Status inicial ao criar um novo deal
-              </p>
-            </div>
-
-            {/* Default Track Stage */}
-            <div className="space-y-2">
-              <Label htmlFor="default_track_stage_code">Etapa Padrão da Pipeline</Label>
-              <Select
-                value={formData.default_track_stage_code}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, default_track_stage_code: value })
-                }
-              >
-                <SelectTrigger id="default_track_stage_code">
-                  <SelectValue placeholder="Selecione uma etapa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stages.map((stage) => (
-                    <SelectItem key={stage.id} value={stage.id}>
-                      {stage.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Etapa inicial da pipeline ao criar track
-              </p>
-            </div>
-
-            {/* Default Track Probability */}
-            <div className="space-y-2">
-              <Label htmlFor="default_track_probability">Probabilidade Padrão (%)</Label>
-              <Input
-                id="default_track_probability"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={formData.default_track_probability}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    default_track_probability: Number(e.target.value)
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Probabilidade padrão para novos tracks (0-100)
-              </p>
-            </div>
-
-            {/* Default Lead Origin */}
-            <div className="space-y-2">
-              <Label htmlFor="default_lead_origin_code">Origem Padrão de Lead</Label>
-              <Select
-                value={formData.default_lead_origin_code}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, default_lead_origin_code: value })
-                }
-              >
-                <SelectTrigger id="default_lead_origin_code">
-                  <SelectValue placeholder="Selecione uma origem" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leadOrigins.map((origin) => (
-                    <SelectItem key={origin.id} value={origin.code}>
-                      {origin.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Origem padrão ao criar um novo lead
-              </p>
-            </div>
-
-            {/* Default Lead Member Role */}
-            <div className="space-y-2">
-              <Label htmlFor="default_lead_member_role_code">Papel Padrão de Membro do Lead</Label>
-              <Select
-                value={formData.default_lead_member_role_code}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, default_lead_member_role_code: value })
-                }
-              >
-                <SelectTrigger id="default_lead_member_role_code">
-                  <SelectValue placeholder="Selecione um papel" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leadMemberRoles.map((role) => (
-                    <SelectItem key={role.id} value={role.code}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Papel padrão ao adicionar membro a um lead
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Synthetic Users Configuration Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <ShieldCheck className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <CardTitle>Configurações de Usuários Sintéticos</CardTitle>
-              <CardDescription>
-                Parâmetros para geração automática de usuários de teste
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Synthetic Default Password */}
-            <div className="space-y-2">
-              <Label htmlFor="synthetic_default_password">Senha Padrão</Label>
-              <Input
-                id="synthetic_default_password"
-                type="password"
-                value={formData.synthetic_default_password}
-                onChange={(e) =>
-                  setFormData({ ...formData, synthetic_default_password: e.target.value })
-                }
-                placeholder="Digite a senha padrão"
-              />
-              <p className="text-xs text-muted-foreground">
-                Senha padrão para todos os usuários sintéticos
-              </p>
-            </div>
-
-            {/* Synthetic Default Role */}
-            <div className="space-y-2">
-              <Label htmlFor="synthetic_default_role_code">Role Padrão</Label>
-              <Select
-                value={formData.synthetic_default_role_code}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, synthetic_default_role_code: value })
-                }
-              >
-                <SelectTrigger id="synthetic_default_role_code">
-                  <SelectValue placeholder="Selecione um role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {userRoleMetadata.map((role) => (
-                    <SelectItem key={role.id} value={role.code}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Role padrão atribuído aos usuários sintéticos
-              </p>
-            </div>
-
-            {/* Synthetic Total Users */}
-            <div className="space-y-2">
-              <Label htmlFor="synthetic_total_users">Quantidade Total de Usuários</Label>
-              <Input
-                id="synthetic_total_users"
-                type="number"
-                min="0"
-                step="1"
-                value={formData.synthetic_total_users}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    synthetic_total_users: Number(e.target.value)
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Quantidade alvo de usuários sintéticos a serem criados
-              </p>
-            </div>
-
-            {/* Synthetic Batch Size */}
-            <div className="space-y-2">
-              <Label htmlFor="synthetic_batch_size">Tamanho do Lote</Label>
-              <Input
-                id="synthetic_batch_size"
-                type="number"
-                min="1"
-                step="1"
-                value={formData.synthetic_batch_size}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    synthetic_batch_size: Number(e.target.value)
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Quantos usuários criar por lote (batch size)
-              </p>
-            </div>
-
-            {/* Synthetic Email Domain */}
-            <div className="space-y-2">
-              <Label htmlFor="synthetic_email_domain">Domínio de E-mail</Label>
-              <Input
-                id="synthetic_email_domain"
-                type="text"
-                value={formData.synthetic_email_domain}
-                onChange={(e) =>
-                  setFormData({ ...formData, synthetic_email_domain: e.target.value })
-                }
-                placeholder="@example.com"
-              />
-              <p className="text-xs text-muted-foreground">
-                Domínio de e-mail para usuários sintéticos (ex: @example.com)
-              </p>
-            </div>
-
-            {/* Synthetic Name Prefix */}
-            <div className="space-y-2">
-              <Label htmlFor="synthetic_name_prefix">Prefixo de Nome</Label>
-              <Input
-                id="synthetic_name_prefix"
-                type="text"
-                value={formData.synthetic_name_prefix}
-                onChange={(e) =>
-                  setFormData({ ...formData, synthetic_name_prefix: e.target.value })
-                }
-                placeholder="Synth User "
-              />
-              <p className="text-xs text-muted-foreground">
-                Prefixo adicionado aos nomes dos usuários sintéticos
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-        {/* Save Button for Defaults */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={isSaving} size="lg">
-            {isSaving ? 'Salvando...' : 'Salvar Configurações'}
-          </Button>
-        </div>
-      </TabsContent>
-
-      {/* Papéis de Usuários Tab */}
-      <TabsContent value="roles" className="space-y-6">
-        <RoleMetadataManager allPermissions={allPermissions ?? []} />
-      </TabsContent>
-
-      {/* Permissões Avançadas (RBAC) Tab */}
-      <TabsContent value="permissions" className="space-y-6">
-        <RolesManager />
-      </TabsContent>
-    </Tabs>
+      {renderContent()}
+    </SettingsSidebarLayout>
   );
 }
