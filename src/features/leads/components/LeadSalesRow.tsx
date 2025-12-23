@@ -668,7 +668,6 @@ export function LeadSalesRow({
             tags={leadTags}
             leadId={actualLeadId}
             leadName={safeLegalName}
-            maxVisibleTags={3}
           />
         ) : (
           <span className="text-sm text-muted-foreground">—</span>

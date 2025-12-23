@@ -90,7 +90,9 @@ export function LeadsListControls({
             size="sm"
             className={cn(
               "h-9 gap-2",
-              isFiltersOpen && "bg-primary text-primary-foreground hover:bg-primary/90"
+              isFiltersOpen 
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-950/50 dark:hover:text-red-400 dark:hover:border-red-800"
             )}
             onClick={onOpenFilterPanel}
             aria-pressed={isFiltersOpen}

@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tag } from '@/lib/types'
 import { safeString } from '@/lib/utils'
@@ -10,26 +9,14 @@ interface TagsCellCompactProps {
   tags: Tag[]
   leadId: string
   leadName: string
-  maxVisibleTags?: number
 }
 
 export function TagsCellCompact({ 
   tags, 
   leadId, 
-  leadName, 
-  maxVisibleTags = 3 
+  leadName
 }: TagsCellCompactProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const { visibleTags, hiddenCount } = useMemo(() => {
-    if (tags.length <= maxVisibleTags) {
-      return { visibleTags: tags, hiddenCount: 0 }
-    }
-    return {
-      visibleTags: tags.slice(0, maxVisibleTags),
-      hiddenCount: tags.length - maxVisibleTags
-    }
-  }, [tags, maxVisibleTags])
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -64,12 +51,11 @@ export function TagsCellCompact({
     <>
       <button
         type="button"
-        className="w-full min-w-0 flex items-center gap-1.5 rounded-md px-1 py-1 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="w-full min-w-0 flex flex-wrap items-center gap-1 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 max-h-[52px] overflow-hidden"
         onClick={handleOpenModal}
         aria-label="Gerenciar tags do lead"
       >
-        {/* Tags visíveis */}
-        {visibleTags.map(tag => {
+        {tags.map(tag => {
           const safeColor = tag.color || '#3b82f6'
           const safeName = safeString(tag.name, 'Tag')
           const initial = safeName.charAt(0).toUpperCase()
@@ -77,33 +63,21 @@ export function TagsCellCompact({
           return (
             <div
               key={tag.id}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 max-w-[80px] ring-1 ring-border bg-card"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 max-w-[72px] ring-1 ring-border bg-card"
               title={safeName}
             >
-              {/* Inicial colorida */}
               <span
-                className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[9px] font-bold text-white"
+                className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded text-[8px] font-bold text-white"
                 style={{ backgroundColor: safeColor }}
               >
                 {initial}
               </span>
-              {/* Nome truncado */}
-              <span className="truncate text-[11px] font-medium text-foreground">
+              <span className="truncate text-[10px] font-medium text-foreground">
                 {safeName}
               </span>
             </div>
           )
         })}
-
-        {/* Badge de contagem */}
-        {hiddenCount > 0 && (
-          <Badge
-            variant="secondary"
-            className="h-5 px-1.5 text-[10px] font-semibold bg-muted text-muted-foreground"
-          >
-            +{hiddenCount}
-          </Badge>
-        )}
       </button>
 
       {/* Modal Kanban */}
