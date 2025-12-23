@@ -3,22 +3,18 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { hasPermission } from '@/lib/permissions';
-import { getInitials } from '@/lib/helpers';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import {
   ChartBar,
   Kanban,
   Bell,
   Plus,
-  User as UserIcon,
-  SignOut,
   Users,
   GoogleLogo,
   MagnifyingGlass,
   Gear,
   FolderOpen,
   List,
-  Question,
   FlowArrow,
   Funnel,
   AddressBook,
@@ -35,9 +31,6 @@ import {
   ShieldStar
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -64,13 +57,14 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
-import { toast } from 'sonner';
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
 import { SLAConfigManager } from '@/components/SLAConfigManager';
 import GlobalSearch from '@/components/GlobalSearch';
 import InboxPanel from '@/features/inbox/components/InboxPanel';
 import { SLAMonitoringService } from '@/components/SLAMonitoringService';
 import { OnboardingTour } from '@/components/OnboardingTour';
+import { CreateNewDropdown } from '@/components/CreateNewDropdown';
+import { UserAvatarMenu } from '@/components/UserAvatarMenu';
 
 interface LayoutProps {
   children: ReactNode;
@@ -88,21 +82,10 @@ export function Layout({ children }: LayoutProps) {
   const [createDealOpen, setCreateDealOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [slaConfigOpen, setSlaConfigOpen] = useState(false);
-  const [compactMode, setCompactMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const currentUser = profile;
   const unreadCount = 0;
-
-  const handleSignOut = async () => {
-    const success = await authSignOut();
-    if (success) {
-      toast.success('Você saiu do sistema');
-      navigate('/login');
-    } else {
-      toast.error('Erro ao sair do sistema');
-    }
-  };
 
   if (!currentUser) return null;
 
@@ -245,14 +228,6 @@ export function Layout({ children }: LayoutProps) {
         }
       ].filter(Boolean) as MenuItem[],
     [canManageIntegrations, canManageUsers, canViewAnalytics]
-  );
-
-  const personalItems = useMemo(
-    () => [
-      { label: 'Perfil', icon: UserIcon, path: '/profile' },
-      { label: 'Central de Ajuda', icon: Question, path: '/help' }
-    ],
-    []
   );
 
   const isActive = (path: string) =>
@@ -457,15 +432,9 @@ export function Layout({ children }: LayoutProps) {
               <MagnifyingGlass />
             </Button>
 
-            <Button
-              onClick={() => setCreateDealOpen(true)}
-              size="sm"
-              className="hidden md:flex"
-              data-tour="new-deal-button"
-            >
-              <Plus className="mr-2" />
-              Novo Deal
-            </Button>
+            <div className="hidden md:block">
+              <CreateNewDropdown />
+            </div>
 
             <Button
               variant="ghost"
@@ -503,48 +472,11 @@ export function Layout({ children }: LayoutProps) {
                 <SheetHeader className="text-left">
                   <SheetTitle>Menu principal</SheetTitle>
                   <SheetDescription>
-                    Atalhos pessoais, de gestão e das seções de Configurações.
+                    Atalhos de gestão e das seções de Configurações.
                   </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex items-center gap-3 py-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {getInitials(currentUser.name || 'U')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium">
-                      {currentUser.name || 'Usuário'}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                      {currentUser.email || ''}
-                    </p>
-                  </div>
-                </div>
-
                   <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">
-                        Pessoal
-                      </p>
-                      {personalItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Button
-                            key={item.path}
-                            variant={isActive(item.path) ? 'secondary' : 'ghost'}
-                            className="w-full justify-start"
-                            onClick={() => handleNavigate(item.path)}
-                            aria-label={`Ir para ${item.label}`}
-                          >
-                            <Icon className="mr-2" />
-                            {item.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-
                     <div className="space-y-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase">
                         Gestão
@@ -629,18 +561,6 @@ export function Layout({ children }: LayoutProps) {
                         })}
                       </div>
                     )}
-
-                    <div className="pt-2 border-t border-border">
-                      <Button
-                        variant="destructive"
-                        className="w-full justify-start"
-                        onClick={handleSignOut}
-                        aria-label="Sair da conta"
-                      >
-                        <SignOut className="mr-2" />
-                        Sair
-                      </Button>
-                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -665,41 +585,6 @@ export function Layout({ children }: LayoutProps) {
                     </TooltipContent>
                   </Tooltip>
                   <DropdownMenuContent align="end" className="w-72">
-                    <DropdownMenuLabel>
-                      <div className="flex items-center gap-3 py-1">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                            {getInitials(currentUser.name || 'U')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <p className="text-sm font-medium">
-                            {currentUser.name || 'Usuário'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                            {currentUser.email || ''}
-                          </p>
-                        </div>
-                      </div>
-                    </DropdownMenuLabel>
-
-                    <DropdownMenuSeparator />
-
-                    {personalItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <DropdownMenuItem
-                          key={item.path}
-                          className={isActive(item.path) ? 'bg-muted text-primary' : ''}
-                          onClick={() => handleNavigate(item.path)}
-                        >
-                          <Icon className="mr-2" />
-                          {item.label}
-                        </DropdownMenuItem>
-                      );
-                    })}
-  
-                    <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
                       Gestão
                     </DropdownMenuLabel>
@@ -735,19 +620,11 @@ export function Layout({ children }: LayoutProps) {
                         {renderSettingsDropdown()}
                       </>
                     )}
-  
-                    <DropdownMenuSeparator />
-  
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={handleSignOut}
-                    >
-                      <SignOut className="mr-2" />
-                      Sair
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+
+              <UserAvatarMenu />
             </div>
           </div>
         </header>
