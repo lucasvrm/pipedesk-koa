@@ -230,7 +230,7 @@ export default function LeadDetailPage() {
     }
     
     return mockActions
-  }, [lead?.nextAction])
+  }, [lead?.nextAction?.label, lead?.nextAction?.dueAt])
 
   const handleCreateComment = useCallback(async (data: CommentFormData) => {
     if (!profile) return

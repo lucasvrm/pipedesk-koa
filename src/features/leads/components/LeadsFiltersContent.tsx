@@ -244,7 +244,7 @@ export function LeadsFiltersContent({
                     htmlFor={inputId}
                     className={cn(
                       'flex items-center gap-2 w-full cursor-pointer py-1.5 px-2 rounded transition-colors group',
-                      isSelected ? 'bg-accent' : 'hover:bg-muted'
+                      'hover:bg-muted'
                     )}
                     data-testid={`ordering-option-${option.value}`}
                   >
@@ -261,11 +261,11 @@ export function LeadsFiltersContent({
                     <div 
                       className={cn(
                         'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border group-focus-within:ring-2 group-focus-within:ring-ring',
-                        isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'
+                        isSelected ? 'border-destructive bg-destructive' : 'border-muted-foreground'
                       )}
                       aria-hidden="true"
                     >
-                      {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
                     </div>
                     <span className="text-sm">{option.label}</span>
                   </label>
