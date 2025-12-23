@@ -27,9 +27,9 @@ export function useCreateLeadTaskTemplate() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       toast.success('Template criado com sucesso')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error('Erro ao criar template', {
-        description: error?.response?.data?.detail || error.message,
+        description: error.message,
       })
     },
   })
@@ -45,9 +45,9 @@ export function useUpdateLeadTaskTemplate() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       toast.success('Template atualizado com sucesso')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error('Erro ao atualizar template', {
-        description: error?.response?.data?.detail || error.message,
+        description: error.message,
       })
     },
   })
@@ -62,9 +62,9 @@ export function useDeleteLeadTaskTemplate() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       toast.success('Template desativado com sucesso')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error('Erro ao desativar template', {
-        description: error?.response?.data?.detail || error.message,
+        description: error.message,
       })
     },
   })
