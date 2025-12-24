@@ -2,41 +2,418 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { UnifiedLayout } from '@/components/UnifiedLayout'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import {
   User,
   Mail,
-  ShieldCheck,
   Pencil,
   Check,
+  X,
   Upload,
   FileText,
   Landmark,
   IdCard,
   CreditCard,
   MapPin,
-  Phone
+  Phone,
+  Briefcase,
+  Building2,
+  Calendar,
+  Linkedin,
+  Copy,
+  Eye,
+  Clock,
+  Key,
+  Shield,
+  Laptop,
+  Smartphone,
+  Monitor,
+  LogOut,
+  Activity,
+  Target,
+  Users,
+  CheckCircle,
+  DollarSign,
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  ChevronDown,
+  Camera,
+  Trash,
+  AlertTriangle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
-import { ProfileHeader, ProfileFormData } from '@/components/ProfileHeader'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { getInitials } from '@/lib/helpers'
+import { cn } from '@/lib/utils'
 
+// ============================================================================
+// TYPES
+// ============================================================================
+interface ProfileFormData {
+  name: string
+  email: string
+  secondaryEmail: string
+  cellphone: string
+  rg: string
+  cpf: string
+  address: string
+  pixKeyPF: string
+  pixKeyPJ: string
+  avatarUrl: string
+  title: string
+  department: string
+  birthDate: string
+  linkedin: string
+  bio: string
+  docIdentityUrl: string
+  docSocialContractUrl: string
+  docServiceAgreementUrl: string
+}
+
+// ============================================================================
+// EDITABLE FIELD COMPONENT
+// ============================================================================
+interface EditableFieldProps {
+  label: string
+  value: string
+  field: string
+  onSave: (field: string, value: string) => Promise<void>
+  type?: string
+  placeholder?: string
+  readonly?: boolean
+  tooltip?: string
+  isSaving?: boolean
+  icon?: React.ReactNode
+  colSpan?: boolean
+}
+
+function EditableField({
+  label,
+  value,
+  field,
+  onSave,
+  type = 'text',
+  placeholder,
+  readonly = false,
+  tooltip,
+  isSaving = false,
+  icon,
+  colSpan = false,
+}: EditableFieldProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [localValue, setLocalValue] = useState(value)
+
+  useEffect(() => {
+    setLocalValue(value)
+  }, [value])
+
+  const handleSave = async () => {
+    if (localValue !== value) {
+      await onSave(field, localValue)
+    }
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setLocalValue(value)
+    setIsEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSave()
+    if (e.key === 'Escape') handleCancel()
+  }
+
+  return (
+    <div className={cn("group", colSpan && "md:col-span-2")}>
+      <div className="flex items-center gap-2 mb-1">
+        <Label className="text-sm font-medium text-muted-foreground">{label}</Label>
+        {tooltip && (
+          <span className="text-muted-foreground cursor-help text-xs" title={tooltip}>
+            ⓘ
+          </span>
+        )}
+        {readonly && (
+          <Badge variant="outline" className="text-[10px]">
+            Somente leitura
+          </Badge>
+        )}
+      </div>
+
+      {isEditing && !readonly ? (
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            {icon && (
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                {icon}
+              </span>
+            )}
+            <Input
+              type={type}
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              className={cn("text-sm", icon && "pl-10")}
+              autoFocus
+              disabled={isSaving}
+            />
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={handleCancel}
+            disabled={isSaving}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div
+          onClick={() => !readonly && setIsEditing(true)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent text-sm transition-all min-h-[40px]",
+            !readonly && "cursor-pointer hover:border-border hover:bg-accent/50 group-hover:border-border/50"
+          )}
+        >
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
+            {value || placeholder || 'Não informado'}
+          </span>
+          {!readonly && (
+            <Pencil className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-50 text-muted-foreground transition-opacity" />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// COLLAPSIBLE SECTION COMPONENT
+// ============================================================================
+interface CollapsibleSectionProps {
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+  defaultOpen?: boolean
+}
+
+function CollapsibleSection({ title, icon, children, defaultOpen = true }: CollapsibleSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <Card>
+      <CardHeader
+        className="pb-3 cursor-pointer hover:bg-accent/50 transition-colors rounded-t-lg"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            {icon}
+            {title}
+          </CardTitle>
+          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
+        </div>
+      </CardHeader>
+      {isOpen && <CardContent>{children}</CardContent>}
+    </Card>
+  )
+}
+
+// ============================================================================
+// STAT CARD COMPONENT
+// ============================================================================
+interface StatCardProps {
+  icon: React.ReactNode
+  label: string
+  valueMonth: string | number
+  valueTotal: string | number
+  trend?: number
+  prefix?: string
+  suffix?: string
+}
+
+function StatCard({ icon, label, valueMonth, valueTotal, trend, prefix = '', suffix = '' }: StatCardProps) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            {icon}
+          </div>
+          {trend !== undefined && (
+            <div className={cn("flex items-center gap-1 text-xs font-medium", trend >= 0 ? 'text-green-600' : 'text-red-600')}>
+              {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {Math.abs(trend)}%
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-1">{label}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-2xl font-bold text-foreground">
+            {prefix}{typeof valueMonth === 'number' ? valueMonth.toLocaleString('pt-BR') : valueMonth}{suffix}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            / {prefix}{typeof valueTotal === 'number' ? valueTotal.toLocaleString('pt-BR') : valueTotal}{suffix} total
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============================================================================
+// DOCUMENT CARD COMPONENT
+// ============================================================================
+interface DocumentCardProps {
+  title: string
+  icon: React.ReactNode
+  documentUrl: string
+  onUpload: (file: File) => void
+  onDownload: () => void
+  isSaving: boolean
+}
+
+function DocumentCard({ title, icon, documentUrl, onUpload, onDownload, isSaving }: DocumentCardProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const hasDocument = !!documentUrl
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onUpload(file)
+  }
+
+  return (
+    <Card className="border-2 border-dashed hover:border-primary/50 transition-colors">
+      <CardContent className="p-4 text-center space-y-3">
+        <div className="flex items-start justify-between">
+          <div className="p-2 bg-muted rounded-lg">{icon}</div>
+          {hasDocument ? (
+            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              <Check className="h-3 w-3 mr-1" /> Enviado
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              <Clock className="h-3 w-3 mr-1" /> Pendente
+            </Badge>
+          )}
+        </div>
+
+        <div>
+          <h4 className="font-medium text-sm text-foreground">{title}</h4>
+          {hasDocument && <p className="text-xs text-muted-foreground mt-1">Documento enviado</p>}
+        </div>
+
+        <div className="flex gap-2">
+          {hasDocument && (
+            <Button variant="outline" size="sm" className="flex-1" onClick={onDownload}>
+              <Eye className="h-3 w-3 mr-1" /> Ver
+            </Button>
+          )}
+          <Button
+            variant={hasDocument ? "outline" : "default"}
+            size="sm"
+            className="flex-1"
+            onClick={() => inputRef.current?.click()}
+            disabled={isSaving}
+          >
+            <Upload className="h-3 w-3 mr-1" />
+            {hasDocument ? 'Substituir' : 'Upload'}
+          </Button>
+        </div>
+
+        <input
+          type="file"
+          ref={inputRef}
+          className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={handleFileChange}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============================================================================
+// MOCK DATA FOR STATS AND ACTIVITY
+// ============================================================================
+const mockStats = {
+  leadsCreatedMonth: 24,
+  leadsCreatedTotal: 342,
+  leadsCreatedTrend: 12,
+  leadsQualifiedMonth: 18,
+  leadsQualifiedTotal: 256,
+  leadsQualifiedTrend: 8,
+  conversionRateMonth: 75,
+  conversionRateTotal: 68,
+  conversionRateTrend: 5,
+  topLeadSourceMonth: 'Indicação',
+  topLeadSourceTotal: 'LinkedIn',
+  topDealSourceMonth: 'Indicação',
+  topDealSourceTotal: 'Indicação',
+  tasksCreatedMonth: 45,
+  tasksCreatedTotal: 512,
+  tasksCreatedTrend: -3,
+  tasksCompletedMonth: 42,
+  tasksCompletedTotal: 489,
+  tasksCompletedTrend: 10,
+  pipelineValue: 2450000,
+  pipelineTrend: 15,
+}
+
+const mockSessions = [
+  { id: '1', device: 'Chrome - Windows', location: 'São Paulo, BR', lastActive: new Date().toISOString(), current: true },
+  { id: '2', device: 'Safari - iPhone', location: 'São Paulo, BR', lastActive: new Date(Date.now() - 86400000).toISOString(), current: false },
+]
+
+const mockLoginHistory = [
+  { date: new Date().toISOString(), device: 'Chrome - Windows', location: 'São Paulo, BR', success: true },
+  { date: new Date(Date.now() - 86400000).toISOString(), device: 'Safari - iPhone', location: 'São Paulo, BR', success: true },
+  { date: new Date(Date.now() - 86400000 * 2).toISOString(), device: 'Chrome - Windows', location: 'São Paulo, BR', success: false },
+]
+
+const mockRecentActivity = [
+  { id: 1, action: 'Fechou deal', target: 'CRI Residencial Alpha', time: '2 horas atrás', icon: '🎉' },
+  { id: 2, action: 'Converteu lead', target: 'Empresa XYZ Ltda', time: '5 horas atrás', icon: '✅' },
+  { id: 3, action: 'Adicionou nota', target: 'Deal #1234', time: '1 dia atrás', icon: '📝' },
+  { id: 4, action: 'Completou tarefa', target: 'Ligar para cliente', time: '1 dia atrás', icon: '☑️' },
+  { id: 5, action: 'Atualizou status', target: 'Lead Maria Silva', time: '2 dias atrás', icon: '🔄' },
+]
+
+// ============================================================================
+// MAIN PROFILE COMPONENT
+// ============================================================================
 export default function Profile() {
   const { getUserRoleByCode } = useSystemMetadata()
   const { profile, resetPassword } = useAuth()
   
-  const [isEditing, setIsEditing] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [lastLogin, setLastLogin] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState(false)
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [sessions, setSessions] = useState(mockSessions)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -61,6 +438,7 @@ export default function Profile() {
     docServiceAgreementUrl: ''
   })
 
+  // Load profile data
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -104,6 +482,7 @@ export default function Profile() {
     }
   }, [profile])
 
+  // Handlers
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0 || !profile) return
     const file = event.target.files[0]
@@ -112,10 +491,7 @@ export default function Profile() {
 
     try {
       setIsSaving(true)
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file)
-
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
       if (uploadError) throw uploadError
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
@@ -147,11 +523,51 @@ export default function Profile() {
         .eq('id', profile.id)
 
       if (error) throw error
-
       setFormData(prev => ({ ...prev, avatarUrl: '' }))
       toast.success('Foto removida')
     } catch (error) {
       toast.error('Erro ao remover foto')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveField = async (field: string, value: string) => {
+    if (!profile) return
+
+    const fieldToColumn: Record<string, string> = {
+      name: 'name',
+      secondaryEmail: 'secondary_email',
+      cellphone: 'cellphone',
+      rg: 'rg',
+      cpf: 'cpf',
+      address: 'address',
+      pixKeyPF: 'pix_key_pf',
+      pixKeyPJ: 'pix_key_pj',
+      title: 'title',
+      department: 'department',
+      birthDate: 'birth_date',
+      linkedin: 'linkedin',
+      bio: 'bio',
+    }
+
+    const column = fieldToColumn[field]
+    if (!column) return
+
+    try {
+      setIsSaving(true)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [column]: value })
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      setFormData(prev => ({ ...prev, [field]: value }))
+      toast.success('Campo atualizado!')
+    } catch (err) {
+      toast.error('Erro ao atualizar campo')
+      console.error(err)
     } finally {
       setIsSaving(false)
     }
@@ -166,10 +582,7 @@ export default function Profile() {
       setIsSaving(true)
       toast.info('Enviando documento...')
       
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, file)
-
+      const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, file)
       if (uploadError) throw uploadError
 
       const { error: updateError } = await supabase
@@ -189,53 +602,9 @@ export default function Profile() {
     }
   }
 
-  const handleSave = async () => {
-    setError(null)
-    if (!formData.name || !formData.email) {
-      setError('Nome e email são obrigatórios')
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          name: formData.name,
-          secondary_email: formData.secondaryEmail,
-          cellphone: formData.cellphone,
-          rg: formData.rg,
-          cpf: formData.cpf,
-          address: formData.address,
-          pix_key_pf: formData.pixKeyPF,
-          pix_key_pj: formData.pixKeyPJ,
-          title: formData.title,
-          department: formData.department,
-          birth_date: formData.birthDate,
-          linkedin: formData.linkedin,
-          bio: formData.bio
-        })
-        .eq('id', profile?.id)
-
-      if (updateError) throw updateError
-
-      toast.success('Perfil atualizado com sucesso!')
-      setIsEditing(false)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar perfil'
-      setError(message)
-      toast.error(message)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   const downloadDocument = async (path: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(path, 60)
-
+      const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 60)
       if (error) throw error
       window.open(data.signedUrl, '_blank')
     } catch (e) {
@@ -243,260 +612,543 @@ export default function Profile() {
     }
   }
 
+  const handleCopyId = async () => {
+    if (profile?.id) {
+      await navigator.clipboard.writeText(profile.id)
+      setCopiedId(true)
+      toast.success('ID copiado!')
+      setTimeout(() => setCopiedId(false), 2000)
+    }
+  }
+
+  const handleRevokeSession = (sessionId: string) => {
+    setSessions(sessions.filter(s => s.id !== sessionId))
+    toast.success('Sessão encerrada')
+  }
+
   if (!profile) return null
 
   const roleInfo = getUserRoleByCode(profile.role)
-  const createdAtDate = createdAt ? new Date(createdAt) : null
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return 'N/A'
+    return format(new Date(dateStr), "dd 'de' MMM 'de' yyyy", { locale: ptBR })
+  }
+
+  const tabs = [
+    { id: 'overview', label: 'Visão Geral', icon: User },
+    { id: 'documents', label: 'Documentos', icon: FileText },
+    { id: 'financial', label: 'Financeiro', icon: Landmark },
+    { id: 'security', label: 'Segurança', icon: Shield },
+    { id: 'activity', label: 'Atividade', icon: Activity },
+  ]
+
+  const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
 
   return (
-    <UnifiedLayout
-      activeSection="profile"
-      activeItem="personal"
-      showBreadcrumbs={false}
-    >
+    <UnifiedLayout activeSection="profile" activeItem="personal" showBreadcrumbs={false}>
       <div className="space-y-6">
-        {/* Header com Banner e Avatar */}
-        <ProfileHeader
-          formData={formData}
-          profile={profile}
-          roleInfo={roleInfo}
-          fileInputRef={fileInputRef}
-          onAvatarUpload={handleAvatarUpload}
-          onRemoveAvatar={handleRemoveAvatar}
-          isSaving={isSaving}
-        />
+        {/* ================================================================ */}
+        {/* HEADER COM BANNER E AVATAR */}
+        {/* ================================================================ */}
+        <div className="relative">
+          <div className="h-32 bg-gradient-to-r from-primary via-primary/90 to-primary/70 rounded-xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/10" />
+          </div>
 
-        {/* Conteúdo Principal */}
-        <Card className="border-t-4 border-t-primary">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Informações do Perfil</CardTitle>
-                <CardDescription>Gerencie suas informações pessoais e documentos</CardDescription>
-              </div>
-              {!isEditing && (
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Editar Dados
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
-                <TabsTrigger value="financial">Dados Bancários</TabsTrigger>
-                <TabsTrigger value="documents">Documentos</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="personal" className="space-y-6 animate-in fade-in-50">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="name" className="pl-10" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} disabled={!isEditing} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Principal (Login)</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="email" className="pl-10" value={formData.email} disabled />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryEmail">Email Secundário</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="secondaryEmail" className="pl-10" value={formData.secondaryEmail} onChange={(e) => setFormData({...formData, secondaryEmail: e.target.value})} disabled={!isEditing} placeholder="email@exemplo.com" />
-                    </div>
-                  </div>
-
-                  {/* CAMPO DE CELULAR ADICIONADO AQUI */}
-                  <div className="space-y-2">
-                    <Label htmlFor="cellphone">Celular / WhatsApp</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="cellphone" className="pl-10" value={formData.cellphone} onChange={(e) => setFormData({...formData, cellphone: e.target.value})} disabled={!isEditing} placeholder="(00) 00000-0000" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
-                    <div className="relative">
-                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="cpf" className="pl-10" value={formData.cpf} onChange={(e) => setFormData({...formData, cpf: e.target.value})} disabled={!isEditing} placeholder="000.000.000-00" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="rg">RG</Label>
-                    <div className="relative">
-                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="rg" className="pl-10" value={formData.rg} onChange={(e) => setFormData({...formData, rg: e.target.value})} disabled={!isEditing} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="address">Endereço Completo</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="address" className="pl-10" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} disabled={!isEditing} placeholder="Rua, Número, Bairro, Cidade - UF" />
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="financial" className="space-y-6 animate-in fade-in-50">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="pixPF">Chave PIX (Pessoa Física)</Label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="pixPF" className="pl-10" value={formData.pixKeyPF} onChange={(e) => setFormData({...formData, pixKeyPF: e.target.value})} disabled={!isEditing} placeholder="CPF, Email ou Telefone" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pixPJ">Chave PIX (Pessoa Jurídica)</Label>
-                    <div className="relative">
-                      <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input id="pixPJ" className="pl-10" value={formData.pixKeyPJ} onChange={(e) => setFormData({...formData, pixKeyPJ: e.target.value})} disabled={!isEditing} placeholder="CNPJ, Email ou Aleatória" />
-                    </div>
-                  </div>
+          <div className="px-6 -mt-12 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end gap-4">
+              <div className="relative">
+                <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
+                  <AvatarImage src={formData.avatarUrl} className="object-cover" />
+                  <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                    {getInitials(profile.name || 'U')}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="absolute bottom-0 right-0 flex gap-1">
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="h-8 w-8 rounded-full shadow-md"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSaving}
+                  >
+                    <Camera className="h-3 w-3" />
+                  </Button>
+                  {formData.avatarUrl && (
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="h-8 w-8 rounded-full shadow-md"
+                      onClick={handleRemoveAvatar}
+                      disabled={isSaving}
+                    >
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
                 
-                <div className="bg-muted/30 p-4 rounded-lg flex gap-3 text-sm text-muted-foreground">
-                  <ShieldCheck className="h-6 w-6 shrink-0" />
-                  <p>Esses dados são utilizados apenas para fins de pagamentos e reembolsos autorizados. Suas informações bancárias são armazenadas de forma segura.</p>
+                <div className="absolute bottom-1 left-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+
+              <div className="flex-1 pb-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h1 className="text-xl font-bold text-foreground">{formData.name || 'Usuário'}</h1>
+                  <Badge variant="default">{roleInfo?.label || profile.role}</Badge>
                 </div>
-              </TabsContent>
+                {(formData.title || formData.department) && (
+                  <p className="text-sm text-muted-foreground">
+                    {formData.title}{formData.title && formData.department ? ' • ' : ''}{formData.department}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">{profile.email}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-              <TabsContent value="documents" className="space-y-6 animate-in fade-in-50">
-                <div className="grid gap-6 md:grid-cols-3">
-                  <Card className="border-dashed border-2">
-                    <CardHeader className="p-4 text-center">
-                      <IdCard className="mx-auto text-muted-foreground mb-2 h-8 w-8" />
-                      <CardTitle className="text-sm">RG / CPF / CNH</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 text-center space-y-3">
-                      {formData.docIdentityUrl ? (
-                        <div className="text-xs">
-                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Enviado</p>
-                          <Button variant="outline" size="sm" onClick={() => downloadDocument(formData.docIdentityUrl)}>Visualizar</Button>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Pendente envio</p>
-                      )}
-                      
-                      {isEditing && (
-                        <div className="mt-2">
-                          <input 
-                            type="file" 
-                            id="upload-identity" 
-                            className="hidden" 
-                            onChange={(e) => e.target.files?.[0] && handleDocumentUpload(e.target.files[0], 'doc_identity_url', 'docIdentityUrl')}
-                          />
-                          <Button size="sm" variant="secondary" className="w-full" onClick={() => document.getElementById('upload-identity')?.click()}>
-                            <Upload className="mr-2 h-3.5 w-3.5" /> Upload
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-dashed border-2">
-                    <CardHeader className="p-4 text-center">
-                      <FileText className="mx-auto text-muted-foreground mb-2 h-8 w-8" />
-                      <CardTitle className="text-sm">Contrato Social (PJ)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 text-center space-y-3">
-                      {formData.docSocialContractUrl ? (
-                        <div className="text-xs">
-                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Enviado</p>
-                          <Button variant="outline" size="sm" onClick={() => downloadDocument(formData.docSocialContractUrl)}>Visualizar</Button>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Pendente envio</p>
-                      )}
-                      
-                      {isEditing && (
-                        <div className="mt-2">
-                          <input 
-                            type="file" 
-                            id="upload-social" 
-                            className="hidden" 
-                            onChange={(e) => e.target.files?.[0] && handleDocumentUpload(e.target.files[0], 'doc_social_contract_url', 'docSocialContractUrl')}
-                          />
-                          <Button size="sm" variant="secondary" className="w-full" onClick={() => document.getElementById('upload-social')?.click()}>
-                            <Upload className="mr-2 h-3.5 w-3.5" /> Upload
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-dashed border-2">
-                    <CardHeader className="p-4 text-center">
-                      <FileText className="mx-auto text-muted-foreground mb-2 h-8 w-8" />
-                      <CardTitle className="text-sm">Contrato de Serviço</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 text-center space-y-3">
-                      {formData.docServiceAgreementUrl ? (
-                        <div className="text-xs">
-                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Enviado</p>
-                          <Button variant="outline" size="sm" onClick={() => downloadDocument(formData.docServiceAgreementUrl)}>Visualizar</Button>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Pendente envio</p>
-                      )}
-                      
-                      {isEditing && (
-                        <div className="mt-2">
-                          <input 
-                            type="file" 
-                            id="upload-service" 
-                            className="hidden" 
-                            onChange={(e) => e.target.files?.[0] && handleDocumentUpload(e.target.files[0], 'doc_service_agreement_url', 'docServiceAgreementUrl')}
-                          />
-                          <Button size="sm" variant="secondary" className="w-full" onClick={() => document.getElementById('upload-service')?.click()}>
-                            <Upload className="mr-2 h-3.5 w-3.5" /> Upload
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+        {/* ================================================================ */}
+        {/* CONTEÚDO PRINCIPAL */}
+        {/* ================================================================ */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* SIDEBAR INFO RÁPIDA */}
+          <div className="lg:w-56 shrink-0 space-y-3">
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">ID do Usuário</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground truncate">
+                      {profile.id.slice(0, 8)}...{profile.id.slice(-4)}
+                    </code>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCopyId}>
+                      {copiedId ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                    </Button>
+                  </div>
                 </div>
-              </TabsContent>
-            </Tabs>
 
-            {isEditing && (
-              <div className="flex justify-end gap-3 mt-8 border-t pt-4">
-                <Button variant="outline" onClick={() => setIsEditing(false)} disabled={isSaving}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Membro desde</p>
+                  <p className="text-sm font-medium text-foreground">{formatDate(createdAt)}</p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Último acesso</p>
+                  <p className="text-sm font-medium text-foreground">{lastLogin ? formatDate(lastLogin) : 'Agora'}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {formData.bio && (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Sobre</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{formData.bio}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {formData.linkedin && (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Links</p>
+                  <a
+                    href={formData.linkedin.startsWith('http') ? formData.linkedin : `https://${formData.linkedin}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-primary hover:underline"
+                  >
+                    <Linkedin className="h-3 w-3" /> {formData.linkedin}
+                  </a>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* CONTEÚDO CENTRAL COM TABS */}
+          <div className="flex-1 space-y-4">
+            {/* Tab List */}
+            <div className="bg-card rounded-xl border p-1 flex gap-1 overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap",
+                      activeTab === tab.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* ============================================================ */}
+            {/* TAB: VISÃO GERAL */}
+            {/* ============================================================ */}
+            {activeTab === 'overview' && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-4 w-4" /> Informações Pessoais
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid md:grid-cols-2 gap-x-6 gap-y-3">
+                    <EditableField label="Nome Completo" value={formData.name} field="name" onSave={handleSaveField} icon={<User className="h-4 w-4" />} isSaving={isSaving} />
+                    <EditableField label="Email Principal" value={formData.email} field="email" onSave={handleSaveField} icon={<Mail className="h-4 w-4" />} readonly tooltip="Email de login. Contate o suporte para alterar." />
+                    <EditableField label="Email Secundário" value={formData.secondaryEmail} field="secondaryEmail" onSave={handleSaveField} icon={<Mail className="h-4 w-4" />} placeholder="email@exemplo.com" isSaving={isSaving} />
+                    <EditableField label="Celular / WhatsApp" value={formData.cellphone} field="cellphone" onSave={handleSaveField} icon={<Phone className="h-4 w-4" />} placeholder="(00) 00000-0000" isSaving={isSaving} />
+                    <EditableField label="Cargo / Título" value={formData.title} field="title" onSave={handleSaveField} icon={<Briefcase className="h-4 w-4" />} placeholder="Ex: Gerente Comercial" isSaving={isSaving} />
+                    <EditableField label="Departamento" value={formData.department} field="department" onSave={handleSaveField} icon={<Building2 className="h-4 w-4" />} placeholder="Ex: Vendas" isSaving={isSaving} />
+                    <EditableField label="Data de Nascimento" value={formData.birthDate} field="birthDate" onSave={handleSaveField} icon={<Calendar className="h-4 w-4" />} type="date" isSaving={isSaving} />
+                    <EditableField label="LinkedIn" value={formData.linkedin} field="linkedin" onSave={handleSaveField} icon={<Linkedin className="h-4 w-4" />} placeholder="linkedin.com/in/seu-perfil" isSaving={isSaving} />
+                    <EditableField label="Bio / Sobre" value={formData.bio} field="bio" onSave={handleSaveField} icon={<FileText className="h-4 w-4" />} placeholder="Conte um pouco sobre você..." isSaving={isSaving} colSpan />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" /> Documentos de Identificação
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid md:grid-cols-2 gap-x-6 gap-y-3">
+                    <EditableField label="CPF" value={formData.cpf} field="cpf" onSave={handleSaveField} placeholder="000.000.000-00" isSaving={isSaving} />
+                    <EditableField label="RG" value={formData.rg} field="rg" onSave={handleSaveField} placeholder="00.000.000-0" isSaving={isSaving} />
+                    <EditableField label="Endereço Completo" value={formData.address} field="address" onSave={handleSaveField} icon={<MapPin className="h-4 w-4" />} placeholder="Rua, Número, Bairro, Cidade - UF, CEP" isSaving={isSaving} colSpan />
+                  </CardContent>
+                </Card>
               </div>
             )}
 
-            <div className="mt-8 text-xs text-muted-foreground text-center border-t pt-4">
-              Membro desde {createdAtDate ? format(createdAtDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : '...'} • 
-              <button onClick={() => resetPassword(profile.email)} className="ml-1 hover:underline text-primary">Redefinir Senha</button>
-            </div>
-          </CardContent>
-        </Card>
+            {/* ============================================================ */}
+            {/* TAB: DOCUMENTOS */}
+            {/* ============================================================ */}
+            {activeTab === 'documents' && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-4 w-4" /> Documentos Enviados
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <DocumentCard
+                        title="RG / CPF / CNH"
+                        icon={<IdCard className="h-5 w-5 text-muted-foreground" />}
+                        documentUrl={formData.docIdentityUrl}
+                        onUpload={(file) => handleDocumentUpload(file, 'doc_identity_url', 'docIdentityUrl')}
+                        onDownload={() => downloadDocument(formData.docIdentityUrl)}
+                        isSaving={isSaving}
+                      />
+                      <DocumentCard
+                        title="Contrato Social (PJ)"
+                        icon={<FileText className="h-5 w-5 text-muted-foreground" />}
+                        documentUrl={formData.docSocialContractUrl}
+                        onUpload={(file) => handleDocumentUpload(file, 'doc_social_contract_url', 'docSocialContractUrl')}
+                        onDownload={() => downloadDocument(formData.docSocialContractUrl)}
+                        isSaving={isSaving}
+                      />
+                      <DocumentCard
+                        title="Contrato de Serviço"
+                        icon={<FileText className="h-5 w-5 text-muted-foreground" />}
+                        documentUrl={formData.docServiceAgreementUrl}
+                        onUpload={(file) => handleDocumentUpload(file, 'doc_service_agreement_url', 'docServiceAgreementUrl')}
+                        onDownload={() => downloadDocument(formData.docServiceAgreementUrl)}
+                        isSaving={isSaving}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {pendingDocsCount > 0 && (
+                  <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-800 dark:text-amber-200 text-sm">
+                          {pendingDocsCount} documento{pendingDocsCount > 1 ? 's' : ''} pendente{pendingDocsCount > 1 ? 's' : ''}
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                          Complete seu cadastro para ter acesso a todas as funcionalidades.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* TAB: FINANCEIRO */}
+            {/* ============================================================ */}
+            {activeTab === 'financial' && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Landmark className="h-4 w-4" /> Dados Bancários
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
+                      <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Seus dados bancários são criptografados e utilizados apenas para pagamentos e reembolsos autorizados.
+                      </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-x-6 gap-y-3">
+                      <EditableField label="Chave PIX (Pessoa Física)" value={formData.pixKeyPF} field="pixKeyPF" onSave={handleSaveField} icon={<CreditCard className="h-4 w-4" />} placeholder="CPF, Email ou Telefone" isSaving={isSaving} />
+                      <EditableField label="Chave PIX (Pessoa Jurídica)" value={formData.pixKeyPJ} field="pixKeyPJ" onSave={handleSaveField} icon={<Building2 className="h-4 w-4" />} placeholder="CNPJ, Email ou Aleatória" isSaving={isSaving} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* TAB: SEGURANÇA */}
+            {/* ============================================================ */}
+            {activeTab === 'security' && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Key className="h-4 w-4" /> Senha
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-foreground font-medium">Alterar senha</p>
+                        <p className="text-xs text-muted-foreground">Recomendamos trocar sua senha periodicamente</p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => resetPassword(profile.email)}>
+                        Redefinir Senha
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Shield className="h-4 w-4" /> Autenticação de Dois Fatores (2FA)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm text-foreground font-medium">Status</p>
+                          <Badge variant={twoFactorEnabled ? 'default' : 'secondary'} className={
+                            twoFactorEnabled 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          }>
+                            {twoFactorEnabled ? 'Ativado' : 'Desativado'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {twoFactorEnabled ? 'Sua conta está protegida.' : 'Adicione segurança extra.'}
+                        </p>
+                      </div>
+                      <Button
+                        variant={twoFactorEnabled ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
+                        className={twoFactorEnabled ? 'text-destructive hover:bg-destructive/10' : ''}
+                      >
+                        {twoFactorEnabled ? 'Desativar' : 'Ativar 2FA'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Laptop className="h-4 w-4" /> Sessões Ativas
+                      </CardTitle>
+                      {sessions.length > 1 && (
+                        <Button variant="ghost" size="sm" className="text-xs text-destructive">
+                          Encerrar todas
+                        </Button>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg",
+                          session.current
+                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                            : 'bg-muted/50'
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-background rounded-lg">
+                            {session.device.includes('iPhone') ? <Smartphone className="h-4 w-4" /> : <Laptop className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                              {session.device}
+                              {session.current && (
+                                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px]">
+                                  Sessão atual
+                                </Badge>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-2">
+                              <MapPin className="h-3 w-3" />
+                              {session.location}
+                            </p>
+                          </div>
+                        </div>
+                        {!session.current && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleRevokeSession(session.id)}
+                          >
+                            <LogOut className="h-3 w-3 mr-1" />
+                            Encerrar
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <CollapsibleSection title="Histórico de Login" icon={<Clock className="h-4 w-4" />} defaultOpen={false}>
+                  <div className="space-y-1">
+                    {mockLoginHistory.map((login, idx) => (
+                      <div key={idx} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-2 h-2 rounded-full", login.success ? 'bg-green-500' : 'bg-red-500')} />
+                          <div>
+                            <p className="text-sm text-foreground">{login.device}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {login.location}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-foreground">{format(new Date(login.date), "dd/MM/yyyy 'às' HH:mm")}</p>
+                          <p className={cn("text-xs", login.success ? 'text-green-600' : 'text-red-600')}>
+                            {login.success ? '✓ Sucesso' : '✕ Falhou'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleSection>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* TAB: ATIVIDADE */}
+            {/* ============================================================ */}
+            {activeTab === 'activity' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <StatCard icon={<Users className="h-4 w-4 text-primary" />} label="Leads Criados" valueMonth={mockStats.leadsCreatedMonth} valueTotal={mockStats.leadsCreatedTotal} trend={mockStats.leadsCreatedTrend} />
+                  <StatCard icon={<Target className="h-4 w-4 text-primary" />} label="Leads Qualificados" valueMonth={mockStats.leadsQualifiedMonth} valueTotal={mockStats.leadsQualifiedTotal} trend={mockStats.leadsQualifiedTrend} />
+                  <StatCard icon={<Zap className="h-4 w-4 text-primary" />} label="Taxa de Conversão" valueMonth={mockStats.conversionRateMonth} valueTotal={mockStats.conversionRateTotal} trend={mockStats.conversionRateTrend} suffix="%" />
+                  <StatCard icon={<DollarSign className="h-4 w-4 text-primary" />} label="Pipeline Ativo" valueMonth={mockStats.pipelineValue} valueTotal={mockStats.pipelineValue} trend={mockStats.pipelineTrend} prefix="R$ " />
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Criadas" valueMonth={mockStats.tasksCreatedMonth} valueTotal={mockStats.tasksCreatedTotal} trend={mockStats.tasksCreatedTrend} />
+                  <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Concluídas" valueMonth={mockStats.tasksCompletedMonth} valueTotal={mockStats.tasksCompletedTotal} trend={mockStats.tasksCompletedTrend} />
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground mb-2">Principal Origem de Leads</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Mês:</span>
+                          <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceMonth}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Total:</span>
+                          <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceTotal}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground mb-2">Principal Origem de Deals</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Mês:</span>
+                          <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceMonth}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Total:</span>
+                          <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceTotal}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Activity className="h-4 w-4" /> Atividade Recente
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" className="text-xs text-primary">
+                        Ver histórico completo
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      {mockRecentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+                          <span className="text-lg">{activity.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground">
+                              <span className="font-medium">{activity.action}</span>{' '}
+                              <span className="text-muted-foreground">{activity.target}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {activity.time}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </UnifiedLayout>
   )
