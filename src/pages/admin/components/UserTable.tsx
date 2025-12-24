@@ -1,8 +1,16 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge, BadgeVariant } from '@/components/ui/badge';
+import { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge, BadgeVariant } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,22 +19,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  MoreHorizontal,
   Pencil,
-  Trash2,
-  MoreVertical,
   Key,
   UserCog,
+  Trash2,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { User } from '@/lib/types';
 import { getInitials } from '@/lib/helpers';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export type SortKey = 'name' | 'email' | 'role' | 'department' | 'lastLogin';
 export type SortDirection = 'asc' | 'desc';
+export type UserStatus = 'active' | 'inactive' | 'pending';
 
 interface UserTableProps {
   users: User[];
@@ -41,11 +51,37 @@ interface UserTableProps {
   onDelete: (user: User) => void;
   onResetPassword: (user: User) => void;
   onImpersonate: (user: User) => void;
-  getRoleInfo: (code: string) => { label: string; badgeVariant?: string } | undefined;
+  getRoleInfo: (role: string) => { label: string; badgeVariant?: string } | undefined;
   totalCount: number;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+}
+
+function SortIcon({ column, sortConfig }: { column: SortKey; sortConfig: { key: SortKey; direction: SortDirection } }) {
+  if (sortConfig.key !== column) {
+    return <ChevronsUpDown className="h-3 w-3 text-muted-foreground/50" />;
+  }
+  return sortConfig.direction === 'asc' 
+    ? <ChevronUp className="h-3 w-3 text-primary" />
+    : <ChevronDown className="h-3 w-3 text-primary" />;
+}
+
+function StatusBadge({ status }: { status: UserStatus }) {
+  const config = {
+    active: { label: 'Ativo', variant: 'default' as BadgeVariant, dotClass: 'bg-green-500' },
+    inactive: { label: 'Inativo', variant: 'secondary' as BadgeVariant, dotClass: 'bg-red-500' },
+    pending: { label: 'Pendente', variant: 'outline' as BadgeVariant, dotClass: 'bg-amber-500' },
+  };
+
+  const { label, variant, dotClass } = config[status] || config.pending;
+
+  return (
+    <Badge variant={variant} className="gap-1.5">
+      <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+      {label}
+    </Badge>
+  );
 }
 
 export function UserTable({
@@ -67,132 +103,135 @@ export function UserTable({
   totalPages,
   onPageChange,
 }: UserTableProps) {
-  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
-    if (sortConfig.key !== columnKey) {
-      return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground opacity-50" />;
-    }
-    return sortConfig.direction === 'asc' ? (
-      <ArrowUp className="ml-1 h-3 w-3 text-primary" />
-    ) : (
-      <ArrowDown className="ml-1 h-3 w-3 text-primary" />
-    );
-  };
+  const allSelected = users.length > 0 && selectedUsers.size === users.length;
+  const someSelected = selectedUsers.size > 0 && selectedUsers.size < users.length;
 
-  const getStatusBadge = (status?: 'active' | 'inactive' | 'pending') => {
-    const variant: Record<string, BadgeVariant> = {
-      active: 'default',
-      inactive: 'secondary',
-      pending: 'outline',
-    };
-    const label: Record<string, string> = {
-      active: 'Ativo',
-      inactive: 'Inativo',
-      pending: 'Pendente',
-    };
-    return (
-      <Badge variant={variant[status || 'pending']}>
-        {label[status || 'pending']}
-      </Badge>
-    );
-  };
+  const formatLastLogin = (dateStr: string | undefined) => {
+    if (!dateStr) return 'Nunca';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (isLoading) {
-    return (
-      <div className="rounded-md border bg-card">
-        <div className="p-8 text-center text-muted-foreground">
-          Carregando usuários...
-        </div>
-      </div>
-    );
-  }
+    if (diffDays === 0) return 'Hoje';
+    if (diffDays === 1) return 'Ontem';
+    if (diffDays < 7) return `${diffDays} dias atrás`;
+    return format(date, "dd/MM/yyyy", { locale: ptBR });
+  };
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border bg-card">
+      <div className="bg-card rounded-xl border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]">
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-12">
                 <Checkbox
-                  checked={selectedUsers.size === users.length && users.length > 0}
+                  checked={allSelected}
+                  // @ts-ignore - indeterminate is valid but not in types
+                  indeterminate={someSelected}
                   onCheckedChange={onSelectAll}
                 />
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="cursor-pointer hover:bg-muted/80 transition-colors"
                 onClick={() => onSort('name')}
               >
                 <div className="flex items-center gap-1">
-                  Usuário <SortIcon columnKey="name" />
+                  Usuário
+                  <SortIcon column="name" sortConfig={sortConfig} />
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onSort('email')}
-              >
-                <div className="flex items-center gap-1">
-                  Email <SortIcon columnKey="email" />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="cursor-pointer hover:bg-muted/80 transition-colors"
                 onClick={() => onSort('role')}
               >
                 <div className="flex items-center gap-1">
-                  Função <SortIcon columnKey="role" />
+                  Função
+                  <SortIcon column="role" sortConfig={sortConfig} />
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="cursor-pointer hover:bg-muted/80 transition-colors"
                 onClick={() => onSort('department')}
               >
                 <div className="flex items-center gap-1">
-                  Departamento <SortIcon columnKey="department" />
+                  Departamento
+                  <SortIcon column="department" sortConfig={sortConfig} />
                 </div>
               </TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-24 text-right">Ações</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/80 transition-colors"
+                onClick={() => onSort('lastLogin')}
+              >
+                <div className="flex items-center gap-1">
+                  Último Acesso
+                  <SortIcon column="lastLogin" sortConfig={sortConfig} />
+                </div>
+              </TableHead>
+              <TableHead className="w-12 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.length === 0 ? (
+            {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  Nenhum usuário encontrado com os filtros atuais.
+                <TableCell colSpan={7} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                    <span className="text-sm text-muted-foreground">Carregando...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-4xl">🔍</span>
+                    <span className="text-muted-foreground">Nenhum usuário encontrado</span>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               users.map((user) => {
                 const roleInfo = getRoleInfo(user.role);
+                const isCurrentUser = user.id === currentUserId;
+                const isSelected = selectedUsers.has(user.id);
+
                 return (
                   <TableRow
                     key={user.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                      isSelected ? 'bg-primary/5' : ''
+                    }`}
                     onClick={() => onEdit(user)}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
-                        checked={selectedUsers.has(user.id)}
+                        checked={isSelected}
                         onCheckedChange={() => onSelect(user.id)}
+                        disabled={isCurrentUser}
                       />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(user.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          {user.title && (
-                            <p className="text-xs text-muted-foreground">{user.title}</p>
+                        <div className="relative">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {getInitials(user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {user.status === 'active' && (
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
                           )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>
                       <Badge variant={(roleInfo?.badgeVariant as BadgeVariant) || 'outline'}>
                         {roleInfo?.label || user.role}
@@ -201,42 +240,45 @@ export function UserTable({
                     <TableCell className="text-muted-foreground">
                       {user.department || '-'}
                     </TableCell>
-                    <TableCell>{getStatusBadge(user.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit(user)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Editar
+                    <TableCell>
+                      <StatusBadge status={user.status || 'pending'} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatLastLogin(user.lastLogin)}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(user)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onResetPassword(user)}>
+                            <Key className="h-4 w-4 mr-2" />
+                            Resetar Senha
+                          </DropdownMenuItem>
+                          {!isCurrentUser && (
+                            <DropdownMenuItem onClick={() => onImpersonate(user)}>
+                              <UserCog className="h-4 w-4 mr-2" />
+                              Impersonar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onResetPassword(user)}>
-                              <Key className="mr-2 h-4 w-4" />
-                              Redefinir Senha
-                            </DropdownMenuItem>
-                            {user.id !== currentUserId && (
-                              <DropdownMenuItem onClick={() => onImpersonate(user)}>
-                                <UserCog className="mr-2 h-4 w-4" />
-                                Impersonar
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => onDelete(user)}
-                              disabled={user.id === currentUserId}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => onDelete(user)}
+                            disabled={isCurrentUser}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -247,11 +289,12 @@ export function UserTable({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {users.length} de {totalCount} usuários
-          </div>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {totalCount} usuário{totalCount !== 1 ? 's' : ''} encontrado{totalCount !== 1 ? 's' : ''}
+        </p>
+
+        {totalPages > 1 && (
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -262,9 +305,34 @@ export function UserTable({
               <ChevronLeft className="h-4 w-4 mr-1" />
               Anterior
             </Button>
-            <div className="text-sm">
-              Página {currentPage} de {totalPages}
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 5) {
+                  page = i + 1;
+                } else if (currentPage <= 3) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  page = totalPages - 4 + i;
+                } else {
+                  page = currentPage - 2 + i;
+                }
+
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'default' : 'outline'}
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    onClick={() => onPageChange(page)}
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
             </div>
+
             <Button
               variant="outline"
               size="sm"
@@ -275,8 +343,8 @@ export function UserTable({
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
