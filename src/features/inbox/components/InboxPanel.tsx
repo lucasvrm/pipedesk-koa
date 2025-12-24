@@ -158,7 +158,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 <p className="text-white/70 text-sm">{unreadCount > 0 ? `${unreadCount} não lidas` : 'Tudo em dia'}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20 mr-10"
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
               onClick={handleOpenPreferences} title="Configurações">
               <Settings className="h-4 w-4" />
             </Button>
@@ -263,7 +263,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 pr-8 pb-40 space-y-2">
+              <div className="p-3 pr-6 pb-40 space-y-2 overflow-hidden">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
@@ -274,7 +274,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                     <div key={group.groupKey} className="space-y-1">
                       {/* Card Principal */}
                       <div onClick={() => handleGroupClick(group)}
-                        className={cn("relative p-4 rounded-xl border transition-all cursor-pointer group hover:shadow-md",
+                        className={cn("relative p-4 rounded-xl border transition-all cursor-pointer group hover:shadow-md max-w-full overflow-hidden",
                           group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
@@ -329,7 +329,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           </div>
 
                           {/* Ações hover */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1">
+                          <div className="absolute right-2 top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1">
                             {!hasMultiple && group.unreadCount > 0 && (
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkRead(group.notifications[0].id, e)} title="Marcar lida">
                                 <Check className="h-4 w-4" />
