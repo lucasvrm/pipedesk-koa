@@ -37,6 +37,9 @@ pids
 
 .spark-workbench-id
 src/pages/admin/SettingsPage.old.tsx
+src/pages/Profile.tsx.old
+src/pages/Profile_new.tsx
+src/pages/Profile_README.md
 
 # Python
 __pycache__/
