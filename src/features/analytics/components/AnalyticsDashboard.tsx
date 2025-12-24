@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-// CORREÇÃO: Adicionado 'Clock' aos imports abaixo
-import { Download, ChartLine, Target, Users, Funnel, ChartLineUp, PresentationChart, Strategy, Handshake, Clock } from '@phosphor-icons/react'
+import { Download, ChartLine, Target, Users, Funnel, TrendingUp, PresentationChart, GitBranch, Handshake, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 
 // IMPORTS DOS NOVOS GRÁFICOS
@@ -21,7 +20,7 @@ import { TeamWorkloadHeatmap } from './charts/TeamWorkloadHeatmap'
 import ConversionTrendChart from './ConversionTrendChart'
 import DealComparison from '@/features/deals/pages/DealComparison'
 import { PlayersAnalytics } from './PlayersAnalytics'
-import { PageContainer } from '@/components/PageContainer'
+import { UnifiedLayout } from '@/components/UnifiedLayout'
 
 interface AnalyticsDashboardProps {
   currentUser: User
@@ -61,7 +60,12 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
   }
 
   return (
-    <PageContainer className="space-y-6">
+    <UnifiedLayout
+      activeSection="management"
+      activeItem="analytics"
+      showBreadcrumbs={true}
+    >
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -136,11 +140,11 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
         <Tabs defaultValue="strategy" className="w-full space-y-6">
           <TabsList className="bg-muted/50 p-1 w-full justify-start overflow-x-auto">
             <TabsTrigger value="strategy" className="gap-2 min-w-[120px]">
-              <Strategy size={16} />
+              <GitBranch size={16} />
               Estratégia & Forecast
             </TabsTrigger>
             <TabsTrigger value="operations" className="gap-2 min-w-[120px]">
-              <ChartLineUp size={16} />
+              <TrendingUp size={16} />
               Operacional & Conversão
             </TabsTrigger>
             <TabsTrigger value="comparison" className="gap-2 min-w-[120px]">
@@ -277,6 +281,7 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
           </TabsContent>
         </Tabs>
       )}
-    </PageContainer>
+      </div>
+    </UnifiedLayout>
   )
 }
