@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { UnifiedLayout } from '@/components/UnifiedLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,38 +10,31 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge, BadgeVariant } from '@/components/ui/badge'
 import {
-  User as UserIcon,
-  EnvelopeSimple,
+  User,
+  Mail,
   ShieldCheck,
-  Calendar,
-  SignOut,
-  ArrowLeft,
-  PencilSimple,
+  Pencil,
   Check,
-  X,
-  LockKey,
   Camera,
-  Trash,
+  Trash2,
   Upload,
   FileText,
-  Bank,
-  IdentificationCard,
+  Landmark,
+  IdCard,
   CreditCard,
   MapPin,
   Phone
-} from '@phosphor-icons/react'
+} from 'lucide-react'
 import { getInitials } from '@/lib/helpers'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { PageContainer } from '@/components/PageContainer'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 
 export default function Profile() {
   const { getUserRoleByCode } = useSystemMetadata()
-  const { profile, signOut, resetPassword } = useAuth()
-  const navigate = useNavigate()
+  const { profile, resetPassword } = useAuth()
   
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -220,16 +213,6 @@ export default function Profile() {
     }
   }
 
-  const handleSignOut = async () => {
-    const success = await signOut()
-    if (success) {
-      toast.success('Você saiu do sistema')
-      navigate('/login')
-    } else {
-      toast.error('Erro ao sair do sistema')
-    }
-  }
-
   const downloadDocument = async (path: string) => {
     try {
       const { data, error } = await supabase.storage
@@ -248,24 +231,17 @@ export default function Profile() {
   const createdAtDate = createdAt ? new Date(createdAt) : null
 
   return (
-    <PageContainer>
-      <div className="space-y-6">
-        
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={20} />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Meu Perfil</h1>
-            <p className="text-muted-foreground">Gerencie suas informações pessoais e documentos</p>
-          </div>
-        </div>
-
+    <UnifiedLayout
+      activeSection="profile"
+      activeItem="personal"
+    >
+      <div className="max-w-4xl space-y-6">
+        {/* Header Card com Avatar e Info */}
         <Card className="border-t-4 border-t-primary">
           <CardHeader>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-6">
-                
+                {/* Avatar com ações */}
                 <div className="relative group">
                   <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
                     <AvatarImage src={formData.avatarUrl} className="object-cover" />
@@ -280,7 +256,7 @@ export default function Profile() {
                       onClick={() => fileInputRef.current?.click()}
                       title="Alterar foto"
                     >
-                      <Camera size={14} />
+                      <Camera className="h-3.5 w-3.5" />
                     </Button>
                     {formData.avatarUrl && (
                       <Button
@@ -290,7 +266,7 @@ export default function Profile() {
                         onClick={handleRemoveAvatar}
                         title="Remover foto"
                       >
-                        <Trash size={14} />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
@@ -306,7 +282,7 @@ export default function Profile() {
                 <div>
                   <CardTitle className="text-2xl">{formData.name || 'Usuário'}</CardTitle>
                   <CardDescription className="text-base flex items-center gap-2 mt-1">
-                    <EnvelopeSimple /> {profile.email}
+                    <Mail className="h-4 w-4" /> {profile.email}
                   </CardDescription>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge variant={(getUserRoleByCode(profile.role)?.badgeVariant as BadgeVariant) || 'default'}>
@@ -317,14 +293,9 @@ export default function Profile() {
               </div>
 
               {!isEditing && (
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsEditing(true)}>
-                    <PencilSimple className="mr-2" size={18} /> Editar Dados
-                    </Button>
-                    <Button variant="destructive" onClick={handleSignOut}>
-                    <SignOut className="mr-2" size={18} /> Sair
-                    </Button>
-                </div>
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar Dados
+                </Button>
               )}
             </div>
           </CardHeader>
@@ -348,7 +319,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome Completo</Label>
                     <div className="relative">
-                      <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="name" className="pl-10" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} disabled={!isEditing} />
                     </div>
                   </div>
@@ -356,7 +327,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Principal (Login)</Label>
                     <div className="relative">
-                      <EnvelopeSimple className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="email" className="pl-10" value={formData.email} disabled />
                     </div>
                   </div>
@@ -364,7 +335,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="secondaryEmail">Email Secundário</Label>
                     <div className="relative">
-                      <EnvelopeSimple className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="secondaryEmail" className="pl-10" value={formData.secondaryEmail} onChange={(e) => setFormData({...formData, secondaryEmail: e.target.value})} disabled={!isEditing} placeholder="email@exemplo.com" />
                     </div>
                   </div>
@@ -373,7 +344,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="cellphone">Celular / WhatsApp</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="cellphone" className="pl-10" value={formData.cellphone} onChange={(e) => setFormData({...formData, cellphone: e.target.value})} disabled={!isEditing} placeholder="(00) 00000-0000" />
                     </div>
                   </div>
@@ -381,7 +352,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="cpf">CPF</Label>
                     <div className="relative">
-                      <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="cpf" className="pl-10" value={formData.cpf} onChange={(e) => setFormData({...formData, cpf: e.target.value})} disabled={!isEditing} placeholder="000.000.000-00" />
                     </div>
                   </div>
@@ -389,7 +360,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="rg">RG</Label>
                     <div className="relative">
-                      <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="rg" className="pl-10" value={formData.rg} onChange={(e) => setFormData({...formData, rg: e.target.value})} disabled={!isEditing} />
                     </div>
                   </div>
@@ -397,7 +368,7 @@ export default function Profile() {
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="address">Endereço Completo</Label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="address" className="pl-10" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} disabled={!isEditing} placeholder="Rua, Número, Bairro, Cidade - UF" />
                     </div>
                   </div>
@@ -409,7 +380,7 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="pixPF">Chave PIX (Pessoa Física)</Label>
                     <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="pixPF" className="pl-10" value={formData.pixKeyPF} onChange={(e) => setFormData({...formData, pixKeyPF: e.target.value})} disabled={!isEditing} placeholder="CPF, Email ou Telefone" />
                     </div>
                   </div>
@@ -417,14 +388,14 @@ export default function Profile() {
                   <div className="space-y-2">
                     <Label htmlFor="pixPJ">Chave PIX (Pessoa Jurídica)</Label>
                     <div className="relative">
-                      <Bank className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input id="pixPJ" className="pl-10" value={formData.pixKeyPJ} onChange={(e) => setFormData({...formData, pixKeyPJ: e.target.value})} disabled={!isEditing} placeholder="CNPJ, Email ou Aleatória" />
                     </div>
                   </div>
                 </div>
                 
                 <div className="bg-muted/30 p-4 rounded-lg flex gap-3 text-sm text-muted-foreground">
-                  <ShieldCheck size={24} className="shrink-0" />
+                  <ShieldCheck className="h-6 w-6 shrink-0" />
                   <p>Esses dados são utilizados apenas para fins de pagamentos e reembolsos autorizados. Suas informações bancárias são armazenadas de forma segura.</p>
                 </div>
               </TabsContent>
@@ -433,13 +404,13 @@ export default function Profile() {
                 <div className="grid gap-6 md:grid-cols-3">
                   <Card className="border-dashed border-2">
                     <CardHeader className="p-4 text-center">
-                      <IdentificationCard size={32} className="mx-auto text-muted-foreground mb-2" />
+                      <IdCard className="mx-auto text-muted-foreground mb-2 h-8 w-8" />
                       <CardTitle className="text-sm">RG / CPF / CNH</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-center space-y-3">
                       {formData.docIdentityUrl ? (
                         <div className="text-xs">
-                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check size={12}/> Enviado</p>
+                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Enviado</p>
                           <Button variant="outline" size="sm" onClick={() => downloadDocument(formData.docIdentityUrl)}>Visualizar</Button>
                         </div>
                       ) : (
@@ -455,7 +426,7 @@ export default function Profile() {
                             onChange={(e) => e.target.files?.[0] && handleDocumentUpload(e.target.files[0], 'doc_identity_url', 'docIdentityUrl')}
                           />
                           <Button size="sm" variant="secondary" className="w-full" onClick={() => document.getElementById('upload-identity')?.click()}>
-                            <Upload className="mr-2" size={14} /> Upload
+                            <Upload className="mr-2 h-3.5 w-3.5" /> Upload
                           </Button>
                         </div>
                       )}
@@ -464,13 +435,13 @@ export default function Profile() {
 
                   <Card className="border-dashed border-2">
                     <CardHeader className="p-4 text-center">
-                      <FileText size={32} className="mx-auto text-muted-foreground mb-2" />
+                      <FileText className="mx-auto text-muted-foreground mb-2 h-8 w-8" />
                       <CardTitle className="text-sm">Contrato Social (PJ)</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-center space-y-3">
                       {formData.docSocialContractUrl ? (
                         <div className="text-xs">
-                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check size={12}/> Enviado</p>
+                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Enviado</p>
                           <Button variant="outline" size="sm" onClick={() => downloadDocument(formData.docSocialContractUrl)}>Visualizar</Button>
                         </div>
                       ) : (
@@ -486,7 +457,7 @@ export default function Profile() {
                             onChange={(e) => e.target.files?.[0] && handleDocumentUpload(e.target.files[0], 'doc_social_contract_url', 'docSocialContractUrl')}
                           />
                           <Button size="sm" variant="secondary" className="w-full" onClick={() => document.getElementById('upload-social')?.click()}>
-                            <Upload className="mr-2" size={14} /> Upload
+                            <Upload className="mr-2 h-3.5 w-3.5" /> Upload
                           </Button>
                         </div>
                       )}
@@ -495,13 +466,13 @@ export default function Profile() {
 
                   <Card className="border-dashed border-2">
                     <CardHeader className="p-4 text-center">
-                      <FileText size={32} className="mx-auto text-muted-foreground mb-2" />
+                      <FileText className="mx-auto text-muted-foreground mb-2 h-8 w-8" />
                       <CardTitle className="text-sm">Contrato de Serviço</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-center space-y-3">
                       {formData.docServiceAgreementUrl ? (
                         <div className="text-xs">
-                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check size={12}/> Enviado</p>
+                          <p className="text-green-600 font-medium mb-2 flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Enviado</p>
                           <Button variant="outline" size="sm" onClick={() => downloadDocument(formData.docServiceAgreementUrl)}>Visualizar</Button>
                         </div>
                       ) : (
@@ -517,7 +488,7 @@ export default function Profile() {
                             onChange={(e) => e.target.files?.[0] && handleDocumentUpload(e.target.files[0], 'doc_service_agreement_url', 'docServiceAgreementUrl')}
                           />
                           <Button size="sm" variant="secondary" className="w-full" onClick={() => document.getElementById('upload-service')?.click()}>
-                            <Upload className="mr-2" size={14} /> Upload
+                            <Upload className="mr-2 h-3.5 w-3.5" /> Upload
                           </Button>
                         </div>
                       )}
@@ -545,6 +516,6 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
-    </PageContainer>
+    </UnifiedLayout>
   )
 }
