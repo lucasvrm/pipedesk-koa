@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { 
-  Bell, BellOff, Check, Trash2, Archive, Settings, Filter, MoreHorizontal,
+  Bell, BellOff, Check, Trash2, Archive, Filter, MoreHorizontal,
   ChevronDown, ChevronRight, ExternalLink, MessageCircle, UserCircle,
   RefreshCw, AlertTriangle, Clock, Activity, Cog, Circle,
 } from 'lucide-react';
@@ -142,7 +142,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
-        className="w-[540px] sm:w-[600px] flex flex-col p-0 gap-0 border-l"
+        className="w-[620px] sm:w-[700px] flex flex-col p-0 gap-0 border-l"
         closeButtonClassName="bg-white/95 hover:bg-white text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200"
       >
         
@@ -162,7 +162,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
           <div className="flex gap-2 mt-4 overflow-x-auto whitespace-nowrap">
             {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                className={cn("px-[0.7rem] py-[0.34rem] rounded-full text-[11px] font-medium transition-all",
                   filterStatus === s ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
                 {s === 'all' ? 'Todas' : s === 'unread' ? 'Não lidas' : 'Lidas'}
               </button>
@@ -170,7 +170,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                <button className={cn("px-[0.7rem] py-[0.34rem] rounded-full text-[11px] font-medium transition-all flex items-center gap-1",
                   (filterCategory !== 'all' || filterPriority !== 'all') ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
                   <Filter className="h-3 w-3" /> Filtros
                   {(filterCategory !== 'all' || filterPriority !== 'all') && (
@@ -212,15 +212,6 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            <button 
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all flex items-center gap-1"
-              onClick={handleOpenPreferences}
-              title="Configurações e preferências"
-            >
-              <Settings className="h-3 w-3" />
-              Opções
-            </button>
           </div>
         </div>
 
@@ -281,7 +272,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
-                        <div className="flex gap-3 pl-2 pr-32">
+                        <div className="flex gap-3 pl-2 pr-6">
                           <div className={cn("relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0", colors.bg)}>
                             <Icon className={cn("h-5 w-5", colors.text)} />
                             {group.unreadCount > 0 && !hasMultiple && (
@@ -290,8 +281,8 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2">
+                            <div className="flex items-start gap-2">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <p className={cn("font-medium text-sm truncate", group.unreadCount > 0 ? "text-foreground" : "text-muted-foreground")}>
                                   {group.title}
                                 </p>
@@ -301,16 +292,51 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                                   </button>
                                 )}
                               </div>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(group.latestAt)}</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 pl-4">{formatDate(group.latestAt)}</span>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{group.message}</p>
 
-                            <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <Badge variant="outline" className="text-[10px] h-5 font-normal">{NOTIFICATION_CATEGORY_LABELS[group.category]}</Badge>
                               {group.unreadCount > 0 && hasMultiple && (
                                 <Badge className="text-[10px] h-5 bg-red-100 text-red-700 hover:bg-red-100">{group.unreadCount} não lida{group.unreadCount > 1 ? 's' : ''}</Badge>
                               )}
                               {group.priority === 'critical' && <Badge className="text-[10px] h-5 bg-red-500 text-white">URGENTE</Badge>}
+
+                              <div className="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                                {!hasMultiple && group.unreadCount > 0 && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkRead(group.notifications[0].id, e)} title="Marcar lida">
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {!hasMultiple && group.unreadCount === 0 && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkUnread(group.notifications[0].id, e)} title="Marcar não lida">
+                                    <Circle className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {!hasMultiple && (
+                                  <>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleArchive(group.notifications[0].id, e)} title="Arquivar">
+                                      <Archive className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(group.notifications[0].id, e)} title="Excluir">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                {hasMultiple && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => { if (profile?.id) markGroupAsRead.mutate({ userId: profile.id, groupKey: group.groupKey }); }}>
+                                        <Check className="h-4 w-4 mr-2" />Marcar grupo como lido
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </div>
                             </div>
 
                             {/* Expandido (única) */}
@@ -331,41 +357,6 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                             )}
                           </div>
 
-                          {/* Ações hover */}
-                          <div className="absolute right-4 top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1 bg-white/95 dark:bg-gray-900/95 rounded-lg shadow-lg p-1.5">
-                            {!hasMultiple && group.unreadCount > 0 && (
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkRead(group.notifications[0].id, e)} title="Marcar lida">
-                                <Check className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {!hasMultiple && group.unreadCount === 0 && (
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkUnread(group.notifications[0].id, e)} title="Marcar não lida">
-                                <Circle className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {!hasMultiple && (
-                              <>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleArchive(group.notifications[0].id, e)} title="Arquivar">
-                                  <Archive className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(group.notifications[0].id, e)} title="Excluir">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            {hasMultiple && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => { if (profile?.id) markGroupAsRead.mutate({ userId: profile.id, groupKey: group.groupKey }); }}>
-                                    <Check className="h-4 w-4 mr-2" />Marcar grupo como lido
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
                         </div>
                       </div>
 
