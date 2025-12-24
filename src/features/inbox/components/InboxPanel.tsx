@@ -158,10 +158,12 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 <p className="text-white/70 text-sm">{unreadCount > 0 ? `${unreadCount} não lidas` : 'Tudo em dia'}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-              onClick={handleOpenPreferences} title="Configurações">
-              <Settings className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 mr-12">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+                onClick={handleOpenPreferences} title="Configurações">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           
           {/* Filtros */}
@@ -278,7 +280,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
-                        <div className="flex gap-3 pl-2">
+                        <div className="flex gap-3 pl-2 pr-24">
                           <div className={cn("relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0", colors.bg)}>
                             <Icon className={cn("h-5 w-5", colors.text)} />
                             {group.unreadCount > 0 && !hasMultiple && (
