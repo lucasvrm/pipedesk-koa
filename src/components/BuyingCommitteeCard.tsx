@@ -1,5 +1,5 @@
 import { Contact, BuyingRole, ContactSentiment } from '@/lib/types'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Button } from '@/components/ui/button'
 import {
   Crown,
@@ -57,7 +57,6 @@ export function BuyingCommitteeCard({ contact, onEdit, onClick }: BuyingCommitte
   const sentimentColor = contact.sentiment ? SENTIMENT_COLORS[contact.sentiment] : SENTIMENT_COLORS.unknown
   const safeName = safeString(contact.name, 'Contato')
   const safeRole = safeStringOptional(contact.role) ?? 'Sem cargo'
-  const initials = safeName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (onClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -79,10 +78,11 @@ export function BuyingCommitteeCard({ contact, onEdit, onClick }: BuyingCommitte
     >
       {/* Avatar with Sentiment Border */}
       <div className={cn("relative p-0.5 rounded-full border-2", sentimentColor)}>
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={undefined} />
-          <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
-        </Avatar>
+        <UserBadge
+          name={safeName}
+          avatarUrl={undefined}
+          size="md"
+        />
         {/* Role Badge */}
         <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm border border-border">
           <TooltipProvider>

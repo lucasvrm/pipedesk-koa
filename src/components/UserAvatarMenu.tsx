@@ -1,6 +1,6 @@
 import { User, HelpCircle, LogOut, Bell, BellOff, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserBadge } from '@/components/ui/user-badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
-import { getInitials } from '@/lib/helpers';
 import { safeString, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
@@ -30,10 +29,6 @@ export function UserAvatarMenu() {
   const userName = safeString(profile?.name, 'Usuário');
   const userEmail = profile?.email || '';
   const userAvatar = profile?.avatar_url || profile?.avatar;
-  const userInitials = getInitials(userName);
-  const avatarBgColor = profile?.avatarBgColor || '#fee2e2';
-  const avatarTextColor = profile?.avatarTextColor || '#991b1b';
-  const avatarBorderColor = profile?.avatarBorderColor || '#ffffff';
 
   const handleSignOut = async () => {
     const success = await signOut();
@@ -71,31 +66,20 @@ export function UserAvatarMenu() {
           className="relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Menu do usuário"
         >
-          <Avatar className={cn(
-            "h-9 w-9 cursor-pointer border-2 transition-colors",
-            preferences?.dndEnabled 
-              ? "border-amber-400 dark:border-amber-600" 
-              : "border-transparent hover:border-primary/20"
-          )}
-          style={{
-            borderColor: preferences?.dndEnabled 
+          <UserBadge
+            name={userName}
+            avatarUrl={userAvatar}
+            bgColor={profile?.avatarBgColor}
+            textColor={profile?.avatarTextColor}
+            borderColor={preferences?.dndEnabled 
               ? undefined 
-              : avatarBorderColor
-          }}
-          >
-            {userAvatar ? (
-              <AvatarImage src={userAvatar} alt={userName} />
-            ) : null}
-            <AvatarFallback 
-              className="font-semibold text-sm"
-              style={{
-                backgroundColor: avatarBgColor,
-                color: avatarTextColor
-              }}
-            >
-              {userInitials}
-            </AvatarFallback>
-          </Avatar>
+              : profile?.avatarBorderColor}
+            size="sm"
+            className={cn(
+              "cursor-pointer transition-colors",
+              preferences?.dndEnabled && "ring-2 ring-amber-400 dark:ring-amber-600"
+            )}
+          />
           {/* DND Indicator */}
           {preferences?.dndEnabled && (
             <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 border-2 border-background flex items-center justify-center">
@@ -108,25 +92,14 @@ export function UserAvatarMenu() {
         {/* Header com info do usuário */}
         <DropdownMenuLabel className="font-normal">
           <div className="flex items-center gap-3">
-            <Avatar 
-              className="h-10 w-10"
-              style={{
-                borderColor: avatarBorderColor
-              }}
-            >
-              {userAvatar ? (
-                <AvatarImage src={userAvatar} alt={userName} />
-              ) : null}
-              <AvatarFallback 
-                className="font-semibold"
-                style={{
-                  backgroundColor: avatarBgColor,
-                  color: avatarTextColor
-                }}
-              >
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
+            <UserBadge
+              name={userName}
+              avatarUrl={userAvatar}
+              bgColor={profile?.avatarBgColor}
+              textColor={profile?.avatarTextColor}
+              borderColor={profile?.avatarBorderColor}
+              size="md"
+            />
             <div className="flex flex-col space-y-0.5">
               <p className="text-sm font-semibold leading-none">{userName}</p>
               <p className="text-xs text-muted-foreground leading-none">{userEmail}</p>
