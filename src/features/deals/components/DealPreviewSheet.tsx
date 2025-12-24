@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { dealStatusMap } from '@/lib/statusMaps'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { 
   MasterDeal, 
   PlayerTrack, 
@@ -226,10 +226,15 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
                       {recentComments.map((comment) => (
                         <div key={comment.id} className="relative pl-8 text-sm group">
                           <div className="absolute left-0 top-1 w-6 h-6 bg-background border rounded-full flex items-center justify-center z-10">
-                            <Avatar className="h-4 w-4">
-                                <AvatarImage src={comment.author?.avatar} />
-                                <AvatarFallback className="text-[8px]">{getInitials(comment.author?.name || '?')}</AvatarFallback>
-                            </Avatar>
+                            <UserBadge
+                              name={comment.author?.name || '?'}
+                              avatarUrl={comment.author?.avatar}
+                              bgColor={comment.author?.avatarBgColor}
+                              textColor={comment.author?.avatarTextColor}
+                              borderColor={comment.author?.avatarBorderColor}
+                              size="xs"
+                              className="h-4 w-4"
+                            />
                           </div>
                           <div className="bg-muted/20 p-2.5 rounded-lg border border-transparent group-hover:border-border transition-colors">
                             <div className="flex justify-between items-start mb-1">

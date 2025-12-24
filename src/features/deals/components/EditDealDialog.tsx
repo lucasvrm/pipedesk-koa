@@ -48,7 +48,7 @@ import {
   CommandItem,
   CommandList
 } from '@/components/ui/command'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CalendarIcon, Check, Plus, Trash, X } from 'lucide-react'
@@ -421,10 +421,15 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                                     return (
                                       <CommandItem key={user.id} onSelect={() => toggleUser(user.id)}>
                                         <div className="flex items-center gap-2">
-                                          <Avatar className="h-5 w-5">
-                                            <AvatarImage src={user.avatar} />
-                                            <AvatarFallback className="text-[9px]">{getInitials(user.name)}</AvatarFallback>
-                                          </Avatar>
+                                          <UserBadge
+                                            name={user.name}
+                                            avatarUrl={user.avatar}
+                                            bgColor={user.avatarBgColor}
+                                            textColor={user.avatarTextColor}
+                                            borderColor={user.avatarBorderColor}
+                                            size="xs"
+                                            className="h-5 w-5"
+                                          />
                                           <span>{user.name}</span>
                                         </div>
                                       </CommandItem>
@@ -445,10 +450,15 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                             const user = users?.find(u => u.id === userId)
                             return (
                               <Badge key={userId} variant="secondary" className="pl-1 pr-2 py-1 gap-2 flex items-center">
-                                <Avatar className="h-5 w-5">
-                                  <AvatarImage src={user?.avatar} />
-                                  <AvatarFallback className="text-[8px]">{getInitials(user?.name || '?')}</AvatarFallback>
-                                </Avatar>
+                                <UserBadge
+                                  name={user?.name || '?'}
+                                  avatarUrl={user?.avatar}
+                                  bgColor={user?.avatarBgColor}
+                                  textColor={user?.avatarTextColor}
+                                  borderColor={user?.avatarBorderColor}
+                                  size="xs"
+                                  className="h-5 w-5"
+                                />
                                 {user?.name}
                                 <button 
                                   type="button" 

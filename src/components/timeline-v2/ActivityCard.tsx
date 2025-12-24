@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/helpers'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -134,12 +134,14 @@ export function ActivityCard({
       {/* Header: Avatar, Name, Badge, Time */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Avatar className="h-8 w-8 border">
-            <AvatarImage src={item.author.avatar} alt={item.author.name} />
-            <AvatarFallback className="text-xs bg-muted">
-              {getInitials(item.author.name)}
-            </AvatarFallback>
-          </Avatar>
+          <UserBadge
+            name={item.author.name}
+            avatarUrl={item.author.avatar}
+            bgColor={item.author.avatarBgColor}
+            textColor={item.author.avatarTextColor}
+            borderColor={item.author.avatarBorderColor}
+            size="sm"
+          />
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold text-foreground truncate">
