@@ -142,7 +142,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
-        className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l"
+        className="w-[520px] sm:w-[600px] flex flex-col p-0 gap-0 border-l"
         closeButtonClassName="bg-white/95 hover:bg-white text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200"
       >
         
@@ -157,12 +157,6 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 <h2 className="text-white font-semibold text-lg">Notificações</h2>
                 <p className="text-white/70 text-sm">{unreadCount > 0 ? `${unreadCount} não lidas` : 'Tudo em dia'}</p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 mr-12">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                onClick={handleOpenPreferences} title="Configurações">
-                <Settings className="h-4 w-4" />
-              </Button>
             </div>
           </div>
           
@@ -220,6 +214,15 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            <button 
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all flex items-center gap-1"
+              onClick={handleOpenPreferences}
+              title="Configurações e preferências"
+            >
+              <Settings className="h-3 w-3" />
+              Opções
+            </button>
           </div>
         </div>
 
@@ -265,7 +268,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 pr-6 pb-40 space-y-2 overflow-hidden">
+              <div className="p-3 pr-6 pb-40 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
@@ -276,11 +279,11 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                     <div key={group.groupKey} className="space-y-1">
                       {/* Card Principal */}
                       <div onClick={() => handleGroupClick(group)}
-                        className={cn("relative p-4 rounded-xl border transition-all cursor-pointer group hover:shadow-md max-w-full overflow-hidden",
+                        className={cn("relative p-4 rounded-xl border transition-all cursor-pointer group hover:shadow-md max-w-full",
                           group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
-                        <div className="flex gap-3 pl-2 pr-24">
+                        <div className="flex gap-3 pl-2 pr-28">
                           <div className={cn("relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0", colors.bg)}>
                             <Icon className={cn("h-5 w-5", colors.text)} />
                             {group.unreadCount > 0 && !hasMultiple && (
@@ -331,7 +334,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           </div>
 
                           {/* Ações hover */}
-                          <div className="absolute right-2 top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1">
+                          <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1 bg-white/95 rounded-lg shadow-md p-1">
                             {!hasMultiple && group.unreadCount > 0 && (
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkRead(group.notifications[0].id, e)} title="Marcar lida">
                                 <Check className="h-4 w-4" />
