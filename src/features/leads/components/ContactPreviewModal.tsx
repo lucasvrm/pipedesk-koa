@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { safeString, safeStringOptional } from '@/lib/utils'
 
 interface ContactInfo {
@@ -82,12 +82,12 @@ export function ContactPreviewModal({ open, onOpenChange, contact }: ContactPrev
         <div className="space-y-4">
           {/* Contact Header with Avatar */}
           <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-            <Avatar className="h-14 w-14 border-2 border-background shadow-sm">
-              <AvatarImage src={safeAvatar ?? undefined} alt={safeName} />
-              <AvatarFallback className="text-lg font-semibold">
-                {getInitials(safeName)}
-              </AvatarFallback>
-            </Avatar>
+            <UserBadge
+              name={safeName}
+              avatarUrl={safeAvatar ?? undefined}
+              size="lg"
+              className="h-14 w-14 border-2 border-background shadow-sm"
+            />
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-foreground truncate">{safeName}</h3>
               {safeRole && (

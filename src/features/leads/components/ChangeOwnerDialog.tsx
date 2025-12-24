@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/command'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { useUpdateLead, addLeadMember, LEADS_KEY, LEADS_SALES_VIEW_KEY, LEADS_SALES_VIEW_ALT_KEY } from '@/services/leadService'
@@ -226,15 +226,14 @@ export function ChangeOwnerDialog({
                         onSelect={() => handleSelectUser(user)}
                         className="flex items-center gap-3 py-2 cursor-pointer"
                       >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src={user.avatar}
-                            alt={safeString(user.name, 'Usuário')}
-                          />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(safeString(user.name, 'NA'))}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserBadge
+                          name={safeString(user.name, 'Usuário')}
+                          avatarUrl={user.avatar}
+                          bgColor={user.avatarBgColor}
+                          textColor={user.avatarTextColor}
+                          borderColor={user.avatarBorderColor}
+                          size="sm"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
                             {safeString(user.name, 'Usuário')}
@@ -265,15 +264,14 @@ export function ChangeOwnerDialog({
           {/* Selected User Preview - appears above the checkbox when a user is selected */}
           {selectedUser && (
             <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30" data-testid="selected-owner-preview">
-              <Avatar className="h-10 w-10">
-                <AvatarImage
-                  src={selectedUser.avatar}
-                  alt={safeString(selectedUser.name, 'Usuário')}
-                />
-                <AvatarFallback>
-                  {getInitials(safeString(selectedUser.name, 'NA'))}
-                </AvatarFallback>
-              </Avatar>
+              <UserBadge
+                name={safeString(selectedUser.name, 'Usuário')}
+                avatarUrl={selectedUser.avatar}
+                bgColor={selectedUser.avatarBgColor}
+                textColor={selectedUser.avatarTextColor}
+                borderColor={selectedUser.avatarBorderColor}
+                size="md"
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">Novo responsável:</p>
                 <p className="text-sm text-muted-foreground truncate">

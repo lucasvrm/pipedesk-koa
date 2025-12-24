@@ -4,7 +4,7 @@ import { Users, Plus, ExternalLink, Unlink, Search, Loader2, UserPlus } from 'lu
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -93,9 +93,12 @@ export function LeadContactsModal({ open, onOpenChange, leadId, leadName, contac
                   <div className="space-y-2">
                     {contacts.map(c => (
                       <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                        <Avatar className="h-10 w-10 border">
-                          <AvatarFallback>{getInitials(c.name)}</AvatarFallback>
-                        </Avatar>
+                        <UserBadge
+                          name={c.name || 'NA'}
+                          avatarUrl={c.avatar}
+                          size="md"
+                          className="h-10 w-10 border"
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm truncate">{c.name}</span>
@@ -149,9 +152,12 @@ export function LeadContactsModal({ open, onOpenChange, leadId, leadName, contac
                   <div className="space-y-1">
                     {filtered.map(c => (
                       <button key={c.id} className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 text-left" onClick={() => handleLink(c)} disabled={isLinking}>
-                        <Avatar className="h-9 w-9 border">
-                          <AvatarFallback>{getInitials(c.name)}</AvatarFallback>
-                        </Avatar>
+                        <UserBadge
+                          name={c.name || 'NA'}
+                          avatarUrl={c.avatar}
+                          size="sm"
+                          className="h-9 w-9 border"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{c.name}</p>
                           {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
