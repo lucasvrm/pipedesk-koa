@@ -49,6 +49,7 @@ const PRIORITY_EMOJI: Record<NotificationPriority, string> = {
 
 interface UseRealtimeNotificationsOptions {
   onNewNotification?: (notification: any) => void;
+  onOpenInbox?: () => void;
 }
 
 export function useRealtimeNotifications(
@@ -61,6 +62,8 @@ export function useRealtimeNotifications(
   // Ref para acessar preferences atualizado dentro do callback
   const preferencesRef = useRef(preferences);
   preferencesRef.current = preferences;
+  const onOpenInboxRef = useRef(options?.onOpenInbox);
+  onOpenInboxRef.current = options?.onOpenInbox;
 
   useEffect(() => {
     if (!userId) return;
@@ -97,23 +100,20 @@ export function useRealtimeNotifications(
           const style = TOAST_STYLES[priority];
           const emoji = PRIORITY_EMOJI[priority];
 
-          const toastFn = priority === 'critical' || priority === 'urgent' 
-            ? toast.warning 
-            : priority === 'high'
-              ? toast.info
-              : toast.message;
-
-          toastFn(`${emoji} ${notification.title}`, {
-            description: notification.message,
-            duration: style.duration,
-            className: style.className,
-            action: notification.link ? {
-              label: 'Ver',
-              onClick: () => {
-                window.location.href = notification.link;
+          toast(
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{emoji} {notification.title}</span>
+              <span className="text-sm text-muted-foreground">{notification.message}</span>
+            </div>,
+            {
+              duration: style.duration,
+              className: style.className,
+              action: {
+                label: 'Ver',
+                onClick: () => onOpenInboxRef.current?.(),
               },
-            } : undefined,
-          });
+            }
+          );
         }
       )
       .on(

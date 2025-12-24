@@ -77,7 +77,9 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useRealtimeNotifications(profile?.id);
+  useRealtimeNotifications(profile?.id, {
+    onOpenInbox: () => setInboxOpen(true),
+  });
 
   const { data: unreadCount = 0 } = useUnreadCount(profile?.id || null);
 
