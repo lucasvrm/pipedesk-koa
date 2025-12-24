@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { 
-  Bell, BellOff, Check, Trash2, Archive, Settings, Filter, MoreHorizontal,
+  Bell, BellOff, Check, Trash2, Archive, Filter, MoreHorizontal,
   ChevronDown, ChevronRight, ExternalLink, MessageCircle, UserCircle,
   RefreshCw, AlertTriangle, Clock, Activity, Cog, Circle,
 } from 'lucide-react';
@@ -142,7 +142,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
-        className="w-[540px] sm:w-[600px] flex flex-col p-0 gap-0 border-l"
+        className="w-[620px] sm:w-[700px] flex flex-col p-0 gap-0 border-l"
         closeButtonClassName="bg-white/95 hover:bg-white text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200"
       >
         
@@ -162,7 +162,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
           <div className="flex gap-2 mt-4 overflow-x-auto whitespace-nowrap">
             {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                className={cn("px-[0.7rem] py-[0.34rem] rounded-full text-[11px] font-medium transition-all",
                   filterStatus === s ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
                 {s === 'all' ? 'Todas' : s === 'unread' ? 'Não lidas' : 'Lidas'}
               </button>
@@ -170,7 +170,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                <button className={cn("px-[0.7rem] py-[0.34rem] rounded-full text-[11px] font-medium transition-all flex items-center gap-1",
                   (filterCategory !== 'all' || filterPriority !== 'all') ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
                   <Filter className="h-3 w-3" /> Filtros
                   {(filterCategory !== 'all' || filterPriority !== 'all') && (
@@ -213,14 +213,13 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <button 
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all flex items-center gap-1"
+            <Button 
+              variant="secondary"
+              className="px-[0.7rem] py-[0.34rem] h-8 rounded-full text-[11px] font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all"
               onClick={handleOpenPreferences}
-              title="Configurações e preferências"
             >
-              <Settings className="h-3 w-3" />
               Opções
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -281,7 +280,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
-                        <div className="flex gap-3 pl-2 pr-32">
+                        <div className="flex gap-3 pl-2 pr-[140px]">
                           <div className={cn("relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0", colors.bg)}>
                             <Icon className={cn("h-5 w-5", colors.text)} />
                             {group.unreadCount > 0 && !hasMultiple && (
