@@ -1,3 +1,14 @@
+import { User } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -6,45 +17,50 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { User, UserRole } from '@/lib/types';
-import { UserCircle, Building2, Wallet, FileText } from 'lucide-react';
+import {
+  User as UserIcon,
+  Mail,
+  Phone,
+  Building2,
+  Briefcase,
+  CreditCard,
+  FileText,
+  Wallet,
+} from 'lucide-react';
+import { UserFormData, UserStatus } from '../UserManagementPage';
 
-type UserStatus = 'active' | 'inactive' | 'pending';
-
-export interface UserFormData {
-  name: string;
-  email: string;
-  role: UserRole;
-  status: UserStatus;
-  title: string;
-  department: string;
-  clientEntity: string;
-  avatar: string;
-  cellphone: string;
-  cpf: string;
-  rg: string;
-  address: string;
-  pixKeyPJ: string;
-  pixKeyPF: string;
-  docIdentityUrl: string;
-  docSocialContractUrl: string;
-  docServiceAgreementUrl: string;
+interface RoleMetadata {
+  code: string;
+  label: string;
 }
 
 interface UserFormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   formData: UserFormData;
-  setFormData: (data: UserFormData) => void;
+  setFormData: React.Dispatch<React.SetStateAction<UserFormData>>;
   editingUser: User | null;
   onSave: () => void;
   isSaving: boolean;
-  roles: Array<{ code: string; label: string }>;
+  roles: RoleMetadata[];
+}
+
+interface FormSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function FormSection({ title, icon, children }: FormSectionProps) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+        {icon}
+        <span>{title}</span>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function UserFormDrawer({
@@ -58,236 +74,227 @@ export function UserFormDrawer({
   roles,
 }: UserFormDrawerProps) {
   const updateField = (field: keyof UserFormData, value: string) => {
-    setFormData({ ...formData, [field]: value });
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl">
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>
-            {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
-          </SheetTitle>
+          <SheetTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</SheetTitle>
           <SheetDescription>
             {editingUser
-              ? 'Atualize as informações do usuário abaixo.'
-              : 'Preencha os dados para criar um novo usuário.'}
+              ? 'Atualize as informações do usuário'
+              : 'Preencha os dados para criar um novo usuário'}
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
-          <div className="space-y-6 py-4">
-            {/* Dados de Acesso e Perfil */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
-                <UserCircle className="h-5 w-5" />
-                Dados de Acesso e Perfil
+        <div className="space-y-6 py-6">
+          {/* Dados de Acesso */}
+          <FormSection title="Dados de Acesso" icon={<UserIcon className="h-4 w-4" />}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label>Nome Completo *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  placeholder="Nome do usuário"
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => updateField('name', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateField('email', e.target.value)}
-                    disabled={!!editingUser}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Função</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(v) => updateField('role', v)}
-                  >
-                    <SelectTrigger id="role">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.code} value={role.code}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(v) => updateField('status', v)}
-                  >
-                    <SelectTrigger id="status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Ativo</SelectItem>
-                      <SelectItem value="inactive">Inativo</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Cargo</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => updateField('title', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Departamento</Label>
-                  <Input
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) => updateField('department', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="clientEntity">Empresa / Entidade</Label>
-                  <Input
-                    id="clientEntity"
-                    value={formData.clientEntity}
-                    onChange={(e) => updateField('clientEntity', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="avatar">URL da Foto (Avatar)</Label>
-                  <Input
-                    id="avatar"
-                    value={formData.avatar}
-                    onChange={(e) => updateField('avatar', e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  placeholder="email@exemplo.com"
+                  disabled={!!editingUser}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Função</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(v) => updateField('role', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.code} value={role.code}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => updateField('status', v as UserStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          </FormSection>
 
-            {/* Dados Pessoais */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
-                <Building2 className="h-5 w-5" />
-                Dados Pessoais
+          {/* Informações Profissionais */}
+          <FormSection title="Informações Profissionais" icon={<Briefcase className="h-4 w-4" />}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Cargo / Título</Label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => updateField('title', e.target.value)}
+                  placeholder="Ex: Gerente Comercial"
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF</Label>
-                  <Input
-                    id="cpf"
-                    value={formData.cpf}
-                    onChange={(e) => updateField('cpf', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rg">RG</Label>
-                  <Input
-                    id="rg"
-                    value={formData.rg}
-                    onChange={(e) => updateField('rg', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cellphone">Celular</Label>
-                  <Input
-                    id="cellphone"
-                    value={formData.cellphone}
-                    onChange={(e) => updateField('cellphone', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-3">
-                  <Label htmlFor="address">Endereço Completo</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => updateField('address', e.target.value)}
-                  />
-                </div>
+
+              <div className="space-y-2">
+                <Label>Departamento</Label>
+                <Input
+                  value={formData.department}
+                  onChange={(e) => updateField('department', e.target.value)}
+                  placeholder="Ex: Vendas"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label>Empresa / Entidade</Label>
+                <Input
+                  value={formData.clientEntity}
+                  onChange={(e) => updateField('clientEntity', e.target.value)}
+                  placeholder="Nome da empresa"
+                />
               </div>
             </div>
+          </FormSection>
 
-            {/* Dados Financeiros */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
-                <Wallet className="h-5 w-5" />
-                Dados Financeiros
+          {/* Dados Pessoais */}
+          <FormSection title="Dados Pessoais" icon={<CreditCard className="h-4 w-4" />}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>CPF</Label>
+                <Input
+                  value={formData.cpf}
+                  onChange={(e) => updateField('cpf', e.target.value)}
+                  placeholder="000.000.000-00"
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pixKeyPJ">Chave PIX (PJ)</Label>
-                  <Input
-                    id="pixKeyPJ"
-                    value={formData.pixKeyPJ}
-                    onChange={(e) => updateField('pixKeyPJ', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pixKeyPF">Chave PIX (PF)</Label>
-                  <Input
-                    id="pixKeyPF"
-                    value={formData.pixKeyPF}
-                    onChange={(e) => updateField('pixKeyPF', e.target.value)}
-                  />
-                </div>
+
+              <div className="space-y-2">
+                <Label>RG</Label>
+                <Input
+                  value={formData.rg}
+                  onChange={(e) => updateField('rg', e.target.value)}
+                  placeholder="00.000.000-0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Celular</Label>
+                <Input
+                  value={formData.cellphone}
+                  onChange={(e) => updateField('cellphone', e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>URL do Avatar</Label>
+                <Input
+                  value={formData.avatar}
+                  onChange={(e) => updateField('avatar', e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label>Endereço</Label>
+                <Input
+                  value={formData.address}
+                  onChange={(e) => updateField('address', e.target.value)}
+                  placeholder="Endereço completo"
+                />
               </div>
             </div>
+          </FormSection>
 
-            {/* URLs de Documentos */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
-                <FileText className="h-5 w-5" />
-                URLs de Documentos
+          {/* Dados Financeiros */}
+          <FormSection title="Dados Financeiros" icon={<Wallet className="h-4 w-4" />}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Chave PIX (PF)</Label>
+                <Input
+                  value={formData.pixKeyPF}
+                  onChange={(e) => updateField('pixKeyPF', e.target.value)}
+                  placeholder="CPF, Email ou Telefone"
+                />
               </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="docIdentityUrl">Link do Documento de Identidade</Label>
-                  <Input
-                    id="docIdentityUrl"
-                    value={formData.docIdentityUrl}
-                    onChange={(e) => updateField('docIdentityUrl', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="docSocialContractUrl">Link do Contrato Social</Label>
-                  <Input
-                    id="docSocialContractUrl"
-                    value={formData.docSocialContractUrl}
-                    onChange={(e) => updateField('docSocialContractUrl', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="docServiceAgreementUrl">
-                    Link do Contrato de Prestação de Serviços
-                  </Label>
-                  <Input
-                    id="docServiceAgreementUrl"
-                    value={formData.docServiceAgreementUrl}
-                    onChange={(e) => updateField('docServiceAgreementUrl', e.target.value)}
-                  />
-                </div>
+
+              <div className="space-y-2">
+                <Label>Chave PIX (PJ)</Label>
+                <Input
+                  value={formData.pixKeyPJ}
+                  onChange={(e) => updateField('pixKeyPJ', e.target.value)}
+                  placeholder="CNPJ ou Aleatória"
+                />
               </div>
             </div>
-          </div>
-        </ScrollArea>
+          </FormSection>
 
-        <SheetFooter className="border-t pt-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
+          {/* Documentos */}
+          <FormSection title="URLs de Documentos" icon={<FileText className="h-4 w-4" />}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Documento de Identidade</Label>
+                <Input
+                  value={formData.docIdentityUrl}
+                  onChange={(e) => updateField('docIdentityUrl', e.target.value)}
+                  placeholder="URL do documento"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Contrato Social</Label>
+                <Input
+                  value={formData.docSocialContractUrl}
+                  onChange={(e) => updateField('docSocialContractUrl', e.target.value)}
+                  placeholder="URL do documento"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Contrato de Serviço</Label>
+                <Input
+                  value={formData.docServiceAgreementUrl}
+                  onChange={(e) => updateField('docServiceAgreementUrl', e.target.value)}
+                  placeholder="URL do documento"
+                />
+              </div>
+            </div>
+          </FormSection>
+        </div>
+
+        <SheetFooter className="gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancelar
           </Button>
           <Button onClick={onSave} disabled={isSaving}>
-            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+            {isSaving ? 'Salvando...' : 'Salvar'}
           </Button>
         </SheetFooter>
       </SheetContent>
