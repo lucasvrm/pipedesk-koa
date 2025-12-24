@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { hasPermission } from '@/lib/permissions';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { useUnreadCount } from '@/services/notificationService';
 import {
   ChartBar,
   Kanban,
@@ -78,6 +79,8 @@ export function Layout({ children }: LayoutProps) {
 
   useRealtimeNotifications(profile?.id);
 
+  const { data: unreadCount = 0 } = useUnreadCount(profile?.id || null);
+
   const [inboxOpen, setInboxOpen] = useState(false);
   const [createDealOpen, setCreateDealOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -85,7 +88,6 @@ export function Layout({ children }: LayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const currentUser = profile;
-  const unreadCount = 0;
 
   if (!currentUser) return null;
 
