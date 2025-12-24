@@ -141,7 +141,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l" hideCloseButton>
+      <SheetContent className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-500 p-5">
@@ -260,7 +260,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 pb-6 space-y-2">
+              <div className="p-3 pb-24 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
