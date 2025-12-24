@@ -142,7 +142,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
-        className="w-[468px] sm:w-[540px] flex flex-col p-0 gap-0 border-l"
+        className="w-[540px] sm:w-[600px] flex flex-col p-0 gap-0 border-l"
         closeButtonClassName="bg-white/95 hover:bg-white text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200"
       >
         
@@ -159,7 +159,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
           </div>
           
           {/* Filtros */}
-          <div className="flex gap-2 mt-4 flex-wrap">
+          <div className="flex gap-2 mt-4 overflow-x-auto whitespace-nowrap">
             {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
                 className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
