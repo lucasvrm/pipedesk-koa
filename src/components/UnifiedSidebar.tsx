@@ -32,8 +32,6 @@ import {
   Moon,
   Monitor,
   Users,
-  Link2,
-  FolderOpen,
   Briefcase,
   Package,
   Shield,
@@ -72,7 +70,7 @@ interface UnifiedSidebarProps {
 }
 
 // Configuração do menu
-const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, canViewAnalytics: boolean, canManageIntegrations: boolean): MenuSection[] => [
+const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, canViewAnalytics: boolean): MenuSection[] => [
   {
     id: 'profile',
     label: 'Meu Perfil',
@@ -90,8 +88,6 @@ const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, ca
     color: 'text-blue-500',
     items: [
       ...(canViewAnalytics ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics', external: true }] : []),
-      ...(canManageIntegrations ? [{ id: 'google', label: 'Google Workspace', icon: Link2, path: '/admin/integrations/google', external: true, badge: 'Restrito' }] : []),
-      { id: 'folders', label: 'Pastas', icon: FolderOpen, path: '/folders/manage', external: true },
       ...(canManageUsers ? [{ id: 'users', label: 'Usuários', icon: Users, path: '/admin/users', external: true, badge: 'Restrito' }] : []),
     ].filter(Boolean) as MenuItem[],
   },
@@ -179,11 +175,10 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   const canManageUsers = useMemo(() => profile ? hasPermission(profile.role, 'MANAGE_USERS') : false, [profile]);
   const canManageSettings = useMemo(() => profile ? hasPermission(profile.role, 'MANAGE_SETTINGS') : false, [profile]);
   const canViewAnalytics = useMemo(() => profile ? hasPermission(profile.role, 'VIEW_ANALYTICS') : false, [profile]);
-  const canManageIntegrations = useMemo(() => profile ? hasPermission(profile.role, 'MANAGE_INTEGRATIONS') : false, [profile]);
 
   const menuSections = useMemo(() => 
-    getMenuSections(canManageUsers, canManageSettings, canViewAnalytics, canManageIntegrations),
-    [canManageUsers, canManageSettings, canViewAnalytics, canManageIntegrations]
+    getMenuSections(canManageUsers, canManageSettings, canViewAnalytics),
+    [canManageUsers, canManageSettings, canViewAnalytics]
   );
 
   const { activeSection, activeItem } = useMemo(() => {

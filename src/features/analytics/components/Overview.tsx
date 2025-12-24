@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/EmptyState'
 import {
-  TrendUp,
-  CurrencyCircleDollar,
+  TrendingUp,
+  DollarSign,
   CheckCircle,
-  RocketLaunch,
-} from '@phosphor-icons/react'
+  Rocket,
+} from 'lucide-react'
 import { PlayerStage, STAGE_PROBABILITIES } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
 import DealsList from '@/features/deals/components/DealsList'
@@ -63,7 +63,7 @@ export default function Overview() {
       {(masterDeals || []).length === 0 ? (
         <div className="space-y-6">
           <EmptyState
-            icon={<RocketLaunch size={64} weight="duotone" />}
+            icon={<Rocket className="h-16 w-16" />}
             title="Bem-vindo ao PipeDesk!"
             description="Você ainda não tem nenhum negócio. Comece criando seu primeiro Master Deal."
             actionLabel="Criar Primeiro Negócio"
@@ -76,7 +76,7 @@ export default function Overview() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Negócios Ativos</CardTitle>
-                <TrendUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
               <CardContent>
                 <div className="text-xl md:text-2xl font-bold">{activeDeals.length}</div>
@@ -89,7 +89,7 @@ export default function Overview() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Volume Total</CardTitle>
-                <CurrencyCircleDollar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
               <CardContent>
                 <div className="text-xl md:text-2xl font-bold break-words">{formatCurrency(totalVolume)}</div>
@@ -102,7 +102,7 @@ export default function Overview() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Forecast Ponderado</CardTitle>
-                <TrendUp className="h-4 w-4 text-success flex-shrink-0" />
+                <TrendingUp className="h-4 w-4 text-success flex-shrink-0" />
               </CardHeader>
               <CardContent>
                 <div className="text-xl md:text-2xl font-bold break-words">{formatCurrency(weightedPipeline)}</div>
