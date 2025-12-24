@@ -141,7 +141,10 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l">
+      <SheetContent 
+        className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l"
+        closeButtonClassName="bg-red-600/10 hover:bg-red-600/20 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+      >
         
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-500 p-5">
@@ -260,7 +263,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 pb-24 space-y-2">
+              <div className="p-3 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
@@ -416,6 +419,8 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                     </div>
                   );
                 })}
+                {/* Espaçador para garantir que o último item não seja cortado */}
+                <div className="h-32" />
               </div>
             </ScrollArea>
           )}
