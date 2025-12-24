@@ -356,6 +356,13 @@ export default function UserManagementPage() {
               Magic Links
             </Button>
             <Button
+              variant="outline"
+              onClick={handleCreate}
+              className="gap-2"
+            >
+              Criar Manualmente
+            </Button>
+            <Button
               onClick={() => setInviteDialogOpen(true)}
               className="gap-2"
             >
