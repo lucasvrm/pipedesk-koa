@@ -29,6 +29,9 @@ export interface User {
   email: string
   role: UserRole
   avatar?: string
+  avatarBgColor?: string
+  avatarTextColor?: string
+  avatarBorderColor?: string
   clientEntity?: string
   has_completed_onboarding?: boolean
   createdAt?: string
