@@ -8,6 +8,7 @@ import { GlobalErrorBoundary } from './components/GlobalErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ImpersonationProvider } from './contexts/ImpersonationContext.tsx'
 import { SystemMetadataProvider } from './contexts/SystemMetadataContext.tsx'
+import { ThemeProvider } from './contexts/ThemeContext.tsx'
 
 import "./main.css"
 import "./styles/theme.css"
@@ -49,14 +50,16 @@ createRoot(document.getElementById('root')!).render(
   <GlobalErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <ImpersonationProvider>
-            <SystemMetadataProvider>
-              <App />
-              <ReactQueryDevtools initialIsOpen={false} />
-            </SystemMetadataProvider>
-          </ImpersonationProvider>
-        </AuthProvider>
+        <ThemeProvider defaultTheme="system">
+          <AuthProvider>
+            <ImpersonationProvider>
+              <SystemMetadataProvider>
+                <App />
+                <ReactQueryDevtools initialIsOpen={false} />
+              </SystemMetadataProvider>
+            </ImpersonationProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </GlobalErrorBoundary>
