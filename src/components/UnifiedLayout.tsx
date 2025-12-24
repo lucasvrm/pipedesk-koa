@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UnifiedSidebar } from '@/components/UnifiedSidebar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Home } from 'lucide-react';
 
@@ -108,7 +107,7 @@ export function UnifiedLayout({
   };
 
   return (
-    <div className={cn("flex h-[calc(100vh-4rem)] bg-background", className)}>
+    <div className={cn("flex h-[calc(100vh-4rem)] bg-background overflow-hidden", className)}>
       {/* Sidebar */}
       <UnifiedSidebar
         activeSection={activeSection}
@@ -163,11 +162,11 @@ export function UnifiedLayout({
         )}
 
         {/* Content Area */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className={cn("p-6", contentClassName)}>
             {children}
           </div>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );

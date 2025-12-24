@@ -10,7 +10,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
   TooltipContent,
@@ -301,11 +300,9 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   return (
     <div className="flex h-full">
       {/* Icon Rail */}
-      <div className="w-16 bg-slate-900 dark:bg-slate-950 flex flex-col items-center py-4 shrink-0">
-        {/* Logo */}
-        <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-lg mb-6">
-          P
-        </div>
+      <div className="w-16 bg-slate-900 flex flex-col items-center py-4 shrink-0">
+        {/* Spacer no lugar do logo */}
+        <div className="h-4 mb-4" />
 
         {/* Section Icons */}
         <div className="flex-1 flex flex-col items-center gap-2">
@@ -436,7 +433,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
       </div>
 
       {/* Expanded Panel */}
-      <div className="w-64 bg-slate-50 dark:bg-slate-900 border-r border-border flex flex-col">
+      <div className="w-64 bg-background border-r border-border flex flex-col">
         {/* Section Header */}
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold text-foreground">
@@ -476,7 +473,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         </div>
 
         {/* Menu Items */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className="p-3 space-y-1">
             {menuSections.find(s => s.id === activeSection)?.items.map((item) => {
               const Icon = item.icon;
@@ -491,8 +488,8 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
                       isActive && !hasChildren
-                        ? "bg-red-500 text-white shadow-md"
-                        : "text-foreground hover:bg-muted"
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-foreground hover:bg-accent"
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -520,7 +517,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
                         <button
                           key={child.id}
                           onClick={() => handleChildClick(item, child)}
-                          className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                          className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
                         >
                           {child.label}
                         </button>
@@ -531,12 +528,12 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer */}
         <div className="p-3 border-t border-border space-y-2">
           {/* Theme Selector */}
-          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50">
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/50">
             <span className="text-sm text-muted-foreground">Tema</span>
             <div className="flex items-center gap-1">
               <Button
@@ -569,7 +566,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
           {/* Logout */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="w-full justify-start text-destructive hover:bg-destructive/10"
             onClick={handleSignOut}
           >
             <LogOut className="h-4 w-4 mr-2" />
