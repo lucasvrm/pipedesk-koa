@@ -1,4 +1,4 @@
-import { User, HelpCircle, LogOut, Bell, BellSlash, Gear } from 'lucide-react';
+import { User, HelpCircle, LogOut, Bell, BellOff, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -65,7 +65,7 @@ export function UserAvatarMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative"
+          className="relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Menu do usuário"
         >
           <Avatar className={cn(
@@ -84,7 +84,7 @@ export function UserAvatarMenu() {
           {/* DND Indicator */}
           {preferences?.dndEnabled && (
             <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 border-2 border-background flex items-center justify-center">
-              <BellSlash className="h-2 w-2 text-white" />
+              <BellOff className="h-2 w-2 text-white" />
             </span>
           )}
         </button>
@@ -121,7 +121,7 @@ export function UserAvatarMenu() {
         >
           <div className="flex items-center gap-2">
             {preferences?.dndEnabled ? (
-              <BellSlash className="h-4 w-4 text-amber-600" />
+              <BellOff className="h-4 w-4 text-amber-600" />
             ) : (
               <Bell className="h-4 w-4 text-muted-foreground" />
             )}
@@ -150,7 +150,7 @@ export function UserAvatarMenu() {
           onClick={() => navigate('/profile/preferences')}
           className="cursor-pointer"
         >
-          <Gear className="mr-2 h-4 w-4" />
+          <Settings className="mr-2 h-4 w-4" />
           Preferências de Notificação
         </DropdownMenuItem>
         
