@@ -47,10 +47,12 @@ function SheetContent({
   children,
   side = "right",
   hideCloseButton = false,
+  closeButtonClassName,
   ...props
 }: ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
   hideCloseButton?: boolean
+  closeButtonClassName?: string
 }) {
   return (
     <SheetPortal>
@@ -73,8 +75,13 @@ function SheetContent({
       >
         {children}
         {!hideCloseButton && (
-          <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
-            <XIcon className="size-4" />
+          <SheetPrimitive.Close 
+            className={cn(
+              "absolute top-4 right-4 rounded-lg p-2 opacity-70 transition-all hover:opacity-100 hover:bg-muted disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              closeButtonClassName
+            )}
+          >
+            <XIcon className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         )}
