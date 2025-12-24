@@ -32,6 +32,7 @@ export interface User {
   avatarBgColor?: string
   avatarTextColor?: string
   avatarBorderColor?: string
+  bannerStyle?: string
   clientEntity?: string
   has_completed_onboarding?: boolean
   createdAt?: string

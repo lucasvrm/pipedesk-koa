@@ -86,14 +86,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
             .single();
 
           if (newProfile) {
-            setProfile({ ...newProfile, avatar: newProfile.avatar_url });
+            setProfile({ 
+              ...newProfile, 
+              avatar: newProfile.avatar_url,
+              avatarBgColor: newProfile.avatar_bg_color,
+              avatarTextColor: newProfile.avatar_text_color,
+              avatarBorderColor: newProfile.avatar_border_color,
+              bannerStyle: newProfile.banner_style,
+            });
             loadedProfileId.current = userId;
           }
         } else {
           console.error('Erro ao buscar perfil:', error);
         }
       } else if (data) {
-        setProfile({ ...data, avatar: data.avatar_url });
+        setProfile({ 
+          ...data, 
+          avatar: data.avatar_url,
+          avatarBgColor: data.avatar_bg_color,
+          avatarTextColor: data.avatar_text_color,
+          avatarBorderColor: data.avatar_border_color,
+          bannerStyle: data.banner_style,
+        });
         loadedProfileId.current = userId;
       }
     } catch (err) {
