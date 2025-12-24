@@ -2,7 +2,7 @@ import { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge, BadgeVariant } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserBadge } from '@/components/ui/user-badge';
 import {
   Table,
   TableBody,
@@ -216,12 +216,15 @@ export function UserTable({
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={user.avatar} />
-                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                              {getInitials(user.name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserBadge
+                            name={user.name}
+                            avatarUrl={user.avatar}
+                            bgColor={user.avatarBgColor}
+                            textColor={user.avatarTextColor}
+                            borderColor={user.avatarBorderColor}
+                            size="sm"
+                            className="h-9 w-9"
+                          />
                           {user.status === 'active' && (
                             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
                           )}

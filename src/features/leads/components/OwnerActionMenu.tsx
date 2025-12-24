@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -174,12 +174,15 @@ export function OwnerActionMenu({ leadId, currentOwner, children }: OwnerActionM
                         onClick={() => handleSelectOwner(user)}
                         disabled={isMutating || isCurrentOwner}
                       >
-                        <Avatar className="h-8 w-8 shrink-0">
-                          <AvatarImage src={user.avatar} alt={userName} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(userName)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserBadge
+                          name={userName}
+                          avatarUrl={user.avatar}
+                          bgColor={user.avatarBgColor}
+                          textColor={user.avatarTextColor}
+                          borderColor={user.avatarBorderColor}
+                          size="sm"
+                          className="shrink-0"
+                        />
                         <div className="flex-1 min-w-0 overflow-hidden">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm font-medium truncate">

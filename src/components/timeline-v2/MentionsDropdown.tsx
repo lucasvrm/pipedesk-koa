@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/helpers'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TimelineAuthor } from './types'
@@ -140,12 +140,14 @@ export function MentionsDropdown({
                 onClick={() => onSelect(user)}
                 onMouseEnter={() => setSelectedIndex(index)}
               >
-                <Avatar className="h-8 w-8 border">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="text-xs bg-muted">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserBadge
+                  name={user.name}
+                  avatarUrl={user.avatar}
+                  bgColor={user.avatarBgColor}
+                  textColor={user.avatarTextColor}
+                  borderColor={user.avatarBorderColor}
+                  size="sm"
+                />
                 <span className="truncate font-medium text-foreground">
                   {user.name}
                 </span>

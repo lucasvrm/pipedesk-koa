@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Clock, WarningCircle, User } from '@phosphor-icons/react'
 import { MasterDeal } from '@/lib/types' // Corrigido de Deal para MasterDeal
@@ -86,10 +86,14 @@ export function DealKanbanCard({ deal, index, onClick }: DealKanbanCardProps) {
 
                 {/* Avatar do Dono (se existir) */}
                 {deal.createdByUser && (
-                  <Avatar className="h-6 w-6 border-2 border-background" title={deal.createdByUser.name}>
-                      <AvatarImage src={deal.createdByUser.avatar} />
-                      <AvatarFallback className="text-[9px]">{deal.createdByUser.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <UserBadge
+                    name={deal.createdByUser.name}
+                    avatarUrl={deal.createdByUser.avatar}
+                    bgColor={deal.createdByUser.avatarBgColor}
+                    textColor={deal.createdByUser.avatarTextColor}
+                    borderColor={deal.createdByUser.avatarBorderColor}
+                    size="xs"
+                  />
                 )}
             </div>
           </div>

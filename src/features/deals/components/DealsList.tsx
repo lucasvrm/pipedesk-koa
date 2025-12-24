@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { dealStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Progress } from '@/components/ui/progress'
 import { WarningCircle, TrendUp, Buildings, CalendarBlank, Clock, Tag as TagIcon } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -184,10 +184,16 @@ export default function DealsList({ deals, tracks, stages, onDealClick }: DealsL
 
                 <div className="flex -space-x-1.5">
                     {deal.responsibles?.slice(0, 3).map((u, i) => (
-                        <Avatar key={i} className="h-5 w-5 ring-1 ring-background">
-                            <AvatarImage src={u.avatar} />
-                            <AvatarFallback className="text-[8px]">{u.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <UserBadge
+                          key={i}
+                          name={u.name}
+                          avatarUrl={u.avatar}
+                          bgColor={u.avatarBgColor}
+                          textColor={u.avatarTextColor}
+                          borderColor={u.avatarBorderColor}
+                          size="xs"
+                          className="h-5 w-5 ring-1 ring-background"
+                        />
                     ))}
                 </div>
             </CardFooter>

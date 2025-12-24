@@ -8,7 +8,7 @@ import { updateLead } from '@/services/leadService'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
@@ -170,10 +170,15 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
               <span className="font-medium">Responsável</span>
               {owner ? (
                 <div className="flex items-center gap-1">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={ownerAvatar} />
-                    <AvatarFallback className="text-[8px]">{ownerInitials}</AvatarFallback>
-                  </Avatar>
+                  <UserBadge
+                    name={ownerName}
+                    avatarUrl={ownerAvatar}
+                    bgColor={owner.avatarBgColor}
+                    textColor={owner.avatarTextColor}
+                    borderColor={owner.avatarBorderColor}
+                    size="xs"
+                    className="h-5 w-5"
+                  />
                   <span className="truncate max-w-[100px] text-foreground">{ownerName}</span>
                 </div>
               ) : <span>—</span>}

@@ -4,7 +4,7 @@ import { ptBR } from 'date-fns/locale'
 import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check, Plus, ListTodo } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Button } from '@/components/ui/button'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -707,10 +707,15 @@ export function LeadSalesRow({
             <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
               {owner ? (
                 <>
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={owner.avatar || undefined} alt={safeOwnerName ?? undefined} />
-                    <AvatarFallback>{getInitials(safeOwnerName ?? undefined)}</AvatarFallback>
-                  </Avatar>
+                  <UserBadge
+                    name={safeOwnerName ?? 'Usuário'}
+                    avatarUrl={owner.avatar || undefined}
+                    bgColor={owner.avatarBgColor}
+                    textColor={owner.avatarTextColor}
+                    borderColor={owner.avatarBorderColor}
+                    size="sm"
+                    className="shrink-0"
+                  />
                   <div className="text-sm font-medium leading-tight truncate">{safeOwnerName}</div>
                 </>
               ) : (
@@ -720,10 +725,15 @@ export function LeadSalesRow({
           </OwnerActionMenu>
         ) : owner ? (
           <div className="flex items-center gap-2 min-w-0">
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarImage src={owner.avatar || undefined} alt={safeOwnerName ?? undefined} />
-              <AvatarFallback>{getInitials(safeOwnerName ?? undefined)}</AvatarFallback>
-            </Avatar>
+            <UserBadge
+              name={safeOwnerName ?? 'Usuário'}
+              avatarUrl={owner.avatar || undefined}
+              bgColor={owner.avatarBgColor}
+              textColor={owner.avatarTextColor}
+              borderColor={owner.avatarBorderColor}
+              size="sm"
+              className="shrink-0"
+            />
             <div className="text-sm font-medium leading-tight truncate">{safeOwnerName}</div>
           </div>
         ) : (

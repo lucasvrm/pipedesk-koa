@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
@@ -928,12 +928,17 @@ export default function LeadDetailPage() {
                   <CardContent className="p-0">
                     {lead.members && lead.members.length > 0 ? (
                       <div className="divide-y">
-                        {lead.members.map(member => (
+                         {lead.members.map(member => (
                           <div key={member.userId} className="px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
-                                {safeStringOptional(member.user?.name)?.charAt(0) || 'U'}
-                              </div>
+                              <UserBadge
+                                name={safeString(member.user?.name, 'Usuário')}
+                                avatarUrl={member.user?.avatar}
+                                bgColor={member.user?.avatarBgColor}
+                                textColor={member.user?.avatarTextColor}
+                                borderColor={member.user?.avatarBorderColor}
+                                size="md"
+                              />
                               <div className="space-y-0.5">
                                 <p className="text-sm font-medium leading-tight">{safeString(member.user?.name, 'Usuário')}</p>
                                 <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
@@ -1180,9 +1185,12 @@ export default function LeadDetailPage() {
                               isAlreadyLinked && 'opacity-50 cursor-not-allowed'
                             )}
                           >
-                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                              {safeString(contact.name, 'C').charAt(0)}
-                            </div>
+                            <UserBadge
+                              name={safeString(contact.name, 'Contato')}
+                              avatarUrl={contact.avatar}
+                              size="sm"
+                              className="h-8 w-8"
+                            />
                             <div className="space-y-1 flex-1">
                               <p className="text-sm font-medium leading-tight">{safeString(contact.name, 'Contato')}</p>
                               <p className="text-xs text-muted-foreground">{contact.role || 'Sem cargo'}</p>

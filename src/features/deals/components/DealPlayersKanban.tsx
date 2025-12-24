@@ -7,7 +7,7 @@ import { formatCurrency, formatDate } from '@/lib/helpers'
 import { useStages } from '@/services/pipelineService'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -208,7 +208,12 @@ function TrackCard({
           </div>
           <div className="pt-2 border-t flex justify-between items-center">
             <Badge variant="outline" className="text-[9px] h-4">{track.probability || stageProbability}%</Badge>
-            {track.responsibles?.length > 0 && <Avatar className="h-5 w-5"><AvatarFallback className="text-[8px]"><User /></AvatarFallback></Avatar>}
+            {track.responsibles?.length > 0 && (
+              <div className="flex items-center gap-1">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">{track.responsibles.length}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

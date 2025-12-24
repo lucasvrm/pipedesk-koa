@@ -8,7 +8,7 @@ import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
 import { CreateLeadModal } from '../components/CreateLeadModal'
