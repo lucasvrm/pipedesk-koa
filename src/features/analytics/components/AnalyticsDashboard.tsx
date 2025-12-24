@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Download, ChartLine, Target, Users, Funnel, TrendingUp, PresentationChart, GitBranch, Handshake, Clock } from 'lucide-react'
+import { Download, ChartLine, Target, Users, Funnel, TrendingUp, BarChart3, GitBranch, Handshake, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 
 // IMPORTS DOS NOVOS GRÁFICOS
@@ -69,7 +69,7 @@ export default function AnalyticsDashboard({ currentUser }: AnalyticsDashboardPr
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <PresentationChart className="text-primary" />
+            <BarChart3 className="text-primary" />
             Analytics & Inteligência
           </h2>
           <p className="text-muted-foreground">
