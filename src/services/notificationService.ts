@@ -146,6 +146,18 @@ export async function markAsRead(notificationId: string): Promise<void> {
 }
 
 /**
+ * Mark a notification as unread
+ */
+export async function markAsUnread(notificationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: false })
+    .eq('id', notificationId);
+
+  if (error) throw error;
+}
+
+/**
  * Mark all notifications as read for a user
  */
 export async function markAllAsRead(userId: string): Promise<void> {
@@ -700,6 +712,21 @@ export function useMarkAsRead() {
 
   return useMutation({
     mutationFn: markAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
+  });
+}
+
+/**
+ * Hook to mark as unread
+ */
+export function useMarkAsUnread() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: markAsUnread,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
       queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
