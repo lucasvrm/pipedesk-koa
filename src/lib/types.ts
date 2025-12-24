@@ -43,6 +43,11 @@ export interface User {
   docIdentityUrl?: string
   docSocialContractUrl?: string
   docServiceAgreementUrl?: string
+  title?: string
+  department?: string
+  birthDate?: string
+  linkedin?: string
+  bio?: string
   isSynthetic?: boolean
   preferences?: Record<string, any> // User specific UI preferences
 }

@@ -1,5 +1,115 @@
 # 📋 ACTION_PLAN.md - Ajustes em /leads
 
+## 🚧 Status: ✅ Concluído (Prompt 18A - Profile Page Refactor)
+
+**Data:** 2024-12-24  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Frontend - Refatoração da página de perfil com novo layout (banner + avatar grande + ProfileHeader component)
+
+---
+
+## 🆕 Iteração atual - Prompt 18A: Profile Page - Estrutura Base e Layout
+
+**Data:** 2024-12-24  
+**Autor:** GitHub Copilot Agent  
+**Escopo:** Frontend - Refatoração completa da página `/profile` com novo layout
+
+### 🎯 Objetivo
+Refatorar a página `/profile` com novo layout moderno incluindo:
+- Banner com gradiente no topo
+- Avatar grande (24x24) com indicador online
+- Botões de ação no avatar (upload, remover)
+- Informações do usuário (nome, cargo, departamento, email, role badge)
+- Botão "Compartilhar Perfil"
+- Novos campos de perfil: title, department, birthDate, linkedin, bio
+
+### ✅ Tarefas Concluídas
+- [x] Criado componente `ProfileHeader` em `/src/components/ProfileHeader.tsx`
+- [x] Implementado banner com gradiente e botão "Alterar capa"
+- [x] Avatar grande (h-24 w-24) com bordas e shadow
+- [x] Botões de ação no avatar usando lucide-react icons (Camera, Trash)
+- [x] Indicador online (bolinha verde)
+- [x] Seção de informações com nome, role badge, título/departamento, email
+- [x] Atualizado `Profile.tsx` para usar `ProfileHeader`
+- [x] Adicionados novos campos ao `ProfileFormData`: title, department, birthDate, linkedin, bio
+- [x] Atualizado tipo `User` em `src/lib/types.ts` com novos campos
+- [x] Atualizado handler `handleSave` para salvar novos campos
+- [x] Adicionado campo `lastLogin` ao estado e busca de metadados
+
+### Arquivos Criados
+- `src/components/ProfileHeader.tsx` - Novo componente com banner e avatar (145 linhas)
+
+### Arquivos Modificados
+- `src/pages/Profile.tsx` - Integração do ProfileHeader e novos campos
+- `src/lib/types.ts` - Adicionados 5 novos campos opcionais ao tipo User
+
+### 🎨 Stack Utilizada
+- React 18 + TypeScript (strict mode)
+- Tailwind CSS para estilos
+- shadcn/ui components (Avatar, Button, Badge)
+- **lucide-react** icons (Camera, Trash) - conforme AGENTS.md
+- ❌ **NÃO utilizado** @phosphor-icons/react (proibido conforme guidelines)
+
+### 📊 Novos Campos em User/Profile
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `title` | string? | Cargo do usuário |
+| `department` | string? | Departamento |
+| `birthDate` | string? | Data de nascimento |
+| `linkedin` | string? | URL do LinkedIn |
+| `bio` | string? | Biografia do usuário |
+
+### 📊 Medição de Impacto
+
+| Métrica | Valor |
+|---------|-------|
+| Arquivos criados | 1 |
+| Arquivos modificados | 2 |
+| Componentes novos | 1 (ProfileHeader) |
+| Novos campos (User type) | 5 |
+| Linhas de código (ProfileHeader) | 137 |
+| Ícones migrados | 2 (Camera, Trash - de Phosphor para lucide-react) |
+| Alertas de segurança | 0 |
+| Contratos quebrados | 0 |
+| Libs novas adicionadas | 0 |
+| Complexidade | 35/100 |
+
+**Risco:** 🟢 Baixo (componente novo, não quebra existentes)
+
+### 📝 ROADMAP Final
+
+| Item Solicitado | Status | Observações |
+|----------------|--------|-------------|
+| Criar ProfileHeader.tsx | ✅ | Banner + Avatar + Info + Ações |
+| Banner com gradiente | ✅ | gradient-to-r from-primary |
+| Botão "Alterar capa" | ✅ | Funcionalidade placeholder |
+| Avatar 24x24 com bordas | ✅ | h-24 w-24 border-4 shadow-xl |
+| Indicador online | ✅ | Bolinha verde absolute bottom-1 left-1 |
+| Botões de ação (Camera, Trash) | ✅ | lucide-react icons (não Phosphor) |
+| Input file hidden | ✅ | ref passado via props |
+| Nome + Role Badge | ✅ | Integrado com useSystemMetadata |
+| Título + Departamento | ✅ | Exibidos se presentes |
+| Email do usuário | ✅ | text-xs muted-foreground |
+| Botão "Compartilhar Perfil" | ✅ | Funcionalidade placeholder |
+| Exportar interface ProfileFormData | ✅ | Com todos os campos (18 total) |
+| Atualizar Profile.tsx | ✅ | Integra ProfileHeader |
+| Adicionar novos campos ao formData | ✅ | title, department, birthDate, linkedin, bio |
+| Atualizar User type | ✅ | 5 novos campos opcionais |
+| Atualizar handleSave | ✅ | Salva novos campos no Supabase |
+| Buscar lastLogin | ✅ | Adicionado ao fetchMetadata |
+| Usar lucide-react (não Phosphor) | ✅ | Camera, Trash do lucide-react |
+
+#### Legenda
+- ✅ **Implementado** exatamente como solicitado
+
+### 📝 Notas para Prompt 18B
+O Prompt 18B deve criar:
+- `ProfileSidebarInfo.tsx` - Sidebar com info rápida (ID, membro desde, bio, links)
+- `ProfileTabs.tsx` - Estrutura das 5 tabs com conteúdo
+
+---
+
 ## 🚧 Status: ✅ Concluído (Migration - Sistema de Notificações)
 
 **Data:** 2025-12-23  
