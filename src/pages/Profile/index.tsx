@@ -804,7 +804,7 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="flex-1 pb-1 pt-2">
+              <div className="flex-1 pb-2 pt-6">
                 <div className="flex items-center gap-2 mb-0.5">
                   <h1 className="text-xl font-bold text-foreground">{formData.name || 'Usuário'}</h1>
                   <Badge variant="default">{roleInfo?.label || profile.role}</Badge>

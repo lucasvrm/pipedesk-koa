@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { getInitials } from '@/lib/helpers'
 // CORREÇÃO: Imports via services
 import { useUsers } from '@/services/userService'
 import { useTasks } from '@/services/taskService'
@@ -70,10 +69,14 @@ export function TeamWorkloadHeatmap() {
             {workloadData.map((item) => (
               <div key={item.user.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors border">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={item.user.avatar} />
-                    <AvatarFallback>{getInitials(item.user.name)}</AvatarFallback>
-                  </Avatar>
+                  <UserBadge
+                    name={item.user.name}
+                    avatarUrl={item.user.avatar}
+                    bgColor={item.user.avatarBgColor}
+                    textColor={item.user.avatarTextColor}
+                    borderColor={item.user.avatarBorderColor}
+                    size="sm"
+                  />
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{item.user.name}</span>
                     <span className="text-[10px] text-muted-foreground capitalize">{item.user.role}</span>
