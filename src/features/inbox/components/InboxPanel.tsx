@@ -160,69 +160,75 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           </div>
           
-          {/* Filtros */}
-          <div className="flex gap-2 mt-4 flex-wrap">
-            {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
-              <button key={s} onClick={() => setFilterStatus(s)}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  filterStatus === s ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
-                {s === 'all' ? 'Todas' : s === 'unread' ? 'Não lidas' : 'Lidas'}
-              </button>
-            ))}
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1",
-                  (filterCategory !== 'all' || filterPriority !== 'all') ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
-                  <Filter className="h-3 w-3" /> Filtros
-                  {(filterCategory !== 'all' || filterPriority !== 'all') && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px]">
-                      {(filterCategory !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0)}
-                    </span>
-                  )}
+          {/* Filtros e Opções */}
+          <div className="mt-4 space-y-2">
+            {/* Linha 1: Filtros de status e dropdown */}
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
+                <button key={s} onClick={() => setFilterStatus(s)}
+                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    filterStatus === s ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
+                  {s === 'all' ? 'Todas' : s === 'unread' ? 'Não lidas' : 'Lidas'}
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={8} className="w-56">
-                <DropdownMenuLabel>Categoria</DropdownMenuLabel>
-                <DropdownMenuCheckboxItem checked={filterCategory === 'all'} onCheckedChange={() => setFilterCategory('all')}>
-                  Todas
-                </DropdownMenuCheckboxItem>
-                {(Object.keys(NOTIFICATION_CATEGORY_LABELS) as NotificationCategory[]).filter(c => c !== 'general').map(cat => {
-                  const Icon = CATEGORY_ICONS[cat];
-                  return (
-                    <DropdownMenuCheckboxItem key={cat} checked={filterCategory === cat} onCheckedChange={() => setFilterCategory(cat)}>
-                      <Icon className="h-4 w-4 mr-2" />{NOTIFICATION_CATEGORY_LABELS[cat]}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Prioridade</DropdownMenuLabel>
-                <DropdownMenuCheckboxItem checked={filterPriority === 'all'} onCheckedChange={() => setFilterPriority('all')}>
-                  Todas
-                </DropdownMenuCheckboxItem>
-                {(['critical', 'urgent', 'high', 'normal', 'low'] as NotificationPriority[]).map(pri => (
-                  <DropdownMenuCheckboxItem key={pri} checked={filterPriority === pri} onCheckedChange={() => setFilterPriority(pri)}>
-                    <span className={cn("w-2 h-2 rounded-full mr-2", NOTIFICATION_PRIORITY_COLORS[pri].dot)} />
-                    {NOTIFICATION_PRIORITY_LABELS[pri]}
+              ))}
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                    (filterCategory !== 'all' || filterPriority !== 'all') ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
+                    <Filter className="h-3 w-3" /> Filtros
+                    {(filterCategory !== 'all' || filterPriority !== 'all') && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px]">
+                        {(filterCategory !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0)}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={8} className="w-56">
+                  <DropdownMenuLabel>Categoria</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem checked={filterCategory === 'all'} onCheckedChange={() => setFilterCategory('all')}>
+                    Todas
                   </DropdownMenuCheckboxItem>
-                ))}
-                {hasFilters && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={clearFilters} className="text-red-600">Limpar filtros</DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {(Object.keys(NOTIFICATION_CATEGORY_LABELS) as NotificationCategory[]).filter(c => c !== 'general').map(cat => {
+                    const Icon = CATEGORY_ICONS[cat];
+                    return (
+                      <DropdownMenuCheckboxItem key={cat} checked={filterCategory === cat} onCheckedChange={() => setFilterCategory(cat)}>
+                        <Icon className="h-4 w-4 mr-2" />{NOTIFICATION_CATEGORY_LABELS[cat]}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Prioridade</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem checked={filterPriority === 'all'} onCheckedChange={() => setFilterPriority('all')}>
+                    Todas
+                  </DropdownMenuCheckboxItem>
+                  {(['critical', 'urgent', 'high', 'normal', 'low'] as NotificationPriority[]).map(pri => (
+                    <DropdownMenuCheckboxItem key={pri} checked={filterPriority === pri} onCheckedChange={() => setFilterPriority(pri)}>
+                      <span className={cn("w-2 h-2 rounded-full mr-2", NOTIFICATION_PRIORITY_COLORS[pri].dot)} />
+                      {NOTIFICATION_PRIORITY_LABELS[pri]}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  {hasFilters && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={clearFilters} className="text-red-600">Limpar filtros</DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             
-            <button 
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all flex items-center gap-1"
-              onClick={handleOpenPreferences}
-              title="Configurações e preferências"
-            >
-              <Settings className="h-3 w-3" />
-              Opções
-            </button>
+            {/* Linha 2: Badge Opções */}
+            <div className="flex">
+              <button 
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all flex items-center gap-1"
+                onClick={handleOpenPreferences}
+                title="Configurações e preferências"
+              >
+                <Settings className="h-3 w-3" />
+                Opções
+              </button>
+            </div>
           </div>
         </div>
 
@@ -268,7 +274,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 pr-6 pb-40 space-y-2">
+              <div className="p-4 pr-8 pb-40 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
@@ -283,7 +289,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
-                        <div className="flex gap-3 pl-2 pr-28">
+                        <div className="flex gap-3 pl-2 pr-32">
                           <div className={cn("relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0", colors.bg)}>
                             <Icon className={cn("h-5 w-5", colors.text)} />
                             {group.unreadCount > 0 && !hasMultiple && (
@@ -334,7 +340,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                           </div>
 
                           {/* Ações hover */}
-                          <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1 bg-white/95 rounded-lg shadow-md p-1">
+                          <div className="absolute right-4 top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1 bg-white/95 dark:bg-gray-900/95 rounded-lg shadow-lg p-1.5">
                             {!hasMultiple && group.unreadCount > 0 && (
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkRead(group.notifications[0].id, e)} title="Marcar lida">
                                 <Check className="h-4 w-4" />
