@@ -212,14 +212,6 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            <Button 
-              variant="secondary"
-              className="px-[0.7rem] py-[0.34rem] h-8 rounded-full text-[11px] font-medium bg-gray-700/90 text-white hover:bg-gray-700 transition-all"
-              onClick={handleOpenPreferences}
-            >
-              Opções
-            </Button>
           </div>
         </div>
 
