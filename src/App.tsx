@@ -49,6 +49,9 @@ const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
 // AIDA
 const AidaPage = lazy(() => import('@/pages/AidaPage'))
 
+// Profile Pages
+const ProfilePreferencesPage = lazy(() => import('@/pages/ProfilePreferencesPage'))
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="text-center">
@@ -106,6 +109,7 @@ function App() {
             <Route path="/dataroom" element={<DataRoomView />} />
             <Route path="/audit" element={<AuditLogView />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/preferences" element={<ProfilePreferencesPage />} />
             <Route path="/help" element={<HelpCenterPage />} />
 
             {/* Admin & Settings Routes */}
