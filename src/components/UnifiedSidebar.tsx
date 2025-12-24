@@ -437,17 +437,9 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
           
           {activeSection === 'profile' && (
             <div className="mt-3 space-y-2">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  {userAvatar && <AvatarImage src={userAvatar} alt={profile.name || ''} />}
-                  <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 text-white font-bold">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground truncate">{profile.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
-                </div>
+              <div className="space-y-1.5">
+                <p className="font-medium text-sm text-foreground">{profile.name}</p>
+                <p className="text-xs text-muted-foreground">{profile.email}</p>
               </div>
               
               <div className="flex items-center gap-2">
