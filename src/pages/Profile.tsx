@@ -5,18 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge, BadgeVariant } from '@/components/ui/badge'
 import {
   User,
   Mail,
   ShieldCheck,
   Pencil,
   Check,
-  Camera,
-  Trash2,
   Upload,
   FileText,
   Landmark,
@@ -25,12 +21,12 @@ import {
   MapPin,
   Phone
 } from 'lucide-react'
-import { getInitials } from '@/lib/helpers'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
+import { ProfileHeader, ProfileFormData } from '@/components/ProfileHeader'
 
 export default function Profile() {
   const { getUserRoleByCode } = useSystemMetadata()
@@ -40,20 +36,26 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
+  const [lastLogin, setLastLogin] = useState<string | null>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
     email: '',
     secondaryEmail: '',
-    cellphone: '', // Novo campo
+    cellphone: '',
     rg: '',
     cpf: '',
     address: '',
     pixKeyPF: '',
     pixKeyPJ: '',
     avatarUrl: '',
+    title: '',
+    department: '',
+    birthDate: '',
+    linkedin: '',
+    bio: '',
     docIdentityUrl: '',
     docSocialContractUrl: '',
     docServiceAgreementUrl: ''
@@ -65,29 +67,40 @@ export default function Profile() {
         name: profile.name || '',
         email: profile.email || '',
         secondaryEmail: profile.secondaryEmail || '',
-        cellphone: profile.cellphone || '', // Carrega do profile
+        cellphone: profile.cellphone || '',
         rg: profile.rg || '',
         cpf: profile.cpf || '',
         address: profile.address || '',
         pixKeyPF: profile.pixKeyPF || '',
         pixKeyPJ: profile.pixKeyPJ || '',
         avatarUrl: profile.avatar || '',
+        title: profile.title || '',
+        department: profile.department || '',
+        birthDate: profile.birthDate || '',
+        linkedin: profile.linkedin || '',
+        bio: profile.bio || '',
         docIdentityUrl: profile.docIdentityUrl || '',
         docSocialContractUrl: profile.docSocialContractUrl || '',
         docServiceAgreementUrl: profile.docServiceAgreementUrl || ''
       })
 
-      const fetchCreatedAt = async () => {
+      const fetchMetadata = async () => {
         try {
           const { data } = await supabase
             .from('profiles')
-            .select('created_at')
+            .select('created_at, last_login')
             .eq('id', profile.id)
             .single()
-          if ((data as any)?.created_at) setCreatedAt((data as any).created_at)
-        } catch (err) { console.error(err) }
+          
+          if (data) {
+            setCreatedAt(data.created_at)
+            setLastLogin(data.last_login)
+          }
+        } catch (err) {
+          console.error(err)
+        }
       }
-      fetchCreatedAt()
+      fetchMetadata()
     }
   }, [profile])
 
@@ -96,17 +109,16 @@ export default function Profile() {
     const file = event.target.files[0]
     const fileExt = file.name.split('.').pop()
     const fileName = `${profile.id}-${Math.random()}.${fileExt}`
-    const filePath = `${fileName}`
 
     try {
       setIsSaving(true)
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file)
+        .upload(fileName, file)
 
       if (uploadError) throw uploadError
 
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
       
       const { error: updateError } = await supabase
         .from('profiles')
@@ -191,12 +203,17 @@ export default function Profile() {
         .update({
           name: formData.name,
           secondary_email: formData.secondaryEmail,
-          cellphone: formData.cellphone, // Salva o celular
+          cellphone: formData.cellphone,
           rg: formData.rg,
           cpf: formData.cpf,
           address: formData.address,
           pix_key_pf: formData.pixKeyPF,
-          pix_key_pj: formData.pixKeyPJ
+          pix_key_pj: formData.pixKeyPJ,
+          title: formData.title,
+          department: formData.department,
+          birth_date: formData.birthDate,
+          linkedin: formData.linkedin,
+          bio: formData.bio
         })
         .eq('id', profile?.id)
 
@@ -228,70 +245,35 @@ export default function Profile() {
 
   if (!profile) return null
 
+  const roleInfo = getUserRoleByCode(profile.role)
   const createdAtDate = createdAt ? new Date(createdAt) : null
 
   return (
     <UnifiedLayout
       activeSection="profile"
       activeItem="personal"
+      showBreadcrumbs={false}
     >
-      <div className="max-w-4xl space-y-6">
-        {/* Header Card com Avatar e Info */}
+      <div className="space-y-6">
+        {/* Header com Banner e Avatar */}
+        <ProfileHeader
+          formData={formData}
+          profile={profile}
+          roleInfo={roleInfo}
+          fileInputRef={fileInputRef}
+          onAvatarUpload={handleAvatarUpload}
+          onRemoveAvatar={handleRemoveAvatar}
+          isSaving={isSaving}
+        />
+
+        {/* Conteúdo Principal */}
         <Card className="border-t-4 border-t-primary">
           <CardHeader>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-6">
-                {/* Avatar com ações */}
-                <div className="relative group">
-                  <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                    <AvatarImage src={formData.avatarUrl} className="object-cover" />
-                    <AvatarFallback className="text-2xl">{getInitials(profile.name || 'U')}</AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="absolute bottom-0 right-0 flex gap-1">
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8 rounded-full shadow-md hover:bg-primary hover:text-primary-foreground transition-colors"
-                      onClick={() => fileInputRef.current?.click()}
-                      title="Alterar foto"
-                    >
-                      <Camera className="h-3.5 w-3.5" />
-                    </Button>
-                    {formData.avatarUrl && (
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="h-8 w-8 rounded-full shadow-md"
-                        onClick={handleRemoveAvatar}
-                        title="Remover foto"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                  />
-                </div>
-
-                <div>
-                  <CardTitle className="text-2xl">{formData.name || 'Usuário'}</CardTitle>
-                  <CardDescription className="text-base flex items-center gap-2 mt-1">
-                    <Mail className="h-4 w-4" /> {profile.email}
-                  </CardDescription>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant={(getUserRoleByCode(profile.role)?.badgeVariant as BadgeVariant) || 'default'}>
-                      {getUserRoleByCode(profile.role)?.label || profile.role}
-                    </Badge>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Informações do Perfil</CardTitle>
+                <CardDescription>Gerencie suas informações pessoais e documentos</CardDescription>
               </div>
-
               {!isEditing && (
                 <Button variant="outline" onClick={() => setIsEditing(true)}>
                   <Pencil className="mr-2 h-4 w-4" /> Editar Dados
