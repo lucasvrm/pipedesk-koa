@@ -690,7 +690,7 @@ export default function Profile() {
         {/* HEADER COM BANNER E AVATAR */}
         {/* ================================================================ */}
         <div className="relative">
-          <div className={cn("h-28 rounded-xl relative overflow-hidden", formData.bannerStyle)}>
+          <div className={cn("min-h-[7rem] rounded-xl relative overflow-hidden pb-14 md:pb-16", formData.bannerStyle)}>
             <div className="absolute inset-0 bg-black/10" />
             
             {/* Change Banner Button */}
@@ -748,9 +748,9 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="px-6 -mt-16 relative z-10">
+          <div className="px-6 relative">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
-              <div className="relative">
+              <div className="relative -mt-14 md:-mt-16 z-10">
                 <Avatar 
                   className="h-32 w-32 border-4 border-background shadow-xl"
                   style={{
@@ -804,7 +804,7 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="flex-1 pb-2 pt-6">
+              <div className="flex-1 pb-2 pt-4 md:pt-6">
                 <div className="flex items-center gap-2 mb-0.5">
                   <h1 className="text-xl font-bold text-foreground">{formData.name || 'Usuário'}</h1>
                   <Badge variant="default">{roleInfo?.label || profile.role}</Badge>
