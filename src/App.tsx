@@ -52,6 +52,9 @@ const AidaPage = lazy(() => import('@/pages/AidaPage'))
 // Profile Pages
 const ProfilePreferencesPage = lazy(() => import('@/pages/ProfilePreferencesPage'))
 
+// Test Pages
+const UnifiedSidebarTest = lazy(() => import('@/pages/UnifiedSidebarTest'))
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="text-center">
@@ -111,6 +114,9 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/preferences" element={<ProfilePreferencesPage />} />
             <Route path="/help" element={<HelpCenterPage />} />
+            
+            {/* Test Routes */}
+            <Route path="/test/unified-sidebar" element={<UnifiedSidebarTest />} />
 
             {/* Admin & Settings Routes */}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole={['admin']}><UserManagementPage /></ProtectedRoute>} />
