@@ -1,332 +1,65 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useImpersonation } from '@/contexts/ImpersonationContext';
-import { hasPermission } from '@/lib/permissions';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
-import { useUnreadCount } from '@/services/notificationService';
+import { useUnreadCount, useNotificationPreferences } from '@/services/notificationService';
 import {
-  ChartBar,
+  BarChart3,
   Kanban,
   Bell,
   Plus,
-  Users,
-  GoogleLogo,
-  MagnifyingGlass,
-  Gear,
-  FolderOpen,
-  List,
-  FlowArrow,
-  Funnel,
-  AddressBook,
+  Search,
+  Filter,
+  BookOpen,
   Briefcase,
-  Buildings,
-  ListChecks,
-  Package,
-  TagSimple,
-  FileText,
-  CalendarBlank,
-  ChartLine,
-  Robot,
-  ShieldCheck,
-  ShieldStar
-} from '@phosphor-icons/react';
+  Building2,
+  ListTodo,
+  BellOff
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuGroup,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '@/components/ui/sheet';
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
-import { SLAConfigManager } from '@/components/SLAConfigManager';
 import GlobalSearch from '@/components/GlobalSearch';
 import InboxPanel from '@/features/inbox/components/InboxPanel';
 import { SLAMonitoringService } from '@/components/SLAMonitoringService';
 import { OnboardingTour } from '@/components/OnboardingTour';
 import { CreateNewDropdown } from '@/components/CreateNewDropdown';
-import { UserAvatarMenu } from '@/components/UserAvatarMenu';
+import { getInitials } from '@/lib/helpers';
+import { cn } from '@/lib/utils';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile, signOut: authSignOut } = useAuth();
-  const { isImpersonating, setIsImpersonating } = useImpersonation();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [createDealOpen, setCreateDealOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useRealtimeNotifications(profile?.id, {
     onOpenInbox: () => setInboxOpen(true),
   });
 
   const { data: unreadCount = 0 } = useUnreadCount(profile?.id || null);
+  const { data: preferences } = useNotificationPreferences(profile?.id || null);
 
-  const [inboxOpen, setInboxOpen] = useState(false);
-  const [createDealOpen, setCreateDealOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [slaConfigOpen, setSlaConfigOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  if (!profile) return null;
 
-  const currentUser = profile;
-
-  if (!currentUser) return null;
-
-  const canManageUsers = hasPermission(currentUser.role, 'MANAGE_USERS');
-  const canViewAnalytics = hasPermission(currentUser.role, 'VIEW_ANALYTICS');
-  const canManageIntegrations = hasPermission(
-    currentUser.role,
-    'MANAGE_INTEGRATIONS'
-  );
-  const canManageSettings = hasPermission(
-    currentUser.role,
-    'MANAGE_SETTINGS'
-  );
-
-  const settingsDefaultSections = useMemo(
-    () => ({
-      crm: 'leads',
-      products: 'products',
-      system: 'defaults',
-      productivity: 'tasks',
-      integrations: 'dashboards'
-    }),
-    []
-  );
-
-  const settingsShortcuts = useMemo(
-    () =>
-      [
-        {
-          category: 'system',
-          label: 'Configurações do Sistema',
-          icon: ShieldCheck,
-          restricted: true,
-          visible: canManageSettings,
-          items: [
-            {
-              label: 'Defaults do Sistema',
-              section: 'defaults',
-              icon: Gear,
-              description: 'Valores padrão para deals e leads'
-            },
-            {
-              label: 'Papéis & Permissões',
-              section: 'roles',
-              icon: ShieldStar,
-              description: 'Gestão de perfis e papéis'
-            },
-            {
-              label: 'Permissões Avançadas',
-              section: 'permissions',
-              icon: ShieldCheck,
-              description: 'Controle granular de acesso'
-            }
-          ]
-        },
-        {
-          category: 'crm',
-          label: 'CRM & Vendas',
-          icon: Users,
-          restricted: true,
-          visible: canManageSettings,
-          items: [
-            { label: 'Leads', section: 'leads', icon: Users },
-            { label: 'Deals & Pipeline', section: 'deals', icon: FlowArrow },
-            { label: 'Empresas & Contatos', section: 'companies', icon: Briefcase }
-          ]
-        },
-        {
-          category: 'products',
-          label: 'Produtos & Operações',
-          icon: Package,
-          restricted: true,
-          visible: canManageSettings,
-          items: [
-            { label: 'Produtos', section: 'products', icon: Package },
-            { label: 'Tipos de Operação', section: 'operation_types', icon: FlowArrow },
-            { label: 'Origens de Deal', section: 'deal_sources', icon: Funnel },
-            { label: 'Motivos de Perda', section: 'loss_reasons', icon: ListChecks }
-          ]
-        },
-        {
-          category: 'productivity',
-          label: 'Produtividade',
-          icon: ListChecks,
-          restricted: true,
-          visible: canManageSettings,
-          items: [
-            { label: 'Tarefas', section: 'tasks', icon: ListChecks },
-            { label: 'Tags', section: 'tags', icon: TagSimple },
-            { label: 'Templates', section: 'templates', icon: FileText },
-            { label: 'Feriados', section: 'holidays', icon: CalendarBlank }
-          ]
-        },
-        {
-          category: 'integrations',
-          label: 'Integrações & Automação',
-          icon: Robot,
-          restricted: true,
-          visible: canManageSettings,
-          items: [
-            { label: 'Dashboards', section: 'dashboards', icon: ChartLine },
-            { label: 'Automação de Documentos', section: 'automation', icon: Robot }
-          ]
-        }
-      ].filter((group) => group.visible),
-    [canManageSettings]
-  );
-
-  type MenuItem = {
-    label: string;
-    icon: typeof Gear;
-    path: string;
-    restricted?: boolean;
-  };
-
-  const managementItems = useMemo<MenuItem[]>(
-    () =>
-      [
-        canViewAnalytics && {
-          label: 'Analytics',
-          icon: ChartBar,
-          path: '/analytics'
-        },
-        canManageIntegrations && {
-          label: 'Google Workspace',
-          icon: GoogleLogo,
-          path: '/admin/integrations/google',
-          restricted: true
-        },
-        {
-          label: 'Pastas',
-          icon: FolderOpen,
-          path: '/folders/manage'
-        },
-        canManageUsers && {
-          label: 'Usuários',
-          icon: Users,
-          path: '/admin/users',
-          restricted: true
-        }
-      ].filter(Boolean) as MenuItem[],
-    [canManageIntegrations, canManageUsers, canViewAnalytics]
-  );
+  const userAvatar = profile.avatar_url || profile.avatar;
+  const userInitials = getInitials(profile.name || 'U');
 
   const isActive = (path: string) =>
     location.pathname === path ||
     location.pathname.startsWith(path + '/');
-
-  const isSettingsActive = (category: string, section?: string) => {
-    if (location.pathname !== '/admin/settings') return false;
-
-    const params = new URLSearchParams(location.search);
-    const currentCategory = params.get('category') || 'crm';
-    const currentSection = params.get('section') || settingsDefaultSections[currentCategory];
-
-    const matchesCategory = currentCategory === category;
-    const matchesSection = section ? currentSection === section : true;
-
-    return matchesCategory && matchesSection;
-  };
-
-  const navigateToSettings = (category: string, section?: string) => {
-    const params = new URLSearchParams({
-      category,
-      section: section || settingsDefaultSections[category]
-    });
-    navigate(`/admin/settings?${params.toString()}`);
-    setMenuOpen(false);
-  };
-
-  const handleNavigate = (path: string) => {
-    navigate(path);
-    setMenuOpen(false);
-  };
-
-  const renderSettingsDropdown = () => (
-    <DropdownMenuGroup>
-      <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
-        Configurações
-      </DropdownMenuLabel>
-      {settingsShortcuts.map((group) => {
-        const GroupIcon = group.icon;
-        return (
-          <DropdownMenuSub key={group.category}>
-            <DropdownMenuSubTrigger
-              className={`flex items-center gap-2 ${
-                isSettingsActive(group.category) ? 'bg-muted text-primary' : ''
-              }`}
-            >
-              <GroupIcon className="mr-2" />
-              {group.label}
-              {group.restricted && (
-                <Badge variant="outline" className="ml-auto text-[10px] uppercase">
-                  Admin/Manager
-                </Badge>
-              )}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="w-72">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs text-muted-foreground uppercase">
-                <GroupIcon className="h-4 w-4" />
-                {group.label}
-              </DropdownMenuLabel>
-              {group.items.map((item) => {
-                const ItemIcon = item.icon;
-                return (
-                  <DropdownMenuItem
-                    key={`${group.category}-${item.section}`}
-                    className={
-                      isSettingsActive(group.category, item.section)
-                        ? 'bg-muted text-primary'
-                        : ''
-                    }
-                    onClick={() => navigateToSettings(group.category, item.section)}
-                  >
-                    <ItemIcon className="mr-2" />
-                    <div className="flex flex-col">
-                      <span>{item.label}</span>
-                      {item.description && (
-                        <span className="text-[11px] text-muted-foreground">
-                          {item.description}
-                        </span>
-                      )}
-                    </div>
-                    {group.restricted && (
-                      <Badge variant="outline" className="ml-auto text-[10px] uppercase">
-                        Restrito
-                      </Badge>
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-        );
-      })}
-    </DropdownMenuGroup>
-  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -348,7 +81,7 @@ export function Layout({ children }: LayoutProps) {
                 data-tour="dashboard-nav"
               >
                 <Link to="/dashboard">
-                  <ChartBar className="mr-2" />
+                  <BarChart3 className="mr-2 h-4 w-4" />
                   Dashboard
                 </Link>
               </Button>
@@ -359,7 +92,7 @@ export function Layout({ children }: LayoutProps) {
                 asChild
               >
                 <Link to="/leads">
-                  <Funnel className="mr-2" />
+                  <Filter className="mr-2 h-4 w-4" />
                   Leads
                 </Link>
               </Button>
@@ -375,7 +108,7 @@ export function Layout({ children }: LayoutProps) {
                 data-tour="deals-nav"
               >
                 <Link to="/deals">
-                  <Kanban className="mr-2" />
+                  <Kanban className="mr-2 h-4 w-4" />
                   Deals
                 </Link>
               </Button>
@@ -386,7 +119,7 @@ export function Layout({ children }: LayoutProps) {
                 asChild
               >
                 <Link to="/companies">
-                  <Briefcase className="mr-2" />
+                  <Briefcase className="mr-2 h-4 w-4" />
                   Empresas
                 </Link>
               </Button>
@@ -397,7 +130,7 @@ export function Layout({ children }: LayoutProps) {
                 asChild
               >
                 <Link to="/contacts">
-                  <AddressBook className="mr-2" />
+                  <BookOpen className="mr-2 h-4 w-4" />
                   Contatos
                 </Link>
               </Button>
@@ -408,7 +141,7 @@ export function Layout({ children }: LayoutProps) {
                 asChild
               >
                 <Link to="/players">
-                  <Buildings className="mr-2" />
+                  <Building2 className="mr-2 h-4 w-4" />
                   Players
                 </Link>
               </Button>
@@ -419,7 +152,7 @@ export function Layout({ children }: LayoutProps) {
                 asChild
               >
                 <Link to="/tasks">
-                  <ListChecks className="mr-2" />
+                  <ListTodo className="mr-2 h-4 w-4" />
                   Tarefas
                 </Link>
               </Button>
@@ -427,19 +160,22 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Busca Global */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSearchOpen(true)}
               title="Busca Global (Ctrl+K)"
             >
-              <MagnifyingGlass />
+              <Search className="h-5 w-5" />
             </Button>
 
+            {/* Botão +Novo */}
             <div className="hidden md:block">
               <CreateNewDropdown />
             </div>
 
+            {/* Notificações */}
             <Button
               variant="ghost"
               size="icon"
@@ -447,7 +183,7 @@ export function Layout({ children }: LayoutProps) {
               onClick={() => setInboxOpen(true)}
               data-tour="notifications"
             >
-              <Bell />
+              <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -455,190 +191,48 @@ export function Layout({ children }: LayoutProps) {
               )}
             </Button>
 
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="Menu, gestão e configurações"
-                  aria-label="Menu, gestão e configurações"
-                  aria-expanded={menuOpen}
-                  onClick={() => setMenuOpen(true)}
-                  className="lg:hidden"
+            {/* Avatar - Navega para /profile */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Meu perfil e configurações"
                 >
-                  <List weight="bold" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-[90%] sm:max-w-sm overflow-y-auto lg:hidden"
-              >
-                <SheetHeader className="text-left">
-                  <SheetTitle>Menu principal</SheetTitle>
-                  <SheetDescription>
-                    Atalhos de gestão e das seções de Configurações.
-                  </SheetDescription>
-                </SheetHeader>
-
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">
-                        Gestão
-                      </p>
-                      {managementItems.map((item) => {
-                        const Icon = item.icon as typeof Gear;
-                        return (
-                          <Button
-                            key={item.path}
-                            variant={isActive(item.path) ? 'secondary' : 'ghost'}
-                            className="w-full justify-start"
-                            onClick={() => handleNavigate(item.path)}
-                            aria-label={`Ir para ${item.label}`}
-                          >
-                            <Icon className="mr-2" />
-                            <span className="flex-1 text-left">{item.label}</span>
-                            {item.restricted && (
-                              <Badge variant="outline" className="text-[10px] uppercase">
-                                Restrito
-                              </Badge>
-                            )}
-                          </Button>
-                        );
-                      })}
-                    </div>
-
-                    {settingsShortcuts.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase">
-                          Configurações
-                        </p>
-                        {settingsShortcuts.map((group) => {
-                          const GroupIcon = group.icon;
-                          return (
-                            <div key={group.category} className="rounded-lg border p-3">
-                              <div className="flex items-center gap-2">
-                                <GroupIcon className="h-4 w-4" />
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium">{group.label}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Acesso direto às seções do Settings
-                                  </p>
-                                </div>
-                                {group.restricted && (
-                                  <Badge variant="outline" className="text-[10px] uppercase">
-                                    Admin/Manager
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="mt-2 grid grid-cols-1 gap-1">
-                                {group.items.map((item) => {
-                                  const ItemIcon = item.icon;
-                                  const active = isSettingsActive(group.category, item.section);
-                                  return (
-                                    <Button
-                                      key={`${group.category}-${item.section}`}
-                                      variant={active ? 'secondary' : 'ghost'}
-                                      className="w-full justify-start"
-                                      onClick={() => navigateToSettings(group.category, item.section)}
-                                      aria-label={`Ir para ${item.label}`}
-                                    >
-                                      <ItemIcon className="mr-2 h-4 w-4" />
-                                      <div className="flex flex-col items-start">
-                                        <span>{item.label}</span>
-                                        {item.description && (
-                                          <span className="text-[11px] text-muted-foreground">
-                                            {item.description}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {group.restricted && (
-                                        <Badge variant="outline" className="ml-auto text-[10px] uppercase">
-                                          Restrito
-                                        </Badge>
-                                      )}
-                                    </Button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <div className="hidden lg:block">
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Menu de navegação"
-                          aria-label="Menu de navegação"
-                        >
-                          <List weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Menu, atalhos e configurações
-                    </TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
-                      Gestão
-                    </DropdownMenuLabel>
-  
-                    {managementItems.map((item) => {
-                      const Icon = item.icon as typeof Gear;
-                      return (
-                        <Tooltip key={item.path}>
-                          <TooltipTrigger asChild>
-                            <DropdownMenuItem
-                              className={isActive(item.path) ? 'bg-muted text-primary' : ''}
-                              onClick={() => handleNavigate(item.path)}
-                            >
-                              <Icon className="mr-2" />
-                              <span className="flex-1">{item.label}</span>
-                              {item.restricted && (
-                                <Badge variant="outline" className="text-[10px] uppercase">
-                                  Restrito
-                                </Badge>
-                              )}
-                            </DropdownMenuItem>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">
-                            Abrir {item.label}
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-  
-                    {settingsShortcuts.length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        {renderSettingsDropdown()}
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <UserAvatarMenu />
-            </div>
+                  <Avatar className={cn(
+                    "h-9 w-9 cursor-pointer border-2 transition-colors",
+                    preferences?.dndEnabled 
+                      ? "border-amber-400 dark:border-amber-600" 
+                      : "border-transparent hover:border-primary/20"
+                  )}>
+                    {userAvatar && <AvatarImage src={userAvatar} alt={profile.name || ''} />}
+                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* DND Indicator */}
+                  {preferences?.dndEnabled && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 border-2 border-background flex items-center justify-center">
+                      <BellOff className="h-2 w-2 text-white" />
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Perfil e Configurações
+              </TooltipContent>
+            </Tooltip>
           </div>
-        </header>
+        </div>
+      </header>
 
       <main className="flex-1 overflow-auto relative">{children}</main>
 
+      {/* Modais e Serviços */}
       <GlobalSearch
         open={searchOpen}
         onOpenChange={setSearchOpen}
-        currentUser={currentUser}
+        currentUser={profile}
       />
       <InboxPanel open={inboxOpen} onOpenChange={setInboxOpen} />
       <CreateDealDialog
@@ -646,30 +240,10 @@ export function Layout({ children }: LayoutProps) {
         onOpenChange={setCreateDealOpen}
       />
 
-      {/* SLA Modal Legacy */}
-      {canManageSettings && (
-        <div
-          className={
-            slaConfigOpen
-              ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6 animate-in fade-in duration-200'
-              : 'hidden'
-          }
-        >
-          <div className="max-w-5xl mx-auto">
-            <div className="mb-6 flex items-center gap-4">
-              <Button variant="ghost" onClick={() => setSlaConfigOpen(false)}>
-                ← Voltar
-              </Button>
-              <h2 className="text-2xl font-bold">Configuração de SLA</h2>
-            </div>
-            <SLAConfigManager />
-          </div>
-        </div>
-      )}
-
       <SLAMonitoringService />
       <OnboardingTour />
 
+      {/* Bottom Navigation Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center justify-around h-16 px-2 z-50 safe-area-bottom">
         <Button
           variant="ghost"
@@ -678,7 +252,7 @@ export function Layout({ children }: LayoutProps) {
           className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
           <Link to="/dashboard">
-            <ChartBar className="mb-1 h-5 w-5" />
+            <BarChart3 className="mb-1 h-5 w-5" />
             <span className="text-[10px]">Dash</span>
           </Link>
         </Button>
@@ -717,9 +291,12 @@ export function Layout({ children }: LayoutProps) {
           asChild
           className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
-          <Link to="/players">
-            <Buildings className="mb-1 h-5 w-5" />
-            <span className="text-[10px]">Players</span>
+          <Link to="/profile">
+            <Avatar className="h-5 w-5 mb-1">
+              {userAvatar && <AvatarImage src={userAvatar} />}
+              <AvatarFallback className="text-[8px]">{userInitials}</AvatarFallback>
+            </Avatar>
+            <span className="text-[10px]">Perfil</span>
           </Link>
         </Button>
       </div>
