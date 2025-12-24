@@ -31,6 +31,9 @@ export function UserAvatarMenu() {
   const userEmail = profile?.email || '';
   const userAvatar = profile?.avatar_url || profile?.avatar;
   const userInitials = getInitials(userName);
+  const avatarBgColor = profile?.avatarBgColor || '#fee2e2';
+  const avatarTextColor = profile?.avatarTextColor || '#991b1b';
+  const avatarBorderColor = profile?.avatarBorderColor || '#ffffff';
 
   const handleSignOut = async () => {
     const success = await signOut();
@@ -73,11 +76,23 @@ export function UserAvatarMenu() {
             preferences?.dndEnabled 
               ? "border-amber-400 dark:border-amber-600" 
               : "border-transparent hover:border-primary/20"
-          )}>
+          )}
+          style={{
+            borderColor: preferences?.dndEnabled 
+              ? undefined 
+              : avatarBorderColor
+          }}
+          >
             {userAvatar ? (
               <AvatarImage src={userAvatar} alt={userName} />
             ) : null}
-            <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+            <AvatarFallback 
+              className="font-semibold text-sm"
+              style={{
+                backgroundColor: avatarBgColor,
+                color: avatarTextColor
+              }}
+            >
               {userInitials}
             </AvatarFallback>
           </Avatar>
@@ -93,11 +108,22 @@ export function UserAvatarMenu() {
         {/* Header com info do usuário */}
         <DropdownMenuLabel className="font-normal">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
+            <Avatar 
+              className="h-10 w-10"
+              style={{
+                borderColor: avatarBorderColor
+              }}
+            >
               {userAvatar ? (
                 <AvatarImage src={userAvatar} alt={userName} />
               ) : null}
-              <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+              <AvatarFallback 
+                className="font-semibold"
+                style={{
+                  backgroundColor: avatarBgColor,
+                  color: avatarTextColor
+                }}
+              >
                 {userInitials}
               </AvatarFallback>
             </Avatar>

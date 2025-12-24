@@ -45,6 +45,8 @@ import {
   Camera,
   Trash,
   AlertTriangle,
+  Image as ImageIcon,
+  Palette,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
@@ -52,6 +54,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { getInitials } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 
@@ -77,7 +80,23 @@ interface ProfileFormData {
   docIdentityUrl: string
   docSocialContractUrl: string
   docServiceAgreementUrl: string
+  bannerStyle: string
+  avatarBgColor: string
+  avatarTextColor: string
+  avatarBorderColor: string
 }
+
+// Banner options constants
+const BANNER_OPTIONS = [
+  { id: 'gradient-1', label: 'Azul Profissional', value: 'bg-gradient-to-r from-blue-600 to-blue-400' },
+  { id: 'gradient-2', label: 'Verde Natureza', value: 'bg-gradient-to-r from-emerald-600 to-teal-400' },
+  { id: 'gradient-3', label: 'Roxo Elegante', value: 'bg-gradient-to-r from-purple-600 to-pink-400' },
+  { id: 'gradient-4', label: 'Laranja Energia', value: 'bg-gradient-to-r from-orange-500 to-amber-400' },
+  { id: 'gradient-5', label: 'Cinza Neutro', value: 'bg-gradient-to-r from-gray-600 to-gray-400' },
+  { id: 'gradient-6', label: 'Vermelho Intenso', value: 'bg-gradient-to-r from-red-600 to-rose-400' },
+  { id: 'solid-dark', label: 'Escuro', value: 'bg-gray-800' },
+  { id: 'solid-primary', label: 'Primário', value: 'bg-primary' },
+]
 
 // ============================================================================
 // EDITABLE FIELD COMPONENT
@@ -435,7 +454,11 @@ export default function Profile() {
     bio: '',
     docIdentityUrl: '',
     docSocialContractUrl: '',
-    docServiceAgreementUrl: ''
+    docServiceAgreementUrl: '',
+    bannerStyle: 'bg-gradient-to-r from-primary via-primary/90 to-primary/70',
+    avatarBgColor: '#fee2e2',
+    avatarTextColor: '#991b1b',
+    avatarBorderColor: '#ffffff',
   })
 
   // Load profile data
@@ -459,7 +482,11 @@ export default function Profile() {
         bio: profile.bio || '',
         docIdentityUrl: profile.docIdentityUrl || '',
         docSocialContractUrl: profile.docSocialContractUrl || '',
-        docServiceAgreementUrl: profile.docServiceAgreementUrl || ''
+        docServiceAgreementUrl: profile.docServiceAgreementUrl || '',
+        bannerStyle: profile.bannerStyle || 'bg-gradient-to-r from-primary via-primary/90 to-primary/70',
+        avatarBgColor: profile.avatarBgColor || '#fee2e2',
+        avatarTextColor: profile.avatarTextColor || '#991b1b',
+        avatarBorderColor: profile.avatarBorderColor || '#ffffff',
       })
 
       const fetchMetadata = async () => {
@@ -549,6 +576,10 @@ export default function Profile() {
       birthDate: 'birth_date',
       linkedin: 'linkedin',
       bio: 'bio',
+      bannerStyle: 'banner_style',
+      avatarBgColor: 'avatar_bg_color',
+      avatarTextColor: 'avatar_text_color',
+      avatarBorderColor: 'avatar_border_color',
     }
 
     const column = fieldToColumn[field]
@@ -626,6 +657,14 @@ export default function Profile() {
     toast.success('Sessão encerrada')
   }
 
+  const handleBannerChange = async (bannerStyle: string) => {
+    await handleSaveField('bannerStyle', bannerStyle)
+  }
+
+  const handleColorChange = async (field: 'avatarBgColor' | 'avatarTextColor' | 'avatarBorderColor', value: string) => {
+    await handleSaveField(field, value)
+  }
+
   if (!profile) return null
 
   const roleInfo = getUserRoleByCode(profile.role)
@@ -651,16 +690,82 @@ export default function Profile() {
         {/* HEADER COM BANNER E AVATAR */}
         {/* ================================================================ */}
         <div className="relative">
-          <div className="h-32 bg-gradient-to-r from-primary via-primary/90 to-primary/70 rounded-xl relative overflow-hidden">
+          <div className={cn("h-28 rounded-xl relative overflow-hidden", formData.bannerStyle)}>
             <div className="absolute inset-0 bg-black/10" />
+            
+            {/* Change Banner Button */}
+            <div className="absolute top-3 right-3 z-10">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 text-xs shadow-md"
+                    disabled={isSaving}
+                  >
+                    <ImageIcon className="h-3 w-3 mr-1" />
+                    Alterar capa
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="end">
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">Escolha uma capa</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Personalize a aparência do seu perfil
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      {BANNER_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => handleBannerChange(option.value)}
+                          className={cn(
+                            "relative h-16 rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                            formData.bannerStyle === option.value
+                              ? "border-primary ring-2 ring-primary/20"
+                              : "border-transparent hover:border-border"
+                          )}
+                        >
+                          <div className={cn("w-full h-full", option.value)} />
+                          {formData.bannerStyle === option.value && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                              <Check className="h-5 w-5 text-white" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1">
+                            <p className="text-[10px] text-white font-medium text-center">
+                              {option.label}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          <div className="px-6 -mt-12 relative z-10">
+          <div className="px-6 -mt-16 relative z-10">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
               <div className="relative">
-                <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
+                <Avatar 
+                  className="h-32 w-32 border-4 border-background shadow-xl"
+                  style={{
+                    backgroundColor: formData.avatarBgColor,
+                    borderColor: formData.avatarBorderColor
+                  }}
+                >
                   <AvatarImage src={formData.avatarUrl} className="object-cover" />
-                  <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                  <AvatarFallback 
+                    className="text-2xl"
+                    style={{
+                      backgroundColor: formData.avatarBgColor,
+                      color: formData.avatarTextColor,
+                    }}
+                  >
                     {getInitials(profile.name || 'U')}
                   </AvatarFallback>
                 </Avatar>
@@ -699,7 +804,7 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="flex-1 pb-1">
+              <div className="flex-1 pb-1 pt-2">
                 <div className="flex items-center gap-2 mb-0.5">
                   <h1 className="text-xl font-bold text-foreground">{formData.name || 'Usuário'}</h1>
                   <Badge variant="default">{roleInfo?.label || profile.role}</Badge>
@@ -819,6 +924,76 @@ export default function Profile() {
                     <EditableField label="Data de Nascimento" value={formData.birthDate} field="birthDate" onSave={handleSaveField} icon={<Calendar className="h-4 w-4" />} type="date" isSaving={isSaving} />
                     <EditableField label="LinkedIn" value={formData.linkedin} field="linkedin" onSave={handleSaveField} icon={<Linkedin className="h-4 w-4" />} placeholder="linkedin.com/in/seu-perfil" isSaving={isSaving} />
                     <EditableField label="Bio / Sobre" value={formData.bio} field="bio" onSave={handleSaveField} icon={<FileText className="h-4 w-4" />} placeholder="Conte um pouco sobre você..." isSaving={isSaving} colSpan />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Palette className="h-4 w-4" /> Personalização do Avatar
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Personalize as cores do seu avatar que aparece em toda a plataforma
+                    </p>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      {/* Cor de Fundo */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Fundo</Label>
+                        <Input 
+                          type="color" 
+                          value={formData.avatarBgColor}
+                          onChange={(e) => handleColorChange('avatarBgColor', e.target.value)}
+                          className="h-10 w-full cursor-pointer"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      
+                      {/* Cor do Texto */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Texto</Label>
+                        <Input 
+                          type="color" 
+                          value={formData.avatarTextColor}
+                          onChange={(e) => handleColorChange('avatarTextColor', e.target.value)}
+                          className="h-10 w-full cursor-pointer"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      
+                      {/* Cor da Borda */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Borda</Label>
+                        <Input 
+                          type="color" 
+                          value={formData.avatarBorderColor}
+                          onChange={(e) => handleColorChange('avatarBorderColor', e.target.value)}
+                          className="h-10 w-full cursor-pointer"
+                          disabled={isSaving}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Preview */}
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm text-muted-foreground">Preview:</span>
+                      <div 
+                        className="h-12 w-12 rounded-full flex items-center justify-center text-sm font-semibold"
+                        style={{
+                          backgroundColor: formData.avatarBgColor,
+                          color: formData.avatarTextColor,
+                          border: `2px solid ${formData.avatarBorderColor}`
+                        }}
+                      >
+                        {getInitials(formData.name)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-foreground">{formData.name || 'Usuário'}</p>
+                        <p className="text-xs text-muted-foreground">Como seu avatar aparecerá</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
