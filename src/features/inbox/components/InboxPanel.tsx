@@ -143,7 +143,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l"
-        closeButtonClassName="bg-red-600/10 hover:bg-red-600/20 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+        closeButtonClassName="bg-white/95 hover:bg-white text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200"
       >
         
         {/* Header */}
@@ -158,7 +158,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 <p className="text-white/70 text-sm">{unreadCount > 0 ? `${unreadCount} não lidas` : 'Tudo em dia'}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20 mr-10"
               onClick={handleOpenPreferences} title="Configurações">
               <Settings className="h-4 w-4" />
             </Button>
@@ -263,7 +263,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 space-y-2">
+              <div className="p-3 pr-8 pb-40 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
@@ -419,8 +419,6 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                     </div>
                   );
                 })}
-                {/* Espaçador para garantir que o último item não seja cortado */}
-                <div className="h-32" />
               </div>
             </ScrollArea>
           )}
