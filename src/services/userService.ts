@@ -29,6 +29,12 @@ function mapUserFromDB(item: any): User {
         docIdentityUrl: item.doc_identity_url || undefined,
         docSocialContractUrl: item.doc_social_contract_url || undefined,
         docServiceAgreementUrl: item.doc_service_agreement_url || undefined,
+        
+        // Campos adicionais para gerenciamento
+        title: item.title || '',
+        department: item.department || '',
+        status: item.status || 'pending',
+        lastLogin: item.last_login || undefined,
     };
 }
 
@@ -77,6 +83,9 @@ interface CreateUserInput {
     docIdentityUrl?: string;
     docSocialContractUrl?: string;
     docServiceAgreementUrl?: string;
+    title?: string;
+    department?: string;
+    status?: 'active' | 'inactive' | 'pending';
 }
 
 export async function createUser(userData: CreateUserInput) {

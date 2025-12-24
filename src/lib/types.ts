@@ -50,6 +50,8 @@ export interface User {
   bio?: string
   isSynthetic?: boolean
   preferences?: Record<string, any> // User specific UI preferences
+  status?: 'active' | 'inactive' | 'pending'
+  lastLogin?: string
 }
 
 export interface PipelineStage {
