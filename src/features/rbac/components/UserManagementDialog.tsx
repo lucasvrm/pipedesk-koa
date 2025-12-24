@@ -28,10 +28,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge, BadgeVariant } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Trash, UserPlus, PencilSimple, EnvelopeSimple, Link as LinkIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { getInitials } from '@/lib/helpers'
 import InviteUserDialog from './InviteUserDialog'
 import MagicLinksDialog from './MagicLinksDialog'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
@@ -294,11 +293,14 @@ export default function UserManagementDialog({
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                {getInitials(user.name)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserBadge
+                              name={user.name}
+                              avatarUrl={user.avatar}
+                              bgColor={user.avatarBgColor}
+                              textColor={user.avatarTextColor}
+                              borderColor={user.avatarBorderColor}
+                              size="sm"
+                            />
                             <span className="font-medium">{user.name}</span>
                           </div>
                         </TableCell>
