@@ -2,12 +2,12 @@ import { useState, useRef, useMemo } from 'react'
 import { useUsers } from '@/services/userService'
 import { useComments, useCreateComment, useDeleteComment } from '@/services/commentService'
 import { logActivity } from '@/services/activityService'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { getInitials, formatDateTime } from '@/lib/helpers'
+import { formatDateTime } from '@/lib/helpers'
 import { PaperPlaneRight, Trash, ArrowsDownUp, Funnel } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -181,10 +181,15 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
             ) : (
               processedComments.map((comment) => (
                 <div key={comment.id} className="flex gap-3 group">
-                  <Avatar className="h-8 w-8 mt-1 shrink-0">
-                    <AvatarImage src={comment.author?.avatar_url} />
-                    <AvatarFallback>{getInitials(comment.author?.name || '?')}</AvatarFallback>
-                  </Avatar>
+                  <UserBadge
+                    name={comment.author?.name || 'Usuário Desconhecido'}
+                    avatarUrl={comment.author?.avatar_url}
+                    bgColor={comment.author?.avatarBgColor}
+                    textColor={comment.author?.avatarTextColor}
+                    borderColor={comment.author?.avatarBorderColor}
+                    size="sm"
+                    className="mt-1 shrink-0"
+                  />
                   <div className="flex-1 bg-muted/30 p-3 rounded-lg border min-w-0">
                     <div className="flex justify-between items-start mb-1 gap-2">
                       <span className="font-semibold text-xs text-blue-600 truncate">
@@ -229,10 +234,14 @@ export default function CommentsPanel({ entityId, entityType, currentUser }: Com
                     className="w-full flex items-center gap-2 p-2 hover:bg-accent rounded-sm cursor-pointer text-sm text-left transition-colors"
                     onClick={() => insertMention({ id: user.id, name: user.name })}
                   >
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={user.avatar} />
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
+                    <UserBadge
+                      name={user.name}
+                      avatarUrl={user.avatar}
+                      bgColor={user.avatarBgColor}
+                      textColor={user.avatarTextColor}
+                      borderColor={user.avatarBorderColor}
+                      size="xs"
+                    />
                     <span className="truncate">{user.name}</span>
                   </button>
                 ))}

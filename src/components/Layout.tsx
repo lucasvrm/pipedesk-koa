@@ -17,7 +17,7 @@ import {
   BellOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserBadge } from '@/components/ui/user-badge';
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +29,6 @@ import InboxPanel from '@/features/inbox/components/InboxPanel';
 import { SLAMonitoringService } from '@/components/SLAMonitoringService';
 import { OnboardingTour } from '@/components/OnboardingTour';
 import { CreateNewDropdown } from '@/components/CreateNewDropdown';
-import { getInitials } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 
 interface LayoutProps {
@@ -55,7 +54,6 @@ export function Layout({ children }: LayoutProps) {
   if (!profile) return null;
 
   const userAvatar = profile.avatar_url || profile.avatar;
-  const userInitials = getInitials(profile.name || 'U');
 
   const isActive = (path: string) =>
     location.pathname === path ||
@@ -199,17 +197,20 @@ export function Layout({ children }: LayoutProps) {
                   className="relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Meu perfil e configurações"
                 >
-                  <Avatar className={cn(
-                    "h-9 w-9 cursor-pointer border-2 transition-colors",
-                    preferences?.dndEnabled 
-                      ? "border-amber-400 dark:border-amber-600" 
-                      : "border-transparent hover:border-primary/20"
-                  )}>
-                    {userAvatar && <AvatarImage src={userAvatar} alt={profile.name || ''} />}
-                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserBadge
+                    name={profile.name || 'Usuário'}
+                    avatarUrl={userAvatar}
+                    bgColor={profile.avatarBgColor}
+                    textColor={profile.avatarTextColor}
+                    borderColor={preferences?.dndEnabled 
+                      ? undefined 
+                      : profile.avatarBorderColor}
+                    size="sm"
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      preferences?.dndEnabled && "ring-2 ring-amber-400 dark:ring-amber-600"
+                    )}
+                  />
                   {/* DND Indicator */}
                   {preferences?.dndEnabled && (
                     <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 border-2 border-background flex items-center justify-center">
@@ -292,10 +293,15 @@ export function Layout({ children }: LayoutProps) {
           className="flex-col h-full py-1 px-2 rounded-none flex-1"
         >
           <Link to="/profile">
-            <Avatar className="h-5 w-5 mb-1">
-              {userAvatar && <AvatarImage src={userAvatar} />}
-              <AvatarFallback className="text-[8px]">{userInitials}</AvatarFallback>
-            </Avatar>
+            <UserBadge
+              name={profile.name || 'Usuário'}
+              avatarUrl={userAvatar}
+              bgColor={profile.avatarBgColor}
+              textColor={profile.avatarTextColor}
+              borderColor={profile.avatarBorderColor}
+              size="xs"
+              className="mb-1"
+            />
             <span className="text-[10px]">Perfil</span>
           </Link>
         </Button>

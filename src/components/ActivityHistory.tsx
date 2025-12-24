@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react'
 import { useActivities, ActivityEntityType } from '@/services/activityService'
 import { useUsers } from '@/services/userService'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserBadge } from '@/components/ui/user-badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { getInitials, formatDateTime } from '@/lib/helpers'
+import { formatDateTime } from '@/lib/helpers'
 import {
   Plus, PencilSimple, Trash, XCircle, ArrowRight,
   ChatCircle, FileArrowUp, ClockCounterClockwise,
@@ -250,12 +250,14 @@ export default function ActivityHistory({
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {showUser && (
                             <>
-                              <Avatar className="h-6 w-6 border">
-                                <AvatarImage src={user?.avatar_url} />
-                                <AvatarFallback className="text-[10px] bg-muted">
-                                  {getInitials(user?.name || 'S')}
-                                </AvatarFallback>
-                              </Avatar>
+                              <UserBadge
+                                name={user?.name || 'Sistema'}
+                                avatarUrl={user?.avatar_url}
+                                bgColor={user?.avatarBgColor}
+                                textColor={user?.avatarTextColor}
+                                borderColor={user?.avatarBorderColor}
+                                size="xs"
+                              />
                               <span className="text-xs font-semibold text-foreground truncate">
                                 {user?.name || 'Sistema'}
                               </span>
