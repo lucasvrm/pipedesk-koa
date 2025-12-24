@@ -7,7 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Treemap, Cell 
 } from 'recharts'
-import { Trophy, Warning, Clock, ChartPieSlice } from '@phosphor-icons/react'
+import { Trophy, AlertTriangle, Clock, PieChart } from 'lucide-react'
 
 // Paleta de cores para o Treemap
 const COLORS = [
@@ -170,7 +170,7 @@ export default function PlayerIntelligenceDashboard() {
         <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-2">
-                <ChartPieSlice className="text-primary h-5 w-5" />
+                <PieChart className="text-primary h-5 w-5" />
                 <CardTitle>Matriz de Apetite</CardTitle>
             </div>
             <CardDescription>Concentração de deals por Player vs. Tipo de Produto.</CardDescription>
@@ -247,7 +247,7 @@ export default function PlayerIntelligenceDashboard() {
         <Card>
             <CardHeader>
                 <div className="flex items-center gap-2">
-                    <Warning className="text-orange-500 h-5 w-5" />
+                    <AlertTriangle className="text-orange-500 h-5 w-5" />
                     <CardTitle>Concentração de Pipeline</CardTitle>
                 </div>
                 <CardDescription>Volume financeiro ativo nas mãos de cada player.</CardDescription>
