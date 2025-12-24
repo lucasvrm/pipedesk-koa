@@ -31,18 +31,14 @@ export function DeleteUserDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta ação não pode ser desfeita. Isso excluirá permanentemente{' '}
-            {user ? <strong>{user.name}</strong> : 'o usuário'} e revogará seu
-            acesso ao sistema.
+            Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário{' '}
+            <strong>{user?.name}</strong> e revogará seu acesso ao sistema.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
-            }}
+            onClick={onConfirm}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

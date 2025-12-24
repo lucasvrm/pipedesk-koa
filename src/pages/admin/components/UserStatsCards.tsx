@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, UserX, UserPlus } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock } from 'lucide-react';
 
-interface StatsData {
+interface UserStats {
   total: number;
   active: number;
   inactive: number;
@@ -9,57 +9,55 @@ interface StatsData {
 }
 
 interface UserStatsCardsProps {
-  stats: StatsData;
+  stats: UserStats;
 }
 
 export function UserStatsCards({ stats }: UserStatsCardsProps) {
   const cards = [
     {
-      title: 'Total de Usuários',
+      label: 'Total de Usuários',
       value: stats.total,
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-950/20',
+      color: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700',
+      iconColor: 'text-gray-600 dark:text-gray-400',
     },
     {
-      title: 'Ativos',
+      label: 'Ativos',
       value: stats.active,
       icon: UserCheck,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 dark:bg-green-950/20',
+      color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+      iconColor: 'text-green-600 dark:text-green-400',
     },
     {
-      title: 'Inativos',
+      label: 'Inativos',
       value: stats.inactive,
       icon: UserX,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50 dark:bg-red-950/20',
+      color: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+      iconColor: 'text-red-600 dark:text-red-400',
     },
     {
-      title: 'Pendentes',
+      label: 'Pendentes',
       value: stats.pending,
-      icon: UserPlus,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50 dark:bg-amber-950/20',
+      icon: Clock,
+      color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+      iconColor: 'text-amber-600 dark:text-amber-400',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.title} className="border-border">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {card.title}
-                  </p>
-                  <p className="text-2xl font-bold mt-1">{card.value}</p>
+          <Card key={card.label} className={`border ${card.color}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg bg-background ${card.iconColor}`}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <div className={`p-3 rounded-lg ${card.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${card.color}`} />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{card.value}</p>
+                  <p className="text-xs text-muted-foreground">{card.label}</p>
                 </div>
               </div>
             </CardContent>
