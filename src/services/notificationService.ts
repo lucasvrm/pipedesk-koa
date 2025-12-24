@@ -185,6 +185,13 @@ export async function deleteNotification(notificationId: string): Promise<void> 
 }
 
 /**
+ * Archive a notification (currently same as delete)
+ */
+export async function archiveNotification(notificationId: string): Promise<void> {
+  return deleteNotification(notificationId);
+}
+
+/**
  * Delete all read notifications for a user
  */
 export async function deleteAllRead(userId: string): Promise<void> {
@@ -739,6 +746,21 @@ export function useDeleteNotification() {
 
   return useMutation({
     mutationFn: deleteNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
+  });
+}
+
+/**
+ * Hook to archive notification
+ */
+export function useArchiveNotification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: archiveNotification,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
       queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });

@@ -2,90 +2,53 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-  useGroupedNotifications,
-  useMarkAsRead, 
-  useMarkAllAsRead, 
-  useMarkGroupAsRead,
-  useDeleteNotification,
-  useDeleteAllRead,
-  useNotificationPreferences,
-  GroupedNotification,
+  useGroupedNotifications, useMarkAsRead, useMarkAllAsRead, useMarkGroupAsRead,
+  useDeleteNotification, useDeleteAllRead, useArchiveNotification,
+  useNotificationPreferences, GroupedNotification, Notification,
 } from '@/services/notificationService';
 import {
-  NotificationCategory,
-  NotificationPriority,
-  NOTIFICATION_CATEGORY_LABELS,
-  NOTIFICATION_PRIORITY_LABELS,
-  NOTIFICATION_PRIORITY_COLORS,
+  NotificationCategory, NotificationPriority,
+  NOTIFICATION_CATEGORY_LABELS, NOTIFICATION_PRIORITY_LABELS, NOTIFICATION_PRIORITY_COLORS,
 } from '@/lib/types';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { 
-  Bell, 
-  Check, 
-  Trash, 
-  MessageCircle, 
-  UserCircle, 
-  Clock, 
-  AlertTriangle, 
-  CheckCircle,
-  RefreshCw,
-  Settings,
-  Activity,
-  ChevronDown,
-  ChevronRight,
-  Filter,
-  MoreVertical,
-  BellOff,
+  Bell, BellOff, Check, Trash2, Archive, Settings, Filter, MoreHorizontal,
+  ChevronDown, ChevronRight, ExternalLink, X, MessageCircle, UserCircle,
+  RefreshCw, AlertTriangle, Clock, Activity, Cog,
 } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export interface InboxPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// Ícones por categoria
 const CATEGORY_ICONS: Record<NotificationCategory, React.ElementType> = {
-  mention: MessageCircle,
-  assignment: UserCircle,
-  status: RefreshCw,
-  sla: AlertTriangle,
-  deadline: Clock,
-  activity: Activity,
-  system: Settings,
-  general: Bell,
+  mention: MessageCircle, assignment: UserCircle, status: RefreshCw,
+  sla: AlertTriangle, deadline: Clock, activity: Activity, system: Cog, general: Bell,
 };
+
+type FilterStatus = 'all' | 'unread' | 'read';
 
 export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const { profile } = useAuth();
   const navigate = useNavigate();
   
-  // Hooks de dados (ordem obrigatória: queries e mutations primeiro)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
+  const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'all'>('all');
+  const [filterPriority, setFilterPriority] = useState<NotificationPriority | 'all'>('all');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  
   const { data: groupedNotifications, isLoading } = useGroupedNotifications(profile?.id || null);
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const markAsRead = useMarkAsRead();
@@ -93,409 +56,350 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const markGroupAsRead = useMarkGroupAsRead();
   const deleteNotification = useDeleteNotification();
   const deleteAllRead = useDeleteAllRead();
-  
-  // State (após hooks de dados)
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'all'>('all');
-  const [filterPriority, setFilterPriority] = useState<NotificationPriority | 'all'>('all');
+  const archiveNotification = useArchiveNotification();
 
-  // Filtrar notificações
   const filteredNotifications = useMemo(() => {
     if (!groupedNotifications) return [];
-    
     return groupedNotifications.filter(group => {
       if (filterCategory !== 'all' && group.category !== filterCategory) return false;
       if (filterPriority !== 'all' && group.priority !== filterPriority) return false;
+      if (filterStatus === 'unread' && group.unreadCount === 0) return false;
+      if (filterStatus === 'read' && group.unreadCount > 0) return false;
       return true;
     });
-  }, [groupedNotifications, filterCategory, filterPriority]);
+  }, [groupedNotifications, filterCategory, filterPriority, filterStatus]);
 
-  // Contadores
   const unreadCount = groupedNotifications?.reduce((acc, g) => acc + g.unreadCount, 0) || 0;
   const totalCount = groupedNotifications?.length || 0;
-  const hasFilters = filterCategory !== 'all' || filterPriority !== 'all';
+  const hasFilters = filterCategory !== 'all' || filterPriority !== 'all' || filterStatus !== 'all';
 
-  // Handlers
-  const toggleGroup = (groupKey: string) => {
+  const toggleGroupExpand = (key: string) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
-      if (next.has(groupKey)) {
-        next.delete(groupKey);
-      } else {
-        next.add(groupKey);
-      }
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
   };
 
-  const handleNotificationClick = (notification: GroupedNotification) => {
-    // Se tem mais de 1 notificação, expandir o grupo
-    if (notification.totalCount > 1) {
-      toggleGroup(notification.groupKey);
-      return;
-    }
-    
-    // Marcar como lido e navegar
-    if (notification.unreadCount > 0) {
-      markAsRead.mutate(notification.notifications[0].id);
-    }
-    if (notification.link) {
-      navigate(notification.link);
-      onOpenChange(false);
-    }
+  const toggleNotificationExpand = (id: string) => {
+    setExpandedNotifications(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
-  const handleSingleNotificationClick = (notificationId: string, link: string, read: boolean) => {
-    if (!read) {
-      markAsRead.mutate(notificationId);
-    }
-    if (link) {
-      navigate(link);
-      onOpenChange(false);
-    }
+  const handleNotificationClick = (n: Notification) => {
+    toggleNotificationExpand(n.id);
+    if (!n.read) markAsRead.mutate(n.id);
   };
 
-  const handleMarkGroupAsRead = (groupKey: string) => {
-    if (profile?.id) {
-      markGroupAsRead.mutate({ userId: profile.id, groupKey });
-    }
+  const handleGroupClick = (g: GroupedNotification) => {
+    g.totalCount > 1 ? toggleGroupExpand(g.groupKey) : handleNotificationClick(g.notifications[0]);
   };
 
-  const getIcon = (category: NotificationCategory) => {
-    const Icon = CATEGORY_ICONS[category] || Bell;
-    return Icon;
+  const handleNavigate = (link: string) => {
+    if (link) { navigate(link); onOpenChange(false); }
   };
 
-  const getPriorityColors = (priority: NotificationPriority) => {
-    return NOTIFICATION_PRIORITY_COLORS[priority];
+  const handleMarkAll = () => {
+    if (profile?.id) { markAllAsRead.mutate(profile.id); toast.success('Todas marcadas como lidas'); }
+  };
+
+  const handleDeleteRead = () => {
+    if (profile?.id) { deleteAllRead.mutate(profile.id); toast.success('Lidas removidas'); }
+  };
+
+  const handleArchive = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); archiveNotification.mutate(id); toast.success('Arquivada');
+  };
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); deleteNotification.mutate(id);
+  };
+
+  const handleMarkRead = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); markAsRead.mutate(id);
   };
 
   const clearFilters = () => {
-    setFilterCategory('all');
-    setFilterPriority('all');
+    setFilterCategory('all'); setFilterPriority('all'); setFilterStatus('all');
   };
+
+  const getIcon = (cat: NotificationCategory) => CATEGORY_ICONS[cat] || Bell;
+  const getPriorityColors = (pri: NotificationPriority) => NOTIFICATION_PRIORITY_COLORS[pri];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[420px] sm:w-[540px] flex flex-col p-0 gap-0">
+      <SheetContent className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l">
         
-        {/* Header */}
-        <SheetHeader className="p-4 border-b bg-muted/10">
+        {/* Header Gradiente PipeDesk */}
+        <div className="bg-gradient-to-r from-red-600 to-red-500 p-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <SheetTitle className="flex items-center gap-2">
-                Notificações
-                {preferences?.dndEnabled && (
-                  <BellOff className="h-4 w-4 text-muted-foreground" />
-                )}
-              </SheetTitle>
-              {unreadCount > 0 && (
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  {unreadCount} {unreadCount === 1 ? 'nova' : 'novas'}
-                </Badge>
-              )}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                {preferences?.dndEnabled ? <BellOff className="h-5 w-5 text-white" /> : <Bell className="h-5 w-5 text-white" />}
+              </div>
+              <div>
+                <h2 className="text-white font-semibold text-lg">Notificações</h2>
+                <p className="text-white/70 text-sm">{unreadCount > 0 ? `${unreadCount} não lidas` : 'Tudo em dia'}</p>
+              </div>
             </div>
-            
             <div className="flex items-center gap-1">
-              {/* Filtros */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant={hasFilters ? 'secondary' : 'ghost'} 
-                    size="icon" 
-                    className="h-8 w-8"
-                  >
-                    <Filter className={cn("h-4 w-4", hasFilters && "text-primary")} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Filtrar por categoria</DropdownMenuLabel>
-                  <DropdownMenuCheckboxItem
-                    checked={filterCategory === 'all'}
-                    onCheckedChange={() => setFilterCategory('all')}
-                  >
-                    Todas
-                  </DropdownMenuCheckboxItem>
-                  {(Object.keys(NOTIFICATION_CATEGORY_LABELS) as NotificationCategory[]).map(cat => (
-                    <DropdownMenuCheckboxItem
-                      key={cat}
-                      checked={filterCategory === cat}
-                      onCheckedChange={() => setFilterCategory(cat)}
-                    >
-                      {NOTIFICATION_CATEGORY_LABELS[cat]}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuLabel>Filtrar por prioridade</DropdownMenuLabel>
-                  <DropdownMenuCheckboxItem
-                    checked={filterPriority === 'all'}
-                    onCheckedChange={() => setFilterPriority('all')}
-                  >
-                    Todas
-                  </DropdownMenuCheckboxItem>
-                  {(Object.keys(NOTIFICATION_PRIORITY_LABELS) as NotificationPriority[]).map(pri => (
-                    <DropdownMenuCheckboxItem
-                      key={pri}
-                      checked={filterPriority === pri}
-                      onCheckedChange={() => setFilterPriority(pri)}
-                    >
-                      <span 
-                        className={cn(
-                          "w-2 h-2 rounded-full mr-2",
-                          NOTIFICATION_PRIORITY_COLORS[pri].dot
-                        )} 
-                      />
-                      {NOTIFICATION_PRIORITY_LABELS[pri]}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                  
-                  {hasFilters && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={clearFilters}>
-                        Limpar filtros
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Ações */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {unreadCount > 0 && (
-                    <DropdownMenuItem
-                      onClick={() => profile?.id && markAllAsRead.mutate(profile.id)}
-                      disabled={markAllAsRead.isPending}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Marcar todas como lidas
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    onClick={() => profile?.id && deleteAllRead.mutate(profile.id)}
-                    disabled={deleteAllRead.isPending}
-                    className="text-muted-foreground"
-                  >
-                    <Trash className="mr-2 h-4 w-4" />
-                    Limpar lidas
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+                onClick={() => navigate('/profile/preferences')} title="Configurações">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+                onClick={() => onOpenChange(false)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-          <SheetDescription className="hidden">
-            Central de notificações do usuário
-          </SheetDescription>
-        </SheetHeader>
+          
+          {/* Filtros Pills */}
+          <div className="flex gap-2 mt-4 flex-wrap">
+            {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
+              <button key={s} onClick={() => setFilterStatus(s)}
+                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  filterStatus === s ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
+                {s === 'all' ? 'Todas' : s === 'unread' ? 'Não lidas' : 'Lidas'}
+              </button>
+            ))}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                  (filterCategory !== 'all' || filterPriority !== 'all') ? "bg-white text-red-600" : "bg-white/20 text-white hover:bg-white/30")}>
+                  <Filter className="h-3 w-3" /> Filtros
+                  {(filterCategory !== 'all' || filterPriority !== 'all') && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px]">
+                      {(filterCategory !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0)}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Categoria</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem checked={filterCategory === 'all'} onCheckedChange={() => setFilterCategory('all')}>
+                  Todas
+                </DropdownMenuCheckboxItem>
+                {(Object.keys(NOTIFICATION_CATEGORY_LABELS) as NotificationCategory[]).filter(c => c !== 'general').map(cat => {
+                  const Icon = CATEGORY_ICONS[cat];
+                  return (
+                    <DropdownMenuCheckboxItem key={cat} checked={filterCategory === cat} onCheckedChange={() => setFilterCategory(cat)}>
+                      <Icon className="h-4 w-4 mr-2" />{NOTIFICATION_CATEGORY_LABELS[cat]}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Prioridade</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem checked={filterPriority === 'all'} onCheckedChange={() => setFilterPriority('all')}>
+                  Todas
+                </DropdownMenuCheckboxItem>
+                {(['critical', 'urgent', 'high', 'normal', 'low'] as NotificationPriority[]).map(pri => (
+                  <DropdownMenuCheckboxItem key={pri} checked={filterPriority === pri} onCheckedChange={() => setFilterPriority(pri)}>
+                    <span className={cn("w-2 h-2 rounded-full mr-2", NOTIFICATION_PRIORITY_COLORS[pri].dot)} />
+                    {NOTIFICATION_PRIORITY_LABELS[pri]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                {hasFilters && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={clearFilters} className="text-red-600">Limpar filtros</DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
         {/* DND Banner */}
         {preferences?.dndEnabled && (
-          <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-            <BellOff className="h-4 w-4" />
-            <span>Modo Não Perturbe ativo</span>
+          <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 flex items-center gap-2 text-sm text-amber-700">
+            <BellOff className="h-4 w-4" /><span>Não Perturbe ativo</span>
+            <Button variant="link" size="sm" className="ml-auto h-auto p-0 text-amber-700" onClick={() => navigate('/profile/preferences')}>
+              Configurar
+            </Button>
           </div>
         )}
 
-        {/* Lista de Notificações */}
-        <div className="flex-1 overflow-hidden relative">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Carregando...
+        {/* Ações em massa */}
+        {unreadCount > 0 && (
+          <div className="px-4 py-2 bg-muted/30 border-b flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{unreadCount} não lida{unreadCount > 1 ? 's' : ''}</span>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleMarkAll} disabled={markAllAsRead.isPending}>
+                <Check className="h-3 w-3 mr-1" />Marcar todas
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={handleDeleteRead} disabled={deleteAllRead.isPending}>
+                <Trash2 className="h-3 w-3 mr-1" />Limpar lidas
+              </Button>
             </div>
+          </div>
+        )}
+
+        {/* Lista */}
+        <div className="flex-1 overflow-hidden">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Carregando...</div>
           ) : filteredNotifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 p-4">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                <Bell className="h-6 w-6 opacity-50" />
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-8">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                <Bell className="h-8 w-8 opacity-30" />
               </div>
-              <p className="text-sm">
-                {hasFilters ? 'Nenhuma notificação com esses filtros' : 'Tudo limpo por aqui!'}
-              </p>
-              {hasFilters && (
-                <Button variant="link" size="sm" onClick={clearFilters}>
-                  Limpar filtros
-                </Button>
-              )}
+              <div className="text-center">
+                <p className="font-medium text-foreground">{hasFilters ? 'Nenhuma encontrada' : 'Tudo limpo!'}</p>
+                <p className="text-sm mt-1">{hasFilters ? 'Ajuste os filtros' : 'Sem pendências'}</p>
+              </div>
+              {hasFilters && <Button variant="outline" size="sm" onClick={clearFilters}>Limpar filtros</Button>}
             </div>
           ) : (
-            <ScrollArea className="h-full w-full">
-              <div className="flex flex-col p-2 gap-1">
+            <ScrollArea className="h-full">
+              <div className="p-3 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
-                  const priorityColors = getPriorityColors(group.priority);
-                  const isExpanded = expandedGroups.has(group.groupKey);
+                  const colors = getPriorityColors(group.priority);
+                  const isGroupExp = expandedGroups.has(group.groupKey);
                   const hasMultiple = group.totalCount > 1;
 
                   return (
-                    <Collapsible 
-                      key={group.groupKey} 
-                      open={isExpanded}
-                      onOpenChange={() => hasMultiple && toggleGroup(group.groupKey)}
-                    >
-                      {/* Item Principal */}
-                      <div
-                        className={cn(
-                          "group flex gap-3 p-3 rounded-lg transition-colors cursor-pointer relative border",
-                          group.unreadCount > 0
-                            ? "bg-primary/5 border-primary/10 hover:bg-primary/10"
-                            : "bg-card border-transparent hover:bg-muted/50"
-                        )}
-                        onClick={() => handleNotificationClick(group)}
-                      >
-                        {/* Indicador de Prioridade */}
-                        <div 
-                          className={cn(
-                            "absolute left-0 top-0 bottom-0 w-1 rounded-l-lg",
-                            priorityColors.dot
-                          )}
-                        />
+                    <div key={group.groupKey} className="space-y-1">
+                      {/* Card Principal */}
+                      <div onClick={() => handleGroupClick(group)}
+                        className={cn("relative p-4 rounded-xl border transition-all cursor-pointer group hover:shadow-md",
+                          group.unreadCount > 0 ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900" : "bg-card border-border hover:border-muted-foreground/20")}>
+                        <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-full", colors.dot)} />
 
-                        {/* Ícone */}
-                        <div className="mt-0.5 shrink-0 ml-1">
-                          <Icon 
-                            className={cn("h-5 w-5", priorityColors.text)} 
-                          />
-                        </div>
-
-                        {/* Conteúdo */}
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <p className={cn(
-                                "text-sm font-medium leading-none truncate",
-                                group.unreadCount > 0 && "text-foreground"
-                              )}>
-                                {group.title}
-                              </p>
-                              {hasMultiple && (
-                                <CollapsibleTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-5 w-5 p-0"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronDown className="h-3 w-3" />
-                                    ) : (
-                                      <ChevronRight className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                </CollapsibleTrigger>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
-                              {formatDate(group.latestAt)}
-                            </span>
+                        <div className="flex gap-3 pl-2">
+                          <div className={cn("relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0", colors.bg)}>
+                            <Icon className={cn("h-5 w-5", colors.text)} />
+                            {group.unreadCount > 0 && !hasMultiple && (
+                              <div className={cn("absolute -top-1 -right-1 w-3 h-3 rounded-full ring-2 ring-white", colors.dot)} />
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2 leading-snug">
-                            {group.message}
-                          </p>
-                          
-                          {/* Badges */}
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-[10px] h-5">
-                              {NOTIFICATION_CATEGORY_LABELS[group.category]}
-                            </Badge>
-                            {group.unreadCount > 0 && hasMultiple && (
-                              <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary">
-                                {group.unreadCount} não lidas
-                              </Badge>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <p className={cn("font-medium text-sm truncate", group.unreadCount > 0 ? "text-foreground" : "text-muted-foreground")}>
+                                  {group.title}
+                                </p>
+                                {hasMultiple && (
+                                  <button onClick={(e) => { e.stopPropagation(); toggleGroupExpand(group.groupKey); }} className="p-0.5 hover:bg-muted rounded">
+                                    {isGroupExp ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                                  </button>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(group.latestAt)}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{group.message}</p>
+
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className="text-[10px] h-5 font-normal">{NOTIFICATION_CATEGORY_LABELS[group.category]}</Badge>
+                              {group.unreadCount > 0 && hasMultiple && (
+                                <Badge className="text-[10px] h-5 bg-red-100 text-red-700 hover:bg-red-100">{group.unreadCount} não lida{group.unreadCount > 1 ? 's' : ''}</Badge>
+                              )}
+                              {group.priority === 'critical' && <Badge className="text-[10px] h-5 bg-red-500 text-white">URGENTE</Badge>}
+                            </div>
+
+                            {/* Expandido (única) */}
+                            {!hasMultiple && expandedNotifications.has(group.notifications[0].id) && (
+                              <div className="mt-3 pt-3 border-t border-border">
+                                <p className="text-sm text-foreground mb-3">{group.notifications[0].message}</p>
+                                <div className="flex items-center gap-2">
+                                  {group.link && (
+                                    <Button size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); handleNavigate(group.link); }}>
+                                      <ExternalLink className="h-3 w-3 mr-1" />Ver detalhes
+                                    </Button>
+                                  )}
+                                  <Button variant="outline" size="sm" className="h-8" onClick={(e) => handleArchive(group.notifications[0].id, e)}>
+                                    <Archive className="h-3 w-3 mr-1" />Arquivar
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Ações hover */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-start gap-1">
+                            {!hasMultiple && group.unreadCount > 0 && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkRead(group.notifications[0].id, e)} title="Marcar lida">
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {!hasMultiple && (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleArchive(group.notifications[0].id, e)} title="Arquivar">
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(group.notifications[0].id, e)} title="Excluir">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            {hasMultiple && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => { if (profile?.id) markGroupAsRead.mutate({ userId: profile.id, groupKey: group.groupKey }); }}>
+                                    <Check className="h-4 w-4 mr-2" />Marcar grupo como lido
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
                           </div>
                         </div>
-
-                        {/* Ações (Hover) */}
-                        <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                          {group.unreadCount > 0 && hasMultiple && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkGroupAsRead(group.groupKey);
-                              }}
-                              title="Marcar grupo como lido"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          {!hasMultiple && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteNotification.mutate(group.notifications[0].id);
-                              }}
-                            >
-                              <Trash className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                        
-                        {/* Bolinha de não lido */}
-                        {group.unreadCount > 0 && !hasMultiple && (
-                          <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                        )}
                       </div>
 
-                      {/* Itens Expandidos do Grupo */}
-                      {hasMultiple && (
-                        <CollapsibleContent>
-                          <div className="ml-6 pl-4 border-l-2 border-muted mt-1 space-y-1">
-                            {group.notifications.map((notification) => (
-                              <div
-                                key={notification.id}
-                                className={cn(
-                                  "flex gap-2 p-2 rounded-md transition-colors cursor-pointer text-sm",
-                                  notification.read 
-                                    ? "hover:bg-muted/50" 
-                                    : "bg-primary/5 hover:bg-primary/10"
-                                )}
-                                onClick={() => handleSingleNotificationClick(
-                                  notification.id, 
-                                  notification.link, 
-                                  notification.read
-                                )}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <p className={cn(
-                                    "truncate",
-                                    !notification.read && "font-medium"
-                                  )}>
-                                    {notification.message}
-                                  </p>
+                      {/* Grupo expandido */}
+                      {hasMultiple && isGroupExp && (
+                        <div className="ml-6 pl-4 border-l-2 border-muted space-y-1">
+                          {group.notifications.map((n) => {
+                            const isExp = expandedNotifications.has(n.id);
+                            return (
+                              <div key={n.id} onClick={() => handleNotificationClick(n)}
+                                className={cn("p-3 rounded-lg border transition-all cursor-pointer group/item hover:shadow-sm",
+                                  !n.read ? "bg-red-50/30 border-red-100" : "bg-card border-border")}>
+                                <div className="flex items-start gap-2">
+                                  {!n.read && <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <p className={cn("text-sm truncate", !n.read ? "font-medium" : "")}>{n.message}</p>
+                                      <span className="text-xs text-muted-foreground ml-2 shrink-0">{formatDate(n.createdAt)}</span>
+                                    </div>
+                                    {isExp && (
+                                      <div className="mt-2 pt-2 border-t border-border flex items-center gap-2">
+                                        {n.link && (
+                                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleNavigate(n.link); }}>
+                                            <ExternalLink className="h-3 w-3 mr-1" />Ver
+                                          </Button>
+                                        )}
+                                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => handleArchive(n.id, e)}>
+                                          <Archive className="h-3 w-3 mr-1" />Arquivar
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="opacity-0 group-hover/item:opacity-100 transition-opacity flex gap-1">
+                                    {!n.read && (
+                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleMarkRead(n.id, e)}>
+                                        <Check className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(n.id, e)}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <span className="text-[10px] text-muted-foreground shrink-0">
-                                  {formatDate(notification.createdAt)}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteNotification.mutate(notification.id);
-                                  }}
-                                >
-                                  <Trash className="h-3 w-3" />
-                                </Button>
                               </div>
-                            ))}
-                          </div>
-                        </CollapsibleContent>
+                            );
+                          })}
+                        </div>
                       )}
-                    </Collapsible>
+                    </div>
                   );
                 })}
               </div>
@@ -503,11 +407,15 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
           )}
         </div>
 
-        {/* Footer com contagem */}
+        {/* Footer */}
         {totalCount > 0 && (
-          <div className="p-2 border-t bg-muted/10 text-center text-xs text-muted-foreground">
-            {totalCount} {totalCount === 1 ? 'notificação' : 'notificações'}
-            {hasFilters && ` (filtrado de ${groupedNotifications?.length || 0})`}
+          <div className="p-3 border-t bg-muted/30">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{filteredNotifications.length} de {totalCount}</span>
+              <Button variant="link" size="sm" className="h-auto p-0 text-red-600" onClick={() => navigate('/profile/preferences')}>
+                Preferências
+              </Button>
+            </div>
           </div>
         )}
       </SheetContent>
