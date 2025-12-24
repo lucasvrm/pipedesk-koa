@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-  useGroupedNotifications, useMarkAsRead, useMarkAllAsRead, useMarkGroupAsRead,
+  useGroupedNotifications, useMarkAsRead, useMarkAsUnread, useMarkAllAsRead, useMarkGroupAsRead,
   useDeleteNotification, useDeleteAllRead, useArchiveNotification,
   useNotificationPreferences, GroupedNotification, Notification,
 } from '@/services/notificationService';
@@ -20,8 +20,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { 
   Bell, BellOff, Check, Trash2, Archive, Settings, Filter, MoreHorizontal,
-  ChevronDown, ChevronRight, ExternalLink, X, MessageCircle, UserCircle,
-  RefreshCw, AlertTriangle, Clock, Activity, Cog,
+  ChevronDown, ChevronRight, ExternalLink, MessageCircle, UserCircle,
+  RefreshCw, AlertTriangle, Clock, Activity, Cog, Circle,
 } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
   const { data: groupedNotifications, isLoading } = useGroupedNotifications(profile?.id || null);
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const markAsRead = useMarkAsRead();
+  const markAsUnread = useMarkAsUnread();
   const markAllAsRead = useMarkAllAsRead();
   const markGroupAsRead = useMarkGroupAsRead();
   const deleteNotification = useDeleteNotification();
@@ -102,6 +103,11 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
     if (link) { navigate(link); onOpenChange(false); }
   };
 
+  const handleOpenPreferences = () => {
+    onOpenChange(false);
+    navigate('/profile/preferences');
+  };
+
   const handleMarkAll = () => {
     if (profile?.id) { markAllAsRead.mutate(profile.id); toast.success('Todas marcadas como lidas'); }
   };
@@ -122,6 +128,10 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
     e.stopPropagation(); markAsRead.mutate(id);
   };
 
+  const handleMarkUnread = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); markAsUnread.mutate(id);
+  };
+
   const clearFilters = () => {
     setFilterCategory('all'); setFilterPriority('all'); setFilterStatus('all');
   };
@@ -131,9 +141,9 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l">
+      <SheetContent className="w-[440px] sm:w-[540px] flex flex-col p-0 gap-0 border-l" hideCloseButton>
         
-        {/* Header Gradiente PipeDesk */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-500 p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -145,19 +155,13 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                 <p className="text-white/70 text-sm">{unreadCount > 0 ? `${unreadCount} não lidas` : 'Tudo em dia'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                onClick={() => navigate('/profile/preferences')} title="Configurações">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                onClick={() => onOpenChange(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+              onClick={handleOpenPreferences} title="Configurações">
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
           
-          {/* Filtros Pills */}
+          {/* Filtros */}
           <div className="flex gap-2 mt-4 flex-wrap">
             {(['all', 'unread', 'read'] as FilterStatus[]).map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
@@ -179,7 +183,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent align="end" sideOffset={8} className="w-56">
                 <DropdownMenuLabel>Categoria</DropdownMenuLabel>
                 <DropdownMenuCheckboxItem checked={filterCategory === 'all'} onCheckedChange={() => setFilterCategory('all')}>
                   Todas
@@ -218,7 +222,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
         {preferences?.dndEnabled && (
           <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 flex items-center gap-2 text-sm text-amber-700">
             <BellOff className="h-4 w-4" /><span>Não Perturbe ativo</span>
-            <Button variant="link" size="sm" className="ml-auto h-auto p-0 text-amber-700" onClick={() => navigate('/profile/preferences')}>
+            <Button variant="link" size="sm" className="ml-auto h-auto p-0 text-amber-700" onClick={handleOpenPreferences}>
               Configurar
             </Button>
           </div>
@@ -256,7 +260,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
             </div>
           ) : (
             <ScrollArea className="h-full">
-              <div className="p-3 space-y-2">
+              <div className="p-3 pb-6 space-y-2">
                 {filteredNotifications.map((group) => {
                   const Icon = getIcon(group.category);
                   const colors = getPriorityColors(group.priority);
@@ -328,6 +332,11 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                                 <Check className="h-4 w-4" />
                               </Button>
                             )}
+                            {!hasMultiple && group.unreadCount === 0 && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleMarkUnread(group.notifications[0].id, e)} title="Marcar não lida">
+                                <Circle className="h-4 w-4" />
+                              </Button>
+                            )}
                             {!hasMultiple && (
                               <>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => handleArchive(group.notifications[0].id, e)} title="Arquivar">
@@ -385,11 +394,16 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
                                   </div>
                                   <div className="opacity-0 group-hover/item:opacity-100 transition-opacity flex gap-1">
                                     {!n.read && (
-                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleMarkRead(n.id, e)}>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleMarkRead(n.id, e)} title="Marcar lida">
                                         <Check className="h-3 w-3" />
                                       </Button>
                                     )}
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(n.id, e)}>
+                                    {n.read && (
+                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleMarkUnread(n.id, e)} title="Marcar não lida">
+                                        <Circle className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={(e) => handleDelete(n.id, e)} title="Excluir">
                                       <Trash2 className="h-3 w-3" />
                                     </Button>
                                   </div>
@@ -412,7 +426,7 @@ export default function InboxPanel({ open, onOpenChange }: InboxPanelProps) {
           <div className="p-3 border-t bg-muted/30">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{filteredNotifications.length} de {totalCount}</span>
-              <Button variant="link" size="sm" className="h-auto p-0 text-red-600" onClick={() => navigate('/profile/preferences')}>
+              <Button variant="link" size="sm" className="h-auto p-0 text-red-600" onClick={handleOpenPreferences}>
                 Preferências
               </Button>
             </div>
