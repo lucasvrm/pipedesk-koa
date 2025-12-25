@@ -78,7 +78,9 @@ const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, ca
     color: 'text-red-500',
     items: [
       { id: 'personal', label: 'Dados Pessoais', icon: User, path: '/profile' },
-      { id: 'preferences', label: 'Preferências de Notificação', icon: Bell, path: '/profile/preferences' },
+      { id: 'preferences', label: 'Preferências', icon: Settings, path: '/profile/preferences' },
+      { id: 'activity', label: 'Atividades', icon: Activity, path: '/profile/activity' },
+      { id: 'security', label: 'Segurança', icon: Shield, path: '/profile/security' },
     ],
   },
   {
@@ -191,6 +193,8 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
 
     if (path === '/profile') return { activeSection: 'profile' as SectionId, activeItem: 'personal' };
     if (path === '/profile/preferences') return { activeSection: 'profile' as SectionId, activeItem: 'preferences' };
+    if (path === '/profile/activity') return { activeSection: 'profile' as SectionId, activeItem: 'activity' };
+    if (path === '/profile/security') return { activeSection: 'profile' as SectionId, activeItem: 'security' };
     if (path.startsWith('/admin/settings')) {
       return { activeSection: 'settings' as SectionId, activeItem: category || 'crm' };
     }

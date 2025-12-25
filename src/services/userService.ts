@@ -35,6 +35,12 @@ function mapUserFromDB(item: any): User {
         department: item.department || '',
         status: item.status || 'pending',
         lastLogin: item.last_login || undefined,
+        
+        // Avatar customization fields
+        avatarBgColor: item.avatar_bg_color || undefined,
+        avatarTextColor: item.avatar_text_color || undefined,
+        avatarBorderColor: item.avatar_border_color || undefined,
+        bannerStyle: item.banner_style || undefined,
     };
 }
 
@@ -86,6 +92,11 @@ interface CreateUserInput {
     title?: string;
     department?: string;
     status?: 'active' | 'inactive' | 'pending';
+    // Avatar customization fields
+    avatarBgColor?: string;
+    avatarTextColor?: string;
+    avatarBorderColor?: string;
+    bannerStyle?: string;
 }
 
 export async function createUser(userData: CreateUserInput) {
@@ -101,11 +112,31 @@ export async function createUser(userData: CreateUserInput) {
 }
 
 export async function updateUser(userId: string, userData: Partial<CreateUserInput>) {
+    // Map camelCase to snake_case for avatar customization fields
+    const mappedData: any = { ...userData };
+    
+    if (userData.avatarBgColor !== undefined) {
+        mappedData.avatar_bg_color = userData.avatarBgColor;
+        delete mappedData.avatarBgColor;
+    }
+    if (userData.avatarTextColor !== undefined) {
+        mappedData.avatar_text_color = userData.avatarTextColor;
+        delete mappedData.avatarTextColor;
+    }
+    if (userData.avatarBorderColor !== undefined) {
+        mappedData.avatar_border_color = userData.avatarBorderColor;
+        delete mappedData.avatarBorderColor;
+    }
+    if (userData.bannerStyle !== undefined) {
+        mappedData.banner_style = userData.bannerStyle;
+        delete mappedData.bannerStyle;
+    }
+
     const { data, error } = await supabase.functions.invoke('manage-users', {
         body: {
             action: 'update',
             userId,
-            userData
+            userData: mappedData
         }
     });
 

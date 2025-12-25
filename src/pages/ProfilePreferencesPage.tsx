@@ -1,5 +1,8 @@
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UnifiedLayout } from '@/components/UnifiedLayout';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   useNotificationPreferences, 
   useUpdateNotificationPreferences,
@@ -18,6 +21,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import {
   Select,
   SelectContent,
@@ -36,10 +48,13 @@ import {
   Activity, 
   Settings,
   Info,
+  Palette,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AvatarCustomizer } from '@/pages/Profile/components/AvatarCustomizer';
 
 // Ícones por categoria
 const CATEGORY_ICONS: Record<NotificationCategory, React.ElementType> = {
@@ -83,9 +98,24 @@ const CATEGORIES_RIGHT: NotificationCategory[] = ['deadline', 'activity', 'syste
 
 export default function ProfilePreferencesPage() {
   const { profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: preferences, isLoading } = useNotificationPreferences(profile?.id || null);
   const updatePreferences = useUpdateNotificationPreferences();
   const toggleDND = useToggleDND();
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Get active tab from URL or default to 'notifications'
+  const activeTab = searchParams.get('tab') || 'notifications';
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
+
+  // Breadcrumb label based on active tab
+  const breadcrumbLabel = useMemo(() => {
+    return activeTab === 'avatar' ? 'Avatar' : 'Notificações';
+  }, [activeTab]);
 
   const handleToggleCategory = async (category: NotificationCategory, enabled: boolean) => {
     if (!profile?.id) return;
@@ -125,6 +155,36 @@ export default function ProfilePreferencesPage() {
       toast.success('Prioridade mínima atualizada');
     } catch (error) {
       toast.error('Erro ao atualizar preferências');
+    }
+  };
+
+  const handleAvatarUpdate = async (field: string, value: string) => {
+    if (!profile?.id) return;
+
+    const fieldToColumn: Record<string, string> = {
+      avatarBgColor: 'avatar_bg_color',
+      avatarTextColor: 'avatar_text_color',
+      avatarBorderColor: 'avatar_border_color',
+    };
+
+    const column = fieldToColumn[field];
+    if (!column) return;
+
+    try {
+      setIsSaving(true);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [column]: value })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+
+      toast.success('Avatar atualizado!');
+    } catch (err) {
+      toast.error('Erro ao atualizar avatar');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -203,134 +263,182 @@ export default function ProfilePreferencesPage() {
     );
   }
 
+  if (!profile) return null;
+
   return (
     <UnifiedLayout
       activeSection="profile"
       activeItem="preferences"
     >
       <div className="max-w-5xl space-y-6">
-        
-        {/* DND e Prioridade Mínima - 2 colunas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* DND Card */}
-          <Card className={cn(
-            "transition-colors",
-            preferences?.dndEnabled && "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
-          )}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {preferences?.dndEnabled ? (
-                    <BellOff className="h-6 w-6 text-amber-600" />
-                  ) : (
-                    <Bell className="h-6 w-6 text-muted-foreground" />
-                  )}
-                  <div>
-                    <CardTitle className="text-base">Modo Não Perturbe</CardTitle>
-                    <CardDescription className="text-xs">
-                      Silencia toasts e alertas visuais
-                    </CardDescription>
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/profile">Perfil</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/profile/preferences">Preferências</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbPage>{breadcrumbLabel}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notificações
+            </TabsTrigger>
+            <TabsTrigger value="avatar" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Avatar
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Notifications Tab Content */}
+          <TabsContent value="notifications" className="space-y-6">
+            {/* DND e Prioridade Mínima - 2 colunas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* DND Card */}
+              <Card className={cn(
+                "transition-colors",
+                preferences?.dndEnabled && "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+              )}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {preferences?.dndEnabled ? (
+                        <BellOff className="h-6 w-6 text-amber-600" />
+                      ) : (
+                        <Bell className="h-6 w-6 text-muted-foreground" />
+                      )}
+                      <div>
+                        <CardTitle className="text-base">Modo Não Perturbe</CardTitle>
+                        <CardDescription className="text-xs">
+                          Silencia toasts e alertas visuais
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences?.dndEnabled || false}
+                      onCheckedChange={handleToggleDND}
+                      disabled={toggleDND.isPending}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground">
+                    Notificações ainda aparecem no inbox, mas sem interrupções visuais.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Prioridade Mínima Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Prioridade Mínima</CardTitle>
+                  <CardDescription className="text-xs">
+                    Filtre notificações por importância
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={preferences?.minPriority || 'all'}
+                    onValueChange={handleMinPriorityChange}
+                    disabled={updatePreferences.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione a prioridade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          Todas as prioridades
+                        </div>
+                      </SelectItem>
+                      {(['low', 'normal', 'high', 'urgent', 'critical'] as NotificationPriority[]).map(priority => (
+                        <SelectItem key={priority} value={priority}>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full", NOTIFICATION_PRIORITY_COLORS[priority].dot)} />
+                            {NOTIFICATION_PRIORITY_LABELS[priority]} ou maior
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Receba apenas notificações com prioridade igual ou maior.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Categorias de Notificação - 2 colunas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Categorias de Notificação</CardTitle>
+                <CardDescription>
+                  Ative ou desative notificações por categoria
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Coluna Esquerda */}
+                  <div className="space-y-3">
+                    {CATEGORIES_LEFT.map(category => (
+                      <CategoryCard key={category} category={category} />
+                    ))}
+                  </div>
+                  
+                  {/* Coluna Direita */}
+                  <div className="space-y-3">
+                    {CATEGORIES_RIGHT.map(category => (
+                      <CategoryCard key={category} category={category} />
+                    ))}
                   </div>
                 </div>
-                <Switch
-                  checked={preferences?.dndEnabled || false}
-                  onCheckedChange={handleToggleDND}
-                  disabled={toggleDND.isPending}
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-xs text-muted-foreground">
-                Notificações ainda aparecem no inbox, mas sem interrupções visuais.
-              </p>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Prioridade Mínima Card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Prioridade Mínima</CardTitle>
-              <CardDescription className="text-xs">
-                Filtre notificações por importância
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select
-                value={preferences?.minPriority || 'all'}
-                onValueChange={handleMinPriorityChange}
-                disabled={updatePreferences.isPending}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione a prioridade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-gray-400" />
-                      Todas as prioridades
-                    </div>
-                  </SelectItem>
-                  {(['low', 'normal', 'high', 'urgent', 'critical'] as NotificationPriority[]).map(priority => (
-                    <SelectItem key={priority} value={priority}>
-                      <div className="flex items-center gap-2">
-                        <span className={cn("w-2 h-2 rounded-full", NOTIFICATION_PRIORITY_COLORS[priority].dot)} />
-                        {NOTIFICATION_PRIORITY_LABELS[priority]} ou maior
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-2">
-                Receba apenas notificações com prioridade igual ou maior.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Info Card */}
+            <Card className="bg-muted/50 border-dashed">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p>
+                      <strong>Nota:</strong> Algumas notificações críticas (como SLA vencido) 
+                      podem ignorar essas configurações para garantir que você seja informado.
+                    </p>
+                    <p>
+                      Canais adicionais (email, push) estarão disponíveis em breve.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Categorias de Notificação - 2 colunas */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Categorias de Notificação</CardTitle>
-            <CardDescription>
-              Ative ou desative notificações por categoria
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Coluna Esquerda */}
-              <div className="space-y-3">
-                {CATEGORIES_LEFT.map(category => (
-                  <CategoryCard key={category} category={category} />
-                ))}
-              </div>
-              
-              {/* Coluna Direita */}
-              <div className="space-y-3">
-                {CATEGORIES_RIGHT.map(category => (
-                  <CategoryCard key={category} category={category} />
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Info Card */}
-        <Card className="bg-muted/50 border-dashed">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  <strong>Nota:</strong> Algumas notificações críticas (como SLA vencido) 
-                  podem ignorar essas configurações para garantir que você seja informado.
-                </p>
-                <p>
-                  Canais adicionais (email, push) estarão disponíveis em breve.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Avatar Tab Content */}
+          <TabsContent value="avatar" className="space-y-6">
+            <AvatarCustomizer 
+              user={profile} 
+              onUpdate={handleAvatarUpdate}
+              isSaving={isSaving}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </UnifiedLayout>
   );
