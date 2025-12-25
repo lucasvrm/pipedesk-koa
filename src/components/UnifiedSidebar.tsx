@@ -8,6 +8,10 @@ import {
   useNotificationPreferences, 
   useToggleDND 
 } from '@/services/notificationService';
+import { 
+  useSidebarPreferences, 
+  DEFAULT_SIDEBAR_CONFIG 
+} from '@/services/sidebarPreferencesService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -51,6 +55,7 @@ import {
   Building2,
   CheckSquare,
   FileText,
+  Palette,
 } from 'lucide-react';
 
 // Tipos
@@ -184,6 +189,7 @@ const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, ca
     items: [
       { id: 'personal', label: 'Dados Pessoais', icon: User, path: '/profile' },
       { id: 'preferences', label: 'Preferências', icon: Settings, path: '/profile/preferences' },
+      { id: 'customize', label: 'Personalizar Sidebar', icon: Palette, path: '/profile/customize' },
       { id: 'activity', label: 'Atividades', icon: Activity, path: '/profile/activity' },
       { id: 'security', label: 'Segurança', icon: Shield, path: '/profile/security' },
     ],
@@ -273,6 +279,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   const { theme, setTheme } = useTheme();
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const toggleDND = useToggleDND();
+  const { data: sidebarPrefs } = useSidebarPreferences(profile?.id || null);
 
   // ═══════════════════════════════════════════════════════════════
   // ESTADO DE COLLAPSE (persistido em localStorage)
@@ -299,6 +306,12 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     getMenuSections(canManageUsers, canManageSettings, canViewAnalytics),
     [canManageUsers, canManageSettings, canViewAnalytics]
   );
+
+  // Customized sections based on user preferences
+  const customizedSections = useMemo(() => {
+    const config = sidebarPrefs?.config?.sections || DEFAULT_SIDEBAR_CONFIG;
+    return config.filter(s => s.enabled).sort((a, b) => a.order - b.order);
+  }, [sidebarPrefs]);
 
   const { activeSection, activeItem } = useMemo(() => {
     if (propActiveSection && propActiveItem) {
@@ -343,6 +356,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     // ═══════════════════════════════════════════════════════════════
     if (path === '/profile') return { activeSection: 'profile' as SectionId, activeItem: 'personal' };
     if (path === '/profile/preferences') return { activeSection: 'profile' as SectionId, activeItem: 'preferences' };
+    if (path === '/profile/customize') return { activeSection: 'profile' as SectionId, activeItem: 'customize' };
     if (path === '/profile/activity') return { activeSection: 'profile' as SectionId, activeItem: 'activity' };
     if (path === '/profile/security') return { activeSection: 'profile' as SectionId, activeItem: 'security' };
     if (path.startsWith('/admin/settings')) {
@@ -474,21 +488,25 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
 
         {/* Section Icons */}
         <div className="flex-1 flex flex-col items-center gap-2">
-          {menuSections.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id;
-            const hasItems = section.items.length > 0;
-
+          {customizedSections.map((customSection) => {
+            const originalSection = menuSections.find(s => s.id === customSection.id);
+            if (!originalSection) return null;
+            
+            // Check if section has items (respects permissions)
+            const hasItems = originalSection.items.length > 0;
             if (!hasItems) return null;
 
+            const Icon = originalSection.icon;
+            const isActive = activeSection === originalSection.id;
+
             return (
-              <Tooltip key={section.id}>
+              <Tooltip key={customSection.id}>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
                     <button
                       onClick={() => {
-                        if (section.items.length > 0) {
-                          const firstItem = section.items[0];
+                        if (originalSection.items.length > 0) {
+                          const firstItem = originalSection.items[0];
                           if (firstItem.path) {
                             navigate(firstItem.path);
                           }
@@ -500,6 +518,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
                           ? "bg-white/20 shadow-lg"
                           : "hover:bg-white/10 text-white/60 hover:text-white"
                       )}
+                      style={{ color: isActive ? undefined : customSection.color }}
                     >
                       <Icon className={cn("h-5 w-5", isActive ? "text-white" : "")} />
                       {isActive && (
@@ -509,7 +528,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  {section.label}
+                  {originalSection.label}
                 </TooltipContent>
               </Tooltip>
             );

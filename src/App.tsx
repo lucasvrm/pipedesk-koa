@@ -54,6 +54,7 @@ const AidaPage = lazy(() => import('@/pages/AidaPage'))
 const ProfilePreferencesPage = lazy(() => import('@/pages/ProfilePreferencesPage'))
 const ProfileActivityPage = lazy(() => import('@/pages/Profile/ProfileActivityPage'))
 const ProfileSecurityPage = lazy(() => import('@/pages/Profile/ProfileSecurityPage'))
+const CustomizeSidebarPage = lazy(() => import('@/pages/Profile/CustomizeSidebarPage'))
 
 // Test Pages
 const UnifiedSidebarTest = lazy(() => import('@/pages/UnifiedSidebarTest'))
@@ -132,6 +133,7 @@ function App() {
             <Route path="/profile/preferences" element={<ProfilePreferencesPage />} />
             <Route path="/profile/activity" element={<ProfileActivityPage />} />
             <Route path="/profile/security" element={<ProfileSecurityPage />} />
+            <Route path="/profile/customize" element={<CustomizeSidebarPage />} />
             <Route path="/help" element={<HelpCenterPage />} />
             
             {/* Test Routes */}
