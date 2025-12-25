@@ -127,11 +127,11 @@ const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, ca
   },
   {
     id: 'kanban',
-    label: 'Kanban',
+    label: 'Tracks',
     icon: Kanban,
     color: 'text-orange-500',
     items: [
-      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/kanban' },
+      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/tracks' },
     ],
   },
   {
@@ -308,7 +308,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
       const item = path.includes('comparison') ? 'comparison' : 'list';
       return { activeSection: 'deals' as SectionId, activeItem: item };
     }
-    if (path === '/kanban') {
+    if (path === '/tracks' || path === '/kanban') {
       return { activeSection: 'kanban' as SectionId, activeItem: 'matrix' };
     }
     if (path.startsWith('/companies')) {

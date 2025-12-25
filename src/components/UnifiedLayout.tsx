@@ -39,6 +39,13 @@ export function UnifiedLayout({
   const autoBreadcrumbs = (): Breadcrumb[] => {
     const path = location.pathname;
     
+    if (path === '/tracks') {
+      return [
+        { label: 'Tracks' },
+        { label: 'Master Matrix' },
+      ];
+    }
+
     if (path === '/profile') {
       return [
         { label: 'Meu Perfil' },
