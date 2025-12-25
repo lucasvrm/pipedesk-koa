@@ -1,7 +1,8 @@
-import { Suspense, lazy } from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
+import { UnifiedLayout } from '@/components/UnifiedLayout'
 import LoginView from '@/features/rbac/components/LoginView'
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute'
 import { useAuth } from '@/contexts/AuthContext'
@@ -68,6 +69,19 @@ const PageLoader = () => (
 
 // const Unauthorized = () => <div className="p-8 text-center text-muted-foreground">Acesso não autorizado.</div>;
 
+// ═══════════════════════════════════════════════════════════════
+// WRAPPER: Layout + UnifiedLayout (Rail + Sidebar em todas as rotas)
+// ═══════════════════════════════════════════════════════════════
+function LayoutWithSidebar({ children }: { children: React.ReactNode }) {
+  return (
+    <Layout>
+      <UnifiedLayout showBreadcrumbs={true}>
+        {children}
+      </UnifiedLayout>
+    </Layout>
+  );
+}
+
 function App() {
   const { user, profile } = useAuth()
 
@@ -79,7 +93,7 @@ function App() {
           <Route path="/login" element={!user ? <LoginView /> : <Navigate to="/dashboard" replace />} />
 
           {/* Protected Routes */}
-          <Route element={<ProtectedRoute><Layout><Outlet /></Layout></ProtectedRoute>}>
+          <Route element={<ProtectedRoute><LayoutWithSidebar><Outlet /></LayoutWithSidebar></ProtectedRoute>}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             
