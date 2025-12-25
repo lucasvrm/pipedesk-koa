@@ -52,6 +52,20 @@ export function UnifiedLayout({
         { label: 'Preferências de Notificação' },
       ];
     }
+
+    if (path === '/profile/activity') {
+      return [
+        { label: 'Meu Perfil', path: '/profile' },
+        { label: 'Atividades' },
+      ];
+    }
+
+    if (path === '/profile/security') {
+      return [
+        { label: 'Meu Perfil', path: '/profile' },
+        { label: 'Segurança' },
+      ];
+    }
     
     if (path.startsWith('/admin/settings')) {
       const searchParams = new URLSearchParams(location.search);

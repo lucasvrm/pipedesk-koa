@@ -7,7 +7,6 @@ import {
   useNotificationPreferences, 
   useToggleDND 
 } from '@/services/notificationService';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,7 +14,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { getInitials } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -166,7 +164,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { profile, signOut } = useAuth();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const toggleDND = useToggleDND();
 
@@ -203,8 +201,6 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     return { activeSection: 'profile' as SectionId, activeItem: 'personal' };
   }, [location.pathname, searchParams, propActiveSection, propActiveItem]);
 
-  const userInitials = useMemo(() => getInitials(profile?.name || 'U'), [profile?.name]);
-  const userAvatar = useMemo(() => profile?.avatar_url || profile?.avatar, [profile?.avatar_url, profile?.avatar]);
   const truncatedId = useMemo(() => profile?.id ? `${profile.id.slice(0, 8)}...${profile.id.slice(-4)}` : '', [profile?.id]);
 
   const getThemeIcon = () => {
@@ -349,7 +345,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         </div>
 
         {/* Bottom Icons */}
-        <div className="flex flex-col items-center gap-2 mt-auto">
+        <div className="flex flex-col items-center gap-2 mt-auto pb-2">
           {/* Theme Toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -405,31 +401,8 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
               Central de Ajuda
             </TooltipContent>
           </Tooltip>
-
-          {/* Avatar */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex mt-2">
-                <button>
-                  <Avatar className={cn(
-                    "h-10 w-10 cursor-pointer border-2 transition-colors",
-                    preferences?.dndEnabled 
-                      ? "border-amber-400" 
-                      : "border-transparent hover:border-white/30"
-                  )}>
-                    {userAvatar && <AvatarImage src={userAvatar} alt={profile.name || ''} />}
-                    <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 text-white font-bold text-sm">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {profile.name}
-            </TooltipContent>
-          </Tooltip>
         </div>
+
       </div>
 
       {/* Expanded Panel */}
@@ -523,24 +496,24 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         </div>
 
         {/* Footer */}
-        <div className="mt-auto p-3 border-t border-border space-y-2">
+        <div className="mt-auto p-3 border-t border-border space-y-3">
           {/* Help Button */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             onClick={() => navigate('/help')}
           >
-            <HelpCircle className="h-4 w-4 mr-2" />
+            <HelpCircle className="h-4 w-4" />
             Central de Ajuda
           </Button>
           
           {/* Logout */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-destructive hover:bg-destructive/10"
+            className="w-full justify-start gap-2 text-destructive hover:bg-destructive/10"
             onClick={handleSignOut}
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut className="h-4 w-4" />
             Sair da conta
           </Button>
         </div>
