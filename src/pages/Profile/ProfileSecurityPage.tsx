@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { UnifiedLayout } from '@/components/UnifiedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,17 +40,16 @@ export default function ProfileSecurityPage() {
   if (!profile) return null;
 
   return (
-    <UnifiedLayout activeSection="profile" activeItem="security">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Segurança</h1>
-          <p className="text-sm text-muted-foreground">Gerencie a segurança da sua conta</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Segurança</h1>
+        <p className="text-sm text-muted-foreground">Gerencie a segurança da sua conta</p>
+      </div>
 
-        {/* Grid 2x2 em desktop, 1 coluna em mobile */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Linha 1 - Esquerda: Senha */}
-          <Card>
+      {/* Grid 2x2 em desktop, 1 coluna em mobile */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Linha 1 - Esquerda: Senha */}
+        <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Key className="h-4 w-4" /> Senha
@@ -199,6 +197,5 @@ export default function ProfileSecurityPage() {
           </Card>
         </div>
       </div>
-    </UnifiedLayout>
   );
 }

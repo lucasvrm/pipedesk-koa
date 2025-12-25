@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -289,9 +289,21 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     false  // padrão: expandido
   );
 
-  const toggleCollapse = () => {
+  const toggleCollapse = useCallback(() => {
     setCollapsed(prev => !prev);
-  };
+  }, [setCollapsed]);
+
+  // useEffect para escutar evento de toggle do header
+  useEffect(() => {
+    const handleToggleEvent = () => {
+      toggleCollapse();
+    };
+
+    window.addEventListener('toggle-sidebar', handleToggleEvent);
+    return () => {
+      window.removeEventListener('toggle-sidebar', handleToggleEvent);
+    };
+  }, [toggleCollapse]);
 
   // useState
   const [copiedId, setCopiedId] = useState(false);
@@ -603,20 +615,6 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
           collapsed ? "w-0 opacity-0 overflow-hidden" : "w-64 opacity-100"
         )}
       >
-        {/* Collapse Button (só aparece quando expandido) */}
-        {!collapsed && (
-          <div className="px-4 pt-3 pb-2 border-b border-border">
-            <button
-              onClick={toggleCollapse}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
-              title="Recolher menu"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>Recolher</span>
-            </button>
-          </div>
-        )}
-
         {/* Section Header */}
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold text-foreground">

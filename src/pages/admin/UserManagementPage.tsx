@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/services/userService';
 import { User, UserRole } from '@/lib/types';
 import { hasPermission } from '@/lib/permissions';
-import { UnifiedLayout } from '@/components/UnifiedLayout';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
@@ -109,11 +108,9 @@ export default function UserManagementPage() {
   // Permission check
   if (!currentUser || !hasPermission(currentUser.role, 'MANAGE_USERS')) {
     return (
-      <UnifiedLayout activeSection="management" activeItem="users">
-        <div className="p-8 text-center">
-          <p className="text-destructive">Acesso negado.</p>
-        </div>
-      </UnifiedLayout>
+      <div className="p-8 text-center">
+        <p className="text-destructive">Acesso negado.</p>
+      </div>
     );
   }
 
@@ -336,7 +333,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <UnifiedLayout activeSection="management" activeItem="users">
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -344,8 +341,8 @@ export default function UserManagementPage() {
             <h1 className="text-2xl font-bold text-foreground">Gerenciar Usuários</h1>
             <p className="text-sm text-muted-foreground">
               Controle de acessos, funções e permissões
-            </p>
-          </div>
+          </p>
+        </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -451,6 +448,6 @@ export default function UserManagementPage() {
         isSaving={createUserMutation.isPending || updateUserMutation.isPending}
         roles={userRoleMetadata}
       />
-    </UnifiedLayout>
+    </>
   );
 }

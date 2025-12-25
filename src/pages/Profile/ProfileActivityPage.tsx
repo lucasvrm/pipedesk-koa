@@ -1,4 +1,3 @@
-import { UnifiedLayout } from '@/components/UnifiedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -93,86 +92,84 @@ const mockRecentActivity = [
 
 export default function ProfileActivityPage() {
   return (
-    <UnifiedLayout activeSection="profile" activeItem="activity">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Atividade</h1>
-          <p className="text-sm text-muted-foreground">Acompanhe suas estatísticas e atividades recentes</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Atividade</h1>
+        <p className="text-sm text-muted-foreground">Acompanhe suas estatísticas e atividades recentes</p>
+      </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard icon={<Users className="h-4 w-4 text-primary" />} label="Leads Criados" valueMonth={mockStats.leadsCreatedMonth} valueTotal={mockStats.leadsCreatedTotal} trend={mockStats.leadsCreatedTrend} />
-          <StatCard icon={<Target className="h-4 w-4 text-primary" />} label="Leads Qualificados" valueMonth={mockStats.leadsQualifiedMonth} valueTotal={mockStats.leadsQualifiedTotal} trend={mockStats.leadsQualifiedTrend} />
-          <StatCard icon={<Zap className="h-4 w-4 text-primary" />} label="Taxa de Conversão" valueMonth={mockStats.conversionRateMonth} valueTotal={mockStats.conversionRateTotal} trend={mockStats.conversionRateTrend} suffix="%" />
-          <StatCard icon={<DollarSign className="h-4 w-4 text-primary" />} label="Pipeline Ativo" valueMonth={mockStats.pipelineValue} valueTotal={mockStats.pipelineValue} trend={mockStats.pipelineTrend} prefix="R$ " />
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={<Users className="h-4 w-4 text-primary" />} label="Leads Criados" valueMonth={mockStats.leadsCreatedMonth} valueTotal={mockStats.leadsCreatedTotal} trend={mockStats.leadsCreatedTrend} />
+        <StatCard icon={<Target className="h-4 w-4 text-primary" />} label="Leads Qualificados" valueMonth={mockStats.leadsQualifiedMonth} valueTotal={mockStats.leadsQualifiedTotal} trend={mockStats.leadsQualifiedTrend} />
+        <StatCard icon={<Zap className="h-4 w-4 text-primary" />} label="Taxa de Conversão" valueMonth={mockStats.conversionRateMonth} valueTotal={mockStats.conversionRateTotal} trend={mockStats.conversionRateTrend} suffix="%" />
+        <StatCard icon={<DollarSign className="h-4 w-4 text-primary" />} label="Pipeline Ativo" valueMonth={mockStats.pipelineValue} valueTotal={mockStats.pipelineValue} trend={mockStats.pipelineTrend} prefix="R$ " />
+      </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Criadas" valueMonth={mockStats.tasksCreatedMonth} valueTotal={mockStats.tasksCreatedTotal} trend={mockStats.tasksCreatedTrend} />
-          <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Concluídas" valueMonth={mockStats.tasksCompletedMonth} valueTotal={mockStats.tasksCompletedTotal} trend={mockStats.tasksCompletedTrend} />
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-2">Principal Origem de Leads</p>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Mês:</span>
-                  <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceMonth}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total:</span>
-                  <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceTotal}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-2">Principal Origem de Deals</p>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Mês:</span>
-                  <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceMonth}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total:</span>
-                  <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceTotal}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Criadas" valueMonth={mockStats.tasksCreatedMonth} valueTotal={mockStats.tasksCreatedTotal} trend={mockStats.tasksCreatedTrend} />
+        <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Concluídas" valueMonth={mockStats.tasksCompletedMonth} valueTotal={mockStats.tasksCompletedTotal} trend={mockStats.tasksCompletedTrend} />
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="h-4 w-4" /> Atividade Recente
-              </CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs text-primary">
-                Ver histórico completo
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-2">Principal Origem de Leads</p>
             <div className="space-y-1">
-              {mockRecentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
-                  <span className="text-lg">{activity.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground">
-                      <span className="font-medium">{activity.action}</span>{' '}
-                      <span className="text-muted-foreground">{activity.target}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Mês:</span>
+                <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceMonth}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total:</span>
+                <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceTotal}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-2">Principal Origem de Deals</p>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Mês:</span>
+                <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceMonth}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total:</span>
+                <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceTotal}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
-    </UnifiedLayout>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4" /> Atividade Recente
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs text-primary">
+              Ver histórico completo
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            {mockRecentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+                <span className="text-lg">{activity.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">{activity.action}</span>{' '}
+                    <span className="text-muted-foreground">{activity.target}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {activity.time}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
