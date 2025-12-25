@@ -165,6 +165,7 @@ export default function LeadDetailPage() {
     const statusMeta = getLeadStatusById(lead.leadStatusId)
     return (
       <StatusBadge
+        color={statusMeta?.color}
         semanticStatus={leadStatusMap(statusMeta?.code as any)}
         label={safeString(statusMeta?.label, lead.leadStatusId)}
         className="text-sm"

@@ -176,9 +176,10 @@ export function LeadPriorityBadge({
                       onClick={() => handleChange(option)}
                       className={cn(
                         'flex items-center gap-2 cursor-pointer transition-colors',
-                        isSelected 
-                          ? 'bg-accent text-accent-foreground' 
-                          : '!hover:bg-muted/50 focus:!bg-muted/50'
+                        option === 'hot' && 'hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white',
+                        option === 'warm' && 'hover:bg-amber-500 hover:text-white focus:bg-amber-500 focus:text-white',
+                        option === 'cold' && 'hover:bg-blue-500 hover:text-white focus:bg-blue-500 focus:text-white',
+                        isSelected && 'bg-accent text-accent-foreground'
                       )}
                     >
                       <OptionIcon className={cn('!h-5 !w-5', optConfig.textClass)} />

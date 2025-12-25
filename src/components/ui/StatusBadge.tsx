@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { cn, getContrastColor } from '@/lib/utils'
 
 /**
  * Semantic status colors following the UI/UX audit report
@@ -17,8 +17,9 @@ export const STATUS_COLORS = {
 export type SemanticStatus = keyof typeof STATUS_COLORS
 
 interface StatusBadgeProps {
-  semanticStatus: SemanticStatus
+  semanticStatus?: SemanticStatus
   label: string
+  color?: string
   icon?: ReactNode
   className?: string
 }
@@ -33,15 +34,39 @@ interface StatusBadgeProps {
  * - Red: error, cancelled, rejected
  * - Neutral: inactive, draft, default
  * 
+ * Can also accept custom hex color via `color` prop for dynamic status colors
+ * 
  * @example
  * <StatusBadge semanticStatus="success" label="Aprovado" />
  * <StatusBadge semanticStatus="warning" label="Aguardando" icon={<Clock />} />
+ * <StatusBadge color="#FF5733" label="Custom Status" />
  */
-export function StatusBadge({ semanticStatus, label, icon, className }: StatusBadgeProps) {
+export function StatusBadge({ semanticStatus = 'neutral', label, color, icon, className }: StatusBadgeProps) {
+  // Se color válido, usar
+  if (color && /^#[0-9A-F]{6}$/i.test(color)) {
+    const textColor = getContrastColor(color)
+    return (
+      <Badge
+        variant="outline"
+        className={cn('border-l-4', className)}
+        style={{
+          borderLeftColor: color,
+          backgroundColor: `${color}15`,
+          color: textColor
+        }}
+      >
+        {icon}
+        {label}
+      </Badge>
+    )
+  }
+  
+  // Fallback semântico existente
   return (
     <Badge 
       variant="outline"
       className={cn(
+        'border-l-4',
         STATUS_COLORS[semanticStatus],
         className
       )}
