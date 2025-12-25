@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { LeadSalesRow, getUrgencyLevel, truncateTags } from '@/features/leads/components/LeadSalesRow'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
 
@@ -23,13 +24,18 @@ vi.mock('@/hooks/useSystemMetadata', () => ({
   })
 }))
 
-// Mock the updateLead hook
-vi.mock('@/services/leadService', () => ({
-  useUpdateLead: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false
-  })
-}))
+// Mock lead hooks
+vi.mock('@/services/leadService', async () => {
+  const actual = await vi.importActual<typeof import('@/services/leadService')>('@/services/leadService')
+  return {
+    ...actual,
+    useUpdateLead: () => ({
+      mutateAsync: vi.fn(),
+      isPending: false
+    }),
+    useLead: () => ({ data: null })
+  }
+})
 
 // Mock the tagService hooks
 vi.mock('@/services/tagService', () => ({
@@ -47,6 +53,20 @@ vi.mock('@/services/userService', () => ({
   useUsers: () => ({ data: [], isLoading: false })
 }))
 
+// Mock lead task templates and tasks hooks used by nested modals
+vi.mock('@/hooks/useLeadTaskTemplates', () => ({
+  useLeadTaskTemplates: () => ({ data: { data: [] }, isLoading: false })
+}))
+
+vi.mock('@/features/leads/hooks/useLeadTasks', () => ({
+  useLeadTasks: () => ({ data: { data: [], next_action: null }, isLoading: false }),
+  useCreateLeadTaskFromTemplate: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateLeadTask: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCompleteLeadTask: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSetTaskAsNextAction: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteLeadTask: () => ({ mutate: vi.fn(), isPending: false })
+}))
+
 describe('LeadSalesRow', () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -54,6 +74,16 @@ describe('LeadSalesRow', () => {
       mutations: { retry: false }
     }
   })
+
+  const Wrapper = ({ children }: { children: ReactNode }) => (
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <table>
+          <tbody>{children}</tbody>
+        </table>
+      </QueryClientProvider>
+    </MemoryRouter>
+  )
 
   const baseLead: LeadSalesViewItem = {
     id: 'lead-1',
@@ -69,15 +99,12 @@ describe('LeadSalesRow', () => {
 
   it('renders fallback when lastInteractionAt is invalid', () => {
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow
-            {...baseLead}
-            lastInteractionAt="invalid-date"
-            lastInteractionType="email"
-          />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow
+        {...baseLead}
+        lastInteractionAt="invalid-date"
+        lastInteractionType="email"
+      />,
+      { wrapper: Wrapper }
     )
 
     expect(screen.getByText('Nenhuma interação')).toBeInTheDocument()
@@ -85,25 +112,13 @@ describe('LeadSalesRow', () => {
   })
 
   it('renders status badge with correct label', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    render(<LeadSalesRow {...baseLead} />, { wrapper: Wrapper })
 
     expect(screen.getByText('Novo')).toBeInTheDocument()
   })
 
   it('renders "Sem status" when status is not provided', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} status={undefined} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    render(<LeadSalesRow {...baseLead} status={undefined} />, { wrapper: Wrapper })
 
     expect(screen.getByText('Sem status')).toBeInTheDocument()
   })
@@ -113,11 +128,8 @@ describe('LeadSalesRow', () => {
     const user = userEvent.setup()
     
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...baseLead} onScheduleClick={onScheduleClick} />,
+      { wrapper: Wrapper }
     )
 
     // Find and click the actions menu trigger (kebab menu)
@@ -145,11 +157,8 @@ describe('LeadSalesRow', () => {
     const user = userEvent.setup()
     
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...baseLead} />,
+      { wrapper: Wrapper }
     )
 
     // Find and click the actions menu trigger (kebab menu)
@@ -170,59 +179,58 @@ describe('LeadSalesRow', () => {
 
   it('renders nextAction.label correctly from backend', () => {
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow
-            {...baseLead}
-            nextAction={{ code: 'presentation', label: 'Apresentação' }}
-          />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{ code: 'presentation', label: 'Apresentação' }}
+      />,
+      { wrapper: Wrapper }
     )
 
     expect(screen.getByText('Apresentação')).toBeInTheDocument()
   })
 
   it('renders "Sem próxima ação" fallback when nextAction is undefined', () => {
-    render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} nextAction={undefined} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    )
+    render(<LeadSalesRow {...baseLead} nextAction={undefined} />, { wrapper: Wrapper })
 
     expect(screen.getByText('Sem próxima ação')).toBeInTheDocument()
   })
 
   it('renders nextAction with reason when provided', () => {
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow
-            {...baseLead}
-            nextAction={{
-              code: 'follow_up',
-              label: 'Follow-up',
-              reason: 'Cliente solicitou mais informações'
-            }}
-          />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow
+        {...baseLead}
+        nextAction={{
+          code: 'follow_up',
+          label: 'Follow-up',
+          reason: 'Cliente solicitou mais informações'
+        }}
+      />,
+      { wrapper: Wrapper }
     )
 
     expect(screen.getByText('Follow-up')).toBeInTheDocument()
     expect(screen.getByText('Cliente solicitou mais informações')).toBeInTheDocument()
   })
 
+  it('opens next action modal when Próxima ação cell is clicked', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <LeadSalesRow {...baseLead} />,
+      { wrapper: Wrapper }
+    )
+
+    const cell = screen.getByTestId('next-action-cell')
+    await user.click(cell)
+
+    expect(await screen.findByText('Próxima ação')).toBeInTheDocument()
+  })
+
   // Tags column tests
   it('does NOT render placeholder "Tags" badge when lead has no tags', () => {
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} tags={[]} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...baseLead} tags={[]} />,
+      { wrapper: Wrapper }
     )
 
     // The "Tags" placeholder badge should NOT be present
@@ -244,11 +252,8 @@ describe('LeadSalesRow', () => {
     }
 
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...leadWithTags} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...leadWithTags} />,
+      { wrapper: Wrapper }
     )
 
     expect(screen.getByText('Urgente')).toBeInTheDocument()
@@ -267,11 +272,8 @@ describe('LeadSalesRow', () => {
     })
     
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...baseLead} />,
+      { wrapper: Wrapper }
     )
 
     // Open the actions menu
@@ -290,11 +292,8 @@ describe('LeadSalesRow', () => {
     const onClick = vi.fn()
     
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...baseLead} onClick={onClick} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...baseLead} onClick={onClick} />,
+      { wrapper: Wrapper }
     )
 
     // Open the actions menu
@@ -316,11 +315,8 @@ describe('LeadSalesRow', () => {
     }
     
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...leadWithoutPhone} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...leadWithoutPhone} />,
+      { wrapper: Wrapper }
     )
 
     // Open the actions menu
@@ -343,11 +339,8 @@ describe('LeadSalesRow', () => {
     }
     
     render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <LeadSalesRow {...leadWithoutEmail} />
-        </QueryClientProvider>
-      </MemoryRouter>
+      <LeadSalesRow {...leadWithoutEmail} />,
+      { wrapper: Wrapper }
     )
 
     // Open the actions menu

@@ -19,15 +19,26 @@ export function useLeadTasks(leadId: string, includeCompleted = false) {
   })
 }
 
+async function invalidateLeadCaches(queryClient: ReturnType<typeof useQueryClient>, leadId: string) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['lead-tasks', leadId] }),
+    queryClient.invalidateQueries({ queryKey: ['leads'] }),
+    queryClient.invalidateQueries({ queryKey: ['leads', leadId] }),
+    queryClient.invalidateQueries({ queryKey: ['leads', 'sales-view'] }),
+    queryClient.invalidateQueries({ queryKey: ['leads-sales-view'] }),
+    queryClient.invalidateQueries({ queryKey: ['sales-view'] })
+  ])
+}
+
 export function useCreateLeadTask(leadId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: CreateLeadTaskRequest) => createLeadTask(leadId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-tasks', leadId] })
-      queryClient.invalidateQueries({ queryKey: ['sales-view'] })
-      toast.success('Tarefa criada')
+    onSuccess: async (data, variables) => {
+      await invalidateLeadCaches(queryClient, leadId)
+      const isNextAction = Boolean(data?.is_next_action || variables?.is_next_action)
+      toast.success(isNextAction ? 'Próxima ação definida' : 'Tarefa criada')
     },
     onError: () => {
       toast.error('Erro ao criar tarefa')
@@ -41,10 +52,10 @@ export function useCreateLeadTaskFromTemplate(leadId: string) {
   return useMutation({
     mutationFn: (data: CreateFromTemplateRequest) =>
       createLeadTaskFromTemplate(leadId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-tasks', leadId] })
-      queryClient.invalidateQueries({ queryKey: ['sales-view'] })
-      toast.success('Tarefa criada a partir do template')
+    onSuccess: async (data, variables) => {
+      await invalidateLeadCaches(queryClient, leadId)
+      const isNextAction = Boolean(data?.is_next_action || variables?.is_next_action)
+      toast.success(isNextAction ? 'Próxima ação definida' : 'Tarefa criada a partir do template')
     },
     onError: () => {
       toast.error('Erro ao criar tarefa')
@@ -57,9 +68,8 @@ export function useCompleteLeadTask(leadId: string) {
 
   return useMutation({
     mutationFn: (taskId: string) => completeLeadTask(leadId, taskId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-tasks', leadId] })
-      queryClient.invalidateQueries({ queryKey: ['sales-view'] })
+    onSuccess: async () => {
+      await invalidateLeadCaches(queryClient, leadId)
       toast.success('Tarefa completada')
     },
     onError: () => {
@@ -73,9 +83,8 @@ export function useSetTaskAsNextAction(leadId: string) {
 
   return useMutation({
     mutationFn: (taskId: string) => setTaskAsNextAction(leadId, taskId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-tasks', leadId] })
-      queryClient.invalidateQueries({ queryKey: ['sales-view'] })
+    onSuccess: async () => {
+      await invalidateLeadCaches(queryClient, leadId)
       toast.success('Próxima ação definida')
     },
     onError: () => {
@@ -89,9 +98,8 @@ export function useDeleteLeadTask(leadId: string) {
 
   return useMutation({
     mutationFn: (taskId: string) => deleteLeadTask(leadId, taskId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-tasks', leadId] })
-      queryClient.invalidateQueries({ queryKey: ['sales-view'] })
+    onSuccess: async () => {
+      await invalidateLeadCaches(queryClient, leadId)
       toast.success('Tarefa removida')
     },
     onError: () => {
