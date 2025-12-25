@@ -1,5 +1,11 @@
 # Documentation Refactoring Changelog
 
+## March 2026 - Consolidação de documentos raiz em /docs
+
+- Movidos resumos de implementação e entregáveis para `docs/reports/implementations/`, organizados por domínio (`layout/`, `profile/` e `timeline/`).
+- Arquivos de incidentes/fixes realocados para `docs/incidents/layout/` e `docs/incidents/timeline/` para manter histórico de correções.
+- Plano específico da página de perfil movido para `docs/plans/profile/` para separar planos ativos por área.
+
 ## February 2026 - Arquivamento e limpeza de referências
 
 - Movidos planos desatualizados para `docs/archive/plans/` (backend, fase 1 e command center) para evitar confusão com o estado atual do código.
