@@ -14,8 +14,10 @@ import type {
   TimelineItem,
   TimelineAuthor,
   TimelineFilterState,
-  CommentFormData
+  CommentFormData,
+  TimelineItemType
 } from './types'
+import type { TimelineEventType } from '@/lib/types'
 
 interface TimelineVisualProps {
   entityId: string
@@ -48,6 +50,7 @@ export function TimelineVisual({
     searchQuery: '',
     activeTypes: ['comment', 'email', 'meeting', 'audit', 'system'] // Todos selecionados por padrão
   })
+  const [granularFilter, setGranularFilter] = useState<Record<TimelineItemType, TimelineEventType[]>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [replyingTo, setReplyingTo] = useState<TimelineItem | null>(null)
   
@@ -63,7 +66,7 @@ export function TimelineVisual({
   // Ref for scrolling to cards
   const gridRef = useRef<HTMLDivElement>(null)
 
-  const { filteredItems } = useTimelineFilter(items, filterState)
+  const { filteredItems } = useTimelineFilter(items, filterState, granularFilter)
   const milestones = useTimelineMilestones(filteredItems)
 
   // Milestones já vêm de filteredItems, então já estão filtrados
@@ -210,6 +213,8 @@ export function TimelineVisual({
             onFilterChange={setFilterState}
             itemsCount={filteredItems.length}
             availableItems={items}
+            granularFilter={granularFilter}
+            onGranularFilterChange={setGranularFilter}
           />
         </div>
       </div>
