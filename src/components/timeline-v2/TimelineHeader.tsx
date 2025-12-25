@@ -12,6 +12,13 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { TimelineFilterState, TimelineItemType } from './types'
+import { useTimelinePreferences } from '@/hooks/useTimelinePreferences'
+import {
+  groupEnabledEventsByTimelineType,
+  getLabelForTimelineType
+} from '@/lib/timelineTypeMapping'
+import { TIMELINE_EVENT_LABELS } from '@/constants/timeline'
+import type { TimelineEventType } from '@/lib/types'
 
 interface TimelineHeaderProps {
   filterState: TimelineFilterState
@@ -66,18 +73,34 @@ export function TimelineHeader({
   filterState,
   onFilterChange,
   itemsCount,
-  availableItems = []
+  availableItems: _availableItems = []
 }: TimelineHeaderProps) {
   const navigate = useNavigate()
+  const { enabledEvents } = useTimelinePreferences()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchValue, setSearchValue] = useState(filterState.searchQuery)
 
-  // Discover which types are AVAILABLE (after preference filtering)
-  const availableTypes = useMemo(() => {
-    const types = new Set<TimelineItemType>()
-    availableItems.forEach(item => types.add(item.type))
-    return Array.from(types)
-  }, [availableItems])
+  const availableTypesWithDetails = useMemo(() => {
+    const grouped = groupEnabledEventsByTimelineType(enabledEvents)
+    const filterOrder = FILTER_OPTIONS.map(option => option.type)
+
+    return Array.from(grouped.entries())
+      .sort(
+        ([firstType], [secondType]) =>
+          filterOrder.indexOf(firstType) - filterOrder.indexOf(secondType)
+      )
+      .map(([timelineType, eventTypes]) => ({
+        type: timelineType,
+        events: eventTypes,
+        label: getLabelForTimelineType(timelineType, eventTypes),
+        eventLabels: eventTypes.map((eventType: TimelineEventType) => TIMELINE_EVENT_LABELS[eventType])
+      }))
+  }, [enabledEvents])
+
+  const availableTypes = useMemo(
+    () => availableTypesWithDetails.map(item => item.type),
+    [availableTypesWithDetails]
+  )
 
   const handleSearchSubmit = () => {
     onFilterChange({ ...filterState, searchQuery: searchValue })
@@ -237,11 +260,14 @@ export function TimelineHeader({
         </Button>
 
         {/* Filter chips - só renderiza tipos disponíveis */}
-        {availableTypes.map((type) => {
+        {availableTypesWithDetails.map(({ type, events, label, eventLabels }) => {
           const option = FILTER_OPTIONS.find(opt => opt.type === type)
           if (!option) return null
 
           const isActive = filterState.activeTypes.includes(type)
+          const tooltipText = events.length > 1
+            ? `Inclui: ${eventLabels.join(', ')}`
+            : eventLabels[0] ?? label
           return (
             <Button
               key={type}
@@ -254,9 +280,10 @@ export function TimelineHeader({
                   ? option.activeColor
                   : "bg-background hover:bg-muted"
               )}
+              title={tooltipText}
             >
               {option.icon}
-              {option.label}
+              {label}
             </Button>
           )
         })}
