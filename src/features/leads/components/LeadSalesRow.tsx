@@ -528,7 +528,7 @@ export function LeadSalesRow({
 
   // Guard to prevent row click navigation when modal is open
   const handleRowClick = () => {
-    if (isContactModalOpen) {
+    if (isContactModalOpen || tasksModalOpen || nextActionModalOpen) {
       return
     }
     onClick?.()

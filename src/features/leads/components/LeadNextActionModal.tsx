@@ -40,6 +40,7 @@ export function LeadNextActionModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dropZone, setDropZone] = useState<DragColumn>(null)
+  const [hasUserChangedSelection, setHasUserChangedSelection] = useState(false)
 
   // 3. useMemo
   const templates = useMemo(() => {
@@ -65,18 +66,22 @@ export function LeadNextActionModal({
   // 4. useCallback
   const handleTemplateSelect = useCallback((templateId: string) => {
     setSelectedTemplateId(templateId)
+    setHasUserChangedSelection(true)
   }, [])
 
   const handleClearSelection = useCallback(() => {
     setSelectedTemplateId(null)
+    setHasUserChangedSelection(true)
   }, [])
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
       if (isOpen) {
         setSelectedTemplateId(currentNextActionTemplateId)
+        setHasUserChangedSelection(false) // Reset: permitir sync automático
       } else {
         setSelectedTemplateId(null)
+        setHasUserChangedSelection(false)
         setDraggingId(null)
         setDropZone(null)
       }
@@ -123,19 +128,30 @@ export function LeadNextActionModal({
     const templateIdToUse = selectedTemplate?.id ?? currentNextActionTemplateId
     if (!templateIdToUse) return
 
-    await createFromTemplate.mutateAsync({
-      template_id: templateIdToUse,
-      is_next_action: true,
-    })
-    handleOpenChange(false)
+    try {
+      await createFromTemplate.mutateAsync({
+        template_id: templateIdToUse,
+        is_next_action: true,
+      })
+      // ✅ Fechar modal APÓS sucesso confirmado (invalidação já rodou via hook)
+      handleOpenChange(false)
+    } catch (error) {
+      console.error('[NextActionModal] Failed to save:', error)
+      // Toast de erro já é mostrado pelo hook useCreateLeadTaskFromTemplate
+      // Modal permanece aberto para usuário tentar novamente
+    }
   }, [createFromTemplate, selectedTemplate, currentNextActionTemplateId, handleOpenChange])
 
-  // 5. useEffect - sync when modal opens
+  // 5. useEffect - sync when modal opens or data changes
   useEffect(() => {
-    if (open) {
+    // Sincronizar apenas se: 
+    // 1. Modal está aberto
+    // 2. Usuário ainda não mudou manualmente
+    // 3. Existe uma next action no lead
+    if (open && !hasUserChangedSelection && currentNextActionTemplateId) {
       setSelectedTemplateId(currentNextActionTemplateId)
     }
-  }, [open, currentNextActionTemplateId])
+  }, [open, currentNextActionTemplateId, hasUserChangedSelection])
 
   // 6. Derived lists
   const availableTemplates = useMemo(

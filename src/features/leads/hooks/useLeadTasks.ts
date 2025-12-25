@@ -57,8 +57,19 @@ export function useCreateLeadTaskFromTemplate(leadId: string) {
       const isNextAction = Boolean(data?.is_next_action || variables?.is_next_action)
       toast.success(isNextAction ? 'Próxima ação definida' : 'Tarefa criada a partir do template')
     },
-    onError: () => {
-      toast.error('Erro ao criar tarefa')
+    onError: (error: any) => {
+      console.error('[CreateFromTemplate] Error details:', {
+        message: error?.message,
+        status: error?.status || error?.statusCode,
+        response: error?.response,
+        data: error?.response?.data,
+        stack: error?.stack
+      })
+      
+      const statusCode = error?.status || error?.statusCode || 'desconhecido'
+      toast.error('Erro ao criar tarefa', {
+        description: `Status: ${statusCode}. Verifique o console para detalhes.`
+      })
     },
   })
 }
