@@ -53,7 +53,7 @@ export interface User {
   linkedin?: string
   bio?: string
   isSynthetic?: boolean
-  preferences?: Record<string, any> // User specific UI preferences
+  preferences?: UserPreferences // User specific UI preferences
   status?: 'active' | 'inactive' | 'pending'
   lastLogin?: string
 }
@@ -1196,4 +1196,32 @@ export function getLeadStatusProgress(code: LeadStatus): number {
  */
 export function getLeadStatusColor(code: LeadStatus): string {
   return LEAD_STATUS_COLORS[code] ?? 'bg-gray-500';
+}
+
+// ============================================================================
+// TIMELINE PREFERENCES
+// ============================================================================
+
+export type TimelineEventType =
+  | 'status_change'
+  | 'comments'
+  | 'mentions'
+  | 'assignment'
+  | 'task_completed'
+  | 'notes'
+  | 'file_upload'
+  | 'priority_change'   // FUTURO
+  | 'contact_associated' // FUTURO
+  | 'loss_reason'       // FUTURO
+  | 'calendar_event';   // FUTURO
+
+export interface TimelinePreferences {
+  enabledEvents: Record<TimelineEventType, boolean>;
+  eventColors: Record<TimelineEventType, string>;
+}
+
+export interface UserPreferences {
+  timeline?: TimelinePreferences;
+  notifications?: Record<string, any>;
+  dashboard?: Record<string, any>;
 }
