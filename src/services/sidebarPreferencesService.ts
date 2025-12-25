@@ -82,6 +82,35 @@ export function isItemFixed(sectionId: string, itemId: string): boolean {
   return fixedList.includes('*') || fixedList.includes(itemId);
 }
 
+/**
+ * Normaliza uma seção com campos parciais para incluir todos os campos obrigatórios
+ * (usado para retrocompatibilidade com dados antigos)
+ */
+export function normalizeSection(section: Partial<SidebarSectionConfig> & Pick<SidebarSectionConfig, 'id' | 'enabled' | 'order' | 'color' | 'icon'>): SidebarSectionConfig {
+  // Buscar config padrão correspondente
+  const defaultSection = DEFAULT_SIDEBAR_CONFIG.find(s => s.id === section.id);
+  
+  // Definir valores padrão
+  const type = section.type || 'default';
+  const label = section.label || (defaultSection?.label) || section.id;
+  const tooltip = section.tooltip || (defaultSection?.tooltip) || label;
+  const path = section.path || (defaultSection?.path) || '/';
+  const children = section.children || (defaultSection?.children) || [];
+  
+  return {
+    id: section.id,
+    enabled: section.enabled,
+    order: section.order,
+    color: section.color,
+    icon: section.icon,
+    type,
+    label,
+    tooltip,
+    path,
+    children,
+  };
+}
+
 // ============================================================================
 // DEFAULT CONFIG
 // ============================================================================
@@ -267,7 +296,15 @@ export async function getSidebarPreferences(userId: string | null): Promise<Side
     throw new Error(`Erro ao buscar preferências: ${error.message}`);
   }
   
-  return data as SidebarPreferences;
+  // Normalizar seções para garantir retrocompatibilidade
+  const normalizedData = {
+    ...data,
+    config: {
+      sections: (data.config?.sections || []).map((section: any) => normalizeSection(section))
+    }
+  };
+  
+  return normalizedData as SidebarPreferences;
 }
 
 /**
@@ -277,10 +314,15 @@ export async function upsertSidebarPreferences(
   userId: string,
   config: { sections: SidebarSectionConfig[] }
 ): Promise<SidebarPreferences> {
+  // Normalizar seções para garantir todos os campos obrigatórios
+  const normalizedConfig = {
+    sections: config.sections.map(normalizeSection)
+  };
+  
   const { data, error } = await supabase
     .from('user_sidebar_preferences')
     .upsert(
-      { user_id: userId, config, updated_at: new Date().toISOString() },
+      { user_id: userId, config: normalizedConfig, updated_at: new Date().toISOString() },
       { onConflict: 'user_id' }
     )
     .select()
