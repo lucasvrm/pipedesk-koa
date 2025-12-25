@@ -38,6 +38,7 @@ import {
   ListChecks,
   Bot,
   HelpCircle,
+  Activity,
 } from 'lucide-react';
 
 // Tipos
