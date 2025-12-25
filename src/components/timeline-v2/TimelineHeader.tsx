@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap, ListFilter, Settings } from 'lucide-react'
+import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap, ListFilter, Settings, ChevronDown, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { TimelineFilterState, TimelineItemType } from './types'
 import { useTimelinePreferences } from '@/hooks/useTimelinePreferences'
@@ -25,6 +34,8 @@ interface TimelineHeaderProps {
   onFilterChange: (state: TimelineFilterState) => void
   itemsCount: number
   availableItems?: any[]
+  granularFilter?: Record<TimelineItemType, TimelineEventType[]>
+  onGranularFilterChange?: (filter: Record<TimelineItemType, TimelineEventType[]>) => void
 }
 
 interface FilterOption {
@@ -73,7 +84,9 @@ export function TimelineHeader({
   filterState,
   onFilterChange,
   itemsCount,
-  availableItems: _availableItems = []
+  availableItems: _availableItems = [],
+  granularFilter = {},
+  onGranularFilterChange = () => {}
 }: TimelineHeaderProps) {
   const navigate = useNavigate()
   const { enabledEvents } = useTimelinePreferences()
@@ -96,6 +109,16 @@ export function TimelineHeader({
         eventLabels: eventTypes.map((eventType: TimelineEventType) => TIMELINE_EVENT_LABELS[eventType])
       }))
   }, [enabledEvents])
+
+  // Sincronizar granularFilter quando availableTypesWithDetails muda
+  useEffect(() => {
+    const updated: Record<TimelineItemType, TimelineEventType[]> = {}
+    availableTypesWithDetails.forEach(({ type, events }) => {
+      // Manter filtros existentes que ainda são válidos, ou inicializar com todos
+      updated[type] = granularFilter[type]?.filter(e => events.includes(e)) || [...events]
+    })
+    onGranularFilterChange(updated)
+  }, [availableTypesWithDetails]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const availableTypes = useMemo(
     () => availableTypesWithDetails.map(item => item.type),
@@ -172,6 +195,56 @@ export function TimelineHeader({
 
     onFilterChange({ ...filterState, activeTypes: newTypes })
   }
+
+  /**
+   * Toggle individual de um evento dentro de um grupo
+   */
+  const handleGranularToggle = useCallback(
+    (type: TimelineItemType, eventType: TimelineEventType, checked: boolean) => {
+      const current = granularFilter[type] || []
+      
+      if (checked) {
+        // Adicionar evento se não existir
+        onGranularFilterChange({
+          ...granularFilter,
+          [type]: current.includes(eventType) ? current : [...current, eventType]
+        })
+      } else {
+        // Remover evento
+        onGranularFilterChange({
+          ...granularFilter,
+          [type]: current.filter(e => e !== eventType)
+        })
+      }
+    },
+    [granularFilter, onGranularFilterChange]
+  )
+
+  /**
+   * Seleciona todos os eventos de um grupo
+   */
+  const handleSelectAllInGroup = useCallback(
+    (type: TimelineItemType, events: TimelineEventType[]) => {
+      onGranularFilterChange({
+        ...granularFilter,
+        [type]: [...events]
+      })
+    },
+    [granularFilter, onGranularFilterChange]
+  )
+
+  /**
+   * Desmarca todos os eventos de um grupo
+   */
+  const handleDeselectAllInGroup = useCallback(
+    (type: TimelineItemType) => {
+      onGranularFilterChange({
+        ...granularFilter,
+        [type]: []
+      })
+    },
+    [granularFilter, onGranularFilterChange]
+  )
 
   // "Todos" está ativo quando TODOS os tipos disponíveis estão selecionados
   const isAllSelected = filterState.activeTypes.length === availableTypes.length
@@ -265,26 +338,97 @@ export function TimelineHeader({
           if (!option) return null
 
           const isActive = filterState.activeTypes.includes(type)
-          const tooltipText = events.length > 1
-            ? `Inclui: ${eventLabels.join(', ')}`
-            : eventLabels[0] ?? label
+          const activeEventsCount = granularFilter[type]?.length || 0
+          const totalEventsCount = events.length
+
+          // Se apenas 1 evento, usar Badge simples (comportamento atual)
+          if (events.length === 1) {
+            return (
+              <Button
+                key={type}
+                variant="outline"
+                size="sm"
+                onClick={() => handleTypeToggle(type)}
+                className={cn(
+                  "h-7 px-2.5 text-xs gap-1.5 transition-colors",
+                  isActive
+                    ? option.activeColor
+                    : "bg-background hover:bg-muted"
+                )}
+                title={eventLabels[0]}
+              >
+                {option.icon}
+                {label}
+              </Button>
+            )
+          }
+
+          // Se 2+ eventos, usar DropdownMenu com submenu
           return (
-            <Button
-              key={type}
-              variant="outline"
-              size="sm"
-              onClick={() => handleTypeToggle(type)}
-              className={cn(
-                "h-7 px-2.5 text-xs gap-1.5 transition-colors",
-                isActive
-                  ? option.activeColor
-                  : "bg-background hover:bg-muted"
-              )}
-              title={tooltipText}
-            >
-              {option.icon}
-              {label}
-            </Button>
+            <DropdownMenu key={type}>
+              <DropdownMenuTrigger asChild>
+                <span className="inline-flex">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-7 px-2.5 text-xs gap-1.5 transition-colors",
+                      isActive
+                        ? option.activeColor
+                        : "bg-background hover:bg-muted"
+                    )}
+                  >
+                    {option.icon}
+                    <span>{label}</span>
+                    {activeEventsCount < totalEventsCount && activeEventsCount > 0 && (
+                      <span className="text-xs opacity-70">
+                        {activeEventsCount}/{totalEventsCount}
+                      </span>
+                    )}
+                    <ChevronDown className="h-3 w-3 ml-0.5" />
+                  </Button>
+                </span>
+              </DropdownMenuTrigger>
+              
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Filtrar por tipo
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Checkboxes individuais */}
+                {events.map((eventType) => {
+                  const isChecked = granularFilter[type]?.includes(eventType)
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={eventType}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => handleGranularToggle(type, eventType, checked)}
+                    >
+                      {TIMELINE_EVENT_LABELS[eventType]}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+                
+                <DropdownMenuSeparator />
+                
+                {/* Ações em lote */}
+                <DropdownMenuItem
+                  onClick={() => handleSelectAllInGroup(type, events)}
+                  className="text-xs"
+                >
+                  <Check className="h-3 w-3 mr-2" />
+                  Selecionar Todos
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDeselectAllInGroup(type)}
+                  className="text-xs"
+                >
+                  <X className="h-3 w-3 mr-2" />
+                  Desmarcar Todos
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )
         })}
 
