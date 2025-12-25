@@ -82,13 +82,19 @@ export function TimelineHeader({
 
   const availableTypesWithDetails = useMemo(() => {
     const grouped = groupEnabledEventsByTimelineType(enabledEvents)
+    const filterOrder = FILTER_OPTIONS.map(option => option.type)
 
-    return Array.from(grouped.entries()).map(([timelineType, eventTypes]) => ({
-      type: timelineType,
-      events: eventTypes,
-      label: getLabelForTimelineType(timelineType, eventTypes),
-      eventLabels: eventTypes.map((eventType: TimelineEventType) => TIMELINE_EVENT_LABELS[eventType])
-    }))
+    return Array.from(grouped.entries())
+      .sort(
+        ([firstType], [secondType]) =>
+          filterOrder.indexOf(firstType) - filterOrder.indexOf(secondType)
+      )
+      .map(([timelineType, eventTypes]) => ({
+        type: timelineType,
+        events: eventTypes,
+        label: getLabelForTimelineType(timelineType, eventTypes),
+        eventLabels: eventTypes.map((eventType: TimelineEventType) => TIMELINE_EVENT_LABELS[eventType])
+      }))
   }, [enabledEvents])
 
   const availableTypes = useMemo(
