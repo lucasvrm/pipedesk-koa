@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
-import { useUnifiedTimeline } from './useUnifiedTimeline'
+import { useUnifiedTimeline, TimelineItem } from './useUnifiedTimeline'
 import { useTimelinePreferences } from './useTimelinePreferences'
 import { getPreferenceTypeFromItem } from '@/lib/timelineTypeMapping'
-import type { TimelineItem } from '@/components/timeline-v2/types'
 import type { TimelineEventType } from '@/lib/types'
 
 interface ExtendedTimelineItem extends TimelineItem {

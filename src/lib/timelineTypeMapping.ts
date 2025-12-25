@@ -1,5 +1,5 @@
 import type { TimelineEventType } from '@/lib/types'
-import type { TimelineItemType } from '@/components/timeline-v2/types'
+import type { TimelineItemType } from '@/hooks/useUnifiedTimeline'
 
 /**
  * Mapa de tipos de preferência → tipos da timeline
