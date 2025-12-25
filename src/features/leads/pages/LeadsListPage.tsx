@@ -8,6 +8,7 @@ import { Lead, LeadPriorityBucket, LeadStatus, LEAD_STATUS_PROGRESS, LEAD_STATUS
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { leadStatusMap } from '@/lib/statusMaps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserBadge } from '@/components/ui/user-badge'
 import { LeadDeleteDialog } from '../components/LeadDeleteDialog'
 import { LeadEditSheet } from '../components/LeadEditSheet'
@@ -47,6 +48,9 @@ import { LeadsListControls } from '../components/LeadsListControls'
 import { useIsMobile } from '@/hooks/use-mobile'
 import type { LeadOrderBy } from '../components/LeadsSmartFilters'
 import { FEATURE_FLAGS } from '@/config/featureFlags'
+import { ExportDialog } from '../components/ExportDialog'
+import { ImportWizard } from '../components/ImportWizard'
+import { BulkTagsDialog } from '../components/bulk-tags'
 
 // View types used internally
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
@@ -445,6 +449,11 @@ export default function LeadsListPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [leadToSchedule, setLeadToSchedule] = useState<Lead | null>(null)
 
+  // Estados para dialogs
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [isBulkTagsOpen, setIsBulkTagsOpen] = useState(false)
+
   const getLeadId = (lead: Lead | LeadSalesViewItem) => {
     const raw = lead as any
     return raw.leadId ?? raw.lead_id ?? raw.id ?? raw.lead?.id
@@ -539,6 +548,30 @@ export default function LeadsListPage() {
     }
   }
 
+  const handleExport = useCallback(() => {
+    setIsExportOpen(true)
+  }, [])
+
+  const handleImport = useCallback(() => {
+    setIsImportOpen(true)
+  }, [])
+
+  const handleBulkTags = useCallback(() => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos um lead')
+      return
+    }
+    setIsBulkTagsOpen(true)
+  }, [selectedIds.length])
+
+  const handleImportComplete = useCallback((stats: any) => {
+    toast.success(`${stats.created} leads importados com sucesso`)
+  }, [])
+
+  const handleBulkTagsComplete = useCallback(() => {
+    setSelectedIds([])
+  }, [])
+
   const clearFilters = useCallback(() => {
     handleSearchChange('')
     setStatusFilter('all')
@@ -624,6 +657,31 @@ export default function LeadsListPage() {
 
   const activeLeadStatuses = useMemo(() => leadStatuses.filter(s => s.isActive), [leadStatuses])
   const activeLeadOrigins = useMemo(() => leadOrigins.filter(o => o.isActive), [leadOrigins])
+
+  const filterDescription = useMemo(() => 
+    hasActiveFilters ? `${activeFiltersCount} filtros ativos` : undefined,
+    [hasActiveFilters, activeFiltersCount]
+  )
+
+  const existingLeadsForDuplicateCheck = useMemo(() => 
+    (activeLeads as Lead[]).map((l) => ({
+      id: l.id,
+      legalName: l.legalName,
+      tradeName: l.tradeName,
+      cnpj: l.cnpj,
+      website: l.website,
+      primaryContactEmail: l.contacts?.[0]?.email
+    })),
+    [activeLeads]
+  )
+
+  const selectedLeadsInfo = useMemo(() =>
+    selectedIds.map((id) => {
+      const lead = (activeLeads as Lead[]).find((l) => l.id === id)
+      return { id, name: lead?.legalName || 'Lead' }
+    }),
+    [selectedIds, activeLeads]
+  )
 
   // Compute error UI for Sales View
   const salesErrorUI = useMemo(() => {
@@ -750,6 +808,9 @@ export default function LeadsListPage() {
               onBulkOwnerChange={handleBulkOwnerChange}
               availableStatuses={activeLeadStatuses.map(s => ({ id: s.id, label: s.label }))}
               availableOwners={users.map(u => ({ id: u.id, name: u.name }))}
+              onExport={handleExport}
+              onImport={handleImport}
+              onBulkTags={handleBulkTags}
             />
 
         {/* Conteúdo da Lista dentro do Card - área rolável */}
@@ -975,6 +1036,31 @@ export default function LeadsListPage() {
           lead={leadToSchedule}
         />
       )}
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={isExportOpen}
+        onOpenChange={setIsExportOpen}
+        leads={activeLeads as Lead[]}
+        filterDescription={filterDescription}
+      />
+
+      {/* Import Wizard */}
+      <ImportWizard
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        existingLeads={existingLeadsForDuplicateCheck}
+        onComplete={handleImportComplete}
+      />
+
+      {/* Bulk Tags Dialog */}
+      <BulkTagsDialog
+        open={isBulkTagsOpen}
+        onOpenChange={setIsBulkTagsOpen}
+        selectedIds={selectedIds}
+        selectedLeads={selectedLeadsInfo}
+        onComplete={handleBulkTagsComplete}
+      />
     </div>
   )
 }

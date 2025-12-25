@@ -54,6 +54,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { OPERATION_LABELS } from '@/lib/types'
 import { cn, safeString } from '@/lib/utils'
 import { Check, ChevronsUpDown, Plus, User, X } from 'lucide-react'
+import { useDuplicateDetection } from '../hooks/useDuplicateDetection'
+import { DuplicateDetectionModal } from './DuplicateDetectionModal'
+import { DuplicateWarningInline } from './DuplicateWarningInline'
 
 // Brazilian States (UF)
 const BRAZILIAN_STATES = [
@@ -162,6 +165,18 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [tagsPopoverOpen, setTagsPopoverOpen] = useState(false)
 
+  // Estados para detecção de duplicatas
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [pendingSubmitData, setPendingSubmitData] = useState<CreateLeadFormData | null>(null)
+
+  const {
+    duplicates,
+    isChecking,
+    checkForDuplicates,
+    clearResults,
+    hasDuplicates
+  } = useDuplicateDetection()
+
   const activeLeadOrigins = leadOrigins.filter(o => o.isActive)
   const activeOperationTypes = operationTypes.filter(o => o.isActive)
 
@@ -178,8 +193,10 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
     if (open) {
       form.reset(DEFAULT_FORM_VALUES)
       setSelectedTags([])
+      clearResults()
+      setPendingSubmitData(null)
     }
-  }, [open, form])
+  }, [open, form, clearResults])
 
   // Sync tags with form
   useEffect(() => {
@@ -198,7 +215,7 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
     setSelectedTags(prev => prev.filter(id => id !== tagId))
   }, [])
 
-  const onSubmit = async (data: CreateLeadFormData) => {
+  const createLeadFromData = async (data: CreateLeadFormData) => {
     if (!profile?.id) {
       toast.error('Usuário não autenticado')
       return
@@ -248,6 +265,36 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
     }
   }
 
+  const handleCreateAnyway = () => {
+    if (pendingSubmitData) {
+      createLeadFromData(pendingSubmitData)
+      setPendingSubmitData(null)
+      setShowDuplicatesModal(false)
+    }
+  }
+
+  const onSubmit = async (data: CreateLeadFormData) => {
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado')
+      return
+    }
+
+    // Verificar duplicatas antes de criar
+    const duplicatesFound = await checkForDuplicates({
+      legalName: data.legalName,
+      email: data.newContact?.email || undefined
+    })
+
+    if (duplicatesFound.length > 0) {
+      setPendingSubmitData(data)
+      setShowDuplicatesModal(true)
+      return // Parar aqui, não criar ainda
+    }
+
+    // Criar lead normalmente
+    await createLeadFromData(data)
+  }
+
   const getContactLabel = (contactId: string): string => {
     const contact = contacts.find(c => c.id === contactId)
     if (!contact) return 'Selecione um contato...'
@@ -286,6 +333,14 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
                   </FormItem>
                 )}
               />
+
+              {/* Inline duplicate warning */}
+              {hasDuplicates && (
+                <DuplicateWarningInline
+                  duplicates={duplicates}
+                  onViewDuplicates={() => setShowDuplicatesModal(true)}
+                />
+              )}
 
               {/* Origem do Lead */}
               <FormField
@@ -649,6 +704,18 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
             </DialogFooter>
           </form>
         </Form>
+
+        {/* Modal de Duplicatas */}
+        <DuplicateDetectionModal
+          open={showDuplicatesModal}
+          onOpenChange={setShowDuplicatesModal}
+          duplicates={duplicates}
+          onCreateAnyway={handleCreateAnyway}
+          isCreating={createLead.isPending}
+          inputData={{
+            legalName: form.watch('legalName')
+          }}
+        />
       </DialogContent>
     </Dialog>
   )
