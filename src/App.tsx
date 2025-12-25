@@ -120,7 +120,8 @@ function App() {
 
             {/* Tools */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
-            <Route path="/kanban" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
+            <Route path="/kanban" element={<Navigate to="/tracks" replace />} />
+            <Route path="/tracks" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
             
             <Route path="/folders" element={profile ? <FolderBrowser currentUser={profile} onManageFolders={() => {}} /> : null} />
             <Route path="/folders/manage" element={<FolderManagerPage />} />
