@@ -110,15 +110,19 @@ export function TimelineHeader({
       }))
   }, [enabledEvents])
 
-  // Sincronizar granularFilter quando availableTypesWithDetails muda
+  // Inicializar granularFilter apenas uma vez quando componente monta
   useEffect(() => {
-    const updated: Record<TimelineItemType, TimelineEventType[]> = {}
-    availableTypesWithDetails.forEach(({ type, events }) => {
-      // Manter filtros existentes que ainda são válidos, ou inicializar com todos
-      updated[type] = granularFilter[type]?.filter(e => events.includes(e)) || [...events]
-    })
-    onGranularFilterChange(updated)
-  }, [availableTypesWithDetails]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Só rodar se granularFilter estiver vazio (primeira renderização)
+    const isFirstRender = Object.keys(granularFilter).length === 0
+    
+    if (isFirstRender && availableTypesWithDetails.length > 0) {
+      const initial: Record<TimelineItemType, TimelineEventType[]> = {}
+      availableTypesWithDetails.forEach(({ type, events }) => {
+        initial[type] = [...events] // Inicializar com todos os eventos selecionados
+      })
+      onGranularFilterChange(initial)
+    }
+  }, [availableTypesWithDetails, granularFilter, onGranularFilterChange])
 
   const availableTypes = useMemo(
     () => availableTypesWithDetails.map(item => item.type),
