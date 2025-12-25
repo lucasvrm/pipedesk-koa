@@ -165,21 +165,21 @@ export function TimelineSettings() {
         </div>
       </div>
 
-      {/* Eventos Ativos */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5" />
+      {/* Grid 3 colunas */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Eventos Ativos */}
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
               Eventos Ativos
             </CardTitle>
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="text-xs w-fit mt-2">
               {enabledCount} de {AVAILABLE_EVENTS.length} ativos
             </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4">
+          </CardHeader>
+          <CardContent className="space-y-2 flex-1 overflow-auto">
             {AVAILABLE_EVENTS.map((eventType) => {
               const isEnabled = enabledEvents[eventType];
               const color = eventColors[eventType];
@@ -239,20 +239,18 @@ export function TimelineSettings() {
                 </div>
               );
             })}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Eventos Futuros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            Em Desenvolvimento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
+        {/* Eventos Futuros */}
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-muted-foreground">
+              <Info className="h-4 w-4" />
+              Em Desenvolvimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 flex-1 overflow-auto">
             {FUTURE_EVENTS.map((eventType) => {
               const color = eventColors[eventType];
 
@@ -281,53 +279,56 @@ export function TimelineSettings() {
                 </div>
               );
             })}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground mb-4">
-              Eventos habilitados que aparecerão na timeline:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABLE_EVENTS.filter(e => enabledEvents[e]).map((eventType) => {
-                const color = eventColors[eventType];
-                return (
-                  <Badge
-                    key={eventType}
-                    variant="secondary"
-                    className="px-3 py-1.5"
-                    style={{
-                      backgroundColor: getColorWithOpacity(color, 0.15),
-                      color: color,
-                      borderColor: color
-                    }}
-                  >
-                    <span className="mr-1.5">
-                      {getIconComponent(TIMELINE_EVENT_ICONS[eventType])}
-                    </span>
-                    {TIMELINE_EVENT_LABELS[eventType]}
-                  </Badge>
-                );
-              })}
-              {enabledCount === 0 && (
-                <p className="text-sm text-muted-foreground italic">
-                  Nenhum evento habilitado
-                </p>
-              )}
+        {/* Preview */}
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Preview
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="space-y-2 p-4 bg-muted/30 rounded-lg h-full min-h-[200px]">
+              <p className="text-sm text-muted-foreground mb-4">
+                Eventos habilitados que aparecerão na timeline:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {AVAILABLE_EVENTS.filter(e => enabledEvents[e]).map((eventType) => {
+                  const color = eventColors[eventType];
+                  return (
+                    <Badge
+                      key={eventType}
+                      variant="secondary"
+                      className="px-3 py-1.5"
+                      style={{
+                        backgroundColor: getColorWithOpacity(color, 0.15),
+                        color: color,
+                        borderColor: color
+                      }}
+                    >
+                      <span className="mr-1.5">
+                        {getIconComponent(TIMELINE_EVENT_ICONS[eventType])}
+                      </span>
+                      {TIMELINE_EVENT_LABELS[eventType]}
+                    </Badge>
+                  );
+                })}
+                {enabledCount === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    Nenhum evento habilitado
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+      </div>
+    </div>
+  )
     </div>
   );
 }

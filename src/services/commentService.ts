@@ -107,7 +107,22 @@ export function useCreateComment() {
   return useMutation({
     mutationFn: createComment,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['comments', variables.entityType, variables.entityId] })
+      try {
+        // Timeline v2 usa unifiedTimeline
+        queryClient.invalidateQueries({ 
+          queryKey: ['unifiedTimeline', variables.entityId, variables.entityType] 
+        })
+        // Manter compatibilidade
+        queryClient.invalidateQueries({ 
+          queryKey: ['comments', variables.entityType, variables.entityId] 
+        })
+        // Invalidar notificações se tem menções
+        if (variables.mentions?.length) {
+          queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        }
+      } catch (error) {
+        console.warn('[useCreateComment] Cache invalidation failed:', error)
+      }
     }
   })
 }

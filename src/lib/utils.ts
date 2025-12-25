@@ -82,3 +82,23 @@ export function safeStringOptional(value: unknown, fallback?: string): string | 
 export function ensureArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? value : []
 }
+
+/**
+ * Calculate contrast color (black or white) based on background hex color
+ * Uses WCAG luminance calculation
+ * 
+ * @param hexColor - Hex color string (with or without #)
+ * @returns '#000000' for light backgrounds, '#ffffff' for dark backgrounds
+ * 
+ * @example
+ * getContrastColor('#FF5733') // returns '#ffffff'
+ * getContrastColor('#F0F0F0') // returns '#000000'
+ */
+export function getContrastColor(hexColor: string): string {
+  const hex = hexColor.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5 ? '#000000' : '#ffffff'
+}
