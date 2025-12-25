@@ -474,7 +474,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   return (
     <div className="flex h-full">
       {/* Icon Rail */}
-      <div className="w-16 bg-slate-900 flex flex-col items-center py-4 shrink-0">
+      <div className="w-16 bg-slate-900 flex flex-col items-center py-2 shrink-0">
         {/* Botão Expand (só aparece quando colapsado) */}
         {collapsed && (
           <div className="mb-4">
@@ -495,9 +495,6 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
             </Tooltip>
           </div>
         )}
-
-        {/* Spacer no lugar do logo */}
-        {!collapsed && <div className="h-5 mb-4" />}
 
         {/* Section Icons */}
         <div className="flex-1 flex flex-col items-center gap-2">
@@ -619,7 +616,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         {/* Section Header */}
         <div className={cn(
           "border-b border-border",
-          activeSection === 'profile' ? 'p-4' : 'px-6 py-3'
+          activeSection === 'profile' ? 'p-4' : 'px-6 py-2'
         )}>
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm text-foreground">
@@ -629,10 +626,10 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
             {/* Botão toggle collapse */}
             <button
               onClick={toggleCollapse}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+              className="h-6 w-6 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
               title="Fechar menu"
             >
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="h-3 w-3" />
             </button>
           </div>
           
