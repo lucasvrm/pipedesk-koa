@@ -86,7 +86,7 @@ const FIELD_WEIGHTS = {
  * Free email domains to ignore in matching.
  * Emails from these domains don't indicate a company relationship.
  */
-const FREE_EMAIL_DOMAINS = [
+const FREE_EMAIL_DOMAINS: readonly string[] = [
   'gmail.com',
   'hotmail.com',
   'outlook.com',
@@ -97,7 +97,7 @@ const FREE_EMAIL_DOMAINS = [
   'uol.com.br',
   'bol.com.br',
   'terra.com.br',
-] as const
+]
 
 /**
  * Maximum string length for Levenshtein calculation.
@@ -318,7 +318,7 @@ export function extractEmailDomain(
   const domain = trimmed.slice(atIndex + 1)
 
   // Ignore free email domains
-  if ((FREE_EMAIL_DOMAINS as readonly string[]).includes(domain)) {
+  if (FREE_EMAIL_DOMAINS.includes(domain)) {
     return null
   }
 
