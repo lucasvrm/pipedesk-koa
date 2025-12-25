@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { UnifiedLayout } from '@/components/UnifiedLayout'
-import { DynamicBreadcrumbs } from '@/components/DynamicBreadcrumbs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -568,11 +567,8 @@ export default function Profile() {
   const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
 
   return (
-    <UnifiedLayout activeSection="profile" activeItem="personal" showBreadcrumbs={false}>
+    <UnifiedLayout activeSection="profile" activeItem="personal">
       <div className="space-y-6">
-        {/* Breadcrumb */}
-        <DynamicBreadcrumbs />
-        
         {/* ================================================================ */}
         {/* HEADER COM BANNER E AVATAR */}
         {/* ================================================================ */}

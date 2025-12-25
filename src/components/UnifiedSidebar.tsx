@@ -7,7 +7,6 @@ import {
   useNotificationPreferences, 
   useToggleDND 
 } from '@/services/notificationService';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,7 +14,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { getInitials } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -166,7 +164,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { profile, signOut } = useAuth();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const toggleDND = useToggleDND();
 
@@ -203,8 +201,6 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     return { activeSection: 'profile' as SectionId, activeItem: 'personal' };
   }, [location.pathname, searchParams, propActiveSection, propActiveItem]);
 
-  const userInitials = useMemo(() => getInitials(profile?.name || 'U'), [profile?.name]);
-  const userAvatar = useMemo(() => profile?.avatar_url || profile?.avatar, [profile?.avatar_url, profile?.avatar]);
   const truncatedId = useMemo(() => profile?.id ? `${profile.id.slice(0, 8)}...${profile.id.slice(-4)}` : '', [profile?.id]);
 
   const getThemeIcon = () => {
@@ -348,88 +344,6 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
           })}
         </div>
 
-        {/* Bottom Icons */}
-        <div className="flex flex-col items-center gap-2 mt-auto">
-          {/* Theme Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <button
-                  onClick={cycleTheme}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                >
-                  <ThemeIcon className="h-5 w-5" />
-                </button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              Tema: {theme === 'light' ? 'Claro' : theme === 'dark' ? 'Escuro' : 'Sistema'}
-            </TooltipContent>
-          </Tooltip>
-
-          {/* DND Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <button
-                  onClick={handleToggleDND}
-                  className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                    preferences?.dndEnabled 
-                      ? "bg-amber-500/20 text-amber-400" 
-                      : "text-white/60 hover:text-white hover:bg-white/10"
-                  )}
-                >
-                  {preferences?.dndEnabled ? <BellOff className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
-                </button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {preferences?.dndEnabled ? 'Não Perturbe ativo' : 'Não Perturbe'}
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Help */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <button
-                  onClick={() => navigate('/help')}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                >
-                  <HelpCircle className="h-5 w-5" />
-                </button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              Central de Ajuda
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Avatar */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex mt-2">
-                <button>
-                  <Avatar className={cn(
-                    "h-10 w-10 cursor-pointer border-2 transition-colors",
-                    preferences?.dndEnabled 
-                      ? "border-amber-400" 
-                      : "border-transparent hover:border-white/30"
-                  )}>
-                    {userAvatar && <AvatarImage src={userAvatar} alt={profile.name || ''} />}
-                    <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 text-white font-bold text-sm">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {profile.name}
-            </TooltipContent>
-          </Tooltip>
-        </div>
       </div>
 
       {/* Expanded Panel */}
@@ -523,24 +437,51 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         </div>
 
         {/* Footer */}
-        <div className="mt-auto p-3 border-t border-border space-y-2">
+        <div className="mt-auto p-3 border-t border-border space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
+              onClick={cycleTheme}
+            >
+              <ThemeIcon className="h-4 w-4" />
+              <span className="sr-only">Alternar tema</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-9 w-9",
+                preferences?.dndEnabled
+                  ? "text-amber-500 hover:text-amber-500 hover:bg-amber-500/10"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={handleToggleDND}
+            >
+              {preferences?.dndEnabled ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+              <span className="sr-only">Alternar notificações</span>
+            </Button>
+          </div>
+
           {/* Help Button */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent"
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             onClick={() => navigate('/help')}
           >
-            <HelpCircle className="h-4 w-4 mr-2" />
+            <HelpCircle className="h-4 w-4" />
             Central de Ajuda
           </Button>
           
           {/* Logout */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-destructive hover:bg-destructive/10"
+            className="w-full justify-start gap-2 text-destructive hover:bg-destructive/10"
             onClick={handleSignOut}
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut className="h-4 w-4" />
             Sair da conta
           </Button>
         </div>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UnifiedLayout } from '@/components/UnifiedLayout';
-import { DynamicBreadcrumbs } from '@/components/DynamicBreadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,9 +43,6 @@ export default function ProfileSecurityPage() {
   return (
     <UnifiedLayout activeSection="profile" activeItem="security">
       <div className="space-y-6">
-        {/* Breadcrumb */}
-        <DynamicBreadcrumbs />
-        
         <div>
           <h1 className="text-2xl font-bold text-foreground">Segurança</h1>
           <p className="text-sm text-muted-foreground">Gerencie a segurança da sua conta</p>
