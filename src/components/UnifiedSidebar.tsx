@@ -36,6 +36,7 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
+  ChevronsLeft,
   Copy,
   Check,
   Sun,
@@ -496,7 +497,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         )}
 
         {/* Spacer no lugar do logo */}
-        {!collapsed && <div className="h-4 mb-4" />}
+        {!collapsed && <div className="h-6 mb-4" />}
 
         {/* Section Icons */}
         <div className="flex-1 flex flex-col items-center gap-2">
@@ -616,10 +617,24 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         )}
       >
         {/* Section Header */}
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold text-foreground">
-            {menuSections.find(s => s.id === activeSection)?.label || 'Menu'}
-          </h2>
+        <div className={cn(
+          "border-b border-border",
+          activeSection === 'profile' ? 'p-4' : 'px-4 py-3'
+        )}>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-sm text-foreground">
+              {menuSections.find(s => s.id === activeSection)?.label || 'Menu'}
+            </h2>
+            
+            {/* Botão toggle collapse */}
+            <button
+              onClick={toggleCollapse}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+              title="Fechar menu"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </button>
+          </div>
           
           {activeSection === 'profile' && (
             <div className="mt-3 space-y-2">

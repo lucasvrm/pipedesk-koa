@@ -634,9 +634,9 @@ export default function Profile() {
 
           <div className="px-6 relative">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
-              <div className="relative -mt-14 md:-mt-16 z-10">
+              <div className="relative -mt-20 md:-mt-22 z-10">
                 <Avatar 
-                  className="h-32 w-32 border-4 border-background shadow-xl"
+                  className="h-44 w-44 border-4 border-background shadow-xl"
                   style={{
                     backgroundColor: formData.avatarBgColor,
                     borderColor: formData.avatarBorderColor
