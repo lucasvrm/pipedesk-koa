@@ -328,7 +328,5 @@ export function TimelineSettings() {
 
       </div>
     </div>
-  )
-    </div>
   );
 }
