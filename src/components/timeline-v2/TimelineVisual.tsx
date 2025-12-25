@@ -209,6 +209,7 @@ export function TimelineVisual({
             filterState={filterState}
             onFilterChange={setFilterState}
             itemsCount={filteredItems.length}
+            availableItems={items}
           />
         </div>
       </div>

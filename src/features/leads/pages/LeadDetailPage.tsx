@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { logActivity } from '@/services/activityService'
 import { useEntityTags, useTagOperations } from '@/services/tagService'
 import { useCreateComment, useUpdateComment, useDeleteComment } from '@/services/commentService'
-import { useUnifiedTimeline } from '@/hooks/useUnifiedTimeline'
+import { useTimelineWithPreferences } from '@/hooks/useTimelineWithPreferences'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge, type SemanticStatus } from '@/components/ui/StatusBadge'
@@ -138,7 +138,7 @@ export default function LeadDetailPage() {
     isLoading: timelineLoading, 
     error: timelineError, 
     refetch: refetchTimeline 
-  } = useUnifiedTimeline(id!, 'lead')
+  } = useTimelineWithPreferences(id!, 'lead')
   
   const createComment = useCreateComment()
   const updateComment = useUpdateComment()
