@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap, ListFilter } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Search, X, MessageSquare, Mail, Calendar, GitCommit, Zap, ListFilter, Settings } from 'lucide-react'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +17,7 @@ interface TimelineHeaderProps {
   filterState: TimelineFilterState
   onFilterChange: (state: TimelineFilterState) => void
   itemsCount: number
+  availableItems?: any[]
 }
 
 interface FilterOption {
@@ -62,10 +65,19 @@ const FILTER_OPTIONS: FilterOption[] = [
 export function TimelineHeader({
   filterState,
   onFilterChange,
-  itemsCount
+  itemsCount,
+  availableItems = []
 }: TimelineHeaderProps) {
+  const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchValue, setSearchValue] = useState(filterState.searchQuery)
+
+  // Discover which types are AVAILABLE (after preference filtering)
+  const availableTypes = useMemo(() => {
+    const types = new Set<TimelineItemType>()
+    availableItems.forEach(item => types.add(item.type))
+    return Array.from(types)
+  }, [availableItems])
 
   const handleSearchSubmit = () => {
     onFilterChange({ ...filterState, searchQuery: searchValue })
@@ -87,17 +99,45 @@ export function TimelineHeader({
 
   // Toggle "Todos": se todos estão selecionados, desmarca todos; senão, marca todos
   const handleToggleAll = () => {
-    const allSelected = filterState.activeTypes.length === ALL_TYPES.length
+    const allSelected = filterState.activeTypes.length === availableTypes.length
     if (allSelected) {
       // Desmarcar todos
       onFilterChange({ ...filterState, activeTypes: [] })
     } else {
-      // Marcar todos
-      onFilterChange({ ...filterState, activeTypes: [...ALL_TYPES] })
+      // Marcar todos (só os disponíveis)
+      onFilterChange({ ...filterState, activeTypes: [...availableTypes] })
     }
   }
 
   const handleTypeToggle = (type: TimelineItemType) => {
+    // Verificar se tipo está disponível (não foi filtrado pelas preferências)
+    if (!availableTypes.includes(type)) {
+      // Tipo desabilitado nas preferências → mostrar toast
+      toast(
+        <div className="flex flex-col gap-2">
+          <p className="font-medium">Tipo desabilitado</p>
+          <p className="text-sm text-muted-foreground">
+            Este tipo de evento está desabilitado nas suas preferências da timeline.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigate('/profile/preferences?tab=timeline')
+              toast.dismiss()
+            }}
+            className="w-full"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Ir para Preferências
+          </Button>
+        </div>,
+        { duration: 5000 }
+      )
+      return
+    }
+
+    // Tipo está habilitado → alternar filtro local
     const currentTypes = filterState.activeTypes
     let newTypes: TimelineItemType[]
 
@@ -110,8 +150,8 @@ export function TimelineHeader({
     onFilterChange({ ...filterState, activeTypes: newTypes })
   }
 
-  // "Todos" está ativo quando TODOS os tipos estão selecionados
-  const isAllSelected = filterState.activeTypes.length === ALL_TYPES.length
+  // "Todos" está ativo quando TODOS os tipos disponíveis estão selecionados
+  const isAllSelected = filterState.activeTypes.length === availableTypes.length
   const hasSearchQuery = filterState.searchQuery.trim() !== ''
 
   return (
@@ -196,15 +236,18 @@ export function TimelineHeader({
           Todos
         </Button>
 
-        {/* Filter chips */}
-        {FILTER_OPTIONS.map((option) => {
-          const isActive = filterState.activeTypes.includes(option.type)
+        {/* Filter chips - só renderiza tipos disponíveis */}
+        {availableTypes.map((type) => {
+          const option = FILTER_OPTIONS.find(opt => opt.type === type)
+          if (!option) return null
+
+          const isActive = filterState.activeTypes.includes(type)
           return (
             <Button
-              key={option.type}
+              key={type}
               variant="outline"
               size="sm"
-              onClick={() => handleTypeToggle(option.type)}
+              onClick={() => handleTypeToggle(type)}
               className={cn(
                 "h-7 px-2.5 text-xs gap-1.5 transition-colors",
                 isActive

@@ -27,7 +27,7 @@ import { ThreadReplies } from './ThreadReplies'
 import type { TimelineItem, TimelineItemType } from './types'
 
 interface ActivityCardProps {
-  item: TimelineItem
+  item: TimelineItem & { customColor?: string }
   currentUserId: string
   onEdit?: () => void
   onDelete?: () => void
@@ -123,13 +123,28 @@ export function ActivityCard({
     e.stopPropagation()
   }
 
+  // Apply custom color if provided
+  const hasCustomColor = !!item.customColor
+  const borderLeftColor = item.customColor || undefined
+  const backgroundColor = item.customColor 
+    ? `${item.customColor}15` // 15% opacity
+    : undefined
+
   return (
     <div
       className={cn(
         'rounded-lg border p-4 transition-all hover:shadow-sm',
-        typeConfig.borderClass,
-        typeConfig.bgClass
+        !hasCustomColor && typeConfig.borderClass,
+        !hasCustomColor && typeConfig.bgClass
       )}
+      style={
+        hasCustomColor
+          ? {
+              borderLeft: `4px solid ${borderLeftColor}`,
+              backgroundColor: backgroundColor
+            }
+          : undefined
+      }
     >
       {/* Header: Avatar, Name, Badge, Time */}
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -149,7 +164,19 @@ export function ActivityCard({
               </span>
               <Badge
                 variant="outline"
-                className={cn('text-[10px] px-1.5 py-0 h-4', typeConfig.badgeClass)}
+                className={cn(
+                  'text-[10px] px-1.5 py-0 h-4',
+                  !hasCustomColor && typeConfig.badgeClass
+                )}
+                style={
+                  hasCustomColor
+                    ? {
+                        backgroundColor: item.customColor,
+                        color: '#ffffff',
+                        borderColor: item.customColor
+                      }
+                    : undefined
+                }
               >
                 {typeConfig.label}
               </Badge>
