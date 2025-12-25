@@ -227,7 +227,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto relative">{children}</main>
+      <main className="flex-1 overflow-hidden relative">{children}</main>
 
       {/* Modais e Serviços */}
       <GlobalSearch
