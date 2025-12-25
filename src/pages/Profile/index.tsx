@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { UnifiedLayout } from '@/components/UnifiedLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -570,14 +569,13 @@ export default function Profile() {
   const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
 
   return (
-    <UnifiedLayout activeSection="profile" activeItem="personal">
-      <div className="space-y-6">
-        {/* ================================================================ */}
-        {/* HEADER COM BANNER E AVATAR */}
-        {/* ================================================================ */}
-        <div className="relative">
-          <div className={cn("min-h-[7rem] rounded-xl relative overflow-hidden pb-14 md:pb-16", formData.bannerStyle)}>
-            <div className="absolute inset-0 bg-black/10" />
+    <div className="space-y-6">
+      {/* ================================================================ */}
+      {/* HEADER COM BANNER E AVATAR */}
+      {/* ================================================================ */}
+      <div className="relative">
+        <div className={cn("min-h-[7rem] rounded-xl relative overflow-hidden pb-14 md:pb-16", formData.bannerStyle)}>
+          <div className="absolute inset-0 bg-black/10" />
             
             {/* Change Banner Button */}
             <div className="absolute top-3 right-3 z-10">
@@ -921,6 +919,5 @@ export default function Profile() {
           </div>
         </div>
       </div>
-    </UnifiedLayout>
   )
 }

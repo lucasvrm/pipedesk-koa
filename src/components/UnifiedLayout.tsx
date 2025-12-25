@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UnifiedSidebar } from '@/components/UnifiedSidebar';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight, Home, ChevronsLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Breadcrumb {
   label: string;
@@ -138,9 +139,18 @@ export function UnifiedLayout({
     }
     
     if (path === '/profile/preferences') {
+      const searchParams = new URLSearchParams(location.search);
+      const tab = searchParams.get('tab') || 'notifications';
+      
+      const tabLabels: Record<string, string> = {
+        notifications: 'Preferências de Notificação',
+        avatar: 'Personalizar Avatar',
+        timeline: 'Configurar Timeline',
+      };
+
       return [
         { label: 'Meu Perfil', path: '/profile' },
-        { label: 'Preferências de Notificação' },
+        { label: tabLabels[tab] || 'Preferências' },
       ];
     }
 
@@ -222,46 +232,91 @@ export function UnifiedLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Breadcrumbs */}
+        {/* Header Unificado: Breadcrumbs + Título + Toggle Button */}
         {showBreadcrumbs && finalBreadcrumbs.length > 0 && (
           <div className="px-6 py-3 border-b bg-muted/30 shrink-0">
-            <nav className="flex items-center gap-1.5 text-sm">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+            <div className="flex items-center justify-between gap-4">
+              {/* Coluna Esquerda: Breadcrumbs e Título */}
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                {/* Breadcrumbs */}
+                <nav className="flex items-center gap-1.5 text-sm shrink-0">
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Home className="h-4 w-4" />
+                  </button>
+                  
+                  {finalBreadcrumbs.map((crumb, index) => (
+                    <div key={index} className="flex items-center gap-1.5">
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                      {crumb.path && index < finalBreadcrumbs.length - 1 ? (
+                        <button
+                          onClick={() => navigate(crumb.path!)}
+                          className="text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                        >
+                          {crumb.label}
+                        </button>
+                      ) : (
+                        <span className={cn(
+                          "whitespace-nowrap",
+                          index === finalBreadcrumbs.length - 1 
+                            ? "text-foreground font-medium" 
+                            : "text-muted-foreground"
+                        )}>
+                          {crumb.label}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </nav>
+
+                {/* Título (alinhado verticalmente com breadcrumbs) */}
+                {title && (
+                  <h1 className="text-xl font-bold text-foreground truncate">
+                    {title}
+                  </h1>
+                )}
+              </div>
+
+              {/* Coluna Direita: Botão Toggle Sidebar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('toggle-sidebar'));
+                }}
+                className="shrink-0"
+                title="Abrir/Fechar menu"
               >
-                <Home className="h-4 w-4" />
-              </button>
-              
-              {finalBreadcrumbs.map((crumb, index) => (
-                <div key={index} className="flex items-center gap-1.5">
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-                  {crumb.path && index < finalBreadcrumbs.length - 1 ? (
-                    <button
-                      onClick={() => navigate(crumb.path!)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {crumb.label}
-                    </button>
-                  ) : (
-                    <span className={cn(
-                      index === finalBreadcrumbs.length - 1 
-                        ? "text-foreground font-medium" 
-                        : "text-muted-foreground"
-                    )}>
-                      {crumb.label}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </nav>
+                <ChevronsLeft className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Descrição (se existir) em linha separada */}
+            {description && (
+              <p className="text-sm text-muted-foreground mt-2">{description}</p>
+            )}
           </div>
         )}
 
-        {/* Page Header (optional) */}
-        {(title || description) && (
+        {/* Fallback: Se não tem breadcrumbs mas tem título */}
+        {(!showBreadcrumbs || finalBreadcrumbs.length === 0) && (title || description) && (
           <div className="px-6 py-4 border-b shrink-0">
-            {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
+            <div className="flex items-center justify-between gap-4">
+              {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('toggle-sidebar'));
+                }}
+                className="shrink-0"
+                title="Abrir/Fechar menu"
+              >
+                <ChevronsLeft className="h-5 w-5" />
+              </Button>
+            </div>
             {description && <p className="text-muted-foreground mt-1">{description}</p>}
           </div>
         )}
