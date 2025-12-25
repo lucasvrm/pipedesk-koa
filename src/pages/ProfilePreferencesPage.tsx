@@ -22,14 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+import { DynamicBreadcrumbs } from '@/components/DynamicBreadcrumbs';
 import {
   Select,
   SelectContent,
@@ -49,7 +42,6 @@ import {
   Settings,
   Info,
   Palette,
-  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -112,10 +104,7 @@ export default function ProfilePreferencesPage() {
     setSearchParams({ tab: value });
   };
 
-  // Breadcrumb label based on active tab
-  const breadcrumbLabel = useMemo(() => {
-    return activeTab === 'avatar' ? 'Avatar' : 'Notificações';
-  }, [activeTab]);
+
 
   const handleToggleCategory = async (category: NotificationCategory, enabled: boolean) => {
     if (!profile?.id) return;
@@ -272,25 +261,7 @@ export default function ProfilePreferencesPage() {
     >
       <div className="max-w-5xl space-y-6">
         {/* Breadcrumb */}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/profile">Perfil</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/profile/preferences">Preferências</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbPage>{breadcrumbLabel}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        <DynamicBreadcrumbs />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
