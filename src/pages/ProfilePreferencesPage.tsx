@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AvatarCustomizer } from '@/pages/Profile/components/AvatarCustomizer';
+import { TimelineSettings } from '@/pages/Profile/components/TimelineSettings';
 
 // Ícones por categoria
 const CATEGORY_ICONS: Record<NotificationCategory, React.ElementType> = {
@@ -261,7 +262,7 @@ export default function ProfilePreferencesPage() {
       <div className="max-w-5xl space-y-6">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Notificações
@@ -269,6 +270,10 @@ export default function ProfilePreferencesPage() {
             <TabsTrigger value="avatar" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               Avatar
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Timeline
             </TabsTrigger>
           </TabsList>
 
@@ -404,6 +409,11 @@ export default function ProfilePreferencesPage() {
               onUpdate={handleAvatarUpdate}
               isSaving={isSaving}
             />
+          </TabsContent>
+
+          {/* Timeline Tab Content */}
+          <TabsContent value="timeline">
+            <TimelineSettings />
           </TabsContent>
         </Tabs>
       </div>

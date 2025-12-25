@@ -4,6 +4,7 @@ import { useComments } from '@/services/commentService'
 import { useActivities, ActivityLogEntry } from '@/services/activityService'
 import { fetchTimeline } from '@/services/timelineService'
 import { EntityType } from '@/types/integration'
+import { supabase } from '@/lib/supabaseClient'
 
 export type TimelineItemType = 'comment' | 'activity' | 'system' | 'meeting' | 'email' | 'audit'
 
@@ -247,6 +248,39 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
     refetch: refetchActivities
   } = useActivities(entityId, entityType)
 
+  // Fetch completed tasks for leads
+  const {
+    data: completedTasks,
+    isLoading: tasksLoading,
+    error: tasksError
+  } = useQuery({
+    queryKey: ['lead-tasks-completed', entityId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lead_tasks')
+        .select(`
+          id,
+          title,
+          description,
+          completed_at,
+          completed_by,
+          profiles:profiles!lead_tasks_completed_by_fkey(
+            id,
+            name,
+            avatar_url
+          )
+        `)
+        .eq('lead_id', entityId)
+        .eq('status', 'completed')
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false })
+
+      if (error) throw error
+      return data
+    },
+    enabled: !!entityId && entityType === 'lead'
+  })
+
   const timelineItems = useMemo(() => {
     const items: TimelineItem[] = []
     const seenIds = new Set<string>()
@@ -342,12 +376,40 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
       })
     }
 
+    // Process completed tasks
+    if (completedTasks) {
+      completedTasks.forEach(task => {
+        if (seenIds.has(`task-${task.id}`)) return
+        seenIds.add(`task-${task.id}`)
+
+        items.push({
+          id: `task-${task.id}`,
+          type: 'system',
+          date: task.completed_at!,
+          title: 'Tarefa Concluída',
+          author: {
+            id: task.profiles?.id || 'sistema',
+            name: task.profiles?.name || 'Sistema',
+            avatar: task.profiles?.avatar_url
+          },
+          content: task.title,
+          metadata: {
+            taskId: task.id,
+            description: task.description
+          },
+          parentId: null,
+          isEditable: false,
+          isDeletable: false
+        })
+      })
+    }
+
     // Sort by date desc (most recent first)
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     
     // Organize into threads
     return organizeIntoThreads(items)
-  }, [timelineResponse, comments, activities])
+  }, [timelineResponse, comments, activities, completedTasks])
 
   const refetch = useCallback(async () => {
     await Promise.all([refetchTimeline(), refetchComments(), refetchActivities()])
@@ -356,8 +418,8 @@ export function useUnifiedTimeline(entityId: string, entityType: 'deal' | 'lead'
   return {
     items: timelineItems,
     data: timelineItems, // Alias for consistency
-    isLoading: timelineLoading || commentsLoading || activitiesLoading,
-    error: timelineError || commentsError || activitiesError,
+    isLoading: timelineLoading || commentsLoading || activitiesLoading || tasksLoading,
+    error: timelineError || commentsError || activitiesError || tasksError,
     refetch
   }
 }
