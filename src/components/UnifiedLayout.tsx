@@ -35,184 +35,120 @@ export function UnifiedLayout({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Gera breadcrumbs automáticos se não fornecidos
+  const segmentLabels: Record<string, string> = {
+    dashboard: 'Dashboard',
+    leads: 'Leads',
+    deals: 'Deals',
+    companies: 'Empresas',
+    contacts: 'Contatos',
+    players: 'Players',
+    tasks: 'Tarefas',
+    tracks: 'Tracks',
+    profile: 'Meu Perfil',
+    activity: 'Atividades',
+    security: 'Segurança',
+    admin: 'Admin',
+    settings: 'Configurações',
+  };
+
+  const profileTabLabels: Record<string, string> = {
+    avatar: 'Personalizar Avatar',
+    notifications: 'Preferências de Notificação',
+    timeline: 'Configurar Timeline',
+    tuning: 'Personalização do Menu',
+  };
+
+  const adminCategoryLabels: Record<string, string> = {
+    crm: 'CRM & Vendas',
+    products: 'Produtos & Operações',
+    system: 'Sistema & Segurança',
+    productivity: 'Produtividade',
+    integrations: 'Integrações & Automação',
+  };
+
+  const adminSectionLabels: Record<string, string> = {
+    leads: 'Leads',
+    deals: 'Deals & Pipeline',
+    companies: 'Empresas & Contatos',
+    products: 'Produtos',
+    operation_types: 'Tipos de Operação',
+    deal_sources: 'Origens de Deal',
+    loss_reasons: 'Motivos de Perda',
+    defaults: 'Defaults do Sistema',
+    roles: 'Papéis & Permissões',
+    permissions: 'Permissões Avançadas',
+    tasks: 'Tarefas',
+    tags: 'Tags',
+    templates: 'Templates',
+    holidays: 'Feriados',
+    dashboards: 'Dashboards',
+    automation: 'Automação',
+  };
+
+  const formatSegment = (segment: string) => segment.replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const isIdLike = (segment: string) => /^[0-9a-f-]{6,}$/i.test(segment);
+
   const autoBreadcrumbs = (): Breadcrumb[] => {
-    const path = location.pathname;
-    
-    // ═══════════════════════════════════════════════════════════════
-    // BREADCRUMBS PARA ROTAS PRINCIPAIS
-    // ═══════════════════════════════════════════════════════════════
-    
-    // Dashboard
-    if (path === '/dashboard') {
-      return [
-        { label: 'Dashboard' },
-      ];
-    }
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const searchParams = new URLSearchParams(location.search);
+    const crumbs: Breadcrumb[] = [];
 
-    // Leads
-    if (path === '/leads' || path.startsWith('/leads/')) {
-      const crumbs: Breadcrumb[] = [{ label: 'Leads', path: '/leads' }];
-      
-      // Detalhes de lead específico
-      if (path.startsWith('/leads/') && path !== '/leads') {
-        crumbs.push({ label: 'Detalhes do Lead' });
-      }
-      
-      return crumbs;
-    }
+    if (pathSegments.length === 0) return [];
 
-    // Deals
-    if (path === '/deals' || path.startsWith('/deals/')) {
-      const crumbs: Breadcrumb[] = [{ label: 'Deals', path: '/deals' }];
-      
-      // Sub-rotas de deals
-      if (path === '/deals/comparison') {
-        crumbs.push({ label: 'Comparador de Deals' });
-      } else if (path.startsWith('/deals/') && path !== '/deals') {
-        crumbs.push({ label: 'Detalhes do Deal' });
-      }
-      
-      return crumbs;
-    }
+    pathSegments.forEach((segment, index) => {
+      const path = `/${pathSegments.slice(0, index + 1).join('/')}`;
+      const isLast = index === pathSegments.length - 1;
 
-    // Companies
-    if (path === '/companies' || path.startsWith('/companies/')) {
-      const crumbs: Breadcrumb[] = [{ label: 'Empresas', path: '/companies' }];
-      
-      // Detalhes de empresa específica
-      if (path.startsWith('/companies/') && path !== '/companies') {
-        crumbs.push({ label: 'Detalhes da Empresa' });
-      }
-      
-      return crumbs;
-    }
+      let label = segmentLabels[segment] || formatSegment(segment);
 
-    // Contacts
-    if (path === '/contacts' || path.startsWith('/contacts/')) {
-      const crumbs: Breadcrumb[] = [{ label: 'Contatos', path: '/contacts' }];
-      
-      // Detalhes de contato específico
-      if (path.startsWith('/contacts/') && path !== '/contacts') {
-        crumbs.push({ label: 'Detalhes do Contato' });
-      }
-      
-      return crumbs;
-    }
-
-    // Players
-    if (path === '/players' || path.startsWith('/players/')) {
-      const crumbs: Breadcrumb[] = [{ label: 'Players', path: '/players' }];
-      
-      // Detalhes de player específico
-      if (path.startsWith('/players/') && path !== '/players') {
-        crumbs.push({ label: 'Detalhes do Player' });
-      }
-      
-      return crumbs;
-    }
-
-    // Tasks
-    if (path === '/tasks') {
-      return [
-        { label: 'Tarefas' },
-      ];
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // BREADCRUMBS EXISTENTES (NÃO MODIFICAR ABAIXO)
-    // ═══════════════════════════════════════════════════════════════
-    
-    if (path === '/tracks') {
-      return [
-        { label: 'Tracks' },
-        { label: 'Master Matrix' },
-      ];
-    }
-
-    if (path === '/profile') {
-      return [
-        { label: 'Meu Perfil' },
-        { label: 'Dados Pessoais' },
-      ];
-    }
-    
-    if (path === '/profile/preferences') {
-      const searchParams = new URLSearchParams(location.search);
-      const tab = searchParams.get('tab') || 'avatar';
-      
-      const tabLabels: Record<string, string> = {
-        avatar: 'Personalizar Avatar',
-        notifications: 'Preferências de Notificação',
-        timeline: 'Configurar Timeline',
-        tuning: 'Personalização do Menu',
-      };
-
-      return [
-        { label: 'Meu Perfil', path: '/profile' },
-        { label: tabLabels[tab] || 'Preferências' },
-      ];
-    }
-
-    if (path === '/profile/activity') {
-      return [
-        { label: 'Meu Perfil', path: '/profile' },
-        { label: 'Atividades' },
-      ];
-    }
-
-    if (path === '/profile/security') {
-      return [
-        { label: 'Meu Perfil', path: '/profile' },
-        { label: 'Segurança' },
-      ];
-    }
-    
-    if (path.startsWith('/admin/settings')) {
-      const searchParams = new URLSearchParams(location.search);
-      const category = searchParams.get('category') || 'crm';
-      const section = searchParams.get('section');
-      
-      const categoryLabels: Record<string, string> = {
-        crm: 'CRM & Vendas',
-        products: 'Produtos & Operações',
-        system: 'Sistema & Segurança',
-        productivity: 'Produtividade',
-        integrations: 'Integrações & Automação',
-      };
-
-      const sectionLabels: Record<string, string> = {
-        leads: 'Leads',
-        deals: 'Deals & Pipeline',
-        companies: 'Empresas & Contatos',
-        products: 'Produtos',
-        operation_types: 'Tipos de Operação',
-        deal_sources: 'Origens de Deal',
-        loss_reasons: 'Motivos de Perda',
-        defaults: 'Defaults do Sistema',
-        roles: 'Papéis & Permissões',
-        permissions: 'Permissões Avançadas',
-        tasks: 'Tarefas',
-        tags: 'Tags',
-        templates: 'Templates',
-        holidays: 'Feriados',
-        dashboards: 'Dashboards',
-        automation: 'Automação',
-      };
-
-      const crumbs: Breadcrumb[] = [
-        { label: 'Configurações' },
-        { label: categoryLabels[category] || category, path: `/admin/settings?category=${category}` },
-      ];
-
-      if (section && sectionLabels[section]) {
-        crumbs.push({ label: sectionLabels[section] });
+      // IDs ou hashes viram "Detalhes"
+      if (isIdLike(segment)) {
+        label = 'Detalhes';
       }
 
-      return crumbs;
+      // Ajustes específicos para /admin/settings combinando categorias e seções
+      if (segment === 'settings' && pathSegments[index - 1] === 'admin') {
+        const category = searchParams.get('category');
+        const section = searchParams.get('section');
+        label = segmentLabels[segment] || 'Configurações';
+
+        crumbs.push({ label, path: isLast ? undefined : path });
+
+        if (category) {
+          crumbs.push({
+            label: adminCategoryLabels[category] || formatSegment(category),
+            path: `/admin/settings?category=${category}`,
+          });
+        }
+
+        if (section) {
+          crumbs.push({
+            label: adminSectionLabels[section] || formatSegment(section),
+          });
+        }
+
+        return;
+      }
+
+      crumbs.push({
+        label,
+        path: isLast ? undefined : path,
+      });
+    });
+
+    // Interpreta tabs via query param ?tab=
+    const tab = searchParams.get('tab');
+    if (tab) {
+      const root = pathSegments[0];
+      const tabLabel =
+        (root === 'profile' ? profileTabLabels[tab] : undefined) ||
+        formatSegment(tab);
+      crumbs.push({ label: tabLabel });
     }
 
-    return [];
+    return crumbs;
   };
 
   const finalBreadcrumbs = breadcrumbs || autoBreadcrumbs();
@@ -234,12 +170,12 @@ export function UnifiedLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header Unificado: Breadcrumbs + Título + Toggle Button */}
         {showBreadcrumbs && finalBreadcrumbs.length > 0 && (
-          <div className="px-6 py-3 border-b bg-muted/30 shrink-0">
+          <div className="px-6 py-2.5 border-b bg-muted/30 shrink-0">
             <div className="flex items-center justify-between gap-4">
               {/* Coluna Esquerda: Breadcrumbs e Título */}
               <div className="flex items-center gap-4 min-w-0 flex-1">
                 {/* Breadcrumbs */}
-                <nav className="flex items-center gap-1.5 text-xs shrink-0">
+                <nav className="flex items-center gap-1.5 text-[0.7rem] shrink-0">
                   <button
                     onClick={() => navigate('/dashboard')}
                     className="text-muted-foreground hover:text-foreground transition-colors"

@@ -618,13 +618,13 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
           "border-b border-border",
           activeSection === 'profile' ? 'p-4' : 'px-6 py-2'
         )}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col leading-tight">
-              <h2 className="font-semibold text-lg text-foreground">
-                {menuSections.find(s => s.id === activeSection)?.label || 'Menu'}
-              </h2>
-              <p className="text-xs text-muted-foreground">Subtítulo, será alterado</p>
-            </div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col leading-tight">
+                <h2 className="font-semibold text-lg text-foreground">
+                  {menuSections.find(s => s.id === activeSection)?.label || 'Menu'}
+                </h2>
+                <p className="text-[0.9rem] text-muted-foreground">Subtítulo, será alterado</p>
+              </div>
             
             {/* Botão toggle collapse */}
             <button
