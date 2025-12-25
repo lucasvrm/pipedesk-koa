@@ -43,10 +43,27 @@ import {
   Bot,
   HelpCircle,
   Activity,
+  Home,
+  Filter,
+  Kanban,
+  Building2,
+  CheckSquare,
+  FileText,
 } from 'lucide-react';
 
 // Tipos
-type SectionId = 'profile' | 'management' | 'settings';
+type SectionId = 
+  | 'dashboard' 
+  | 'leads' 
+  | 'deals' 
+  | 'kanban' 
+  | 'companies' 
+  | 'contacts' 
+  | 'players' 
+  | 'tasks' 
+  | 'profile' 
+  | 'management' 
+  | 'settings';
 type Theme = 'light' | 'dark' | 'system';
 
 interface MenuItem {
@@ -76,6 +93,87 @@ interface UnifiedSidebarProps {
 
 // Configuração do menu
 const getMenuSections = (canManageUsers: boolean, canManageSettings: boolean, canViewAnalytics: boolean): MenuSection[] => [
+  // ═══════════════════════════════════════════════════════════════
+  // NOVAS SEÇÕES (Navegação Principal)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: Home,
+    color: 'text-blue-500',
+    items: [
+      { id: 'overview', label: 'Visão Geral', icon: Home, path: '/dashboard' },
+    ],
+  },
+  {
+    id: 'leads',
+    label: 'Leads',
+    icon: Filter,
+    color: 'text-green-500',
+    items: [
+      { id: 'list', label: 'Lista de Leads', icon: Filter, path: '/leads' },
+      { id: 'sales-view', label: 'Sales View', icon: BarChart3, path: '/admin/leads/sales-view' },
+    ],
+  },
+  {
+    id: 'deals',
+    label: 'Deals',
+    icon: Briefcase,
+    color: 'text-purple-500',
+    items: [
+      { id: 'list', label: 'Lista de Deals', icon: Briefcase, path: '/deals' },
+      { id: 'comparison', label: 'Comparador', icon: FileText, path: '/deals/comparison' },
+    ],
+  },
+  {
+    id: 'kanban',
+    label: 'Kanban',
+    icon: Kanban,
+    color: 'text-orange-500',
+    items: [
+      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/kanban' },
+    ],
+  },
+  {
+    id: 'companies',
+    label: 'Empresas',
+    icon: Building2,
+    color: 'text-cyan-500',
+    items: [
+      { id: 'list', label: 'Lista de Empresas', icon: Building2, path: '/companies' },
+    ],
+  },
+  {
+    id: 'contacts',
+    label: 'Contatos',
+    icon: User,
+    color: 'text-indigo-500',
+    items: [
+      { id: 'list', label: 'Lista de Contatos', icon: User, path: '/contacts' },
+    ],
+  },
+  {
+    id: 'players',
+    label: 'Players',
+    icon: Users,
+    color: 'text-pink-500',
+    items: [
+      { id: 'list', label: 'Lista de Players', icon: Users, path: '/players' },
+    ],
+  },
+  {
+    id: 'tasks',
+    label: 'Tarefas',
+    icon: CheckSquare,
+    color: 'text-yellow-500',
+    items: [
+      { id: 'list', label: 'Minhas Tarefas', icon: CheckSquare, path: '/tasks' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SEÇÕES EXISTENTES (NÃO MODIFICAR)
+  // ═══════════════════════════════════════════════════════════════
   {
     id: 'profile',
     label: 'Meu Perfil',
@@ -196,6 +294,39 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     const path = location.pathname;
     const category = searchParams.get('category');
 
+    // ═══════════════════════════════════════════════════════════════
+    // NOVAS DETECÇÕES (Adicionar aqui)
+    // ═══════════════════════════════════════════════════════════════
+    if (path === '/dashboard') {
+      return { activeSection: 'dashboard' as SectionId, activeItem: 'overview' };
+    }
+    if (path.startsWith('/leads') || path.startsWith('/admin/leads')) {
+      const item = path.includes('sales-view') ? 'sales-view' : 'list';
+      return { activeSection: 'leads' as SectionId, activeItem: item };
+    }
+    if (path.startsWith('/deals')) {
+      const item = path.includes('comparison') ? 'comparison' : 'list';
+      return { activeSection: 'deals' as SectionId, activeItem: item };
+    }
+    if (path === '/kanban') {
+      return { activeSection: 'kanban' as SectionId, activeItem: 'matrix' };
+    }
+    if (path.startsWith('/companies')) {
+      return { activeSection: 'companies' as SectionId, activeItem: 'list' };
+    }
+    if (path.startsWith('/contacts')) {
+      return { activeSection: 'contacts' as SectionId, activeItem: 'list' };
+    }
+    if (path.startsWith('/players')) {
+      return { activeSection: 'players' as SectionId, activeItem: 'list' };
+    }
+    if (path === '/tasks') {
+      return { activeSection: 'tasks' as SectionId, activeItem: 'list' };
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DETECÇÕES EXISTENTES (NÃO MODIFICAR ABAIXO)
+    // ═══════════════════════════════════════════════════════════════
     if (path === '/profile') return { activeSection: 'profile' as SectionId, activeItem: 'personal' };
     if (path === '/profile/preferences') return { activeSection: 'profile' as SectionId, activeItem: 'preferences' };
     if (path === '/profile/activity') return { activeSection: 'profile' as SectionId, activeItem: 'activity' };
