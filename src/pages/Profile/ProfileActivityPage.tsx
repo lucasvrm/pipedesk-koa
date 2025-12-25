@@ -1,4 +1,5 @@
 import { UnifiedLayout } from '@/components/UnifiedLayout';
+import { DynamicBreadcrumbs } from '@/components/DynamicBreadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -95,6 +96,9 @@ export default function ProfileActivityPage() {
   return (
     <UnifiedLayout activeSection="profile" activeItem="activity">
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <DynamicBreadcrumbs />
+        
         <div>
           <h1 className="text-2xl font-bold text-foreground">Atividade</h1>
           <p className="text-sm text-muted-foreground">Acompanhe suas estatísticas e atividades recentes</p>

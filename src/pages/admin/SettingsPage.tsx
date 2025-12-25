@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { UnifiedLayout } from '@/components/UnifiedLayout';
+import { DynamicBreadcrumbs } from '@/components/DynamicBreadcrumbs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import {
@@ -257,6 +258,9 @@ export default function SettingsPage() {
       activeItem={activeCategory}
     >
       <div className="space-y-4">
+        {/* Breadcrumb */}
+        <DynamicBreadcrumbs />
+        
         {/* Header com busca */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
