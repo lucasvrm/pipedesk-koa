@@ -253,3 +253,64 @@ export function useTagOperations() {
 
   return { create, update, remove, assign, unassign };
 }
+
+export function useAssignTag() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ 
+      entityId, 
+      entityType, 
+      tagId 
+    }: { 
+      entityId: string
+      entityType: string
+      tagId: string 
+    }) => {
+      const { error } = await supabase
+        .from('entity_tags')
+        .insert({ 
+          entity_id: entityId, 
+          entity_type: entityType, 
+          tag_id: tagId 
+        })
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+    }
+  })
+}
+
+export function useUnassignTag() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ 
+      entityId, 
+      entityType, 
+      tagId 
+    }: { 
+      entityId: string
+      entityType: string
+      tagId: string 
+    }) => {
+      const { error } = await supabase
+        .from('entity_tags')
+        .delete()
+        .match({ 
+          entity_id: entityId, 
+          entity_type: entityType, 
+          tag_id: tagId 
+        })
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+    }
+  })
+}
