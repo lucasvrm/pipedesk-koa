@@ -344,6 +344,65 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
           })}
         </div>
 
+        {/* Bottom Icons */}
+        <div className="flex flex-col items-center gap-2 mt-auto pb-2">
+          {/* Theme Toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <button
+                  onClick={cycleTheme}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <ThemeIcon className="h-5 w-5" />
+                </button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Tema: {theme === 'light' ? 'Claro' : theme === 'dark' ? 'Escuro' : 'Sistema'}
+            </TooltipContent>
+          </Tooltip>
+
+          {/* DND Toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <button
+                  onClick={handleToggleDND}
+                  className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                    preferences?.dndEnabled 
+                      ? "bg-amber-500/20 text-amber-400" 
+                      : "text-white/60 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  {preferences?.dndEnabled ? <BellOff className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
+                </button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {preferences?.dndEnabled ? 'Não Perturbe ativo' : 'Não Perturbe'}
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Help */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <button
+                  onClick={() => navigate('/help')}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Central de Ajuda
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
       </div>
 
       {/* Expanded Panel */}
@@ -438,33 +497,6 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
 
         {/* Footer */}
         <div className="mt-auto p-3 border-t border-border space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
-              onClick={cycleTheme}
-            >
-              <ThemeIcon className="h-4 w-4" />
-              <span className="sr-only">Alternar tema</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-9 w-9",
-                preferences?.dndEnabled
-                  ? "text-amber-500 hover:text-amber-500 hover:bg-amber-500/10"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              onClick={handleToggleDND}
-            >
-              {preferences?.dndEnabled ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-              <span className="sr-only">Alternar notificações</span>
-            </Button>
-          </div>
-
           {/* Help Button */}
           <Button
             variant="ghost"
