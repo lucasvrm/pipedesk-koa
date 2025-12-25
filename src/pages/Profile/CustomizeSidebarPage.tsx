@@ -69,7 +69,7 @@ import {
   Upload,
   Settings,
   Wrench,
-  Tool,
+  Hammer,
   Zap,
   Bell,
   Calendar,
@@ -157,7 +157,7 @@ const ICON_OPTIONS = [
   // Ações (10)
   { value: 'Settings', label: 'Settings', Icon: Settings, category: 'actions' },
   { value: 'Wrench', label: 'Wrench', Icon: Wrench, category: 'actions' },
-  { value: 'Tool', label: 'Tool', Icon: Tool, category: 'actions' },
+  { value: 'Hammer', label: 'Hammer', Icon: Hammer, category: 'actions' },
   { value: 'Zap', label: 'Zap', Icon: Zap, category: 'actions' },
   { value: 'Bell', label: 'Bell', Icon: Bell, category: 'actions' },
   { value: 'Calendar', label: 'Calendar', Icon: Calendar, category: 'actions' },
