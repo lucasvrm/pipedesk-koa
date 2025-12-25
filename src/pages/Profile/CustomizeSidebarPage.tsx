@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import {
   useSidebarPreferences,
   useUpdateSidebarPreferences,
@@ -8,6 +9,7 @@ import {
   DEFAULT_SIDEBAR_CONFIG,
   SidebarSectionConfig,
   SidebarItemConfig,
+  validateSidebarConfig,
 } from '@/services/sidebarPreferencesService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,7 @@ import {
   RotateCcw,
   Save,
   ArrowLeft,
+  Info,
   Home,
   LayoutDashboard,
   Menu,
@@ -214,6 +217,16 @@ export default function CustomizeSidebarPage() {
     return [...DEFAULT_SIDEBAR_CONFIG];
   }, [sidebarPrefs]);
 
+  // Verificar se usuário é admin
+  const isAdmin = useMemo(() => 
+    profile ? hasPermission(profile.role, 'MANAGE_SETTINGS') : false,
+  [profile]);
+
+  // Filtrar seções editáveis (admin vê todas, user só custom)
+  const editableSections = useMemo(() =>
+    sections.filter(s => isAdmin || s.type === 'custom'),
+  [sections, isAdmin]);
+
   const activeTab = searchParams.get('tab') || 'avatar';
 
   // useState
@@ -325,6 +338,145 @@ export default function CustomizeSidebarPage() {
     }
   }, [profile?.id, resetPrefs]);
 
+  // ============================================================================
+  // CRUD HANDLERS
+  // ============================================================================
+
+  /**
+   * Criar ou editar seção
+   */
+  const handleSaveSection = useCallback(async () => {
+    if (!profile?.id) return;
+    if (!sectionForm.label || !sectionForm.tooltip || !sectionForm.path) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    setSections(prev => {
+      let updated: SidebarSectionConfig[];
+      
+      if (editingSection) {
+        // Editar existente
+        updated = prev.map(s =>
+          s.id === editingSection.id
+            ? { ...s, ...sectionForm, label: sectionForm.label, tooltip: sectionForm.tooltip, path: sectionForm.path }
+            : s
+        );
+      } else {
+        // Criar nova (sempre custom)
+        const newSection: SidebarSectionConfig = {
+          id: `custom-${Date.now()}`,
+          type: 'custom',
+          enabled: true,
+          order: prev.length,
+          ...sectionForm,
+          children: []
+        };
+        updated = [...prev, newSection];
+      }
+      
+      return updated;
+    });
+
+    setHasChanges(true);
+    setSectionDialogOpen(false);
+    toast.success(editingSection ? 'Seção atualizada' : 'Seção criada');
+  }, [profile, sectionForm, editingSection]);
+
+  /**
+   * Deletar seção customizada
+   */
+  const handleDeleteSection = useCallback((sectionId: string) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section || section.type !== 'custom') return;
+
+    setSections(prev => {
+      // Remover seção + marcar children como órfãos
+      const filtered = prev.filter(s => s.id !== sectionId);
+      
+      // Reordenar
+      return filtered.map((s, idx) => ({ ...s, order: idx }));
+    });
+
+    setHasChanges(true);
+    toast.success('Seção deletada. Subitens ficaram órfãos (ocultos).');
+  }, [sections]);
+
+  /**
+   * Criar ou editar subitem
+   */
+  const handleSaveItem = useCallback(() => {
+    if (!editingItem) return;
+    if (!itemForm.label || !itemForm.path) {
+      toast.error('Preencha título e path');
+      return;
+    }
+
+    setSections(prev => prev.map(section => {
+      if (section.id !== editingItem.sectionId) return section;
+
+      let updatedChildren: SidebarItemConfig[];
+      
+      if (editingItem.item) {
+        // Editar existente
+        updatedChildren = section.children.map(child =>
+          child.id === editingItem.item!.id
+            ? { ...child, ...itemForm, label: itemForm.label, path: itemForm.path }
+            : child
+        );
+      } else {
+        // Criar novo
+        const newItem: SidebarItemConfig = {
+          id: `custom-item-${Date.now()}`,
+          ...itemForm,
+          enabled: true,
+          order: section.children.length,
+          fixed: false
+        };
+        updatedChildren = [...section.children, newItem];
+      }
+
+      return { ...section, children: updatedChildren };
+    }));
+
+    setHasChanges(true);
+    setItemDialogOpen(false);
+    toast.success(editingItem.item ? 'Item atualizado' : 'Item criado');
+  }, [editingItem, itemForm]);
+
+  /**
+   * Toggle enabled de subitem
+   */
+  const handleToggleItem = useCallback((sectionId: string, itemId: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+      
+      return {
+        ...section,
+        children: section.children.map(child =>
+          child.id === itemId ? { ...child, enabled: !child.enabled } : child
+        )
+      };
+    }));
+    
+    setHasChanges(true);
+  }, []);
+
+  /**
+   * Validar antes de salvar
+   */
+  const handleSaveWithValidation = useCallback(async () => {
+    if (!profile?.id) return;
+    
+    const validation = validateSidebarConfig(sections);
+    if (!validation.isValid) {
+      toast.error(validation.errors[0]);
+      return;
+    }
+    
+    await handleSave();
+  }, [profile, sections, handleSave]);
+
   // Early returns após todos os hooks
   if (!profile) {
     return (
@@ -409,6 +561,14 @@ export default function CustomizeSidebarPage() {
 
         {/* TAB RAIL/SIDEBAR */}
         <TabsContent value="rail">
+          {!isAdmin && (
+            <div className="mb-4 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                <Info className="h-3 w-3" />
+                Apenas administradores podem editar seções padrão do sistema
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Config */}
             <Card>
@@ -449,6 +609,9 @@ export default function CustomizeSidebarPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{section.label}</span>
                             {section.type === 'custom' && <Badge variant="outline" className="text-[10px]">Custom</Badge>}
+                            {section.type === 'default' && isAdmin && (
+                              <Badge variant="secondary" className="text-[10px]">Admin Only</Badge>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">{section.tooltip} • {section.children.length} itens</p>
                         </div>
@@ -458,7 +621,7 @@ export default function CustomizeSidebarPage() {
                           onCheckedChange={() => toggleEnabled(section.id)}
                           disabled={(section.enabled && sections.filter(s => s.enabled).length <= 4) || (!section.enabled && sections.filter(s => s.enabled).length >= 10)}
                         />
-                        {section.type === 'custom' && (
+                        {(section.type === 'custom' || isAdmin) && (
                           <>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                               setEditingSection(section);
@@ -467,9 +630,20 @@ export default function CustomizeSidebarPage() {
                             }}>
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => toast.info('Delete section')}>
-                              <X className="h-4 w-4" />
-                            </Button>
+                            {section.type === 'custom' && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive" 
+                                onClick={() => {
+                                  if (confirm(`Deletar "${section.label}"? Subitens ficarão órfãos.`)) {
+                                    handleDeleteSection(section.id);
+                                  }
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -484,7 +658,11 @@ export default function CustomizeSidebarPage() {
                                 <ItemIcon className="h-4 w-4" />
                                 <span className="flex-1">{item.label}</span>
                                 {item.fixed && <Badge variant="secondary" className="text-[10px]">Fixo</Badge>}
-                                <Switch checked={item.enabled} onCheckedChange={() => toast.info('Toggle item')} disabled={item.fixed} />
+                                <Switch 
+                                  checked={item.enabled} 
+                                  onCheckedChange={() => handleToggleItem(section.id, item.id)} 
+                                  disabled={item.fixed} 
+                                />
                               </div>
                             );
                           })}
@@ -571,7 +749,7 @@ export default function CustomizeSidebarPage() {
 
             <div className="flex gap-2">
               {hasChanges && <Badge variant="secondary">Não salvo</Badge>}
-              <Button onClick={handleSave} disabled={!hasChanges || updatePrefs.isPending}>
+              <Button onClick={handleSaveWithValidation} disabled={!hasChanges || updatePrefs.isPending}>
                 <Save className="h-4 w-4 mr-2" />{updatePrefs.isPending ? 'Salvando...' : 'Salvar'}
               </Button>
             </div>
@@ -596,7 +774,7 @@ export default function CustomizeSidebarPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSectionDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={() => { toast.info('Salvar seção'); setSectionDialogOpen(false); }} disabled={!sectionForm.label || !sectionForm.tooltip}>Salvar</Button>
+            <Button onClick={handleSaveSection} disabled={!sectionForm.label || !sectionForm.tooltip}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -613,7 +791,7 @@ export default function CustomizeSidebarPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setItemDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={() => { toast.info('Salvar item'); setItemDialogOpen(false); }} disabled={!itemForm.label}>Salvar</Button>
+            <Button onClick={handleSaveItem} disabled={!itemForm.label}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

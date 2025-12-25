@@ -47,12 +47,14 @@ export function UnifiedLayout({
     profile: 'Meu Perfil',
     activity: 'Atividades',
     security: 'Segurança',
+    customize: 'Customização',
     admin: 'Admin',
     settings: 'Configurações',
   };
 
   const profileTabLabels: Record<string, string> = {
-    avatar: 'Personalizar Avatar',
+    avatar: 'Avatar',
+    rail: 'Rail/Sidebar',
     notifications: 'Preferências de Notificação',
     timeline: 'Configurar Timeline',
     tuning: 'Personalização do Menu',
@@ -127,6 +129,24 @@ export function UnifiedLayout({
           crumbs.push({
             label: adminSectionLabels[section] || formatSegment(section),
           });
+        }
+
+        return;
+      }
+
+      // Ajuste para /profile/customize com tabs
+      if (segment === 'customize' && pathSegments[index - 1] === 'profile') {
+        crumbs.push({ label: 'Meu Perfil', path: '/profile' });
+        crumbs.push({ label: 'Customização', path: isLast ? undefined : path });
+
+        const tab = searchParams.get('tab');
+        if (tab) {
+          const tabLabels: Record<string, string> = {
+            avatar: 'Avatar',
+            rail: 'Rail/Sidebar',
+            tuning: 'Tuning'
+          };
+          crumbs.push({ label: tabLabels[tab] || 'Customização' });
         }
 
         return;
