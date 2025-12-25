@@ -259,7 +259,7 @@ export default function ProfilePreferencesPage() {
       activeSection="profile"
       activeItem="preferences"
     >
-      <div className="max-w-5xl space-y-6">
+      <div className="space-y-6">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-3">
