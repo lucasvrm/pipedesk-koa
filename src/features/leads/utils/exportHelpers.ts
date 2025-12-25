@@ -1,4 +1,5 @@
 import type { Lead } from '@/lib/types'
+import { calculateStringSimilarity, normalizeString } from './duplicateMatching'
 
 // ============================================================================
 // Types
@@ -17,6 +18,34 @@ export interface ExportOptions {
   format: ExportFormat
   columns: ExportColumn[]
   filename?: string
+}
+
+// ============================================================================
+// Import Types
+// ============================================================================
+
+export interface ParsedRow {
+  rowIndex: number
+  data: Record<string, string>
+  errors: string[]
+}
+
+export interface ImportPreview {
+  headers: string[]
+  rows: ParsedRow[]
+  totalRows: number
+  errorCount: number
+}
+
+export interface ColumnMapping {
+  sourceColumn: string // Nome da coluna no arquivo
+  targetField: string | null // Campo do sistema ou null (ignorar)
+}
+
+export interface TargetField {
+  key: string
+  label: string
+  required: boolean
 }
 
 // ============================================================================
@@ -73,6 +102,24 @@ export const EXPORT_COLUMNS: ExportColumn[] = [
     label: 'Última Atualização',
     getter: (l) => (l.updatedAt ? new Date(l.updatedAt).toLocaleDateString('pt-BR') : ''),
   },
+]
+
+/**
+ * Target fields for import mapping.
+ * CNPJ is NOT required.
+ */
+export const IMPORT_TARGET_FIELDS: TargetField[] = [
+  { key: 'legalName', label: 'Razão Social', required: true },
+  { key: 'tradeName', label: 'Nome Fantasia', required: false },
+  { key: 'cnpj', label: 'CNPJ', required: false }, // OPCIONAL
+  { key: 'website', label: 'Website', required: false },
+  { key: 'segment', label: 'Segmento', required: false },
+  { key: 'addressCity', label: 'Cidade', required: false },
+  { key: 'addressState', label: 'UF', required: false },
+  { key: 'description', label: 'Descrição', required: false },
+  { key: 'contactName', label: 'Nome do Contato', required: false },
+  { key: 'contactEmail', label: 'Email do Contato', required: false },
+  { key: 'contactPhone', label: 'Telefone do Contato', required: false },
 ]
 
 // ============================================================================
@@ -236,4 +283,245 @@ export async function exportLeads(leads: Lead[], options: ExportOptions): Promis
       break
     }
   }
+}
+
+// ============================================================================
+// Import Functions
+// ============================================================================
+
+/**
+ * Parses a single CSV line, handling quoted values.
+ * - Treats values between quotes
+ * - Splits by comma
+ * - Removes external quotes
+ * - Unescapes internal quotes ("" → ")
+ */
+export function parseCSVLine(line: string): string[] {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    const nextChar = line[i + 1]
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (nextChar === '"') {
+          // Escaped quote ("" → ")
+          current += '"'
+          i++ // Skip next quote
+        } else {
+          // End of quoted value
+          inQuotes = false
+        }
+      } else {
+        current += char
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true
+      } else if (char === ',') {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+  }
+
+  // Add last value
+  result.push(current.trim())
+
+  return result
+}
+
+/**
+ * Parses CSV content into ImportPreview.
+ * - First line = headers
+ * - Remaining lines = data rows
+ * - Basic validation: first column not empty (expected to be legal name)
+ */
+export function parseCSV(content: string): ImportPreview {
+  const lines = content.split(/\r?\n/).filter((line) => line.trim() !== '')
+
+  if (lines.length === 0) {
+    throw new Error('Arquivo vazio')
+  }
+
+  const headers = parseCSVLine(lines[0])
+  const dataLines = lines.slice(1)
+
+  const rows: ParsedRow[] = dataLines.map((line, index) => {
+    const values = parseCSVLine(line)
+    const data: Record<string, string> = {}
+
+    headers.forEach((header, i) => {
+      data[header] = values[i] ?? ''
+    })
+
+    const errors: string[] = []
+    // Basic validation: first column should not be empty (expected legal name)
+    if (!values[0] || values[0].trim() === '') {
+      errors.push('Primeira coluna vazia (razão social esperada)')
+    }
+
+    return {
+      rowIndex: index + 2, // +1 for header, +1 for 1-indexed
+      data,
+      errors,
+    }
+  })
+
+  return {
+    headers,
+    rows,
+    totalRows: rows.length,
+    errorCount: rows.filter((r) => r.errors.length > 0).length,
+  }
+}
+
+/**
+ * Parses an XLSX file into ImportPreview.
+ * Uses dynamic import for xlsx library.
+ */
+export async function parseXLSX(file: File): Promise<ImportPreview> {
+  const XLSX = await import('xlsx')
+
+  const buffer = await file.arrayBuffer()
+  const workbook = XLSX.read(buffer, { type: 'array' })
+
+  // First sheet
+  const sheetName = workbook.SheetNames[0]
+  const worksheet = workbook.Sheets[sheetName]
+
+  // Convert to JSON (header: 1 means each row is an array)
+  const jsonData: unknown[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+
+  if (jsonData.length === 0) {
+    throw new Error('Arquivo vazio')
+  }
+
+  const headers = (jsonData[0] as unknown[]).map((h) => String(h ?? ''))
+  const dataRows = jsonData.slice(1)
+
+  const rows: ParsedRow[] = dataRows
+    .filter((row) =>
+      row.some((cell) => cell !== null && cell !== undefined && cell !== '')
+    )
+    .map((row, index) => {
+      const data: Record<string, string> = {}
+      headers.forEach((header, i) => {
+        data[header] = String(row[i] ?? '')
+      })
+
+      const errors: string[] = []
+      // Basic validation: first column should not be empty
+      if (!row[0] || String(row[0]).trim() === '') {
+        errors.push('Primeira coluna vazia (razão social esperada)')
+      }
+
+      return {
+        rowIndex: index + 2, // +1 for header, +1 for 1-indexed
+        data,
+        errors,
+      }
+    })
+
+  return {
+    headers,
+    rows,
+    totalRows: rows.length,
+    errorCount: rows.filter((r) => r.errors.length > 0).length,
+  }
+}
+
+/**
+ * Field aliases for auto-mapping columns.
+ */
+const FIELD_ALIASES: Record<string, string[]> = {
+  legalName: [
+    'razao',
+    'razão',
+    'empresa',
+    'company',
+    'legal',
+    'razao social',
+    'nome empresa',
+  ],
+  tradeName: ['fantasia', 'trade', 'nome fantasia'],
+  cnpj: ['cnpj', 'cpf', 'documento'],
+  website: ['site', 'web', 'url', 'website', 'homepage'],
+  addressCity: ['cidade', 'city', 'municipio', 'município'],
+  addressState: ['estado', 'uf', 'state'],
+  contactEmail: ['email', 'e-mail', 'mail', 'contato email'],
+  contactPhone: [
+    'telefone',
+    'phone',
+    'cel',
+    'celular',
+    'fone',
+    'whatsapp',
+  ],
+  contactName: ['contato', 'contact', 'nome contato', 'responsavel'],
+  description: ['descricao', 'descrição', 'obs', 'observacao', 'observação'],
+  segment: ['segmento', 'segment', 'setor', 'ramo'],
+}
+
+/**
+ * Auto-maps CSV/XLSX headers to target fields using similarity matching.
+ * - First tries exact match (normalized)
+ * - Then tries fuzzy match (>= 70% similarity)
+ * - Each target field can only be used once
+ */
+export function autoMapColumns(headers: string[]): ColumnMapping[] {
+  const usedTargets = new Set<string>()
+  const mappings: ColumnMapping[] = []
+
+  for (const header of headers) {
+    const normalizedHeader = normalizeString(header)
+    let bestMatch: { field: string; score: number } | null = null
+
+    // Try to find a match for this header
+    for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+      // Skip if already used
+      if (usedTargets.has(field)) continue
+
+      for (const alias of aliases) {
+        const normalizedAlias = normalizeString(alias)
+
+        // Exact match
+        if (normalizedHeader === normalizedAlias) {
+          bestMatch = { field, score: 100 }
+          break
+        }
+
+        // Fuzzy match
+        const similarity = calculateStringSimilarity(normalizedHeader, normalizedAlias)
+        if (similarity >= 70) {
+          if (!bestMatch || similarity > bestMatch.score) {
+            bestMatch = { field, score: similarity }
+          }
+        }
+      }
+
+      // If exact match found, no need to check other fields
+      if (bestMatch?.score === 100) break
+    }
+
+    if (bestMatch) {
+      usedTargets.add(bestMatch.field)
+      mappings.push({
+        sourceColumn: header,
+        targetField: bestMatch.field,
+      })
+    } else {
+      mappings.push({
+        sourceColumn: header,
+        targetField: null, // Ignore this column
+      })
+    }
+  }
+
+  return mappings
 }
