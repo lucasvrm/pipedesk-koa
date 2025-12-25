@@ -10,6 +10,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -497,15 +503,31 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
 
         {/* Footer */}
         <div className="mt-auto p-3 border-t border-border space-y-3">
-          {/* Help Button */}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-accent"
-            onClick={() => navigate('/help')}
-          >
-            <HelpCircle className="h-4 w-4" />
-            Central de Ajuda
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-accent"
+              >
+                <ThemeIcon className="h-4 w-4" />
+                Tema: {theme === 'light' ? 'Claro' : theme === 'dark' ? 'Escuro' : 'Sistema'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-full">
+              <DropdownMenuItem onClick={() => setTheme('light')} className="gap-2">
+                <Sun className="h-4 w-4" />
+                <span>Claro</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('dark')} className="gap-2">
+                <Moon className="h-4 w-4" />
+                <span>Escuro</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('system')} className="gap-2">
+                <Monitor className="h-4 w-4" />
+                <span>Sistema</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Logout */}
           <Button
