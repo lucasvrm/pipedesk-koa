@@ -222,14 +222,9 @@ export default function CustomizeSidebarPage() {
     profile ? hasPermission(profile.role, 'MANAGE_SETTINGS') : false,
   [profile]);
 
-  // Filtrar seções editáveis (admin vê todas, user só custom)
-  const editableSections = useMemo(() =>
-    sections.filter(s => isAdmin || s.type === 'custom'),
-  [sections, isAdmin]);
-
   const activeTab = searchParams.get('tab') || 'avatar';
 
-  // useState
+  // useState - DEVE vir ANTES de useMemo que depende dele
   const [sections, setSections] = useState<SidebarSectionConfig[]>(initialSections);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -240,6 +235,11 @@ export default function CustomizeSidebarPage() {
   const [editingItem, setEditingItem] = useState<{ sectionId: string; item: SidebarItemConfig | null } | null>(null);
   const [sectionForm, setSectionForm] = useState({ label: '', tooltip: '', icon: 'Home', color: '#3b82f6', path: '/' });
   const [itemForm, setItemForm] = useState({ label: '', path: '/', icon: 'Home' });
+  
+  // Filtrar seções editáveis (admin vê todas, user só custom)
+  const editableSections = useMemo(() =>
+    sections.filter(s => isAdmin || s.type === 'custom'),
+  [sections, isAdmin]);
 
   // useEffect - Sync quando dados carregam
   useEffect(() => {
