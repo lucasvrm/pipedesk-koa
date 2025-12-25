@@ -39,6 +39,90 @@ export function UnifiedLayout({
   const autoBreadcrumbs = (): Breadcrumb[] => {
     const path = location.pathname;
     
+    // ═══════════════════════════════════════════════════════════════
+    // BREADCRUMBS PARA ROTAS PRINCIPAIS
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Dashboard
+    if (path === '/dashboard') {
+      return [
+        { label: 'Dashboard' },
+      ];
+    }
+
+    // Leads
+    if (path === '/leads' || path.startsWith('/leads/')) {
+      const crumbs: Breadcrumb[] = [{ label: 'Leads', path: '/leads' }];
+      
+      // Detalhes de lead específico
+      if (path.startsWith('/leads/') && path !== '/leads') {
+        crumbs.push({ label: 'Detalhes do Lead' });
+      }
+      
+      return crumbs;
+    }
+
+    // Deals
+    if (path === '/deals' || path.startsWith('/deals/')) {
+      const crumbs: Breadcrumb[] = [{ label: 'Deals', path: '/deals' }];
+      
+      // Sub-rotas de deals
+      if (path === '/deals/comparison') {
+        crumbs.push({ label: 'Comparador de Deals' });
+      } else if (path.startsWith('/deals/') && path !== '/deals') {
+        crumbs.push({ label: 'Detalhes do Deal' });
+      }
+      
+      return crumbs;
+    }
+
+    // Companies
+    if (path === '/companies' || path.startsWith('/companies/')) {
+      const crumbs: Breadcrumb[] = [{ label: 'Empresas', path: '/companies' }];
+      
+      // Detalhes de empresa específica
+      if (path.startsWith('/companies/') && path !== '/companies') {
+        crumbs.push({ label: 'Detalhes da Empresa' });
+      }
+      
+      return crumbs;
+    }
+
+    // Contacts
+    if (path === '/contacts' || path.startsWith('/contacts/')) {
+      const crumbs: Breadcrumb[] = [{ label: 'Contatos', path: '/contacts' }];
+      
+      // Detalhes de contato específico
+      if (path.startsWith('/contacts/') && path !== '/contacts') {
+        crumbs.push({ label: 'Detalhes do Contato' });
+      }
+      
+      return crumbs;
+    }
+
+    // Players
+    if (path === '/players' || path.startsWith('/players/')) {
+      const crumbs: Breadcrumb[] = [{ label: 'Players', path: '/players' }];
+      
+      // Detalhes de player específico
+      if (path.startsWith('/players/') && path !== '/players') {
+        crumbs.push({ label: 'Detalhes do Player' });
+      }
+      
+      return crumbs;
+    }
+
+    // Tasks
+    if (path === '/tasks') {
+      return [
+        { label: 'Tarefas' },
+      ];
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // BREADCRUMBS EXISTENTES (NÃO MODIFICAR ABAIXO)
+    // ═══════════════════════════════════════════════════════════════
+    
     if (path === '/tracks') {
       return [
         { label: 'Tracks' },
