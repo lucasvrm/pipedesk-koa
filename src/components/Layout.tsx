@@ -158,11 +158,6 @@ export function Layout({ children }: LayoutProps) {
               <Search className="h-5 w-5" />
             </Button>
 
-            {/* Botão +Novo */}
-            <div className="hidden md:block">
-              <CreateNewDropdown />
-            </div>
-
             {/* Notificações */}
             <Button
               variant="ghost"
@@ -179,7 +174,10 @@ export function Layout({ children }: LayoutProps) {
               )}
             </Button>
 
-
+            {/* Botão +Novo */}
+            <div className="hidden md:block">
+              <CreateNewDropdown />
+            </div>
           </div>
         </div>
       </header>

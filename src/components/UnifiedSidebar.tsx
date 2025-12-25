@@ -497,7 +497,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         )}
 
         {/* Spacer no lugar do logo */}
-        {!collapsed && <div className="h-6 mb-4" />}
+        {!collapsed && <div className="h-5 mb-4" />}
 
         {/* Section Icons */}
         <div className="flex-1 flex flex-col items-center gap-2">
@@ -619,7 +619,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
         {/* Section Header */}
         <div className={cn(
           "border-b border-border",
-          activeSection === 'profile' ? 'p-4' : 'px-4 py-3'
+          activeSection === 'profile' ? 'p-4' : 'px-6 py-3'
         )}>
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm text-foreground">
