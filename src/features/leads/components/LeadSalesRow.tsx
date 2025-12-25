@@ -35,6 +35,7 @@ import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import { useEntityTags } from '@/services/tagService'
 import { useLead } from '@/services/leadService'
 import { LeadTasksModal } from './LeadTasksModal'
+import { LeadNextActionModal } from './LeadNextActionModal'
 
 interface LeadSalesRowProps extends LeadSalesViewItem {
   selected?: boolean
@@ -105,6 +106,31 @@ const URGENCY_STYLES: Record<UrgencyLevel, { border: string; bg: string; textCol
   }
 }
 
+export function truncateTags(tags: Array<{ id?: string; name: string; color?: string | null }>, availableWidth: number) {
+  const visible: typeof tags = []
+  const sanitizedTags = tags.map((tag) => ({
+    ...tag,
+    name: safeString(tag.name, 'Tag')
+  }))
+
+  let remainingWidth = Math.max(availableWidth, 0)
+  const MIN_TAG_WIDTH = 60
+  const CHAR_WIDTH = 8
+
+  for (const tag of sanitizedTags) {
+    const estimatedWidth = Math.max(MIN_TAG_WIDTH, tag.name.length * CHAR_WIDTH)
+    if (visible.length === 0 || remainingWidth - estimatedWidth > 0) {
+      visible.push(tag)
+      remainingWidth -= estimatedWidth
+    } else {
+      break
+    }
+  }
+
+  const hiddenCount = Math.max(sanitizedTags.length - visible.length, 0)
+  return { visible, hiddenCount }
+}
+
 /**
  * Priority-based background styles for next action cell
  */
@@ -166,6 +192,7 @@ export function LeadSalesRow({
   const [isDriveLoading, setIsDriveLoading] = useState(false)
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [tasksModalOpen, setTasksModalOpen] = useState(false)
+  const [nextActionModalOpen, setNextActionModalOpen] = useState(false)
   
   const safeNextAction = typeof nextAction?.label === 'string' ? nextAction : undefined
 
@@ -648,26 +675,36 @@ export function LeadSalesRow({
       </TableCell>
 
       {/* Próxima ação - navigates to Lead Detail, with urgency styling */}
-      <TableCell style={{ width: columnWidths?.proxima_acao ?? 180 }}>
+      <TableCell
+        style={{ width: columnWidths?.proxima_acao ?? 180 }}
+        data-testid="next-action-cell"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (actualLeadId) setNextActionModalOpen(true)
+        }}
+        className="cursor-pointer"
+      >
         {safeNextAction ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge 
-                  variant="secondary" 
-                  className={`w-4/5 max-w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left ${priorityStyle.border} ${priorityStyle.bg}`}
-                >
-                  <div className="flex items-baseline gap-1 max-w-full">
-                    <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
-                    <span className={`text-sm font-semibold truncate ${urgencyTextColor}`}>{safeNextActionLabel}</span>
-                  </div>
-                  {safeNextActionReason && (
+                <span className="inline-flex w-4/5 max-w-full">
+                  <Badge 
+                    variant="secondary" 
+                    className={`w-full flex flex-col items-start gap-0.5 py-2 px-3 text-left ${priorityStyle.border} ${priorityStyle.bg}`}
+                  >
                     <div className="flex items-baseline gap-1 max-w-full">
-                      <span className="text-xs text-muted-foreground shrink-0">Descrição:</span>
-                      <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">Ação:</span>
+                      <span className={`text-sm font-semibold truncate ${urgencyTextColor}`}>{safeNextActionLabel}</span>
                     </div>
-                  )}
-                </Badge>
+                    {safeNextActionReason && (
+                      <div className="flex items-baseline gap-1 max-w-full">
+                        <span className="text-xs text-muted-foreground shrink-0">Descrição:</span>
+                        <span className="text-[11px] text-muted-foreground line-clamp-1">{safeNextActionReason}</span>
+                      </div>
+                    )}
+                  </Badge>
+                </span>
               </TooltipTrigger>
               {safeNextActionReason && (
                 <TooltipContent className="max-w-xs text-left">
@@ -852,6 +889,12 @@ export function LeadSalesRow({
           <LeadTasksModal
             open={tasksModalOpen}
             onOpenChange={setTasksModalOpen}
+            leadId={actualLeadId}
+            leadName={safeLegalName}
+          />
+          <LeadNextActionModal
+            open={nextActionModalOpen}
+            onOpenChange={setNextActionModalOpen}
             leadId={actualLeadId}
             leadName={safeLegalName}
           />

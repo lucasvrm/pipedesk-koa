@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { UserBadge } from '@/components/ui/user-badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { TimelineVisual } from '@/components/timeline-v2/TimelineVisual'
 import { safeString, safeStringOptional } from '@/lib/utils'
@@ -74,6 +75,7 @@ import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
 import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useLeadTasks } from '../hooks/useLeadTasks'
 
 const DEFAULT_TAG_COLOR = '#3b82f6'
 const STATUS_HIGHLIGHT: Record<SemanticStatus, { bg: string; dot: string; text: string }> = {
@@ -118,6 +120,7 @@ export default function LeadDetailPage() {
   const { leadStatuses, getLeadStatusById } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
+  const { data: leadTasksData, isLoading: leadTasksLoading } = useLeadTasks(id || '', false)
   const updateLead = useUpdateLead()
   const deleteLead = useDeleteLead()
   const { addContact, removeContact } = useLeadContacts(id || '')
@@ -196,41 +199,60 @@ export default function LeadDetailPage() {
 
   // Prepare actions list with nextAction at the first position if defined
   const sidebarActions = useMemo(() => {
-    const mockActions = [
-      { id: '1', title: 'Ligar para cliente', date: 'Hoje, 14:00' },
-      { id: '2', title: 'Enviar proposta comercial', date: 'Amanhã' },
-      { id: '3', title: 'Agendar reunião de apresentação', date: 'Em 3 dias' },
-    ]
-    
-    // CRITICAL: Ensure nextAction appears first when defined
-    if (lead?.nextAction?.label) {
-      let formattedDate = 'Sem prazo definido'
-      
-      if (lead.nextAction.dueAt) {
-        try {
-          const dueDate = typeof lead.nextAction.dueAt === 'string' 
-            ? parseISO(lead.nextAction.dueAt)
-            : lead.nextAction.dueAt
-          
-          if (isValid(dueDate)) {
-            formattedDate = format(dueDate, "d 'de' MMMM", { locale: ptBR })
-          }
-        } catch (error) {
-          console.warn('[LeadDetailPage] Error formatting nextAction date:', error)
+    const tasks = leadTasksData?.data ?? []
+    const nextActionTask =
+      leadTasksData?.next_action ??
+      tasks.find((task) => task.is_next_action)
+
+    const formatTaskDate = (rawDate?: string | null) => {
+      if (!rawDate) return 'Sem prazo definido'
+      try {
+        const parsed = typeof rawDate === 'string' ? parseISO(rawDate) : rawDate
+        if (parsed && isValid(parsed)) {
+          return format(parsed, "d 'de' MMMM", { locale: ptBR })
         }
+      } catch (error) {
+        console.warn('[LeadDetailPage] Error formatting task date:', error)
       }
-      
-      const nextActionItem = {
-        id: 'next-action',
-        title: lead.nextAction.label,
-        date: formattedDate
-      }
-      
-      return [nextActionItem, ...mockActions]
+      return 'Sem prazo definido'
     }
-    
-    return mockActions
-  }, [lead?.nextAction?.label, lead?.nextAction?.dueAt])
+
+    const mappedTasks = tasks
+      .filter((task) => task.id !== nextActionTask?.id)
+      .map((task) => ({
+        id: task.id,
+        title: task.title,
+        date: formatTaskDate(task.due_date),
+        isNextAction: task.is_next_action,
+      }))
+
+    const result = [
+      ...(nextActionTask
+        ? [
+            {
+              id: nextActionTask.id,
+              title: nextActionTask.title,
+              date: formatTaskDate(nextActionTask.due_date),
+              isNextAction: true,
+            },
+          ]
+        : []),
+      ...mappedTasks,
+    ]
+
+    if (result.length === 0 && lead?.nextAction?.label) {
+      return [
+        {
+          id: 'next-action-fallback',
+          title: lead.nextAction.label,
+          date: formatTaskDate(lead.nextAction.dueAt ?? (lead.nextAction as any).due_at),
+          isNextAction: true,
+        },
+      ]
+    }
+
+    return result
+  }, [leadTasksData, lead?.nextAction])
 
   const handleCreateComment = useCallback(async (data: CommentFormData) => {
     if (!profile) return
@@ -1040,29 +1062,53 @@ export default function LeadDetailPage() {
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   Próximas Ações
                 </h3>
-                <span className="text-xs text-slate-400">{sidebarActions.length} pendentes</span>
+                <span className="text-xs text-slate-400">
+                  {leadTasksLoading ? 'Carregando...' : `${sidebarActions.length} pendentes`}
+                </span>
               </div>
               
               {/* Lista de Ações */}
               <div className="space-y-2">
-                {sidebarActions.map((action) => (
-                  <div 
-                    key={action.id}
-                    className="flex items-start gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group"
-                  >
-                    <Checkbox id={`action-${action.id}`} className="mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <label 
-                        htmlFor={`action-${action.id}`} 
-                        className="text-sm text-slate-900 cursor-pointer block truncate"
-                      >
-                        {action.title}
-                      </label>
-                      <span className="text-xs text-slate-500">{action.date}</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {leadTasksLoading ? (
+                  <>
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </>
+                ) : sidebarActions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 py-6 text-center">
+                    <p className="text-sm font-medium text-slate-700">Nenhuma ação cadastrada</p>
+                    <p className="text-xs text-slate-500">Defina uma próxima ação na lista de leads.</p>
                   </div>
-                ))}
+                ) : (
+                  sidebarActions.map((action) => (
+                    <div 
+                      key={action.id}
+                      className={cn(
+                        'flex items-start gap-3 p-2.5 rounded-lg border transition-all cursor-pointer group',
+                        action.isNextAction
+                          ? 'border-primary/50 bg-primary/5 hover:border-primary/70'
+                          : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                      )}
+                    >
+                      <Checkbox id={`action-${action.id}`} className="mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <label 
+                          htmlFor={`action-${action.id}`} 
+                          className="text-sm text-slate-900 cursor-pointer block truncate"
+                        >
+                          {action.title}
+                        </label>
+                        <span className="text-xs text-slate-500">{action.date}</span>
+                        {action.isNextAction && (
+                          <span className="inline-block text-[11px] text-primary font-medium mt-1">
+                            Próxima ação
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  ))
+                )}
               </div>
 
               <Button 
