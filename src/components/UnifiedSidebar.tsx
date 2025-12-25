@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { hasPermission } from '@/lib/permissions';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { 
   useNotificationPreferences, 
   useToggleDND 
@@ -30,6 +31,7 @@ import {
   BellOff,
   LogOut,
   ChevronRight,
+  ChevronLeft,
   Copy,
   Check,
   Sun,
@@ -272,6 +274,18 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
   const { data: preferences } = useNotificationPreferences(profile?.id || null);
   const toggleDND = useToggleDND();
 
+  // ═══════════════════════════════════════════════════════════════
+  // ESTADO DE COLLAPSE (persistido em localStorage)
+  // ═══════════════════════════════════════════════════════════════
+  const [collapsed, setCollapsed] = useLocalStorage<boolean>(
+    'unified-sidebar-collapsed',
+    false  // padrão: expandido
+  );
+
+  const toggleCollapse = () => {
+    setCollapsed(prev => !prev);
+  };
+
   // useState
   const [copiedId, setCopiedId] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -434,8 +448,29 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     <div className="flex h-full">
       {/* Icon Rail */}
       <div className="w-16 bg-slate-900 flex flex-col items-center py-4 shrink-0">
+        {/* Botão Expand (só aparece quando colapsado) */}
+        {collapsed && (
+          <div className="mb-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <button
+                    onClick={toggleCollapse}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Expandir menu
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
         {/* Spacer no lugar do logo */}
-        <div className="h-4 mb-4" />
+        {!collapsed && <div className="h-4 mb-4" />}
 
         {/* Section Icons */}
         <div className="flex-1 flex flex-col items-center gap-2">
@@ -543,7 +578,26 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
       </div>
 
       {/* Expanded Panel */}
-      <div className="w-64 bg-background border-r border-border flex flex-col">
+      <div 
+        className={cn(
+          "bg-background border-r border-border flex flex-col transition-all duration-300 ease-in-out",
+          collapsed ? "w-0 opacity-0 overflow-hidden" : "w-64 opacity-100"
+        )}
+      >
+        {/* Collapse Button (só aparece quando expandido) */}
+        {!collapsed && (
+          <div className="px-4 pt-3 pb-2 border-b border-border">
+            <button
+              onClick={toggleCollapse}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              title="Recolher menu"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Recolher</span>
+            </button>
+          </div>
+        )}
+
         {/* Section Header */}
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold text-foreground">
