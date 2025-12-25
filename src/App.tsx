@@ -51,6 +51,8 @@ const AidaPage = lazy(() => import('@/pages/AidaPage'))
 
 // Profile Pages
 const ProfilePreferencesPage = lazy(() => import('@/pages/ProfilePreferencesPage'))
+const ProfileActivityPage = lazy(() => import('@/pages/Profile/ProfileActivityPage'))
+const ProfileSecurityPage = lazy(() => import('@/pages/Profile/ProfileSecurityPage'))
 
 // Test Pages
 const UnifiedSidebarTest = lazy(() => import('@/pages/UnifiedSidebarTest'))
@@ -113,6 +115,8 @@ function App() {
             <Route path="/audit" element={<AuditLogView />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/preferences" element={<ProfilePreferencesPage />} />
+            <Route path="/profile/activity" element={<ProfileActivityPage />} />
+            <Route path="/profile/security" element={<ProfileSecurityPage />} />
             <Route path="/help" element={<HelpCenterPage />} />
             
             {/* Test Routes */}

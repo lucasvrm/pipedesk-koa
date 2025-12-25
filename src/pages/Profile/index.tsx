@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import {
   User,
   Mail,
@@ -27,26 +26,11 @@ import {
   Copy,
   Eye,
   Clock,
-  Key,
-  Shield,
-  Laptop,
-  Smartphone,
-  Monitor,
-  LogOut,
-  Activity,
-  Target,
-  Users,
-  CheckCircle,
-  DollarSign,
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  ChevronDown,
+  AlertTriangle,
   Camera,
   Trash,
-  AlertTriangle,
-  Image as ImageIcon,
-  Palette,
+  ImageIcon,
+  ChevronDown,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
@@ -260,48 +244,6 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true }: Colla
 }
 
 // ============================================================================
-// STAT CARD COMPONENT
-// ============================================================================
-interface StatCardProps {
-  icon: React.ReactNode
-  label: string
-  valueMonth: string | number
-  valueTotal: string | number
-  trend?: number
-  prefix?: string
-  suffix?: string
-}
-
-function StatCard({ icon, label, valueMonth, valueTotal, trend, prefix = '', suffix = '' }: StatCardProps) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            {icon}
-          </div>
-          {trend !== undefined && (
-            <div className={cn("flex items-center gap-1 text-xs font-medium", trend >= 0 ? 'text-green-600' : 'text-red-600')}>
-              {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {Math.abs(trend)}%
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground mb-1">{label}</p>
-        <div className="flex items-baseline gap-2">
-          <p className="text-2xl font-bold text-foreground">
-            {prefix}{typeof valueMonth === 'number' ? valueMonth.toLocaleString('pt-BR') : valueMonth}{suffix}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            / {prefix}{typeof valueTotal === 'number' ? valueTotal.toLocaleString('pt-BR') : valueTotal}{suffix} total
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// ============================================================================
 // DOCUMENT CARD COMPONENT
 // ============================================================================
 interface DocumentCardProps {
@@ -374,65 +316,17 @@ function DocumentCard({ title, icon, documentUrl, onUpload, onDownload, isSaving
 }
 
 // ============================================================================
-// MOCK DATA FOR STATS AND ACTIVITY
-// ============================================================================
-const mockStats = {
-  leadsCreatedMonth: 24,
-  leadsCreatedTotal: 342,
-  leadsCreatedTrend: 12,
-  leadsQualifiedMonth: 18,
-  leadsQualifiedTotal: 256,
-  leadsQualifiedTrend: 8,
-  conversionRateMonth: 75,
-  conversionRateTotal: 68,
-  conversionRateTrend: 5,
-  topLeadSourceMonth: 'Indicação',
-  topLeadSourceTotal: 'LinkedIn',
-  topDealSourceMonth: 'Indicação',
-  topDealSourceTotal: 'Indicação',
-  tasksCreatedMonth: 45,
-  tasksCreatedTotal: 512,
-  tasksCreatedTrend: -3,
-  tasksCompletedMonth: 42,
-  tasksCompletedTotal: 489,
-  tasksCompletedTrend: 10,
-  pipelineValue: 2450000,
-  pipelineTrend: 15,
-}
-
-const mockSessions = [
-  { id: '1', device: 'Chrome - Windows', location: 'São Paulo, BR', lastActive: new Date().toISOString(), current: true },
-  { id: '2', device: 'Safari - iPhone', location: 'São Paulo, BR', lastActive: new Date(Date.now() - 86400000).toISOString(), current: false },
-]
-
-const mockLoginHistory = [
-  { date: new Date().toISOString(), device: 'Chrome - Windows', location: 'São Paulo, BR', success: true },
-  { date: new Date(Date.now() - 86400000).toISOString(), device: 'Safari - iPhone', location: 'São Paulo, BR', success: true },
-  { date: new Date(Date.now() - 86400000 * 2).toISOString(), device: 'Chrome - Windows', location: 'São Paulo, BR', success: false },
-]
-
-const mockRecentActivity = [
-  { id: 1, action: 'Fechou deal', target: 'CRI Residencial Alpha', time: '2 horas atrás', icon: '🎉' },
-  { id: 2, action: 'Converteu lead', target: 'Empresa XYZ Ltda', time: '5 horas atrás', icon: '✅' },
-  { id: 3, action: 'Adicionou nota', target: 'Deal #1234', time: '1 dia atrás', icon: '📝' },
-  { id: 4, action: 'Completou tarefa', target: 'Ligar para cliente', time: '1 dia atrás', icon: '☑️' },
-  { id: 5, action: 'Atualizou status', target: 'Lead Maria Silva', time: '2 dias atrás', icon: '🔄' },
-]
-
-// ============================================================================
 // MAIN PROFILE COMPONENT
 // ============================================================================
 export default function Profile() {
   const { getUserRoleByCode } = useSystemMetadata()
-  const { profile, resetPassword } = useAuth()
+  const { profile } = useAuth()
   
   const [activeTab, setActiveTab] = useState('overview')
   const [isSaving, setIsSaving] = useState(false)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [lastLogin, setLastLogin] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState(false)
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
-  const [sessions, setSessions] = useState(mockSessions)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -652,17 +546,8 @@ export default function Profile() {
     }
   }
 
-  const handleRevokeSession = (sessionId: string) => {
-    setSessions(sessions.filter(s => s.id !== sessionId))
-    toast.success('Sessão encerrada')
-  }
-
   const handleBannerChange = async (bannerStyle: string) => {
     await handleSaveField('bannerStyle', bannerStyle)
-  }
-
-  const handleColorChange = async (field: 'avatarBgColor' | 'avatarTextColor' | 'avatarBorderColor', value: string) => {
-    await handleSaveField(field, value)
   }
 
   if (!profile) return null
@@ -677,8 +562,6 @@ export default function Profile() {
     { id: 'overview', label: 'Visão Geral', icon: User },
     { id: 'documents', label: 'Documentos', icon: FileText },
     { id: 'financial', label: 'Financeiro', icon: Landmark },
-    { id: 'security', label: 'Segurança', icon: Shield },
-    { id: 'activity', label: 'Atividade', icon: Activity },
   ]
 
   const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
@@ -930,76 +813,6 @@ export default function Profile() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Palette className="h-4 w-4" /> Personalização do Avatar
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-xs text-muted-foreground">
-                      Personalize as cores do seu avatar que aparece em toda a plataforma
-                    </p>
-                    
-                    <div className="grid grid-cols-3 gap-4">
-                      {/* Cor de Fundo */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Fundo</Label>
-                        <Input 
-                          type="color" 
-                          value={formData.avatarBgColor}
-                          onChange={(e) => handleColorChange('avatarBgColor', e.target.value)}
-                          className="h-10 w-full cursor-pointer"
-                          disabled={isSaving}
-                        />
-                      </div>
-                      
-                      {/* Cor do Texto */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Texto</Label>
-                        <Input 
-                          type="color" 
-                          value={formData.avatarTextColor}
-                          onChange={(e) => handleColorChange('avatarTextColor', e.target.value)}
-                          className="h-10 w-full cursor-pointer"
-                          disabled={isSaving}
-                        />
-                      </div>
-                      
-                      {/* Cor da Borda */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Borda</Label>
-                        <Input 
-                          type="color" 
-                          value={formData.avatarBorderColor}
-                          onChange={(e) => handleColorChange('avatarBorderColor', e.target.value)}
-                          className="h-10 w-full cursor-pointer"
-                          disabled={isSaving}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Preview */}
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <span className="text-sm text-muted-foreground">Preview:</span>
-                      <div 
-                        className="h-12 w-12 rounded-full flex items-center justify-center text-sm font-semibold"
-                        style={{
-                          backgroundColor: formData.avatarBgColor,
-                          color: formData.avatarTextColor,
-                          border: `2px solid ${formData.avatarBorderColor}`
-                        }}
-                      >
-                        {getInitials(formData.name)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-foreground">{formData.name || 'Usuário'}</p>
-                        <p className="text-xs text-muted-foreground">Como seu avatar aparecerá</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
                       <CreditCard className="h-4 w-4" /> Documentos de Identificação
                     </CardTitle>
                   </CardHeader>
@@ -1093,230 +906,6 @@ export default function Profile() {
                     <div className="grid md:grid-cols-2 gap-x-6 gap-y-3">
                       <EditableField label="Chave PIX (Pessoa Física)" value={formData.pixKeyPF} field="pixKeyPF" onSave={handleSaveField} icon={<CreditCard className="h-4 w-4" />} placeholder="CPF, Email ou Telefone" isSaving={isSaving} />
                       <EditableField label="Chave PIX (Pessoa Jurídica)" value={formData.pixKeyPJ} field="pixKeyPJ" onSave={handleSaveField} icon={<Building2 className="h-4 w-4" />} placeholder="CNPJ, Email ou Aleatória" isSaving={isSaving} />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* TAB: SEGURANÇA */}
-            {/* ============================================================ */}
-            {activeTab === 'security' && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Key className="h-4 w-4" /> Senha
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <p className="text-sm text-foreground font-medium">Alterar senha</p>
-                        <p className="text-xs text-muted-foreground">Recomendamos trocar sua senha periodicamente</p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => resetPassword(profile.email)}>
-                        Redefinir Senha
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Shield className="h-4 w-4" /> Autenticação de Dois Fatores (2FA)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm text-foreground font-medium">Status</p>
-                          <Badge variant={twoFactorEnabled ? 'default' : 'secondary'} className={
-                            twoFactorEnabled 
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          }>
-                            {twoFactorEnabled ? 'Ativado' : 'Desativado'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {twoFactorEnabled ? 'Sua conta está protegida.' : 'Adicione segurança extra.'}
-                        </p>
-                      </div>
-                      <Button
-                        variant={twoFactorEnabled ? 'outline' : 'default'}
-                        size="sm"
-                        onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                        className={twoFactorEnabled ? 'text-destructive hover:bg-destructive/10' : ''}
-                      >
-                        {twoFactorEnabled ? 'Desativar' : 'Ativar 2FA'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Laptop className="h-4 w-4" /> Sessões Ativas
-                      </CardTitle>
-                      {sessions.length > 1 && (
-                        <Button variant="ghost" size="sm" className="text-xs text-destructive">
-                          Encerrar todas
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {sessions.map((session) => (
-                      <div
-                        key={session.id}
-                        className={cn(
-                          "flex items-center justify-between p-3 rounded-lg",
-                          session.current
-                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                            : 'bg-muted/50'
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-background rounded-lg">
-                            {session.device.includes('iPhone') ? <Smartphone className="h-4 w-4" /> : <Laptop className="h-4 w-4" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                              {session.device}
-                              {session.current && (
-                                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px]">
-                                  Sessão atual
-                                </Badge>
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-2">
-                              <MapPin className="h-3 w-3" />
-                              {session.location}
-                            </p>
-                          </div>
-                        </div>
-                        {!session.current && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRevokeSession(session.id)}
-                          >
-                            <LogOut className="h-3 w-3 mr-1" />
-                            Encerrar
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                <CollapsibleSection title="Histórico de Login" icon={<Clock className="h-4 w-4" />} defaultOpen={false}>
-                  <div className="space-y-1">
-                    {mockLoginHistory.map((login, idx) => (
-                      <div key={idx} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className={cn("w-2 h-2 rounded-full", login.success ? 'bg-green-500' : 'bg-red-500')} />
-                          <div>
-                            <p className="text-sm text-foreground">{login.device}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MapPin className="h-3 w-3" /> {login.location}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-foreground">{format(new Date(login.date), "dd/MM/yyyy 'às' HH:mm")}</p>
-                          <p className={cn("text-xs", login.success ? 'text-green-600' : 'text-red-600')}>
-                            {login.success ? '✓ Sucesso' : '✕ Falhou'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleSection>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* TAB: ATIVIDADE */}
-            {/* ============================================================ */}
-            {activeTab === 'activity' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <StatCard icon={<Users className="h-4 w-4 text-primary" />} label="Leads Criados" valueMonth={mockStats.leadsCreatedMonth} valueTotal={mockStats.leadsCreatedTotal} trend={mockStats.leadsCreatedTrend} />
-                  <StatCard icon={<Target className="h-4 w-4 text-primary" />} label="Leads Qualificados" valueMonth={mockStats.leadsQualifiedMonth} valueTotal={mockStats.leadsQualifiedTotal} trend={mockStats.leadsQualifiedTrend} />
-                  <StatCard icon={<Zap className="h-4 w-4 text-primary" />} label="Taxa de Conversão" valueMonth={mockStats.conversionRateMonth} valueTotal={mockStats.conversionRateTotal} trend={mockStats.conversionRateTrend} suffix="%" />
-                  <StatCard icon={<DollarSign className="h-4 w-4 text-primary" />} label="Pipeline Ativo" valueMonth={mockStats.pipelineValue} valueTotal={mockStats.pipelineValue} trend={mockStats.pipelineTrend} prefix="R$ " />
-                </div>
-
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Criadas" valueMonth={mockStats.tasksCreatedMonth} valueTotal={mockStats.tasksCreatedTotal} trend={mockStats.tasksCreatedTrend} />
-                  <StatCard icon={<CheckCircle className="h-4 w-4 text-primary" />} label="Tarefas Concluídas" valueMonth={mockStats.tasksCompletedMonth} valueTotal={mockStats.tasksCompletedTotal} trend={mockStats.tasksCompletedTrend} />
-                  <Card>
-                    <CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-2">Principal Origem de Leads</p>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Mês:</span>
-                          <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceMonth}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Total:</span>
-                          <span className="text-sm font-medium text-foreground">{mockStats.topLeadSourceTotal}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-2">Principal Origem de Deals</p>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Mês:</span>
-                          <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceMonth}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Total:</span>
-                          <span className="text-sm font-medium text-foreground">{mockStats.topDealSourceTotal}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Activity className="h-4 w-4" /> Atividade Recente
-                      </CardTitle>
-                      <Button variant="ghost" size="sm" className="text-xs text-primary">
-                        Ver histórico completo
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-1">
-                      {mockRecentActivity.map((activity) => (
-                        <div key={activity.id} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
-                          <span className="text-lg">{activity.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground">
-                              <span className="font-medium">{activity.action}</span>{' '}
-                              <span className="text-muted-foreground">{activity.target}</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3 w-3" /> {activity.time}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </CardContent>
                 </Card>
