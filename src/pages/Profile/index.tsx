@@ -31,6 +31,7 @@ import {
   Trash,
   ImageIcon,
   ChevronDown,
+  Activity,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
@@ -41,6 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { getInitials } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
+import { TimelineSettings } from './components/TimelineSettings'
 
 // ============================================================================
 // TYPES
@@ -562,6 +564,7 @@ export default function Profile() {
     { id: 'overview', label: 'Visão Geral', icon: User },
     { id: 'documents', label: 'Documentos', icon: FileText },
     { id: 'financial', label: 'Financeiro', icon: Landmark },
+    { id: 'timeline', label: 'Timeline', icon: Activity },
   ]
 
   const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
@@ -897,7 +900,6 @@ export default function Profile() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
-                      <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                       <p className="text-xs text-blue-700 dark:text-blue-300">
                         Seus dados bancários são criptografados e utilizados apenas para pagamentos e reembolsos autorizados.
                       </p>
@@ -911,6 +913,11 @@ export default function Profile() {
                 </Card>
               </div>
             )}
+
+            {/* ============================================================ */}
+            {/* TAB: TIMELINE */}
+            {/* ============================================================ */}
+            {activeTab === 'timeline' && <TimelineSettings />}
           </div>
         </div>
       </div>
