@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight, Flame, Thermometer, Snowflake, UserCircle, CircleDot, MoreHorizontal } from 'lucide-react'
+import { LayoutGrid, ChevronDown, Trash2, Filter, AlignJustify, Kanban, ChevronLeft, ChevronRight, Flame, Thermometer, Snowflake, UserCircle, CircleDot, MoreHorizontal, Download, Upload, Tags } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type InternalViewMode = 'grid' | 'kanban' | 'sales'
@@ -58,6 +58,9 @@ interface LeadsListControlsProps {
   onBulkOwnerChange?: (ownerId: string | null) => void
   availableStatuses?: { id: string; label: string }[]
   availableOwners?: { id: string; name: string }[]
+  onExport?: () => void
+  onImport?: () => void
+  onBulkTags?: () => void
 }
 
 /**
@@ -89,6 +92,9 @@ export function LeadsListControls({
   onBulkOwnerChange,
   availableStatuses = [],
   availableOwners = [],
+  onExport,
+  onImport,
+  onBulkTags,
 }: LeadsListControlsProps) {
   const testIdSuffix = position === 'bottom' ? '-bottom' : ''
   
@@ -202,6 +208,17 @@ export function LeadsListControls({
                   </DropdownMenuSub>
                 )}
 
+                {/* Gerenciar Tags */}
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onBulkTags?.()
+                  }}
+                >
+                  <Tags className="mr-2 h-4 w-4" />
+                  Gerenciar Tags
+                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
 
                 {/* Excluir */}
@@ -218,6 +235,29 @@ export function LeadsListControls({
         </div>
         
         <div className="flex items-center gap-3">
+          {/* Botões Export/Import */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExport}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onImport}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Importar</span>
+            </Button>
+          </div>
+
           {/* View toggles */}
           <div className="flex items-center p-1 bg-muted rounded-md border">
             <Button
