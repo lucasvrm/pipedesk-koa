@@ -1,3 +1,4 @@
+import { TIMELINE_EVENT_LABELS } from '@/constants/timeline'
 import type { TimelineEventType } from '@/lib/types'
 import type { TimelineItemType } from '@/hooks/useUnifiedTimeline'
 
@@ -80,4 +81,60 @@ export function getPreferenceTypeFromItem(item: {
   }
 
   return null
+}
+
+/**
+ * Agrupa TimelineEventTypes habilitados por TimelineItemType
+ * Usado para renderizar toggles corretos no TimelineHeader
+ */
+export function groupEnabledEventsByTimelineType(
+  enabledEvents: Record<TimelineEventType, boolean>
+): Map<TimelineItemType, TimelineEventType[]> {
+  const grouped = new Map<TimelineItemType, TimelineEventType[]>()
+
+  Object.entries(PREFERENCE_TO_TIMELINE_MAP).forEach(([prefType, config]) => {
+    const eventType = prefType as TimelineEventType
+
+    if (!enabledEvents[eventType]) {
+      return
+    }
+
+    config.timelineTypes.forEach(timelineType => {
+      if (!grouped.has(timelineType)) {
+        grouped.set(timelineType, [])
+      }
+
+      const current = grouped.get(timelineType)!
+      if (!current.includes(eventType)) {
+        current.push(eventType)
+      }
+    })
+  })
+
+  return grouped
+}
+
+/**
+ * Retorna label descritivo para um TimelineItemType
+ * baseado nos eventos de preferência que ele representa
+ */
+export function getLabelForTimelineType(
+  timelineType: TimelineItemType,
+  eventTypes: TimelineEventType[]
+): string {
+  if (eventTypes.length === 0) return ''
+
+  if (eventTypes.length === 1) {
+    return TIMELINE_EVENT_LABELS[eventTypes[0]] ?? timelineType
+  }
+
+  const genericLabels: Record<TimelineItemType, string> = {
+    comment: 'Comentários',
+    email: 'Emails',
+    meeting: 'Reuniões',
+    audit: 'Alterações',
+    system: 'Sistema'
+  }
+
+  return genericLabels[timelineType] ?? timelineType
 }
