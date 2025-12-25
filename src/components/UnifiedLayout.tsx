@@ -239,17 +239,17 @@ export function UnifiedLayout({
               {/* Coluna Esquerda: Breadcrumbs e Título */}
               <div className="flex items-center gap-4 min-w-0 flex-1">
                 {/* Breadcrumbs */}
-                <nav className="flex items-center gap-1.5 text-sm shrink-0">
+                <nav className="flex items-center gap-1.5 text-xs shrink-0">
                   <button
                     onClick={() => navigate('/dashboard')}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <Home className="h-4 w-4" />
+                    <Home className="h-3.5 w-3.5" />
                   </button>
                   
                   {finalBreadcrumbs.map((crumb, index) => (
                     <div key={index} className="flex items-center gap-1.5">
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
                       {crumb.path && index < finalBreadcrumbs.length - 1 ? (
                         <button
                           onClick={() => navigate(crumb.path!)}
@@ -271,27 +271,9 @@ export function UnifiedLayout({
                   ))}
                 </nav>
 
-                {/* Título (alinhado verticalmente com breadcrumbs) */}
-                {title && (
-                  <h1 className="text-xl font-bold text-foreground truncate">
-                    {title}
-                  </h1>
-                )}
               </div>
             </div>
 
-            {/* Descrição (se existir) em linha separada */}
-            {description && (
-              <p className="text-sm text-muted-foreground mt-2">{description}</p>
-            )}
-          </div>
-        )}
-
-        {/* Fallback: Se não tem breadcrumbs mas tem título */}
-        {(!showBreadcrumbs || finalBreadcrumbs.length === 0) && (title || description) && (
-          <div className="px-6 py-4 border-b shrink-0">
-            {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
-            {description && <p className="text-muted-foreground mt-1">{description}</p>}
           </div>
         )}
 
