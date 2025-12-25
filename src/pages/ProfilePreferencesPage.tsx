@@ -40,6 +40,8 @@ import {
   Settings,
   Info,
   Palette,
+  Settings2,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -95,8 +97,8 @@ export default function ProfilePreferencesPage() {
   const toggleDND = useToggleDND();
   const [isSaving, setIsSaving] = useState(false);
 
-  // Get active tab from URL or default to 'notifications'
-  const activeTab = searchParams.get('tab') || 'notifications';
+  // Get active tab from URL or default to 'avatar'
+  const activeTab = searchParams.get('tab') || 'avatar';
 
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
@@ -255,18 +257,22 @@ export default function ProfilePreferencesPage() {
     <div className="space-y-6">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notificações
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="avatar" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
             Avatar
           </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notificações
+          </TabsTrigger>
           <TabsTrigger value="timeline" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Timeline
+          </TabsTrigger>
+          <TabsTrigger value="tuning" className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Tuning
           </TabsTrigger>
         </TabsList>
 
@@ -407,6 +413,32 @@ export default function ProfilePreferencesPage() {
         {/* Timeline Tab Content */}
         <TabsContent value="timeline">
           <TimelineSettings />
+        </TabsContent>
+
+        {/* Tuning Tab Content */}
+        <TabsContent value="tuning" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Menu className="h-5 w-5" />
+                Personalização do Menu
+              </CardTitle>
+              <CardDescription>
+                Configure quais itens aparecem no menu de navegação principal
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-8 text-center bg-muted/30 rounded-lg border-2 border-dashed">
+                <Settings2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-sm font-medium text-foreground mb-2">
+                  🚧 Em desenvolvimento
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Drag & drop de itens de menu será implementado em breve
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

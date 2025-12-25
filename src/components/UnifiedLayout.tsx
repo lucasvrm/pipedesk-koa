@@ -2,8 +2,7 @@ import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UnifiedSidebar } from '@/components/UnifiedSidebar';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Home, ChevronsLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronRight, Home } from 'lucide-react';
 
 interface Breadcrumb {
   label: string;
@@ -140,12 +139,13 @@ export function UnifiedLayout({
     
     if (path === '/profile/preferences') {
       const searchParams = new URLSearchParams(location.search);
-      const tab = searchParams.get('tab') || 'notifications';
+      const tab = searchParams.get('tab') || 'avatar';
       
       const tabLabels: Record<string, string> = {
-        notifications: 'Preferências de Notificação',
         avatar: 'Personalizar Avatar',
+        notifications: 'Preferências de Notificação',
         timeline: 'Configurar Timeline',
+        tuning: 'Personalização do Menu',
       };
 
       return [
@@ -278,19 +278,6 @@ export function UnifiedLayout({
                   </h1>
                 )}
               </div>
-
-              {/* Coluna Direita: Botão Toggle Sidebar */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('toggle-sidebar'));
-                }}
-                className="shrink-0"
-                title="Abrir/Fechar menu"
-              >
-                <ChevronsLeft className="h-5 w-5" />
-              </Button>
             </div>
 
             {/* Descrição (se existir) em linha separada */}
@@ -303,20 +290,7 @@ export function UnifiedLayout({
         {/* Fallback: Se não tem breadcrumbs mas tem título */}
         {(!showBreadcrumbs || finalBreadcrumbs.length === 0) && (title || description) && (
           <div className="px-6 py-4 border-b shrink-0">
-            <div className="flex items-center justify-between gap-4">
-              {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('toggle-sidebar'));
-                }}
-                className="shrink-0"
-                title="Abrir/Fechar menu"
-              >
-                <ChevronsLeft className="h-5 w-5" />
-              </Button>
-            </div>
+            {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
             {description && <p className="text-muted-foreground mt-1">{description}</p>}
           </div>
         )}
