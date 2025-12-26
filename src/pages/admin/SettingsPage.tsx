@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import {
   Users,
   GitBranch,
@@ -66,7 +65,6 @@ function HelpCard({ title, description }: { title: string; description: string }
 
 export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
   
   const CATEGORY_SECTIONS: Record<string, string[]> = useMemo(
     () => ({
