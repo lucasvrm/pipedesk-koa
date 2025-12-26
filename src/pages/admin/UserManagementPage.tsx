@@ -6,6 +6,7 @@ import { hasPermission } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
+import { StandardPageLayout } from '@/components/layouts';
 
 // Components
 import { UserStatsCards } from './components/UserStatsCards';
@@ -334,15 +335,7 @@ export default function UserManagementPage() {
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Gerenciar Usuários</h1>
-            <p className="text-sm text-muted-foreground">
-              Controle de acessos, funções e permissões
-          </p>
-        </div>
+      <StandardPageLayout>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -416,7 +409,7 @@ export default function UserManagementPage() {
           totalPages={totalPages}
           onPageChange={setCurrentPage}
         />
-      </div>
+      </StandardPageLayout>
 
       {/* Dialogs */}
       <InviteUserDialog

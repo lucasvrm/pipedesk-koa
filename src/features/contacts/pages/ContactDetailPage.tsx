@@ -6,21 +6,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { ArrowLeft, Buildings, User, Envelope, Phone, LinkedinLogo } from '@phosphor-icons/react'
+import { Buildings, User, Envelope, Phone, LinkedinLogo } from '@phosphor-icons/react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { ContactUpdate } from '@/services/contactService'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 
 export default function ContactDetailPage() {
@@ -63,69 +55,7 @@ export default function ContactDetailPage() {
   const companyId = contact.companyId
 
   return (
-    <PageContainer className="space-y-6">
-      {/* Breadcrumbs */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/contacts">Contatos</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {companyName && companyId && (
-            <>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to={`/companies/${companyId}`}>{companyName}</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{contact.name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex-1">
-           <div className="flex items-center gap-2 flex-wrap">
-             <h1 className="text-3xl font-bold tracking-tight">{contact.name}</h1>
-             {renderNewBadge(contact.createdAt)}
-             {renderUpdatedTodayBadge(contact.updatedAt)}
-           </div>
-           {companyName ? (
-             <div
-                className="flex items-center gap-1 text-muted-foreground hover:text-primary cursor-pointer w-fit"
-                onClick={() => navigate(`/companies/${companyId}`)}
-             >
-                <Buildings className="w-4 h-4" />
-                <span>{companyName}</span>
-             </div>
-           ) : (
-             <span className="text-muted-foreground text-sm flex items-center gap-1">
-                <Buildings className="w-4 h-4 opacity-50" /> Sem empresa vinculada
-             </span>
-           )}
-        </div>
-        <RequirePermission permission="contacts.update">
-            {isEditing ? (
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
-                    <Button onClick={handleSave} disabled={updateContact.isPending}>Salvar</Button>
-                </div>
-            ) : (
-                <Button onClick={() => setIsEditing(true)}>Editar</Button>
-            )}
-        </RequirePermission>
-      </div>
-
+    <StandardPageLayout>
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1 bg-muted/40 border rounded-lg">
           <TabsTrigger value="overview" className="py-2 px-4"><User className="mr-2 h-4 w-4" /> Visão Geral</TabsTrigger>
@@ -213,6 +143,6 @@ export default function ContactDetailPage() {
           </div>
         </TabsContent>
       </Tabs>
-    </PageContainer>
+    </StandardPageLayout>
   )
 }

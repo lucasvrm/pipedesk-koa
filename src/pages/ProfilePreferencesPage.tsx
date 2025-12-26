@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimelineSettings } from '@/pages/Profile/components/TimelineSettings';
+import { StandardPageLayout } from '@/components/layouts';
 
 // Ícones por categoria
 const CATEGORY_ICONS: Record<NotificationCategory, React.ElementType> = {
@@ -206,20 +207,20 @@ export default function ProfilePreferencesPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <StandardPageLayout>
         <div className="grid grid-cols-2 gap-4">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
         </div>
         <Skeleton className="h-64" />
-      </div>
+      </StandardPageLayout>
     );
   }
 
   if (!profile) return null;
 
   return (
-    <div className="space-y-6">
+    <StandardPageLayout>
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2">
@@ -363,6 +364,6 @@ export default function ProfilePreferencesPage() {
           <TimelineSettings />
         </TabsContent>
       </Tabs>
-    </div>
+    </StandardPageLayout>
   );
 }

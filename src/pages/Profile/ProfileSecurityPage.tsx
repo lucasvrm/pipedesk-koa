@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { StandardPageLayout } from '@/components/layouts';
 
 const mockSessions = [
   { id: '1', device: 'Chrome - Windows', location: 'São Paulo, BR', lastActive: new Date().toISOString(), current: true },
@@ -40,7 +41,7 @@ export default function ProfileSecurityPage() {
   if (!profile) return null;
 
   return (
-    <div className="space-y-6">
+    <StandardPageLayout>
       {/* Grid 2x2 em desktop, 1 coluna em mobile */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Linha 1 - Esquerda: Senha */}
@@ -192,5 +193,6 @@ export default function ProfileSecurityPage() {
           </Card>
         </div>
       </div>
+  </StandardPageLayout>
   );
 }

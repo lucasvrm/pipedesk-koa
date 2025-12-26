@@ -43,6 +43,7 @@ import { PencilSimple, Plus, WarningCircle, Tag as TagIcon, ListDashes, SquaresF
 import { toast } from 'sonner';
 import { TagCard } from './components/TagCard';
 import { TagList } from './components/TagList';
+import { StandardPageLayout } from '@/components/layouts';
 
 // Atenção: PageContainer foi removido daqui. O componente agora apenas
 // rende as seções internas; a página ou aba que embute TagSettings deve
@@ -223,7 +224,7 @@ export default function TagSettings() {
   };
 
   return (
-    <div className="space-y-8">
+    <StandardPageLayout>
       {/* Header & Toolbar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -405,6 +406,6 @@ export default function TagSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </StandardPageLayout>
   );
 }

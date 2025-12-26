@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StandardPageLayout } from '@/components/layouts';
 import {
   GripVertical,
   Eye,
@@ -479,15 +480,17 @@ export default function CustomizeSidebarPage() {
   // Early returns após todos os hooks
   if (!profile) {
     return (
-      <div className="px-3 pt-1 pb-6 text-center text-muted-foreground">
-        Carregando perfil...
-      </div>
+      <StandardPageLayout>
+        <div className="text-center text-muted-foreground">
+          Carregando perfil...
+        </div>
+      </StandardPageLayout>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="px-3 pt-1 pb-6 space-y-4">
+      <StandardPageLayout>
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-96" />
         <div className="space-y-3 mt-6">
@@ -495,13 +498,13 @@ export default function CustomizeSidebarPage() {
             <Skeleton key={i} className="h-16 w-full" />
           ))}
         </div>
-      </div>
+      </StandardPageLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="px-3 pt-1 pb-6">
+      <StandardPageLayout>
         <Card className="border-destructive">
           <CardContent className="pt-6">
             <p className="text-destructive">Erro ao carregar preferências: {error.message}</p>
@@ -511,12 +514,12 @@ export default function CustomizeSidebarPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </StandardPageLayout>
     );
   }
 
   return (
-    <div className="px-3 pt-1 pb-6 space-y-6">
+    <StandardPageLayout>
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="avatar">
@@ -780,6 +783,6 @@ export default function CustomizeSidebarPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </StandardPageLayout>
   );
 }

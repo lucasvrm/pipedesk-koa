@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
@@ -46,8 +46,7 @@ export default function DashboardSettingsPage() {
   if (isLoading) return <div className="p-8">Carregando configurações...</div>
 
   return (
-    <PageContainer>
-      <div className="flex items-center justify-between mb-6">
+    <StandardPageLayout>
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Configuração do Dashboard</h2>
           <p className="text-muted-foreground">
@@ -90,6 +89,6 @@ export default function DashboardSettingsPage() {
             )
         })}
       </div>
-    </PageContainer>
+    </StandardPageLayout>
   )
 }

@@ -4,7 +4,7 @@ import { useDeals } from '@/services/dealService'
 import { usePlayerTracks } from '@/features/deals/hooks/usePlayerTracks'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, AlertCircle } from 'lucide-react'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 
 export default function DealComparison() {
   const { data: deals, loading: dealsLoading, error: dealsError } = useDeals()
@@ -57,11 +57,11 @@ export default function DealComparison() {
   }
 
   return (
-    <PageContainer className="pb-12">
+    <StandardPageLayout>
       <DealComparisonMatrix
         deals={deals}
         playerTracks={playerTracks || []}
       />
-    </PageContainer>
+    </StandardPageLayout>
   )
 }

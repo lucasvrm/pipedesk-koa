@@ -19,6 +19,7 @@ import {
   IntegrationsSettingsSection
 } from '@/pages/admin/components/settings-sections';
 import { useSearchParams } from 'react-router-dom';
+import { StandardPageLayout } from '@/components/layouts';
 
 // Configuração das categorias
 const CATEGORIES = {
@@ -252,35 +253,9 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Breadcrumb */}
-      <DynamicBreadcrumbs />
-      
-      {/* Header com busca */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {categoryConfig?.label || 'Configurações'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {categoryConfig?.description || 'Gerencie as configurações do sistema'}
-          </p>
-        </div>
-
-        {/* Busca */}
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar configurações..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-9"
-          />
-        </div>
-      </div>
-
+    <StandardPageLayout>
       {/* Conteúdo da categoria */}
       {renderContent()}
-    </div>
+    </StandardPageLayout>
   );
 }

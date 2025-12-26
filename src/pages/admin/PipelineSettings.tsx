@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PencilSimple, Trash, Plus, ArrowsDownUp, WarningCircle, Clock, CheckCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import TransitionRulesMatrix from '@/features/admin/components/TransitionRulesMatrix';
-import { PageContainer } from '@/components/PageContainer';
+import { StandardPageLayout } from '@/components/layouts';
 
 export default function PipelineSettings() {
   const { data: stages = [], isLoading } = useStages();
@@ -148,15 +148,7 @@ export default function PipelineSettings() {
   if (isLoading) return <div>Carregando pipeline...</div>;
 
   return (
-    <PageContainer>
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium">Pipeline de Negócios</h3>
-          <p className="text-sm text-muted-foreground">Gerencie as fases do funil, SLAs e regras de transição.</p>
-        </div>
-      </div>
-
-      <Tabs defaultValue="stages" className="w-full">
+    <StandardPageLayout>
         <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
             <TabsTrigger value="stages">Estágios & SLAs</TabsTrigger>
             <TabsTrigger value="transitions">Regras de Transição</TabsTrigger>
@@ -264,7 +256,7 @@ export default function PipelineSettings() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageContainer>
+    </StandardPageLayout>
   );
 }
 

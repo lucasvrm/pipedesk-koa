@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import FolderManager from '@/components/FolderManager'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from '@phosphor-icons/react'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 
 export default function FolderManagerPage() {
   const navigate = useNavigate()
@@ -18,22 +18,12 @@ export default function FolderManagerPage() {
   // Mas para corrigir o erro de tipo imediato:
 
   return (
-    <PageContainer className="pb-12">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/folders')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciar Pastas</h1>
-          <p className="text-muted-foreground">Estrutura de arquivos e organização</p>
-        </div>
-      </div>
-
+    <StandardPageLayout>
       <FolderManager
         currentUser={currentUser}
         open={true}
         onOpenChange={() => {}}
       />
-    </PageContainer>
+    </StandardPageLayout>
   )
 }

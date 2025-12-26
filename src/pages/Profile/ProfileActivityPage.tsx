@@ -12,6 +12,7 @@ import {
   Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StandardPageLayout } from '@/components/layouts';
 
 // ============================================================================
 // STAT CARD COMPONENT
@@ -92,7 +93,7 @@ const mockRecentActivity = [
 
 export default function ProfileActivityPage() {
   return (
-    <div className="space-y-6">
+    <StandardPageLayout>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={<Users className="h-4 w-4 text-primary" />} label="Leads Criados" valueMonth={mockStats.leadsCreatedMonth} valueTotal={mockStats.leadsCreatedTotal} trend={mockStats.leadsCreatedTrend} />
         <StatCard icon={<Target className="h-4 w-4 text-primary" />} label="Leads Qualificados" valueMonth={mockStats.leadsQualifiedMonth} valueTotal={mockStats.leadsQualifiedTotal} trend={mockStats.leadsQualifiedTrend} />
@@ -165,6 +166,6 @@ export default function ProfileActivityPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </StandardPageLayout>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { PageContainer } from '@/components/PageContainer';
+import { StandardPageLayout } from '@/components/layouts';
 import DashboardAIDA from '@/components/Dashboar-AIDA'; // Mantendo o nome do arquivo atual (com typo)
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,11 +20,11 @@ export default function AidaPage() {
 
   if (loading) {
     return (
-      <PageContainer title="AIDA Analytics">
+      <StandardPageLayout>
         <div className="flex h-96 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      </PageContainer>
+      </StandardPageLayout>
     );
   }
 
@@ -34,7 +34,7 @@ export default function AidaPage() {
 
   if (!projectId) {
     return (
-      <PageContainer title="AIDA Analytics">
+      <StandardPageLayout>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Projeto não selecionado</AlertTitle>
@@ -43,22 +43,17 @@ export default function AidaPage() {
             Tente acessar: /aida/SEU_ID_DO_PROJETO
           </AlertDescription>
         </Alert>
-      </PageContainer>
+      </StandardPageLayout>
     );
   }
 
   return (
-    <PageContainer 
-      title="Análise Inteligente de Documentos (AIDA)" 
-      description={`Visualizando dados consolidados do projeto: ${projectId}`}
-    >
-      <div className="mt-6">
-        <DashboardAIDA 
-          projectId={projectId} 
-          token={token || ""} 
-          backendUrl={AIDA_API_URL} 
-        />
-      </div>
-    </PageContainer>
+    <StandardPageLayout>
+      <DashboardAIDA 
+        projectId={projectId} 
+        token={token || ""} 
+        backendUrl={AIDA_API_URL} 
+      />
+    </StandardPageLayout>
   );
 }

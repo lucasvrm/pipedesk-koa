@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -270,18 +270,7 @@ export default function SyntheticDataAdminPage() {
   }
 
   return (
-    <PageContainer>
-      {/* Removemos max-width para permitir largura total conforme PageContainer */}
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Database className="text-primary" />
-            Admin de Dados Sintéticos
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Geração server-side de dados de teste. Determinístico e seguro.
-          </p>
-        </div>
+    <StandardPageLayout>
 
         {/* Informational Alert about Settings Location */}
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
@@ -470,6 +459,6 @@ export default function SyntheticDataAdminPage() {
           </div>
         </div>
       )}
-    </PageContainer>
+    </StandardPageLayout>
   )
 }
