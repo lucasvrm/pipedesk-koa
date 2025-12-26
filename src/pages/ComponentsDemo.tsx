@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { UpdatedTodayBadge, NewBadge, renderUpdatedTodayBadge, renderNewBadge } from '@/components/ui/ActivityBadges'
 import { Users, Building, DollarSign, TrendingUp, Clock, CheckCircle, AlertTriangle, XCircle, Info } from 'lucide-react'
+import { StandardPageLayout } from '@/components/layouts'
 
 /**
  * Demo page showcasing all Phase 1 UI/UX components
@@ -14,7 +15,7 @@ export default function ComponentsDemo() {
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <StandardPageLayout>
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Phase 1 UI/UX Components Demo</h1>
         <p className="text-muted-foreground">
@@ -290,6 +291,6 @@ export default function ComponentsDemo() {
         <p>Componentes implementados como parte da Fase 1 - UI/UX Component Infrastructure</p>
         <p>Ver documentação completa em: docs/ROADMAP_PHASE1_COMPONENTS.md</p>
       </div>
-    </div>
+    </StandardPageLayout>
   )
 }

@@ -256,10 +256,8 @@ export function UnifiedLayout({
           )}
 
           {/* Content Area */}
-          <div className="flex-1 min-h-0 overflow-auto">
-            <div className={cn("p-6", contentClassName)}>
-              {children}
-            </div>
+          <div className={cn("flex-1 min-h-0 overflow-auto px-6", contentClassName)}>
+            {children}
           </div>
         </div>
       </div>

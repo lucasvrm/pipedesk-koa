@@ -14,7 +14,7 @@ import { Separator } from '@/components/ui/separator'
 import { GoogleLogo, FolderOpen, CalendarBlank, EnvelopeSimple, CheckCircle, XCircle, ArrowsClockwise, Warning, Link as LinkIcon, ArrowLeft } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/helpers'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 
 export default function GoogleIntegrationPage() {
   const { profile: currentUser } = useAuth()
@@ -79,20 +79,7 @@ export default function GoogleIntegrationPage() {
   const isTokenExpired = integration && new Date(integration.expiresAt) < new Date()
 
   return (
-    <PageContainer>
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/rbac')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <GoogleLogo className="text-primary" />
-            Google Workspace
-          </h1>
-          <p className="text-muted-foreground">Integração com Drive, Calendar e Gmail</p>
-        </div>
-      </div>
-
+    <StandardPageLayout>
       <div className="space-y-6">
         <Card>
             <CardHeader>
@@ -132,6 +119,6 @@ export default function GoogleIntegrationPage() {
             </>
         )}
       </div>
-    </PageContainer>
+    </StandardPageLayout>
   )
 }

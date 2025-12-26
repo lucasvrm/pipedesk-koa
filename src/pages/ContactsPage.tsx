@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { CompanyType } from '@/lib/types'
 import { RequirePermission } from '@/features/rbac/components/RequirePermission'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 import { SharedListLayout } from '@/components/layouts/SharedListLayout'
 import { SharedListToolbar } from '@/components/layouts/SharedListToolbar'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -270,7 +270,7 @@ export default function ContactsPage() {
   )
 
   return (
-    <PageContainer>
+    <StandardPageLayout>
       <SharedListLayout
         title="Contatos"
         description="Base geral de contatos."
@@ -429,6 +429,6 @@ export default function ContactsPage() {
           </AlertDialogContent>
         </AlertDialog>
       </SharedListLayout>
-    </PageContainer>
+    </StandardPageLayout>
   )
 }

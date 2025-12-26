@@ -1,6 +1,7 @@
 import { UnifiedLayout } from '@/components/UnifiedLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { StandardPageLayout } from '@/components/layouts';
 
 export default function UnifiedLayoutTest() {
   return (
@@ -11,7 +12,7 @@ export default function UnifiedLayoutTest() {
         title="Dados Pessoais"
         description="Gerencie suas informações pessoais e documentos"
       >
-        <div className="space-y-6">
+        <StandardPageLayout>
           <Card>
             <CardHeader>
               <CardTitle>Teste do UnifiedLayout</CardTitle>
@@ -59,7 +60,7 @@ export default function UnifiedLayoutTest() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </StandardPageLayout>
       </UnifiedLayout>
     </TooltipProvider>
   );

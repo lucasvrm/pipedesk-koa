@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 import { Button } from '@/components/ui/button'
 import { 
   HandWaving, 
@@ -181,35 +181,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardFiltersProvider>
-      <PageContainer>
-        
-        {/* --- HEADER --- */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <HandWaving className="text-yellow-500 animate-pulse" weight="fill" />
-              Olá, {profile?.name?.split(' ')[0]}
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={handleOpenCustomize} title="Personalizar Dashboard">
-               <Gear className="mr-2 h-4 w-4" /> Personalizar
-            </Button>
-            <Button onClick={() => navigate('/deals')} variant="outline" className="hidden md:flex">
-              <Briefcase className="mr-2 h-4 w-4" />
-              Ver Deals
-            </Button>
-            <Button onClick={() => navigate('/tasks')} className="shadow-sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Tarefa
-            </Button>
-          </div>
-        </div>
-
+      <StandardPageLayout>
         {/* --- TOOLBAR (FILTERS) --- */}
         <DashboardToolbar />
 
@@ -408,7 +380,7 @@ export default function DashboardPage() {
             </SheetFooter>
         </SheetContent>
       </Sheet>
-    </PageContainer>
+    </StandardPageLayout>
     </DashboardFiltersProvider>
   )
 }

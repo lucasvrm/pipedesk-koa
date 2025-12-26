@@ -42,6 +42,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { getInitials } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
 import { TimelineSettings } from './components/TimelineSettings'
+import { StandardPageLayout } from '@/components/layouts'
 
 // ============================================================================
 // TYPES
@@ -569,7 +570,7 @@ export default function Profile() {
   const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
 
   return (
-    <div className="space-y-6">
+    <StandardPageLayout>
       {/* ================================================================ */}
       {/* HEADER COM BANNER E AVATAR */}
       {/* ================================================================ */}
@@ -918,6 +919,6 @@ export default function Profile() {
             {activeTab === 'timeline' && <TimelineSettings />}
           </div>
         </div>
-      </div>
+    </StandardPageLayout>
   )
 }
