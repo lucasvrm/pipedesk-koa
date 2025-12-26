@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
 import { UnifiedLayout } from '@/components/UnifiedLayout'
@@ -83,6 +83,11 @@ function LayoutWithSidebar({ children }: { children: React.ReactNode }) {
   );
 }
 
+function TrackDetailRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/deals/tracks/${id ?? ''}`} replace />;
+}
+
 function App() {
   const { user, profile } = useAuth()
 
@@ -106,8 +111,6 @@ function App() {
             <Route path="/players" element={<PlayersListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
 
-            <Route path="/tracks/:id" element={<TrackDetailPage />} />
-
             <Route path="/companies" element={<CompaniesListPage />} />
             <Route path="/companies/:id" element={<CompanyDetailPage />} />
 
@@ -121,8 +124,11 @@ function App() {
 
             {/* Tools */}
             <Route path="/tasks" element={profile ? <TaskManagementView currentUser={profile} /> : null} />
-            <Route path="/kanban" element={<Navigate to="/tracks" replace />} />
-            <Route path="/tracks" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
+            <Route path="/kanban" element={<Navigate to="/deals/tracks" replace />} />
+            <Route path="/deals/tracks" element={profile ? <MasterMatrixView currentUser={profile} /> : null} />
+            <Route path="/deals/tracks/:id" element={<TrackDetailPage />} />
+            <Route path="/tracks" element={<Navigate to="/deals/tracks" replace />} />
+            <Route path="/tracks/:id" element={<TrackDetailRedirect />} />
             
             <Route path="/folders" element={profile ? <FolderBrowser currentUser={profile} onManageFolders={() => {}} /> : null} />
             <Route path="/folders/manage" element={<FolderManagerPage />} />

@@ -87,8 +87,15 @@ export default function SettingsPage() {
   };
 
   // Pega categoria e seção da URL
-  const activeCategory = searchParams.get('category') || 'crm';
-  const activeSection = searchParams.get('section') || defaultSectionByCategory[activeCategory];
+  const requestedCategory = searchParams.get('category') || 'crm';
+  const activeCategory = Object.prototype.hasOwnProperty.call(CATEGORIES, requestedCategory)
+    ? requestedCategory
+    : 'crm';
+  const categorySections = CATEGORY_SECTIONS[activeCategory] || [];
+  const requestedSection = searchParams.get('section');
+  const activeSection = categorySections.includes(requestedSection || '')
+    ? requestedSection!
+    : defaultSectionByCategory[activeCategory];
 
   // States para cada categoria
   const [crmSection, setCrmSection] = useState(activeCategory === 'crm' ? activeSection : 'leads');
@@ -99,7 +106,9 @@ export default function SettingsPage() {
 
   const updateSearchParams = (section: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('category', activeCategory);
     nextParams.set('section', section);
+    nextParams.delete('sub');
     setSearchParams(nextParams, { replace: true });
   };
 
@@ -126,6 +135,15 @@ export default function SettingsPage() {
 
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [searchParams, CATEGORY_SECTIONS]);
+
+  useEffect(() => {
+    const shouldClearSub = activeCategory !== 'crm' || activeSection !== 'companies';
+    if (shouldClearSub && searchParams.get('sub')) {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete('sub');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [activeCategory, activeSection, searchParams, setSearchParams]);
 
   const categoryConfig = CATEGORIES[activeCategory as keyof typeof CATEGORIES];
 

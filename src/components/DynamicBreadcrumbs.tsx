@@ -22,8 +22,28 @@ export function DynamicBreadcrumbs() {
   const [searchParams] = useSearchParams();
 
   const breadcrumbs = useMemo(() => {
+    const buildHref = (params: Record<string, string | null>) => {
+      const nextParams = new URLSearchParams(searchParams);
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === null) {
+          nextParams.delete(key);
+        } else {
+          nextParams.set(key, value);
+        }
+      });
+
+      const queryString = nextParams.toString();
+      return `${location.pathname}${queryString ? `?${queryString}` : ''}`;
+    };
+
     const segments: BreadcrumbSegment[] = [];
     const pathParts = location.pathname.split('/').filter(Boolean);
+    const hasQueryHierarchy = !!(
+      searchParams.get('category') ||
+      searchParams.get('section') ||
+      searchParams.get('sub') ||
+      searchParams.get('tab')
+    );
     
     // Build path segments
     let currentPath = '';
@@ -38,36 +58,50 @@ export function DynamicBreadcrumbs() {
       segments.push({
         label,
         href: isLast ? undefined : currentPath,
-        isActive: isLast && !searchParams.get('category') && !searchParams.get('tab'),
+        isActive: isLast && !hasQueryHierarchy,
       });
     }
     
     // Add query param segments
     const category = searchParams.get('category');
     const section = searchParams.get('section');
+    const sub = searchParams.get('sub');
     const tab = searchParams.get('tab');
     
     if (category) {
       const categoryLabel = ROUTE_LABELS[category] || category;
-      const isLast = !section && !tab;
+      const isLast = !section && !sub && !tab;
       
       segments.push({
         label: categoryLabel,
-        href: isLast ? undefined : `${currentPath}?category=${category}`,
+        href: isLast ? undefined : buildHref({ category, section: null, sub: null, tab: null }),
         isActive: isLast,
       });
     }
     
     if (section) {
       const sectionLabel = ROUTE_LABELS[section] || section;
+      const isLast = !sub && !tab;
       
       segments.push({
         label: sectionLabel,
-        isActive: true,
+        href: isLast ? undefined : buildHref({ category, section, sub: null, tab: null }),
+        isActive: isLast,
       });
     }
     
-    if (tab && !category && !section) {
+    if (sub) {
+      const subLabel = ROUTE_LABELS[sub] || sub;
+      const isLast = !tab;
+
+      segments.push({
+        label: subLabel,
+        href: isLast ? undefined : buildHref({ category, section, sub, tab: null }),
+        isActive: isLast,
+      });
+    }
+    
+    if (tab && !category && !section && !sub) {
       const tabLabel = ROUTE_LABELS[tab] || tab;
       
       segments.push({

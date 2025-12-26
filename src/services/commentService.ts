@@ -55,20 +55,41 @@ export async function createComment(data: {
 
   // 2. Disparar Notificações
   if (data.mentions && data.mentions.length > 0) {
-    const authorName = comment.author?.name || 'Alguém'
-    const link = data.entityType === 'deal' ? `/deals/${data.entityId}?tab=comments` : `/dashboard`
+    const filteredMentions = Array.from(
+      new Set(
+        data.mentions.filter((userId) => Boolean(userId) && userId !== data.authorId)
+      )
+    )
 
-    await Promise.all(data.mentions.map(userId => {
-      if (userId !== data.authorId) {
-        return createNotification({
-          userId,
-          type: 'mention',
-          title: 'Você foi mencionado',
-          message: `${authorName} mencionou você em um comentário.`,
-          link
+    if (filteredMentions.length > 0) {
+      const authorName = comment.author?.name || 'Alguém'
+      const link =
+        data.entityType === 'deal'
+          ? `/deals/${data.entityId}?tab=comments`
+          : data.entityType === 'lead'
+            ? `/leads/${data.entityId}`
+            : `/dashboard`
+
+      try {
+        await Promise.all(
+          filteredMentions.map((userId) =>
+            createNotification({
+              userId,
+              type: 'mention',
+              title: 'Você foi mencionado',
+              message: `${authorName} mencionou você em um comentário.`,
+              link
+            })
+          )
+        )
+      } catch (notificationError) {
+        console.warn('[createComment] Notification dispatch failed', {
+          notificationError,
+          entityType: data.entityType,
+          entityId: data.entityId
         })
       }
-    }))
+    }
   }
 
   return comment
@@ -108,7 +129,9 @@ export function useCreateComment() {
     mutationFn: createComment,
     onSuccess: (_, variables) => {
       try {
-        // Timeline v2 usa unifiedTimeline
+        queryClient.invalidateQueries({
+          queryKey: ['timeline', variables.entityType, variables.entityId]
+        })
         queryClient.invalidateQueries({ 
           queryKey: ['unifiedTimeline', variables.entityId, variables.entityType] 
         })

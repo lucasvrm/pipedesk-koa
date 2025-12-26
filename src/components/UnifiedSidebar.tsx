@@ -268,7 +268,7 @@ const getMenuSections = (
     icon: Kanban,
     color: 'text-orange-500',
     items: [
-      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/tracks' },
+      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/deals/tracks' },
     ],
   },
   {
@@ -477,7 +477,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
       const item = path.includes('comparison') ? 'comparison' : 'list';
       return { activeSection: 'deals' as SectionId, activeItem: item };
     }
-    if (path === '/tracks' || path === '/kanban') {
+    if (path.startsWith('/deals/tracks') || path === '/tracks' || path === '/kanban') {
       return { activeSection: 'kanban' as SectionId, activeItem: 'matrix' };
     }
     if (path.startsWith('/companies')) {
