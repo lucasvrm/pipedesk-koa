@@ -96,7 +96,7 @@ function formatActivityContent(activity: ActivityLogEntry): { content: string; t
     }
   }
 
-  // Handle stage change (for deals/tracks)
+  // Handle stage change (for deals or tracks)
   if (action.toLowerCase().includes('estágio alterado') || action.toLowerCase().includes('movido para')) {
     return {
       title: 'Alteração de Estágio',

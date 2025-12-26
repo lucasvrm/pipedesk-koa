@@ -80,7 +80,6 @@ type SectionId =
   | 'players' 
   | 'tasks' 
   | 'profile' 
-  | 'management' 
   | 'settings';
 type Theme = 'light' | 'dark' | 'system';
 
@@ -120,32 +119,13 @@ const getMenuSections = (
   // Se houver config customizado, usar ele (mesclando com lógica de permissões)
   if (customConfig && customConfig.length > 0) {
     return customConfig
-      .filter(section => section.enabled)
+      .filter(section => section.enabled && section.id !== 'management')
       .sort((a, b) => a.order - b.order)
       .map(section => {
-        // LÓGICA HÍBRIDA: Settings e Management usam lógica dinâmica, resto usa banco
+        // LÓGICA HÍBRIDA: Settings usa lógica dinâmica, resto usa banco
         let items: MenuItem[];
         
-        if (section.id === 'management') {
-          // Management: baseado em permissões (não vem do banco)
-          items = [
-            ...(canViewAnalytics ? [{ 
-              id: 'analytics', 
-              label: 'Analytics', 
-              icon: BarChart3, 
-              path: '/analytics', 
-              external: true 
-            }] : []),
-            ...(canManageUsers ? [{ 
-              id: 'users', 
-              label: 'Usuários', 
-              icon: Users, 
-              path: '/admin/users', 
-              external: true, 
-              badge: 'Restrito' 
-            }] : []),
-          ].filter(Boolean) as MenuItem[];
-        } else if (section.id === 'settings') {
+        if (section.id === 'settings') {
           // Settings: baseado em permissão MANAGE_SETTINGS (não vem do banco)
           items = canManageSettings ? [
             { 
@@ -180,6 +160,7 @@ const getMenuSections = (
                 { id: 'defaults', label: 'Defaults do Sistema', section: 'defaults' },
                 { id: 'roles', label: 'Papéis & Permissões', section: 'roles' },
                 { id: 'permissions', label: 'Permissões Avançadas', section: 'permissions' },
+                ...(canManageUsers ? [{ id: 'users', label: 'Usuários', section: 'users' }] : []),
               ]
             },
             { 
@@ -205,6 +186,17 @@ const getMenuSections = (
               ]
             },
           ] : [];
+        } else if (section.id === 'dashboard') {
+          items = section.children
+            .filter(child => child.enabled)
+            .filter(child => child.id !== 'analytics' || canViewAnalytics)
+            .map(child => ({
+              id: child.id,
+              label: child.label,
+              icon: getIconComponent(child.icon || 'FileText'),
+              path: child.path,
+              external: false
+            }));
         } else {
           // Outras seções: vêm do banco normalmente
           items = section.children
@@ -240,6 +232,7 @@ const getMenuSections = (
     color: 'text-blue-500',
     items: [
       { id: 'overview', label: 'Visão Geral', icon: Home, path: '/dashboard' },
+      ...(canViewAnalytics ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics', external: false }] : []),
     ],
   },
   {
@@ -268,7 +261,7 @@ const getMenuSections = (
     icon: Kanban,
     color: 'text-orange-500',
     items: [
-      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/deals/tracks' },
+      { id: 'matrix', label: 'Master Matrix', icon: Kanban, path: '/tracks' },
     ],
   },
   {
@@ -325,16 +318,6 @@ const getMenuSections = (
     ],
   },
   {
-    id: 'management',
-    label: 'Gestão',
-    icon: BarChart3,
-    color: 'text-blue-500',
-    items: [
-      ...(canViewAnalytics ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics', external: true }] : []),
-      ...(canManageUsers ? [{ id: 'users', label: 'Usuários', icon: Users, path: '/admin/users', external: true, badge: 'Restrito' }] : []),
-    ].filter(Boolean) as MenuItem[],
-  },
-  {
     id: 'settings',
     label: 'Configurações',
     icon: Settings,
@@ -372,6 +355,7 @@ const getMenuSections = (
           { id: 'defaults', label: 'Defaults do Sistema', section: 'defaults' },
           { id: 'roles', label: 'Papéis & Permissões', section: 'roles' },
           { id: 'permissions', label: 'Permissões Avançadas', section: 'permissions' },
+          ...(canManageUsers ? [{ id: 'users', label: 'Usuários', section: 'users' }] : []),
         ]
       },
       { 
@@ -469,6 +453,9 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     if (path === '/dashboard') {
       return { activeSection: 'dashboard' as SectionId, activeItem: 'overview' };
     }
+    if (path === '/analytics') {
+      return { activeSection: 'dashboard' as SectionId, activeItem: 'analytics' };
+    }
     if (path.startsWith('/leads') || path.startsWith('/admin/leads')) {
       const item = path.includes('sales-view') ? 'sales-view' : 'list';
       return { activeSection: 'leads' as SectionId, activeItem: item };
@@ -477,7 +464,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
       const item = path.includes('comparison') ? 'comparison' : 'list';
       return { activeSection: 'deals' as SectionId, activeItem: item };
     }
-    if (path.startsWith('/deals/tracks') || path === '/tracks' || path === '/kanban') {
+    if (path.startsWith('/tracks') || path === '/kanban') {
       return { activeSection: 'kanban' as SectionId, activeItem: 'matrix' };
     }
     if (path.startsWith('/companies')) {

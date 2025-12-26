@@ -70,7 +70,6 @@ export const MAX_ACTIVE_SECTIONS = 10;
 export const FIXED_ITEMS: Record<string, string[]> = {
   profile: ['personal', 'preferences', 'security'],  // Sistema precisa
   settings: ['*'],  // Todos (requer permissão MANAGE_SETTINGS)
-  management: ['*'],  // Todos (requer permissão VIEW_ANALYTICS)
 };
 
 /**
@@ -95,7 +94,10 @@ export function normalizeSection(section: Partial<SidebarSectionConfig> & Pick<S
   const label = section.label || (defaultSection?.label) || section.id;
   const tooltip = section.tooltip || (defaultSection?.tooltip) || label;
   const path = section.path || (defaultSection?.path) || '/';
-  const children = section.children || (defaultSection?.children) || [];
+  const defaultChildren = section.children || (defaultSection?.children) || [];
+  const children = defaultChildren.map((child) => ({
+    ...child,
+  }));
   
   return {
     id: section.id,
@@ -127,7 +129,8 @@ export const DEFAULT_SIDEBAR_CONFIG: SidebarSectionConfig[] = [
     tooltip: 'Ir para Dashboard',
     path: '/dashboard',
     children: [
-      { id: 'overview', label: 'Visão Geral', path: '/dashboard', enabled: true, order: 0, fixed: true, icon: 'Home' }
+      { id: 'overview', label: 'Visão Geral', path: '/dashboard', enabled: true, order: 0, fixed: true, icon: 'Home' },
+      { id: 'analytics', label: 'Analytics', path: '/analytics', enabled: true, order: 1, fixed: false, icon: 'BarChart3' }
     ]
   },
   {
@@ -169,9 +172,9 @@ export const DEFAULT_SIDEBAR_CONFIG: SidebarSectionConfig[] = [
     icon: 'Kanban',
     label: 'Tracks',
     tooltip: 'Master Matrix',
-    path: '/deals/tracks',
+    path: '/tracks',
     children: [
-      { id: 'matrix', label: 'Master Matrix', path: '/deals/tracks', enabled: true, order: 0, fixed: true, icon: 'Kanban' }
+      { id: 'matrix', label: 'Master Matrix', path: '/tracks', enabled: true, order: 0, fixed: true, icon: 'Kanban' }
     ]
   },
   {
@@ -249,22 +252,10 @@ export const DEFAULT_SIDEBAR_CONFIG: SidebarSectionConfig[] = [
     ]
   },
   {
-    id: 'management',
-    type: 'default',
-    enabled: true,
-    order: 9,
-    color: '#3b82f6',
-    icon: 'BarChart3',
-    label: 'Gestão',
-    tooltip: 'Ferramentas de Gestão',
-    path: '/analytics',
-    children: []  // Populado dinamicamente com base em permissões
-  },
-  {
     id: 'settings',
     type: 'default',
     enabled: true,
-    order: 10,
+    order: 9,
     color: '#64748b',
     icon: 'Settings',
     label: 'Configurações',
