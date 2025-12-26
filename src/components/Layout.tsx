@@ -17,6 +17,7 @@ import {
   User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
 import GlobalSearch from '@/components/GlobalSearch';
 import InboxPanel from '@/features/inbox/components/InboxPanel';
@@ -50,104 +51,104 @@ export function Layout({ children }: LayoutProps) {
     location.pathname.startsWith(path + '/');
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="flex items-center justify-between h-16 px-6">
-          <div className="flex items-center gap-6">
-            <h1
-              className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate('/dashboard')}
+        <div className="flex items-center h-16 px-6 gap-4">
+          <h1
+            className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/dashboard')}
+          >
+            PipeDesk
+          </h1>
+
+          <div className="flex-1" />
+
+          <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">
+            <Button
+              variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+              data-tour="dashboard-nav"
             >
-              PipeDesk
-            </h1>
+              <Link to="/dashboard">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
 
-            <nav className="hidden md:flex items-center gap-2">
-              <Button
-                variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-                data-tour="dashboard-nav"
-              >
-                <Link to="/dashboard">
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/leads') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/leads">
+                <Filter className="mr-2 h-4 w-4" />
+                Leads
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/leads') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/leads">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Leads
-                </Link>
-              </Button>
+            <Button
+              variant={
+                isActive('/deals') && !isActive('/deals/comparison')
+                  ? 'secondary'
+                  : 'ghost'
+              }
+              size="sm"
+              asChild
+              data-tour="deals-nav"
+            >
+              <Link to="/deals">
+                <Kanban className="mr-2 h-4 w-4" />
+                Deals
+              </Link>
+            </Button>
 
-              <Button
-                variant={
-                  isActive('/deals') && !isActive('/deals/comparison')
-                    ? 'secondary'
-                    : 'ghost'
-                }
-                size="sm"
-                asChild
-                data-tour="deals-nav"
-              >
-                <Link to="/deals">
-                  <Kanban className="mr-2 h-4 w-4" />
-                  Deals
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/companies') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/companies">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Empresas
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/companies') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/companies">
-                  <Briefcase className="mr-2 h-4 w-4" />
-                  Empresas
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/contacts') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/contacts">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Contatos
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/contacts') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/contacts">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Contatos
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/players') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/players">
+                <Building2 className="mr-2 h-4 w-4" />
+                Players
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/players') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/players">
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Players
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/tasks') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/tasks">
+                <ListTodo className="mr-2 h-4 w-4" />
+                Tarefas
+              </Link>
+            </Button>
+          </nav>
 
-              <Button
-                variant={isActive('/tasks') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/tasks">
-                  <ListTodo className="mr-2 h-4 w-4" />
-                  Tarefas
-                </Link>
-              </Button>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pl-4 border-l border-border/80">
             {/* Busca Global */}
             <Button
               variant="ghost"
@@ -168,7 +169,7 @@ export function Layout({ children }: LayoutProps) {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
+                <span className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -182,7 +183,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden relative">{children}</main>
+      <main className="flex-1 min-h-0 overflow-hidden relative">{children}</main>
 
       {/* Modais e Serviços */}
       <GlobalSearch
