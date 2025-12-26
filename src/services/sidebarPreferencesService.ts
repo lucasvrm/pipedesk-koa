@@ -169,9 +169,9 @@ export const DEFAULT_SIDEBAR_CONFIG: SidebarSectionConfig[] = [
     icon: 'Kanban',
     label: 'Tracks',
     tooltip: 'Master Matrix',
-    path: '/tracks',
+    path: '/deals/tracks',
     children: [
-      { id: 'matrix', label: 'Master Matrix', path: '/tracks', enabled: true, order: 0, fixed: true, icon: 'Kanban' }
+      { id: 'matrix', label: 'Master Matrix', path: '/deals/tracks', enabled: true, order: 0, fixed: true, icon: 'Kanban' }
     ]
   },
   {

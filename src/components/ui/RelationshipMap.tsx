@@ -232,7 +232,7 @@ export function RelationshipMap({
               lead: `/leads/${node.id}`,
               company: `/companies/${node.id}`,
               deal: `/deals/${node.id}`,
-              player: `/tracks/${node.id}`,
+              player: `/deals/tracks/${node.id}`,
             }
             navigate(routes[node.type])
           }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { LeadsSalesList } from '@/features/leads/components/LeadsSalesList'
@@ -173,5 +173,53 @@ describe('LeadsSalesList', () => {
     )
 
     Object.assign(import.meta.env, originalEnv)
+  })
+
+  it('renders mirror scrollbar when horizontal overflow exists', async () => {
+    const leads: LeadSalesViewItem[] = [
+      {
+        id: 'scroll-lead',
+        priorityBucket: 'hot',
+        legalName: 'Lead com overflow horizontal'
+      }
+    ]
+
+    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+
+    const scrollContainer = screen.getByTestId('leads-sales-scroll')
+    Object.defineProperty(scrollContainer, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 1200, configurable: true })
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('leads-sales-scrollbar-mirror')).toBeInTheDocument()
+    })
+  })
+
+  it('hides mirror scrollbar when content fits horizontally', async () => {
+    const leads: LeadSalesViewItem[] = [
+      {
+        id: 'no-overflow',
+        priorityBucket: 'warm',
+        legalName: 'Lead sem overflow'
+      }
+    ]
+
+    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+
+    const scrollContainer = screen.getByTestId('leads-sales-scroll')
+    Object.defineProperty(scrollContainer, 'clientWidth', { value: 900, configurable: true })
+    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 800, configurable: true })
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('leads-sales-scrollbar-mirror')).not.toBeInTheDocument()
+    })
   })
 })

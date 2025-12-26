@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import type { CompanyTypeMeta, RelationshipLevelMeta } from '@/types/metadata';
 import { SettingsSidebarLayout, SettingsSectionHeader } from './';
 import type { SidebarNavItem } from './SettingsSidebarNav';
+import { useSearchParams } from 'react-router-dom';
 
 type SectionId = 'types' | 'levels';
 type SettingType = 'company_types' | 'relationship_levels';
@@ -201,7 +202,25 @@ function GenericTable({
 
 export function CompanyRelationshipSettingsSection() {
   const { companyTypes, relationshipLevels, isLoading, refreshMetadata } = useSystemMetadata();
-  const [activeSection, setActiveSection] = useState<SectionId>('types');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subSection = searchParams.get('sub');
+  const activeSection: SectionId = subSection === 'levels' ? 'levels' : 'types';
+
+  useEffect(() => {
+    if (subSection !== 'types' && subSection !== 'levels') {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set('sub', 'types');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, subSection]);
+
+  const handleSectionChange = (nextSection: SectionId) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('category', 'crm');
+    nextParams.set('section', 'companies');
+    nextParams.set('sub', nextSection);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   if (isLoading) {
     return (
@@ -217,7 +236,7 @@ export function CompanyRelationshipSettingsSection() {
   }));
 
   return (
-    <SettingsSidebarLayout items={navItems} activeId={activeSection} onSelect={(id) => setActiveSection(id as SectionId)}>
+    <SettingsSidebarLayout items={navItems} activeId={activeSection} onSelect={(id) => handleSectionChange(id as SectionId)}>
       {activeSection === 'types' && (
         <GenericTable
           type="company_types"

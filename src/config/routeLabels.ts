@@ -20,6 +20,8 @@ export const ROUTE_LABELS: Record<string, string> = {
   leads: 'Leads',
   deals: 'Deals & Pipeline',
   companies: 'Empresas & Contatos',
+  types: 'Tipos de Empresa',
+  levels: 'Níveis de Relacionamento',
   
   // Settings sections (Products)
   'products-list': 'Produtos',
