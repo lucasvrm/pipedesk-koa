@@ -193,7 +193,7 @@ describe('LeadsSalesList', () => {
     expect(scrollContainer).toBeInTheDocument()
   })
 
-  it('renders bottom mirror scrollbar when horizontal overflow exists', () => {
+  it('renders bottom mirror scrollbar when horizontal overflow exists', async () => {
     const leads: LeadSalesViewItem[] = [
       {
         id: 'mirror-test',
@@ -202,7 +202,7 @@ describe('LeadsSalesList', () => {
       }
     ]
 
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+    const { rerender } = renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
 
     const scrollContainer = screen.getByTestId('leads-sales-scroll')
     
@@ -211,18 +211,26 @@ describe('LeadsSalesList', () => {
     Object.defineProperty(scrollContainer, 'clientWidth', { value: 1000, configurable: true })
 
     // Trigger resize event to update mirror state
-    act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event('resize'))
+      // Wait for state updates
+      await new Promise(resolve => setTimeout(resolve, 50))
     })
 
-    // Wait for state update
-    setTimeout(() => {
-      const bottomMirror = screen.queryByTestId('leads-sales-scrollbar-mirror-bottom')
-      expect(bottomMirror).toBeInTheDocument()
-    }, 100)
+    // Re-render to see updated state
+    rerender(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadsSalesList {...baseProps} leads={leads} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    const bottomMirror = screen.queryByTestId('leads-sales-scrollbar-mirror-bottom')
+    expect(bottomMirror).toBeInTheDocument()
   })
 
-  it('positions bottom mirror scrollbar outside the main scroll container', () => {
+  it('positions bottom mirror scrollbar outside the main scroll container', async () => {
     const leads: LeadSalesViewItem[] = [
       {
         id: 'structure-test',
@@ -231,7 +239,7 @@ describe('LeadsSalesList', () => {
       }
     ]
 
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+    const { rerender } = renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
 
     const scrollContainer = screen.getByTestId('leads-sales-scroll')
     
@@ -240,21 +248,28 @@ describe('LeadsSalesList', () => {
     Object.defineProperty(scrollContainer, 'clientWidth', { value: 1000, configurable: true })
 
     // Trigger resize
-    act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event('resize'))
+      await new Promise(resolve => setTimeout(resolve, 50))
     })
 
-    setTimeout(() => {
-      const bottomMirror = screen.queryByTestId('leads-sales-scrollbar-mirror-bottom')
-      if (bottomMirror) {
-        // Bottom mirror should not be inside the scroll container
-        expect(scrollContainer.querySelector('[data-testid="leads-sales-scrollbar-mirror-bottom"]')).toBeNull()
-        expect(scrollContainer.contains(bottomMirror)).toBe(false)
-      }
-    }, 100)
+    rerender(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadsSalesList {...baseProps} leads={leads} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
+
+    const bottomMirror = screen.queryByTestId('leads-sales-scrollbar-mirror-bottom')
+    if (bottomMirror) {
+      // Bottom mirror should not be inside the scroll container
+      expect(scrollContainer.querySelector('[data-testid="leads-sales-scrollbar-mirror-bottom"]')).toBeNull()
+      expect(scrollContainer.contains(bottomMirror)).toBe(false)
+    }
   })
 
-  it('synchronizes scroll between container and bottom mirror', () => {
+  it('synchronizes scroll between container and bottom mirror', async () => {
     const leads: LeadSalesViewItem[] = [
       {
         id: 'sync-test',
@@ -263,7 +278,7 @@ describe('LeadsSalesList', () => {
       }
     ]
 
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+    const { rerender } = renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
 
     const scrollContainer = screen.getByTestId('leads-sales-scroll')
     
@@ -272,35 +287,44 @@ describe('LeadsSalesList', () => {
     Object.defineProperty(scrollContainer, 'clientWidth', { value: 1000, configurable: true })
 
     // Trigger resize
-    act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event('resize'))
+      await new Promise(resolve => setTimeout(resolve, 50))
     })
 
-    setTimeout(() => {
-      const bottomMirrorWrapper = screen.queryByTestId('leads-sales-scrollbar-mirror-bottom')
-      if (bottomMirrorWrapper) {
-        const bottomScrollDiv = bottomMirrorWrapper.querySelector('div') as HTMLDivElement
-        
-        if (bottomScrollDiv) {
-          // Simulate scroll on container
-          act(() => {
-            Object.defineProperty(scrollContainer, 'scrollLeft', { value: 500, configurable: true, writable: true })
-            scrollContainer.dispatchEvent(new Event('scroll'))
-          })
+    rerender(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <LeadsSalesList {...baseProps} leads={leads} />
+        </QueryClientProvider>
+      </MemoryRouter>
+    )
 
-          // Bottom should follow
-          expect(bottomScrollDiv.scrollLeft).toBe(500)
+    const bottomMirrorWrapper = screen.queryByTestId('leads-sales-scrollbar-mirror-bottom')
+    if (bottomMirrorWrapper) {
+      const bottomScrollDiv = bottomMirrorWrapper.querySelector('div') as HTMLDivElement
+      
+      if (bottomScrollDiv) {
+        // Simulate scroll on container
+        await act(async () => {
+          Object.defineProperty(scrollContainer, 'scrollLeft', { value: 500, configurable: true, writable: true })
+          scrollContainer.dispatchEvent(new Event('scroll'))
+          await new Promise(resolve => setTimeout(resolve, 10))
+        })
 
-          // Simulate scroll on bottom mirror
-          act(() => {
-            Object.defineProperty(bottomScrollDiv, 'scrollLeft', { value: 300, configurable: true, writable: true })
-            bottomScrollDiv.dispatchEvent(new Event('scroll'))
-          })
+        // Bottom should follow
+        expect(bottomScrollDiv.scrollLeft).toBe(500)
 
-          // Container should follow
-          expect(scrollContainer.scrollLeft).toBe(300)
-        }
+        // Simulate scroll on bottom mirror
+        await act(async () => {
+          Object.defineProperty(bottomScrollDiv, 'scrollLeft', { value: 300, configurable: true, writable: true })
+          bottomScrollDiv.dispatchEvent(new Event('scroll'))
+          await new Promise(resolve => setTimeout(resolve, 10))
+        })
+
+        // Container should follow
+        expect(scrollContainer.scrollLeft).toBe(300)
       }
-    }, 100)
+    }
   })
 })
