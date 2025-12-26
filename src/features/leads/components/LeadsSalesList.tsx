@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import { LeadSalesRow, LeadSalesRowSkeleton } from './LeadSalesRow'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 import { QuickAction } from '@/components/QuickActionsMenu'
@@ -70,6 +70,13 @@ export function LeadsSalesList({
   // Use external ref if provided, otherwise internal
   const scrollContainerRef = tableScrollRef ?? internalScrollRef
 
+  // Refs for bottom mirror scrollbar
+  const bottomScrollRef = useRef<HTMLDivElement | null>(null)
+  const bottomContentRef = useRef<HTMLDivElement | null>(null)
+
+  // State to track if mirror scrollbar should be shown
+  const [showMirrorScrollbar, setShowMirrorScrollbar] = useState(false)
+
   // Helper to get column width by id
   const colWidth = (id: string) => getColumnWidth(id)
 
@@ -78,6 +85,72 @@ export function LeadsSalesList({
     () => columns.reduce((sum, col) => sum + col.width, 0),
     [columns]
   )
+
+  // Function to sync mirror width and determine if mirror is needed
+  const syncMirrorWidth = useCallback(() => {
+    const container = scrollContainerRef.current
+    const bottomContent = bottomContentRef.current
+
+    if (!container) {
+      setShowMirrorScrollbar(false)
+      return
+    }
+
+    const needsMirror = container.scrollWidth > container.clientWidth + 1
+    setShowMirrorScrollbar(needsMirror)
+
+    if (bottomContent && needsMirror) {
+      bottomContent.style.width = `${container.scrollWidth}px`
+    }
+  }, [scrollContainerRef])
+
+  // Effect to handle scroll synchronization
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    const bottom = bottomScrollRef.current
+
+    if (!container || !bottom) return
+
+    // Sync functions
+    const handleContainerScroll = () => {
+      if (bottom.scrollLeft !== container.scrollLeft) {
+        bottom.scrollLeft = container.scrollLeft
+      }
+    }
+
+    const handleBottomScroll = () => {
+      if (container.scrollLeft !== bottom.scrollLeft) {
+        container.scrollLeft = bottom.scrollLeft
+      }
+    }
+
+    // Initial sync
+    syncMirrorWidth()
+    handleContainerScroll()
+
+    // Add listeners
+    container.addEventListener('scroll', handleContainerScroll)
+    bottom.addEventListener('scroll', handleBottomScroll)
+    window.addEventListener('resize', syncMirrorWidth)
+
+    return () => {
+      container.removeEventListener('scroll', handleContainerScroll)
+      bottom.removeEventListener('scroll', handleBottomScroll)
+      window.removeEventListener('resize', syncMirrorWidth)
+    }
+  }, [scrollContainerRef, syncMirrorWidth])
+
+  // Use ResizeObserver to detect size changes in the scroll container
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver(() => syncMirrorWidth())
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [scrollContainerRef, syncMirrorWidth])
 
   const { validLeads, invalidLeadCount } = useMemo(() => {
     const valid = [] as LeadSalesViewItem[]
@@ -468,6 +541,18 @@ export function LeadsSalesList({
           </TableBody>
         </Table>
       </div>
+
+      {/* Bottom mirror scrollbar - sticky at bottom */}
+      {showMirrorScrollbar && (
+        <div
+          className="sticky bottom-0 left-0 right-0 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 z-10"
+          data-testid="leads-sales-scrollbar-mirror-bottom"
+        >
+          <div ref={bottomScrollRef} className="overflow-x-auto">
+            <div ref={bottomContentRef} className="h-3" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
