@@ -35,6 +35,9 @@ const PROFILE_TAB_LABELS: Record<(typeof PROFILE_TABS)[number], string> = {
 }
 
 const PREFERENCES_TABS = ['notifications'] as const
+const PREFERENCES_TAB_LABELS: Record<(typeof PREFERENCES_TABS)[number], string> = {
+  notifications: ROUTE_LABELS.notifications || 'Notificações',
+}
 
 const isIdLike = (segment: string) => /^[0-9a-f-]{6,}$/i.test(segment)
 
@@ -118,7 +121,7 @@ export function buildBreadcrumbs(pathname: string, searchParams: URLSearchParams
 
     breadcrumbs.push({ label: getLabel('profile'), path: '/profile' })
     breadcrumbs.push({ label: getLabel('preferences'), path: '/profile/preferences' })
-    breadcrumbs.push({ label: getLabel(activeTab) })
+    breadcrumbs.push({ label: PREFERENCES_TAB_LABELS[activeTab] })
 
     return breadcrumbs
   }

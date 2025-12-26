@@ -56,6 +56,12 @@ describe('buildBreadcrumbs helper', () => {
     expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Financeiro'])
   })
 
+  it('falls back to overview when profile tab is invalid', () => {
+    const breadcrumbs = buildBreadcrumbs('/profile', new URLSearchParams('tab=timeline'))
+
+    expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Visão Geral'])
+  })
+
   it('builds profile preferences breadcrumbs with default tab', () => {
     const breadcrumbs = buildBreadcrumbs('/profile/preferences', new URLSearchParams())
 
@@ -64,6 +70,12 @@ describe('buildBreadcrumbs helper', () => {
 
   it('builds profile preferences breadcrumbs using tab from URL', () => {
     const breadcrumbs = buildBreadcrumbs('/profile/preferences', new URLSearchParams('tab=notifications'))
+
+    expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Preferências', 'Notificações'])
+  })
+
+  it('falls back to default preferences tab when invalid', () => {
+    const breadcrumbs = buildBreadcrumbs('/profile/preferences', new URLSearchParams('tab=unknown'))
 
     expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Preferências', 'Notificações'])
   })
