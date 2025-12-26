@@ -43,7 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(new Error(reason))
 
     try {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'local' })
     } catch (signOutError) {
       console.error('[Auth] Erro ao forçar signOut:', signOutError)
     }
@@ -302,8 +302,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       setLoading(true);
       loadedProfileId.current = null;
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      // Use local scope to only clear session on this device
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      
+      // If signOut fails, verify if session was actually cleared
+      if (error) {
+        console.warn('[Auth] signOut error:', error);
+        
+        // Check if session is actually cleared despite the error
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // If session is cleared, consider it a success (idempotent behavior)
+        if (!session) {
+          console.log('[Auth] Session cleared despite error - treating as success');
+          return true;
+        }
+        
+        // Session still exists, this is a real failure
+        throw error;
+      }
+      
       return true;
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Falha ao sair'));
