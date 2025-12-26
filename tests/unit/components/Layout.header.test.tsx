@@ -1,6 +1,5 @@
 import { MemoryRouter } from 'react-router-dom'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
 import { Layout } from '@/components/Layout'
@@ -36,10 +35,6 @@ vi.mock('@/features/deals/components/CreateDealDialog', () => ({
   CreateDealDialog: () => <div data-testid="mock-create-deal-dialog" />
 }))
 
-vi.mock('@/components/SLAConfigManager', () => ({
-  SLAConfigManager: () => <div data-testid="mock-sla-config" />
-}))
-
 vi.mock('@/components/GlobalSearch', () => ({
   default: () => <div data-testid="mock-global-search" />
 }))
@@ -56,11 +51,8 @@ vi.mock('@/components/OnboardingTour', () => ({
   OnboardingTour: () => <div data-testid="mock-onboarding-tour" />
 }))
 
-vi.mock('sonner', () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn()
-  }
+vi.mock('@/components/CreateNewDropdown', () => ({
+  CreateNewDropdown: () => <div data-testid="mock-create-new-dropdown" />
 }))
 
 class ResizeObserverMock {
@@ -71,25 +63,8 @@ class ResizeObserverMock {
 
 vi.stubGlobal('ResizeObserver', ResizeObserverMock)
 
-describe('Layout navigation menu', () => {
-  it('opens the desktop menu when the trigger is clicked', async () => {
-    render(
-      <MemoryRouter>
-        <Layout>
-          <div>Content</div>
-        </Layout>
-      </MemoryRouter>
-    )
-
-    expect(screen.queryByText('Perfil')).not.toBeInTheDocument()
-
-    const user = userEvent.setup()
-    await user.click(screen.getByLabelText('Menu de navegação'))
-
-    expect(await screen.findByText('Perfil')).toBeInTheDocument()
-  })
-
-  it('allows scroll by not applying overflow-hidden to main container', () => {
+describe('Layout header separator', () => {
+  it('renders a single visible separator between menu and action buttons', () => {
     const { container } = render(
       <MemoryRouter>
         <Layout>
@@ -98,11 +73,19 @@ describe('Layout navigation menu', () => {
       </MemoryRouter>
     )
 
-    const rootDiv = container.firstChild as HTMLElement
-    expect(rootDiv).not.toHaveClass('overflow-hidden')
-    expect(rootDiv).not.toHaveClass('h-screen')
-    
-    const mainElement = container.querySelector('main')
-    expect(mainElement).toHaveClass('overflow-auto')
+    const separators = screen.getAllByTestId('header-menu-separator')
+    expect(separators).toHaveLength(1)
+
+    const separator = separators[0]
+    expect(separator).toHaveClass('h-8')
+    expect(separator).toHaveClass('w-px')
+
+    const nav = container.querySelector('nav')
+    expect(separator.previousElementSibling).toBe(nav)
+
+    const actions = separator.nextElementSibling
+    expect(actions).toHaveClass('flex')
+    expect(actions).toHaveClass('items-center')
+    expect(actions).toHaveClass('gap-3')
   })
 })

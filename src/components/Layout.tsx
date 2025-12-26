@@ -147,7 +147,11 @@ export function Layout({ children }: LayoutProps) {
               </Button>
             </nav>
 
-            <Separator orientation="vertical" className="h-8" />
+            <Separator
+              orientation="vertical"
+              data-testid="header-menu-separator"
+              className="hidden h-8 w-px md:block"
+            />
 
             <div className="flex items-center gap-3">
               {/* Busca Global */}

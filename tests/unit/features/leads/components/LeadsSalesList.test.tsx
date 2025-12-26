@@ -199,6 +199,30 @@ describe('LeadsSalesList', () => {
     })
   })
 
+  it('positions mirror scrollbar outside the main scroll container', async () => {
+    const leads: LeadSalesViewItem[] = [
+      {
+        id: 'scroll-structure',
+        priorityBucket: 'hot',
+        legalName: 'Lead com overflow horizontal'
+      }
+    ]
+
+    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+
+    const scrollContainer = screen.getByTestId('leads-sales-scroll')
+    Object.defineProperty(scrollContainer, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 1200, configurable: true })
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    const mirrorScrollbar = await screen.findByTestId('leads-sales-scrollbar-mirror')
+    expect(scrollContainer.querySelector('[data-testid="leads-sales-scrollbar-mirror"]')).toBeNull()
+    expect(scrollContainer.contains(mirrorScrollbar)).toBe(false)
+  })
+
   it('hides mirror scrollbar when content fits horizontally', async () => {
     const leads: LeadSalesViewItem[] = [
       {

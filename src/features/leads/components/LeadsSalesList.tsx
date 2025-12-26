@@ -137,8 +137,8 @@ export function LeadsSalesList({
   const colWidth = (id: string) => getColumnWidth(id)
 
   // Calculate total table width
-  const totalTableWidth = useMemo(() => 
-    columns.reduce((sum, col) => sum + col.width, 0),
+  const totalTableWidth = useMemo(
+    () => columns.reduce((sum, col) => sum + col.width, 0),
     [columns]
   )
 
@@ -345,41 +345,30 @@ export function LeadsSalesList({
 
   return (
     <div className="relative rounded-lg border bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
+        <div className="inline-flex items-center gap-2">
+          <ArrowDownUp className="h-4 w-4" />
+          <span className="text-muted-foreground">Ordenado por</span>
+          <span className="text-foreground font-semibold">{orderLabel}</span>
+        </div>
+        
+        {/* Reset columns button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={resetToDefaults}
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <RotateCcw className="h-3 w-3 mr-1" />
+          Resetar colunas
+        </Button>
+      </div>
+
       <div
         ref={scrollContainerRef}
         className="overflow-x-auto pb-3"
         data-testid="leads-sales-scroll"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
-          <div className="inline-flex items-center gap-2">
-            <ArrowDownUp className="h-4 w-4" />
-            <span className="text-muted-foreground">Ordenado por</span>
-            <span className="text-foreground font-semibold">{orderLabel}</span>
-          </div>
-          
-          {/* Reset columns button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetToDefaults}
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Resetar colunas
-          </Button>
-        </div>
-
-        {showMirrorScrollbar && (
-          <div
-            className="sticky bottom-0 left-0 right-0 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
-            data-testid="leads-sales-scrollbar-mirror"
-          >
-            <div ref={mirrorScrollRef} className="overflow-x-auto">
-              <div ref={mirrorContentRef} className="h-3" />
-            </div>
-          </div>
-        )}
-        
         <Table style={{ tableLayout: 'fixed', minWidth: totalTableWidth, width: '100%' }}>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -542,6 +531,17 @@ export function LeadsSalesList({
           </TableBody>
         </Table>
       </div>
+
+      {showMirrorScrollbar && (
+        <div
+          className="sticky bottom-0 left-0 right-0 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+          data-testid="leads-sales-scrollbar-mirror"
+        >
+          <div ref={mirrorScrollRef} className="overflow-x-auto">
+            <div ref={mirrorContentRef} className="h-3" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
