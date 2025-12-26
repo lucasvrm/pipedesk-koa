@@ -9,108 +9,14 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { ChevronRight } from 'lucide-react';
-import { ROUTE_LABELS } from '@/config/routeLabels';
-
-interface BreadcrumbSegment {
-  label: string;
-  href?: string;
-  isActive?: boolean;
-}
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 
 export function DynamicBreadcrumbs() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
   const breadcrumbs = useMemo(() => {
-    const buildHref = (params: Record<string, string | null>) => {
-      const nextParams = new URLSearchParams(searchParams);
-      Object.entries(params).forEach(([key, value]) => {
-        if (value === null) {
-          nextParams.delete(key);
-        } else {
-          nextParams.set(key, value);
-        }
-      });
-
-      const queryString = nextParams.toString();
-      return `${location.pathname}${queryString ? `?${queryString}` : ''}`;
-    };
-
-    const segments: BreadcrumbSegment[] = [];
-    const pathParts = location.pathname.split('/').filter(Boolean);
-    const hasQueryHierarchy = !!(
-      searchParams.get('category') ||
-      searchParams.get('section') ||
-      searchParams.get('sub') ||
-      searchParams.get('tab')
-    );
-    
-    // Build path segments
-    let currentPath = '';
-    
-    for (let i = 0; i < pathParts.length; i++) {
-      const part = pathParts[i];
-      currentPath += `/${part}`;
-      
-      const label = ROUTE_LABELS[part] || part;
-      const isLast = i === pathParts.length - 1;
-      
-      segments.push({
-        label,
-        href: isLast ? undefined : currentPath,
-        isActive: isLast && !hasQueryHierarchy,
-      });
-    }
-    
-    // Add query param segments
-    const category = searchParams.get('category');
-    const section = searchParams.get('section');
-    const sub = searchParams.get('sub');
-    const tab = searchParams.get('tab');
-    
-    if (category) {
-      const categoryLabel = ROUTE_LABELS[category] || category;
-      const isLast = !section && !sub && !tab;
-      
-      segments.push({
-        label: categoryLabel,
-        href: isLast ? undefined : buildHref({ category, section: null, sub: null, tab: null }),
-        isActive: isLast,
-      });
-    }
-    
-    if (section) {
-      const sectionLabel = ROUTE_LABELS[section] || section;
-      const isLast = !sub && !tab;
-      
-      segments.push({
-        label: sectionLabel,
-        href: isLast ? undefined : buildHref({ category, section, sub: null, tab: null }),
-        isActive: isLast,
-      });
-    }
-    
-    if (sub) {
-      const subLabel = ROUTE_LABELS[sub] || sub;
-      const isLast = !tab;
-
-      segments.push({
-        label: subLabel,
-        href: isLast ? undefined : buildHref({ category, section, sub, tab: null }),
-        isActive: isLast,
-      });
-    }
-    
-    if (tab && !category && !section && !sub) {
-      const tabLabel = ROUTE_LABELS[tab] || tab;
-      
-      segments.push({
-        label: tabLabel,
-        isActive: true,
-      });
-    }
-    
-    return segments;
+    return buildBreadcrumbs(location.pathname, searchParams);
   }, [location.pathname, searchParams]);
 
   if (breadcrumbs.length === 0) {
@@ -120,7 +26,9 @@ export function DynamicBreadcrumbs() {
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        {breadcrumbs.map((segment, index) => (
+        {breadcrumbs.map((segment, index) => {
+          const isLast = index === breadcrumbs.length - 1;
+          return (
           <div key={index} className="contents">
             {index > 0 && (
               <BreadcrumbSeparator>
@@ -128,14 +36,15 @@ export function DynamicBreadcrumbs() {
               </BreadcrumbSeparator>
             )}
             <BreadcrumbItem>
-              {segment.isActive ? (
+              {isLast ? (
                 <BreadcrumbPage>{segment.label}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink href={segment.href}>{segment.label}</BreadcrumbLink>
+                <BreadcrumbLink href={segment.path}>{segment.label}</BreadcrumbLink>
               )}
             </BreadcrumbItem>
           </div>
-        ))}
+          );
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   );

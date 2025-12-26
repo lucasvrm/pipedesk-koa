@@ -94,7 +94,9 @@ export function normalizeSection(section: Partial<SidebarSectionConfig> & Pick<S
   const label = section.label || (defaultSection?.label) || section.id;
   const tooltip = section.tooltip || (defaultSection?.tooltip) || label;
   const path = section.path || (defaultSection?.path) || '/';
-  const defaultChildren = section.children || (defaultSection?.children) || [];
+  const defaultChildren = (section.children || defaultSection?.children || []).filter(
+    (child) => !(section.id === 'deals' && child.id === 'comparison')
+  );
   const children = defaultChildren.map((child) => ({
     ...child,
   }));
@@ -159,8 +161,7 @@ export const DEFAULT_SIDEBAR_CONFIG: SidebarSectionConfig[] = [
     tooltip: 'Gerenciar Deals',
     path: '/deals',
     children: [
-      { id: 'list', label: 'Lista de Deals', path: '/deals', enabled: true, order: 0, fixed: false, icon: 'Briefcase' },
-      { id: 'comparison', label: 'Comparador', path: '/deals/comparison', enabled: true, order: 1, fixed: true, icon: 'FileText' }
+      { id: 'list', label: 'Lista de Deals', path: '/deals', enabled: true, order: 0, fixed: false, icon: 'Briefcase' }
     ]
   },
   {

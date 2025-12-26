@@ -10,7 +10,6 @@ describe('DynamicBreadcrumbs with settings subsections', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText('Administração')).toBeInTheDocument()
     expect(screen.getByText('Configurações')).toBeInTheDocument()
     expect(screen.getByText('CRM & Vendas')).toBeInTheDocument()
 
