@@ -1,4 +1,5 @@
 export { LeadSettingsSection } from './LeadSettingsSection';
+export { LeadPriorityConfigSection } from './LeadPriorityConfigSection';
 export { DealPipelineSettingsSection } from './DealPipelineSettingsSection';
 export { CompanyRelationshipSettingsSection } from './CompanyRelationshipSettingsSection';
 export { SystemMetadataSettingsSection } from './SystemMetadataSettingsSection';

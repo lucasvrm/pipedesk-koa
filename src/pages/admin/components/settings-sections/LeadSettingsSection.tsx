@@ -21,14 +21,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSystemMetadata } from '@/hooks/useSystemMetadata';
 import { settingsService } from '@/services/settingsService';
-import { TrendingUp, Users, UserCircle, ListTodo, Pencil, Trash2 } from 'lucide-react';
+import { TrendingUp, Users, UserCircle, ListTodo, Pencil, Trash2, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import type { LeadStatusMeta } from '@/types/metadata';
 import { LeadTaskTemplatesContent } from './LeadTaskTemplatesSection';
+import { LeadPriorityConfigSection } from './LeadPriorityConfigSection';
 import { SettingsSidebarLayout, SettingsSectionHeader } from './';
 import type { SidebarNavItem } from './SettingsSidebarNav';
 
-type SectionId = 'statuses' | 'origins' | 'roles' | 'tasks';
+type SectionId = 'statuses' | 'origins' | 'roles' | 'tasks' | 'priority';
 type SettingType = 'lead_statuses' | 'lead_origins' | 'lead_member_roles';
 
 interface MetadataItem {
@@ -38,6 +39,7 @@ interface MetadataItem {
   description?: string;
   isActive: boolean;
   sortOrder: number;
+  priorityWeight?: number;
 }
 
 interface FormData {
@@ -46,6 +48,7 @@ interface FormData {
   description: string;
   sortOrder: number;
   color?: string;
+  priorityWeight?: number;
 }
 
 const NAV_ITEMS: Omit<SidebarNavItem, 'count'>[] = [
@@ -53,6 +56,7 @@ const NAV_ITEMS: Omit<SidebarNavItem, 'count'>[] = [
   { id: 'origins', label: 'Origens', icon: Users },
   { id: 'roles', label: 'Papéis de Membros', icon: UserCircle },
   { id: 'tasks', label: 'Templates de Tarefas', icon: ListTodo },
+  { id: 'priority', label: 'Configuração de Prioridade', icon: Flame },
 ];
 
 // ============================================================================
@@ -86,10 +90,10 @@ function GenericTable({
   const openDialog = (item?: MetadataItem) => {
     if (item) {
       setEditingItem(item);
-      setFormData({ code: item.code, label: item.label, description: item.description || '', sortOrder: item.sortOrder });
+      setFormData({ code: item.code, label: item.label, description: item.description || '', sortOrder: item.sortOrder, priorityWeight: item.priorityWeight });
     } else {
       setEditingItem(null);
-      setFormData({ code: '', label: '', description: '', sortOrder: 0 });
+      setFormData({ code: '', label: '', description: '', sortOrder: 0, priorityWeight: type === 'lead_origins' ? 0 : undefined });
     }
     setIsDialogOpen(true);
   };
@@ -106,13 +110,17 @@ function GenericTable({
 
     setIsSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         code: formData.code.trim(),
         label: formData.label.trim(),
         description: formData.description.trim() || undefined,
         isActive: true,
         sortOrder: formData.sortOrder || 0
       };
+
+      if (type === 'lead_origins' && formData.priorityWeight !== undefined) {
+        payload.priorityWeight = formData.priorityWeight;
+      }
 
       if (editingItem) {
         const { error } = await settingsService.update(type, editingItem.id, payload);
@@ -154,6 +162,7 @@ function GenericTable({
             <TableRow>
               <TableHead className="w-[140px]">Código</TableHead>
               <TableHead>Label</TableHead>
+              {type === 'lead_origins' && <TableHead className="w-[80px]">Peso</TableHead>}
               <TableHead className="hidden md:table-cell">Descrição</TableHead>
               <TableHead className="w-[70px]">Ordem</TableHead>
               <TableHead className="w-[80px]">Status</TableHead>
@@ -163,7 +172,7 @@ function GenericTable({
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={type === 'lead_origins' ? 7 : 6} className="text-center py-8 text-muted-foreground">
                   Nenhum registro.
                 </TableCell>
               </TableRow>
@@ -172,6 +181,7 @@ function GenericTable({
                 <TableRow key={item.id}>
                   <TableCell><Badge variant="outline" className="font-mono text-xs">{item.code}</Badge></TableCell>
                   <TableCell className="font-medium">{item.label}</TableCell>
+                  {type === 'lead_origins' && <TableCell className="font-mono text-sm">{item.priorityWeight ?? 0}</TableCell>}
                   <TableCell className="text-sm text-muted-foreground hidden md:table-cell truncate max-w-[200px]">{item.description || '-'}</TableCell>
                   <TableCell>{item.sortOrder}</TableCell>
                   <TableCell><Badge variant={item.isActive ? 'default' : 'secondary'} className="text-xs">{item.isActive ? 'Ativo' : 'Inativo'}</Badge></TableCell>
@@ -206,9 +216,18 @@ function GenericTable({
               <Label>Descrição</Label>
               <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} />
             </div>
-            <div className="space-y-2">
-              <Label>Ordem</Label>
-              <Input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })} className="w-24" />
+            <div className="grid grid-cols-2 gap-4">
+              {type === 'lead_origins' && (
+                <div className="space-y-2">
+                  <Label>Peso de Prioridade</Label>
+                  <Input type="number" value={formData.priorityWeight ?? 0} onChange={(e) => setFormData({ ...formData, priorityWeight: parseInt(e.target.value) || 0 })} min={0} max={100} />
+                  <p className="text-xs text-muted-foreground">0-100: peso para cálculo de prioridade</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>Ordem</Label>
+                <Input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })} className={type === 'lead_origins' ? 'w-full' : 'w-24'} />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -234,10 +253,10 @@ function LeadStatusTable({ data, onRefresh }: { data: LeadStatusMeta[]; onRefres
   const openDialog = (item?: LeadStatusMeta) => {
     if (item) {
       setEditingItem(item);
-      setFormData({ code: item.code, label: item.label, description: item.description || '', sortOrder: item.sortOrder, color: item.color || '#6b7280' });
+      setFormData({ code: item.code, label: item.label, description: item.description || '', sortOrder: item.sortOrder, color: item.color || '#6b7280', priorityWeight: item.priorityWeight ?? 0 });
     } else {
       setEditingItem(null);
-      setFormData({ code: '', label: '', description: '', sortOrder: 0, color: '#6b7280' });
+      setFormData({ code: '', label: '', description: '', sortOrder: 0, color: '#6b7280', priorityWeight: 0 });
     }
     setIsDialogOpen(true);
   };
@@ -249,7 +268,7 @@ function LeadStatusTable({ data, onRefresh }: { data: LeadStatusMeta[]; onRefres
 
     setIsSubmitting(true);
     try {
-      const payload = { code: formData.code.trim(), label: formData.label.trim(), description: formData.description.trim() || undefined, isActive: true, sortOrder: formData.sortOrder || 0, color: formData.color };
+      const payload = { code: formData.code.trim(), label: formData.label.trim(), description: formData.description.trim() || undefined, isActive: true, sortOrder: formData.sortOrder || 0, color: formData.color, priorityWeight: formData.priorityWeight ?? 0 };
       if (editingItem) {
         const { error } = await settingsService.update('lead_statuses', editingItem.id, payload);
         if (error) throw error;
@@ -291,6 +310,7 @@ function LeadStatusTable({ data, onRefresh }: { data: LeadStatusMeta[]; onRefres
               <TableHead className="w-[120px]">Código</TableHead>
               <TableHead>Label</TableHead>
               <TableHead className="w-[90px]">Cor</TableHead>
+              <TableHead className="w-[80px]">Peso</TableHead>
               <TableHead className="hidden lg:table-cell">Descrição</TableHead>
               <TableHead className="w-[60px]">Ordem</TableHead>
               <TableHead className="w-[70px]">Status</TableHead>
@@ -299,7 +319,7 @@ function LeadStatusTable({ data, onRefresh }: { data: LeadStatusMeta[]; onRefres
           </TableHeader>
           <TableBody>
             {data.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum registro.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum registro.</TableCell></TableRow>
             ) : (
               data.map((item) => (
                 <TableRow key={item.id}>
@@ -310,6 +330,7 @@ function LeadStatusTable({ data, onRefresh }: { data: LeadStatusMeta[]; onRefres
                       <div className="w-5 h-5 rounded border" style={{ backgroundColor: item.color || '#6b7280' }} />
                     </div>
                   </TableCell>
+                  <TableCell className="font-mono text-sm">{item.priorityWeight ?? 0}</TableCell>
                   <TableCell className="text-sm text-muted-foreground hidden lg:table-cell truncate max-w-[120px]">{item.description || '-'}</TableCell>
                   <TableCell>{item.sortOrder}</TableCell>
                   <TableCell><Badge variant={item.isActive ? 'default' : 'secondary'} className="text-xs">{item.isActive ? 'Ativo' : 'Inativo'}</Badge></TableCell>
@@ -347,13 +368,20 @@ function LeadStatusTable({ data, onRefresh }: { data: LeadStatusMeta[]; onRefres
                 <Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} className="font-mono flex-1" />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Peso de Prioridade</Label>
+                <Input type="number" value={formData.priorityWeight ?? 0} onChange={(e) => setFormData({ ...formData, priorityWeight: parseInt(e.target.value) || 0 })} min={0} max={100} />
+                <p className="text-xs text-muted-foreground">0-100: peso para cálculo de prioridade</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Ordem</Label>
+                <Input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })} className="w-full" />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} />
-            </div>
-            <div className="space-y-2">
-              <Label>Ordem</Label>
-              <Input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })} className="w-24" />
             </div>
           </div>
           <DialogFooter>
@@ -400,6 +428,8 @@ export function LeadSettingsSection() {
         return <GenericTable type="lead_member_roles" title="Papéis de Membros" description="Funções dos membros associados aos leads" data={leadMemberRoles as MetadataItem[]} onRefresh={refreshMetadata} />;
       case 'tasks':
         return <LeadTaskTemplatesContent />;
+      case 'priority':
+        return <LeadPriorityConfigSection />;
       default:
         return null;
     }
