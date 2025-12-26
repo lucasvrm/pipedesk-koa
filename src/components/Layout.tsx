@@ -17,6 +17,7 @@ import {
   User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
 import GlobalSearch from '@/components/GlobalSearch';
 import InboxPanel from '@/features/inbox/components/InboxPanel';
@@ -50,10 +51,10 @@ export function Layout({ children }: LayoutProps) {
     location.pathname.startsWith(path + '/');
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="flex items-center justify-between h-16 px-6">
-          <div className="flex items-center gap-6">
+        <div className="flex items-center h-16 px-6 gap-6">
+          <div className="flex items-center gap-6 min-w-0 flex-1">
             <h1
               className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate('/dashboard')}
@@ -61,7 +62,7 @@ export function Layout({ children }: LayoutProps) {
               PipeDesk
             </h1>
 
-            <nav className="hidden md:flex items-center gap-2">
+            <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">
               <Button
                 variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -147,7 +148,9 @@ export function Layout({ children }: LayoutProps) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
+
+          <div className="flex items-center gap-3 ml-auto">
             {/* Busca Global */}
             <Button
               variant="ghost"
@@ -168,7 +171,7 @@ export function Layout({ children }: LayoutProps) {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
+                <span className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -182,7 +185,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden relative">{children}</main>
+      <main className="flex-1 min-h-0 overflow-hidden relative">{children}</main>
 
       {/* Modais e Serviços */}
       <GlobalSearch
