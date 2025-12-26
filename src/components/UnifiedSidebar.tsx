@@ -122,21 +122,110 @@ const getMenuSections = (
     return customConfig
       .filter(section => section.enabled)
       .sort((a, b) => a.order - b.order)
-      .map(section => ({
-        id: section.id as SectionId,
-        label: section.label,
-        icon: getIconComponent(section.icon),
-        color: section.color,
-        items: section.children
-          .filter(child => child.enabled)
-          .map(child => ({
-            id: child.id,
-            label: child.label,
-            icon: getIconComponent(child.icon || 'FileText'),
-            path: child.path,
-            external: false
-          }))
-      }));
+      .map(section => {
+        // LÓGICA HÍBRIDA: Settings e Management usam lógica dinâmica, resto usa banco
+        let items: MenuItem[];
+        
+        if (section.id === 'management') {
+          // Management: baseado em permissões (não vem do banco)
+          items = [
+            ...(canViewAnalytics ? [{ 
+              id: 'analytics', 
+              label: 'Analytics', 
+              icon: BarChart3, 
+              path: '/analytics', 
+              external: true 
+            }] : []),
+            ...(canManageUsers ? [{ 
+              id: 'users', 
+              label: 'Usuários', 
+              icon: Users, 
+              path: '/admin/users', 
+              external: true, 
+              badge: 'Restrito' 
+            }] : []),
+          ].filter(Boolean) as MenuItem[];
+        } else if (section.id === 'settings') {
+          // Settings: baseado em permissão MANAGE_SETTINGS (não vem do banco)
+          items = canManageSettings ? [
+            { 
+              id: 'crm', 
+              label: 'CRM & Vendas', 
+              icon: Briefcase, 
+              path: '/admin/settings?category=crm',
+              children: [
+                { id: 'leads', label: 'Leads', section: 'leads' },
+                { id: 'deals', label: 'Deals & Pipeline', section: 'deals' },
+                { id: 'companies', label: 'Empresas & Contatos', section: 'companies' },
+              ]
+            },
+            { 
+              id: 'products', 
+              label: 'Produtos & Operações', 
+              icon: Package, 
+              path: '/admin/settings?category=products',
+              children: [
+                { id: 'products-list', label: 'Produtos', section: 'products' },
+                { id: 'operation_types', label: 'Tipos de Operação', section: 'operation_types' },
+                { id: 'deal_sources', label: 'Origens de Deal', section: 'deal_sources' },
+                { id: 'loss_reasons', label: 'Motivos de Perda', section: 'loss_reasons' },
+              ]
+            },
+            { 
+              id: 'system', 
+              label: 'Sistema & Segurança', 
+              icon: Shield, 
+              path: '/admin/settings?category=system',
+              children: [
+                { id: 'defaults', label: 'Defaults do Sistema', section: 'defaults' },
+                { id: 'roles', label: 'Papéis & Permissões', section: 'roles' },
+                { id: 'permissions', label: 'Permissões Avançadas', section: 'permissions' },
+              ]
+            },
+            { 
+              id: 'productivity', 
+              label: 'Produtividade', 
+              icon: ListChecks, 
+              path: '/admin/settings?category=productivity',
+              children: [
+                { id: 'tasks', label: 'Tarefas', section: 'tasks' },
+                { id: 'tags', label: 'Tags', section: 'tags' },
+                { id: 'templates', label: 'Templates', section: 'templates' },
+                { id: 'holidays', label: 'Feriados', section: 'holidays' },
+              ]
+            },
+            { 
+              id: 'integrations', 
+              label: 'Integrações & Automação', 
+              icon: Bot, 
+              path: '/admin/settings?category=integrations',
+              children: [
+                { id: 'dashboards', label: 'Dashboards', section: 'dashboards' },
+                { id: 'automation', label: 'Automação', section: 'automation' },
+              ]
+            },
+          ] : [];
+        } else {
+          // Outras seções: vêm do banco normalmente
+          items = section.children
+            .filter(child => child.enabled)
+            .map(child => ({
+              id: child.id,
+              label: child.label,
+              icon: getIconComponent(child.icon || 'FileText'),
+              path: child.path,
+              external: false
+            }));
+        }
+
+        return {
+          id: section.id as SectionId,
+          label: section.label,
+          icon: getIconComponent(section.icon),
+          color: section.color,
+          items
+        };
+      });
   }
   
   // Fallback: config padrão hardcoded (existente)
