@@ -13,16 +13,8 @@ interface SharedListLayoutProps {
 
 export function SharedListLayout({ title, subtitle, actions, filtersBar, children, footer }: SharedListLayoutProps) {
   return (
-    <PageContainer>
+    <PageContainer title={title} description={subtitle} actions={actions}>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-            {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
-          </div>
-          {actions}
-        </div>
-
         {filtersBar && (
           <Card>
             <CardContent className="pt-6">{filtersBar}</CardContent>

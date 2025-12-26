@@ -5,7 +5,6 @@ import { useDeals } from '@/services/dealService'
 import { useUsers } from '@/services/userService'
 import {
   ListChecks,
-  Plus,
   Funnel,
   SortAscending,
   CalendarBlank,
@@ -208,31 +207,13 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
   }
 
   const isTaskOverdue = (task: Task): boolean => {
-    return !!(task.dueDate && !task.completed && new Date(task.dueDate) < today)
+      return !!(task.dueDate && !task.completed && new Date(task.dueDate) < today)
   }
 
   return (
     <PageContainer>
       <div className="flex flex-col gap-6">
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <ListChecks className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Tarefas</h1>
-                <p className="text-sm text-muted-foreground">
-                  Gerencie todas as tarefas do sistema
-                </p>
-              </div>
-            </div>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2" />
-              Nova Tarefa
-            </Button>
-          </div>
-
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
             <Card>
               <CardContent className="p-4">
@@ -378,23 +359,17 @@ export default function TaskManagementView({ currentUser }: TaskManagementViewPr
                     <div className="flex justify-center">
                       <ListChecks className="h-16 w-16 text-muted-foreground" />
                     </div>
-                    <div className="space-y-1">
-                      <p className="font-medium">Nenhuma tarefa encontrada</p>
-                      <p className="text-sm text-muted-foreground">
-                        {searchQuery.trim()
-                          ? 'Tente ajustar sua busca ou filtros'
-                          : 'Comece criando uma nova tarefa'}
-                      </p>
-                    </div>
-                    {!searchQuery.trim() && (
-                      <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-                        <Plus className="mr-2" />
-                        Criar Tarefa
-                      </Button>
-                    )}
+                  <div className="space-y-1">
+                    <p className="font-medium">Nenhuma tarefa encontrada</p>
+                    <p className="text-sm text-muted-foreground">
+                      {searchQuery.trim()
+                        ? 'Tente ajustar sua busca ou filtros'
+                        : 'Comece criando uma nova tarefa'}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
             ) : (
               <div className="space-y-3">
                 {filteredAndSortedTasks.map((task) => {
