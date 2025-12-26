@@ -13,29 +13,26 @@ import { parseLeadPriorityConfig, validateLeadPriorityConfig, DEFAULT_LEAD_PRIOR
 import type { LeadPriorityConfig } from '@/types/metadata';
 
 export function LeadPriorityConfigSection() {
-  const { getSetting, refreshMetadata } = useSystemMetadata();
+  const { settings, refreshMetadata } = useSystemMetadata();
   const [config, setConfig] = useState<LeadPriorityConfig>(DEFAULT_LEAD_PRIORITY_CONFIG);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  useEffect(() => {
-    const loadConfig = async () => {
-      setIsLoading(true);
-      try {
-        const rawConfig = getSetting('lead_priority_config');
-        const parsedConfig = parseLeadPriorityConfig(rawConfig);
-        setConfig(parsedConfig);
-      } catch (error) {
-        console.error('Error loading lead priority config:', error);
-        toast.error('Erro ao carregar configuração');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+useEffect(() => {
+  setIsLoading(true);
 
-    loadConfig();
-  }, [getSetting]);
+  try {
+    const rawConfig = settings.find((s) => s.key === 'lead_priority_config')?.value;
+    const parsedConfig = parseLeadPriorityConfig(rawConfig);
+    setConfig(parsedConfig);
+  } catch (error) {
+    console.error('Error loading lead priority config:', error);
+    toast.error('Erro ao carregar configuração');
+  } finally {
+    setIsLoading(false);
+  }
+}, [settings]);
 
   const validation = useMemo(() => {
     return validateLeadPriorityConfig(config);
