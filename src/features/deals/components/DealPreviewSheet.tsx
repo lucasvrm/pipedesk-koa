@@ -73,7 +73,7 @@ export function DealPreviewSheet({ deal, tracks, isOpen, onClose, onEdit }: Deal
 
   const handleTrackClick = (trackId: string) => {
       onClose()
-      navigate(`/deals/tracks/${trackId}`)
+      navigate(`/tracks/${trackId}`)
   }
 
   // Helper para recuperar nome e cor do estágio

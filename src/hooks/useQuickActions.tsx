@@ -338,7 +338,7 @@ export function getTrackQuickActions({
         id: 'view-details',
         label: 'Ver Detalhes',
         icon: <ChartBar className="h-4 w-4" />,
-        onClick: () => navigate(`/deals/tracks/${track.id}`),
+        onClick: () => navigate(`/tracks/${track.id}`),
       },
       {
         id: 'separator-2',

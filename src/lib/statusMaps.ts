@@ -31,7 +31,7 @@ export function leadStatusMap(status: LeadStatus): SemanticStatus {
 export function dealStatusMap(status: DealStatus): SemanticStatus {
   switch (status) {
     case 'active':
-      return 'success' // Active deals/tracks (green)
+      return 'success' // Active deals or tracks (green)
     case 'concluded':
       return 'info' // Concluded successfully (blue)
     case 'cancelled':
