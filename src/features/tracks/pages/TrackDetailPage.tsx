@@ -17,14 +17,6 @@ import { Card } from '@/components/ui/card'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { 
   CheckSquare, ChatCircle, ClockCounterClockwise, 
   FileText, Buildings, CalendarBlank, Wallet, Percent, PresentationChart, PencilSimple
@@ -42,7 +34,7 @@ import CommentsPanel from '@/components/CommentsPanel'
 import ActivityHistory from '@/components/ActivityHistory'
 import DocumentManager from '@/components/DocumentManager'
 import { EditTrackDialog } from '../components/EditTrackDialog'
-import { PageContainer } from '@/components/PageContainer'
+import { StandardPageLayout } from '@/components/layouts'
 import { renderNewBadge, renderUpdatedTodayBadge } from '@/components/ui/ActivityBadges'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getTrackQuickActions } from '@/hooks/useQuickActions'
@@ -148,127 +140,35 @@ export default function TrackDetailPage() {
     : 0
 
   return (
-    <PageContainer className="pb-24 space-y-6">
-      
-      {/* Breadcrumbs */}
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/deals">Negócios</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {deal && (
-            <>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to={`/deals/${deal.id}`}>{deal.clientName}</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{track.playerName}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Cabeçalho */}
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <Link 
-                to={`/players/${track.playerId}`} 
-                className="hover:text-primary transition-colors"
-                title="Ir para página do Player"
-              >
-                <h1 className="text-3xl font-bold tracking-tight hover:underline decoration-2 underline-offset-4">
-                  {track.playerName}
-                </h1>
-              </Link>
-              {renderNewBadge(track.createdAt)}
-              {renderUpdatedTodayBadge(track.updatedAt)}
-              <StatusBadge
-                semanticStatus={trackStatusMap(track.status)}
-                label={STATUS_LABELS[track.status]}
-                className="font-normal"
-              />
-            </div>
-
-            {deal && (
-              <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm font-medium">
-                <Buildings className="h-4 w-4" />
+    <StandardPageLayout>
+      {/* Content */}
+      <div className="space-y-6">
+        {deal && (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
+            <Buildings className="h-4 w-4" />
+            <Link 
+              to={`/deals/${deal.id}`}
+              className="hover:text-primary hover:underline transition-colors"
+            >
+              {deal.clientName}
+            </Link>
+            {deal.company?.name && (
+              <>
+                <span className="opacity-50 mx-1">|</span>
                 <Link 
-                  to={`/deals/${deal.id}`}
+                  to={`/companies/${deal.company.id}`}
                   className="hover:text-primary hover:underline transition-colors"
                 >
-                  {deal.clientName}
+                  {deal.company.name}
                 </Link>
-                {deal.company?.name && (
-                  <>
-                    <span className="opacity-50 mx-1">|</span>
-                    <Link 
-                      to={`/companies/${deal.company.id}`}
-                      className="hover:text-primary hover:underline transition-colors"
-                    >
-                      {deal.company.name}
-                    </Link>
-                  </>
-                )}
-              </div>
+              </>
             )}
           </div>
-          
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex gap-2 items-center">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:inline">Fase Atual</span>
-                    <Select value={track.currentStage} onValueChange={(v) => handleStageChange(v as PlayerStage)} disabled={stagesLoading}>
-                        <SelectTrigger className="w-[180px] h-9">
-                            <SelectValue placeholder="Estágio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {stages.length === 0 ? (
-                                <div className="p-2 text-center text-muted-foreground text-xs">Carregando estágios...</div>
-                            ) : (
-                                stages.map((stage) => (
-                                <SelectItem key={stage.id} value={stage.id}>
-                                    {stage.name}
-                                </SelectItem>
-                                ))
-                            )}
-                        </SelectContent>
-                    </Select>
-                </div>
-                
-                {/* Menu de Ações Secundárias */}
-                <QuickActionsMenu
-                  actions={getTrackQuickActions({
-                    track,
-                    navigate,
-                    updateTrack,
-                    deleteTrack,
-                    profileId: currentUser?.id,
-                    onEdit: () => setEditTrackOpen(true),
-                  })}
-                />
-            </div>
-            
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full border">
-                <PresentationChart className="h-3.5 w-3.5" />
-                <span>Probabilidade:</span>
-                <span className="font-semibold text-foreground">{track.probability}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {/* Card 1: Volume */}
+        {/* Cards de Métricas */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Card 1: Volume */}
         <Card className="p-4 flex flex-col justify-between gap-1 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Wallet className="h-3.5 w-3.5 text-blue-500" /> Volume (Track)
@@ -376,13 +276,7 @@ export default function TrackDetailPage() {
         playerTrackId={track.id}
         open={createTaskOpen} 
         onOpenChange={setCreateTaskOpen} 
-      />
-
-      <EditTrackDialog 
-        track={track}
-        open={editTrackOpen}
-        onOpenChange={setEditTrackOpen}
-      />
+            />
 
       {selectedTask && currentUser && (
         <TaskDetailDialog
@@ -393,6 +287,7 @@ export default function TrackDetailPage() {
             currentUser={currentUser}
         />
       )}
-    </PageContainer>
+      </div>
+    </StandardPageLayout>
   )
 }

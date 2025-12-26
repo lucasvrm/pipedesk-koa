@@ -919,7 +919,6 @@ export default function Profile() {
             {activeTab === 'timeline' && <TimelineSettings />}
           </div>
         </div>
-      </div>
-  </StandardPageLayout>
+    </StandardPageLayout>
   )
 }

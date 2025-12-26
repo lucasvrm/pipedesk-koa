@@ -47,6 +47,7 @@ export default function DashboardSettingsPage() {
 
   return (
     <StandardPageLayout>
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Configuração do Dashboard</h2>
           <p className="text-muted-foreground">

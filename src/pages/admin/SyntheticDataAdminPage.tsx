@@ -270,6 +270,7 @@ export default function SyntheticDataAdminPage() {
   }
 
   return (
+    <>
     <StandardPageLayout>
 
         {/* Informational Alert about Settings Location */}
@@ -443,22 +444,23 @@ export default function SyntheticDataAdminPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-      {/* Modal de confirmação */}
-      {confirmState.visible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-md w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-2">{confirmState.title}</h3>
-            <p className="mb-4 text-sm text-muted-foreground">{confirmState.message}</p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={closeConfirm} disabled={loading}>Cancelar</Button>
-              <Button variant="destructive" onClick={confirmState.onConfirm} disabled={loading}>
-                Confirmar
-              </Button>
-            </div>
+    </StandardPageLayout>
+
+    {/* Modal de confirmação */}
+    {confirmState.visible && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-md shadow-md w-full max-w-md mx-4">
+          <h3 className="text-lg font-semibold mb-2">{confirmState.title}</h3>
+          <p className="mb-4 text-sm text-muted-foreground">{confirmState.message}</p>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={closeConfirm} disabled={loading}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmState.onConfirm} disabled={loading}>
+              Confirmar
+            </Button>
           </div>
         </div>
-      )}
-    </StandardPageLayout>
+      </div>
+    )}
+    </>
   )
 }

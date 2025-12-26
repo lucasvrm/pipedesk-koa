@@ -192,7 +192,6 @@ export default function ProfileSecurityPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-  </StandardPageLayout>
-  );
+    </StandardPageLayout>
+  )
 }

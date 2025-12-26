@@ -148,7 +148,9 @@ export default function PipelineSettings() {
   if (isLoading) return <div>Carregando pipeline...</div>;
 
   return (
+    <>
     <StandardPageLayout>
+      <Tabs defaultValue="stages">
         <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
             <TabsTrigger value="stages">Estágios & SLAs</TabsTrigger>
             <TabsTrigger value="transitions">Regras de Transição</TabsTrigger>
@@ -185,8 +187,9 @@ export default function PipelineSettings() {
             <TransitionRulesMatrix stages={stages} />
         </TabsContent>
       </Tabs>
+    </StandardPageLayout>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>{editingStage ? 'Editar Estágio' : 'Novo Estágio'}</DialogTitle>
@@ -256,7 +259,7 @@ export default function PipelineSettings() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </StandardPageLayout>
+    </>
   );
 }
 
