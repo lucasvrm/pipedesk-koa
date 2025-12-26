@@ -61,7 +61,7 @@ export function Layout({ children }: LayoutProps) {
             PipeDesk
           </h1>
 
-          <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2 ml-auto">
+          <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">
             <Button
               variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
               size="sm"
@@ -146,11 +146,9 @@ export function Layout({ children }: LayoutProps) {
             </Button>
           </nav>
 
-          <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
+          <Separator orientation="vertical" className="h-8 ml-auto" />
 
-          <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
-
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3">
             {/* Busca Global */}
             <Button
               variant="ghost"
