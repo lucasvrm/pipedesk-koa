@@ -232,7 +232,7 @@ export default function ProfilePreferencesPage() {
 
   if (!profile) return null;
 
-    return (
+  return (
     <StandardPageLayout>
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
