@@ -276,7 +276,13 @@ export default function TrackDetailPage() {
         playerTrackId={track.id}
         open={createTaskOpen} 
         onOpenChange={setCreateTaskOpen} 
-            />
+      />
+
+      <EditTrackDialog 
+        track={track}
+        open={editTrackOpen}
+        onOpenChange={setEditTrackOpen}
+      />
 
       {selectedTask && currentUser && (
         <TaskDetailDialog
