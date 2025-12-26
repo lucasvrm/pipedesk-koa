@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -41,7 +42,6 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TimelineSettings } from '@/pages/Profile/components/TimelineSettings';
 import { StandardPageLayout } from '@/components/layouts';
 
 // Ícones por categoria
@@ -90,17 +90,23 @@ export default function ProfilePreferencesPage() {
   const { data: preferences, isLoading } = useNotificationPreferences(profile?.id || null);
   const updatePreferences = useUpdateNotificationPreferences();
   const toggleDND = useToggleDND();
-  const availableTabs = ['notifications', 'timeline'] as const;
+  const availableTabs = ['notifications'] as const;
   const selectedTab = searchParams.get('tab');
   const activeTab = availableTabs.includes(selectedTab as (typeof availableTabs)[number])
     ? (selectedTab as (typeof availableTabs)[number])
     : 'notifications';
 
+  useEffect(() => {
+    if (!selectedTab || !availableTabs.includes(selectedTab as (typeof availableTabs)[number])) {
+      setSearchParams({ tab: 'notifications' }, { replace: true });
+    }
+  }, [availableTabs, selectedTab, setSearchParams]);
+
   const handleTabChange = (value: string) => {
     const nextTab = availableTabs.includes(value as (typeof availableTabs)[number])
       ? value
       : 'notifications';
-    setSearchParams({ tab: nextTab });
+    setSearchParams({ tab: nextTab }, { replace: true });
   };
 
   const handleToggleCategory = async (category: NotificationCategory, enabled: boolean) => {
@@ -219,18 +225,14 @@ export default function ProfilePreferencesPage() {
 
   if (!profile) return null;
 
-  return (
+    return (
     <StandardPageLayout>
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="w-full">
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             Notificações
-          </TabsTrigger>
-          <TabsTrigger value="timeline" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Timeline
           </TabsTrigger>
         </TabsList>
 
@@ -357,11 +359,6 @@ export default function ProfilePreferencesPage() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Timeline Tab Content */}
-        <TabsContent value="timeline">
-          <TimelineSettings />
         </TabsContent>
       </Tabs>
     </StandardPageLayout>

@@ -252,7 +252,6 @@ const getMenuSections = (
     color: 'text-purple-500',
     items: [
       { id: 'list', label: 'Lista de Deals', icon: Briefcase, path: '/deals' },
-      { id: 'comparison', label: 'Comparador', icon: FileText, path: '/deals/comparison' },
     ],
   },
   {
@@ -461,8 +460,7 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
       return { activeSection: 'leads' as SectionId, activeItem: item };
     }
     if (path.startsWith('/deals')) {
-      const item = path.includes('comparison') ? 'comparison' : 'list';
-      return { activeSection: 'deals' as SectionId, activeItem: item };
+      return { activeSection: 'deals' as SectionId, activeItem: 'list' };
     }
     if (path.startsWith('/tracks') || path === '/kanban') {
       return { activeSection: 'kanban' as SectionId, activeItem: 'matrix' };

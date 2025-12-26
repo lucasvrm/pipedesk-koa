@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { UnifiedSidebar } from '@/components/UnifiedSidebar';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Home } from 'lucide-react';
+import { buildBreadcrumbs, BreadcrumbItem } from '@/utils/breadcrumbs';
 
 interface PageHeaderContextValue {
   setHeaderContent: (content: ReactNode | null) => void;
@@ -10,16 +11,11 @@ interface PageHeaderContextValue {
 
 const PageHeaderContext = createContext<PageHeaderContextValue | null>(null);
 
-interface Breadcrumb {
-  label: string;
-  path?: string;
-}
-
 interface UnifiedLayoutProps {
   children: ReactNode;
   title?: string;
   description?: string;
-  breadcrumbs?: Breadcrumb[];
+  breadcrumbs?: BreadcrumbItem[];
   activeSection?: 'profile' | 'management' | 'settings';
   activeItem?: string;
   className?: string;
@@ -46,143 +42,10 @@ export function UnifiedLayout({
     [setHeaderContent]
   );
 
-  const segmentLabels: Record<string, string> = {
-    dashboard: 'Dashboard',
-    leads: 'Leads',
-    deals: 'Deals',
-    companies: 'Empresas',
-    contacts: 'Contatos',
-    players: 'Players',
-    tasks: 'Tarefas',
-    tracks: 'Tracks',
-    profile: 'Meu Perfil',
-    activity: 'Atividades',
-    security: 'Segurança',
-    customize: 'Customização',
-    admin: 'Admin',
-    settings: 'Configurações',
-  };
-
-  const profileTabLabels: Record<string, string> = {
-    avatar: 'Avatar',
-    rail: 'Rail/Sidebar',
-    notifications: 'Preferências de Notificação',
-    timeline: 'Configurar Timeline',
-    tuning: 'Personalização do Menu',
-  };
-
-  const adminCategoryLabels: Record<string, string> = {
-    crm: 'CRM & Vendas',
-    products: 'Produtos & Operações',
-    system: 'Sistema & Segurança',
-    productivity: 'Produtividade',
-    integrations: 'Integrações & Automação',
-  };
-
-  const adminSectionLabels: Record<string, string> = {
-    leads: 'Leads',
-    deals: 'Deals & Pipeline',
-    companies: 'Empresas & Contatos',
-    products: 'Produtos',
-    operation_types: 'Tipos de Operação',
-    deal_sources: 'Origens de Deal',
-    loss_reasons: 'Motivos de Perda',
-    defaults: 'Defaults do Sistema',
-    roles: 'Papéis & Permissões',
-    permissions: 'Permissões Avançadas',
-    tasks: 'Tarefas',
-    tags: 'Tags',
-    templates: 'Templates',
-    holidays: 'Feriados',
-    dashboards: 'Dashboards',
-    automation: 'Automação',
-  };
-
-  const formatSegment = (segment: string) => segment.replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-
-  const isIdLike = (segment: string) => /^[0-9a-f-]{6,}$/i.test(segment);
-
-  const autoBreadcrumbs = (): Breadcrumb[] => {
-    const pathSegments = location.pathname.split('/').filter(Boolean);
-    const searchParams = new URLSearchParams(location.search);
-    const crumbs: Breadcrumb[] = [];
-
-    if (pathSegments.length === 0) return [];
-
-    pathSegments.forEach((segment, index) => {
-      const path = `/${pathSegments.slice(0, index + 1).join('/')}`;
-      const isLast = index === pathSegments.length - 1;
-
-      let label = segmentLabels[segment] || formatSegment(segment);
-
-      // IDs ou hashes viram "Detalhes"
-      if (isIdLike(segment)) {
-        label = 'Detalhes';
-      }
-
-      // Ajustes específicos para /admin/settings combinando categorias e seções
-      if (segment === 'settings' && pathSegments[index - 1] === 'admin') {
-        const category = searchParams.get('category');
-        const section = searchParams.get('section');
-        label = segmentLabels[segment] || 'Configurações';
-
-        crumbs.push({ label, path: isLast ? undefined : path });
-
-        if (category) {
-          crumbs.push({
-            label: adminCategoryLabels[category] || formatSegment(category),
-            path: `/admin/settings?category=${category}`,
-          });
-        }
-
-        if (section) {
-          crumbs.push({
-            label: adminSectionLabels[section] || formatSegment(section),
-          });
-        }
-
-        return;
-      }
-
-      // Ajuste para /profile/customize com tabs
-      if (segment === 'customize' && pathSegments[index - 1] === 'profile') {
-        crumbs.push({ label: 'Meu Perfil', path: '/profile' });
-        crumbs.push({ label: 'Customização', path: isLast ? undefined : path });
-
-        const tab = searchParams.get('tab');
-        if (tab) {
-          const tabLabels: Record<string, string> = {
-            avatar: 'Avatar',
-            rail: 'Rail/Sidebar',
-            tuning: 'Tuning'
-          };
-          crumbs.push({ label: tabLabels[tab] || 'Customização' });
-        }
-
-        return;
-      }
-
-      crumbs.push({
-        label,
-        path: isLast ? undefined : path,
-      });
-    });
-
-    // Interpreta tabs via query param ?tab=
-    const tab = searchParams.get('tab');
-    if (tab) {
-      const root = pathSegments[0];
-      const tabLabel =
-        (root === 'profile' ? profileTabLabels[tab] : undefined) ||
-        formatSegment(tab);
-      crumbs.push({ label: tabLabel });
-    }
-
-    return crumbs;
-  };
-
-  const finalBreadcrumbs = breadcrumbs || autoBreadcrumbs();
+  const finalBreadcrumbs: BreadcrumbItem[] = useMemo(() => {
+    if (breadcrumbs) return breadcrumbs;
+    return buildBreadcrumbs(location.pathname, new URLSearchParams(location.search));
+  }, [breadcrumbs, location.pathname, location.search]);
 
   const handleNavigate = (path: string) => {
     navigate(path);

@@ -11,26 +11,25 @@ import {
   Pencil,
   Check,
   X,
-  Upload,
-  FileText,
-  Landmark,
-  IdCard,
-  CreditCard,
-  MapPin,
-  Phone,
-  Briefcase,
-  Building2,
-  Calendar,
-  Linkedin,
-  Copy,
-  Eye,
-  Clock,
-  AlertTriangle,
-  Camera,
-  Trash,
-  ImageIcon,
-  ChevronDown,
-  Activity,
+   Upload,
+   FileText,
+   Landmark,
+   IdCard,
+   CreditCard,
+   MapPin,
+   Phone,
+   Briefcase,
+   Building2,
+   Calendar,
+   Linkedin,
+   Copy,
+   Eye,
+   Clock,
+   AlertTriangle,
+   Camera,
+   Trash,
+   ImageIcon,
+   ChevronDown,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
@@ -41,7 +40,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { getInitials } from '@/lib/helpers'
 import { cn } from '@/lib/utils'
-import { TimelineSettings } from './components/TimelineSettings'
 import { StandardPageLayout } from '@/components/layouts'
 
 // ============================================================================
@@ -564,7 +562,6 @@ export default function Profile() {
     { id: 'overview', label: 'Visão Geral', icon: User },
     { id: 'documents', label: 'Documentos', icon: FileText },
     { id: 'financial', label: 'Financeiro', icon: Landmark },
-    { id: 'timeline', label: 'Timeline', icon: Activity },
   ]
 
   const pendingDocsCount = [formData.docIdentityUrl, formData.docSocialContractUrl, formData.docServiceAgreementUrl].filter(d => !d).length
@@ -913,10 +910,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* TAB: TIMELINE */}
-            {/* ============================================================ */}
-            {activeTab === 'timeline' && <TimelineSettings />}
           </div>
         </div>
     </StandardPageLayout>

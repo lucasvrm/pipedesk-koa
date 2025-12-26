@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Palette, Save, Check } from 'lucide-react';
 import { getInitials } from '@/lib/helpers';
@@ -103,7 +103,6 @@ export function AvatarCustomizer({ user, onUpdate, isSaving = false }: AvatarCus
                 borderColor: avatarBorderColor
               }}
             >
-              {user.avatar && <AvatarImage src={user.avatar} className="object-cover" />}
               <AvatarFallback
                 className="text-3xl font-bold"
                 style={{

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { DynamicBreadcrumbs } from '@/components/DynamicBreadcrumbs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import {
@@ -96,6 +95,25 @@ export default function SettingsPage() {
   const activeSection = categorySections.includes(requestedSection || '')
     ? requestedSection!
     : defaultSectionByCategory[activeCategory];
+
+  useEffect(() => {
+    const shouldKeepSub = activeCategory === 'crm' && activeSection === 'companies';
+    const nextParams = new URLSearchParams(searchParams.toString());
+    const needsCategoryUpdate = requestedCategory !== activeCategory;
+    const needsSectionUpdate = requestedSection !== activeSection;
+    const hasInvalidSub = !shouldKeepSub && nextParams.get('sub');
+
+    if (needsCategoryUpdate || needsSectionUpdate || hasInvalidSub) {
+      nextParams.set('category', activeCategory);
+      nextParams.set('section', activeSection);
+      if (shouldKeepSub && searchParams.get('sub')) {
+        nextParams.set('sub', searchParams.get('sub') as string);
+      } else {
+        nextParams.delete('sub');
+      }
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [activeCategory, activeSection, requestedCategory, requestedSection, searchParams, setSearchParams]);
 
   // States para cada categoria
   const [crmSection, setCrmSection] = useState(activeCategory === 'crm' ? activeSection : 'leads');

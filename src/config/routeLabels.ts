@@ -4,6 +4,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   preferences: 'Preferências',
   security: 'Segurança',
   activity: 'Atividades',
+  customize: 'Customização',
   
   // Admin routes
   admin: 'Administração',
@@ -47,4 +48,5 @@ export const ROUTE_LABELS: Record<string, string> = {
   // Preferences tabs
   notifications: 'Notificações',
   avatar: 'Avatar',
+  rail: 'Rail/Sidebar',
 };

@@ -222,7 +222,11 @@ export default function CustomizeSidebarPage() {
     profile ? hasPermission(profile.role, 'MANAGE_SETTINGS') : false,
   [profile]);
 
-  const activeTab = searchParams.get('tab') || 'avatar';
+  const availableTabs = ['avatar', 'rail'] as const
+  const requestedTab = searchParams.get('tab');
+  const activeTab = availableTabs.includes(requestedTab as (typeof availableTabs)[number])
+    ? (requestedTab as (typeof availableTabs)[number])
+    : 'avatar';
 
   // useState - DEVE vir ANTES de useMemo que depende dele
   const [sections, setSections] = useState<SidebarSectionConfig[]>(initialSections);
@@ -235,6 +239,12 @@ export default function CustomizeSidebarPage() {
   const [editingItem, setEditingItem] = useState<{ sectionId: string; item: SidebarItemConfig | null } | null>(null);
   const [sectionForm, setSectionForm] = useState({ label: '', tooltip: '', icon: 'Home', color: '#3b82f6', path: '/' });
   const [itemForm, setItemForm] = useState({ label: '', path: '/', icon: 'Home' });
+  
+  useEffect(() => {
+    if (!requestedTab || !availableTabs.includes(requestedTab as (typeof availableTabs)[number])) {
+      setSearchParams({ tab: 'avatar' }, { replace: true });
+    }
+  }, [availableTabs, requestedTab, setSearchParams]);
   
   // Filtrar seções editáveis (admin vê todas, user só custom)
   const editableSections = useMemo(() =>
@@ -520,7 +530,7 @@ export default function CustomizeSidebarPage() {
 
   return (
     <StandardPageLayout>
-      <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
+      <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="avatar">
             <Palette className="h-4 w-4 mr-2" />Avatar
