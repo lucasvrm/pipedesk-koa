@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { LeadSalesRow, LeadSalesRowSkeleton } from './LeadSalesRow'
 import { LeadSalesViewItem, LeadPriorityBucket } from '@/services/leadsSalesViewService'
 import { QuickAction } from '@/components/QuickActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowDownUp, RotateCcw } from 'lucide-react'
 import { safeStringOptional, ensureArray } from '@/lib/utils'
 import { Lead } from '@/lib/types'
@@ -34,6 +33,8 @@ interface LeadsSalesListProps {
   onNavigate: (leadId: string) => void
   onScheduleClick?: (lead: Lead) => void
   getLeadActions?: (lead: LeadSalesViewItem) => QuickAction[] | undefined
+  /** Optional ref to expose the horizontal scroll container to parent for external mirror scrollbar */
+  tableScrollRef?: React.RefObject<HTMLDivElement>
 }
 
 export function LeadsSalesList({
@@ -45,7 +46,8 @@ export function LeadsSalesList({
   onSelectOne,
   onNavigate,
   onScheduleClick,
-  getLeadActions
+  getLeadActions,
+  tableScrollRef
 }: LeadsSalesListProps) {
   // Ensure leads is always an array to prevent React Error #185
   const safeLeads = ensureArray<LeadSalesViewItem>(leads)
@@ -62,76 +64,11 @@ export function LeadsSalesList({
     storageKey: 'leads-table-columns',
     defaultColumns: LEADS_TABLE_COLUMNS
   })
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
-  const mirrorScrollRef = useRef<HTMLDivElement | null>(null)
-  const mirrorContentRef = useRef<HTMLDivElement | null>(null)
-  const [showMirrorScrollbar, setShowMirrorScrollbar] = useState(false)
-
-  const syncMirrorWidth = useCallback(() => {
-    const container = scrollContainerRef.current
-
-    if (!container) {
-      setShowMirrorScrollbar(false)
-      return
-    }
-
-    const needsMirror = container.scrollWidth > container.clientWidth + 1
-    setShowMirrorScrollbar(needsMirror)
-
-    if (mirrorContentRef.current) {
-      mirrorContentRef.current.style.width = `${container.scrollWidth}px`
-    }
-  }, [])
-
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    const mirror = mirrorScrollRef.current
-
-    syncMirrorWidth()
-
-    if (!container || !mirror) {
-      return
-    }
-
-    const handleContainerScroll = () => {
-      if (mirror.scrollLeft !== container.scrollLeft) {
-        mirror.scrollLeft = container.scrollLeft
-      }
-    }
-
-    const handleMirrorScroll = () => {
-      if (container.scrollLeft !== mirror.scrollLeft) {
-        container.scrollLeft = mirror.scrollLeft
-      }
-    }
-
-    handleContainerScroll()
-
-    container.addEventListener('scroll', handleContainerScroll)
-    mirror.addEventListener('scroll', handleMirrorScroll)
-    window.addEventListener('resize', syncMirrorWidth)
-
-    return () => {
-      container.removeEventListener('scroll', handleContainerScroll)
-      mirror.removeEventListener('scroll', handleMirrorScroll)
-      window.removeEventListener('resize', syncMirrorWidth)
-    }
-  }, [columns, syncMirrorWidth])
-
-  useEffect(() => {
-    syncMirrorWidth()
-  }, [columns, safeLeads.length, syncMirrorWidth])
-
-  useEffect(() => {
-    if (typeof ResizeObserver === 'undefined') return
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const observer = new ResizeObserver(() => syncMirrorWidth())
-    observer.observe(container)
-
-    return () => observer.disconnect()
-  }, [syncMirrorWidth])
+  
+  // Internal ref for scroll container, used if no external ref is provided
+  const internalScrollRef = useRef<HTMLDivElement>(null)
+  // Use external ref if provided, otherwise internal
+  const scrollContainerRef = tableScrollRef ?? internalScrollRef
 
   // Helper to get column width by id
   const colWidth = (id: string) => getColumnWidth(id)
@@ -363,18 +300,6 @@ export function LeadsSalesList({
           Resetar colunas
         </Button>
       </div>
-
-      {/* Mirror scrollbar - positioned at TOP for immediate visibility */}
-      {showMirrorScrollbar && (
-        <div
-          className="sticky top-0 left-0 right-0 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 z-10"
-          data-testid="leads-sales-scrollbar-mirror"
-        >
-          <div ref={mirrorScrollRef} className="overflow-x-auto">
-            <div ref={mirrorContentRef} className="h-3" />
-          </div>
-        </div>
-      )}
 
       <div
         ref={scrollContainerRef}

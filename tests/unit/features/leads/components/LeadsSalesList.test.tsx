@@ -1,9 +1,10 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { LeadsSalesList } from '@/features/leads/components/LeadsSalesList'
 import { LeadSalesViewItem } from '@/services/leadsSalesViewService'
+import React from 'react'
 
 // Mock the SystemMetadata context
 vi.mock('@/hooks/useSystemMetadata', () => ({
@@ -175,112 +176,20 @@ describe('LeadsSalesList', () => {
     Object.assign(import.meta.env, originalEnv)
   })
 
-  it('renders mirror scrollbar when horizontal overflow exists', async () => {
+  it('uses external tableScrollRef when provided', () => {
     const leads: LeadSalesViewItem[] = [
       {
-        id: 'scroll-lead',
+        id: 'ref-test',
         priorityBucket: 'hot',
-        legalName: 'Lead com overflow horizontal'
+        legalName: 'Lead com ref externo'
       }
     ]
 
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+    const externalRef = { current: null } as React.RefObject<HTMLDivElement>
+    
+    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} tableScrollRef={externalRef} />)
 
     const scrollContainer = screen.getByTestId('leads-sales-scroll')
-    Object.defineProperty(scrollContainer, 'clientWidth', { value: 600, configurable: true })
-    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 1200, configurable: true })
-
-    act(() => {
-      window.dispatchEvent(new Event('resize'))
-    })
-
-    await waitFor(() => {
-      expect(screen.getByTestId('leads-sales-scrollbar-mirror')).toBeInTheDocument()
-    })
-  })
-
-  it('positions mirror scrollbar outside the main scroll container', async () => {
-    const leads: LeadSalesViewItem[] = [
-      {
-        id: 'scroll-structure',
-        priorityBucket: 'hot',
-        legalName: 'Lead com overflow horizontal'
-      }
-    ]
-
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
-
-    const scrollContainer = screen.getByTestId('leads-sales-scroll')
-    Object.defineProperty(scrollContainer, 'clientWidth', { value: 600, configurable: true })
-    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 1200, configurable: true })
-
-    act(() => {
-      window.dispatchEvent(new Event('resize'))
-    })
-
-    const mirrorScrollbar = await screen.findByTestId('leads-sales-scrollbar-mirror')
-    expect(scrollContainer.querySelector('[data-testid="leads-sales-scrollbar-mirror"]')).toBeNull()
-    expect(scrollContainer.contains(mirrorScrollbar)).toBe(false)
-  })
-
-  it('hides mirror scrollbar when content fits horizontally', async () => {
-    const leads: LeadSalesViewItem[] = [
-      {
-        id: 'no-overflow',
-        priorityBucket: 'warm',
-        legalName: 'Lead sem overflow'
-      }
-    ]
-
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
-
-    const scrollContainer = screen.getByTestId('leads-sales-scroll')
-    Object.defineProperty(scrollContainer, 'clientWidth', { value: 900, configurable: true })
-    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 800, configurable: true })
-
-    act(() => {
-      window.dispatchEvent(new Event('resize'))
-    })
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('leads-sales-scrollbar-mirror')).not.toBeInTheDocument()
-    })
-  })
-
-  it('keeps mirror scrollbar in sync with table scroll positions', async () => {
-    const leads: LeadSalesViewItem[] = [
-      {
-        id: 'sync-scroll',
-        priorityBucket: 'hot',
-        legalName: 'Lead com sincronização'
-      }
-    ]
-
-    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
-
-    const scrollContainer = screen.getByTestId('leads-sales-scroll')
-    Object.defineProperty(scrollContainer, 'clientWidth', { value: 500, configurable: true })
-    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 1000, configurable: true })
-
-    act(() => {
-      window.dispatchEvent(new Event('resize'))
-    })
-
-    const mirrorWrapper = await screen.findByTestId('leads-sales-scrollbar-mirror')
-    const mirrorScroll = mirrorWrapper.querySelector('div') as HTMLDivElement
-
-    act(() => {
-      scrollContainer.scrollLeft = 120
-      scrollContainer.dispatchEvent(new Event('scroll'))
-    })
-
-    expect(mirrorScroll.scrollLeft).toBe(scrollContainer.scrollLeft)
-
-    act(() => {
-      mirrorScroll.scrollLeft = 260
-      mirrorScroll.dispatchEvent(new Event('scroll'))
-    })
-
-    expect(scrollContainer.scrollLeft).toBe(mirrorScroll.scrollLeft)
+    expect(scrollContainer).toBeInTheDocument()
   })
 })

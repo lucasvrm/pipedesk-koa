@@ -20,6 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext'
 import { LeadsKanban } from '../components/LeadsKanban'
 import { LeadsSalesList } from '../components/LeadsSalesList'
+import { HorizontalScrollbarMirror } from '../components/HorizontalScrollbarMirror'
 import { LeadSalesViewItem, useLeadsSalesView } from '@/services/leadsSalesViewService'
 import { Progress } from '@/components/ui/progress'
 import { QuickActionsMenu, QuickAction } from '@/components/QuickActionsMenu'
@@ -177,6 +178,9 @@ export default function LeadsListPage() {
   const [hasSalesRecordedSuccess, setHasSalesRecordedSuccess] = useState(false)
   const [hasAppliedPersistentFallback, setHasAppliedPersistentFallback] = useState(false)
   const salesErrorGuardRef = useRef<{ key: string | null; count: number }>({ key: null, count: 0 })
+  
+  // Ref for the horizontal scroll container in the sales table (for external mirror scrollbar)
+  const salesTableScrollRef = useRef<HTMLDivElement>(null)
 
   // Grid/Kanban pagination state (not URL-based)
   const [gridCurrentPage, setGridCurrentPage] = useState(1)
@@ -857,6 +861,7 @@ export default function LeadsListPage() {
                   onSelectOne={toggleSelectOne}
                   onNavigate={(id) => navigate(`/leads/${id}`)}
                   onScheduleClick={handleScheduleClick}
+                  tableScrollRef={salesTableScrollRef}
                   getLeadActions={(lead): QuickAction[] => {
                     const id = lead.leadId ?? lead.lead_id ?? lead.id
                     if (!id) return []
@@ -959,6 +964,10 @@ export default function LeadsListPage() {
           )}
         </div>
 
+        {/* Fixed footer horizontal scrollbar mirror - only for sales view when table has horizontal overflow */}
+        {currentView === 'sales' && (
+          <HorizontalScrollbarMirror targetRef={salesTableScrollRef} />
+        )}
 
           </div>
         </div>

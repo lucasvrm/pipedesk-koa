@@ -17,7 +17,6 @@ import {
   User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog';
 import GlobalSearch from '@/components/GlobalSearch';
 import InboxPanel from '@/features/inbox/components/InboxPanel';
@@ -147,10 +146,10 @@ export function Layout({ children }: LayoutProps) {
               </Button>
             </nav>
 
-            <Separator
-              orientation="vertical"
+            <div
               data-testid="header-menu-separator"
-              className="hidden h-8 w-px md:block bg-border/60"
+              aria-hidden="true"
+              className="hidden md:block h-8 w-px shrink-0 bg-border/60"
             />
 
             <div className="flex items-center gap-3">
