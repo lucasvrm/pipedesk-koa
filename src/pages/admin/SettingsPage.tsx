@@ -20,6 +20,8 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import { StandardPageLayout } from '@/components/layouts';
 
+const normalizeParam = (value: string | null) => value?.trim().toLowerCase() || null;
+
 // Configuração das categorias
 const CATEGORIES = {
   crm: {
@@ -85,13 +87,13 @@ export default function SettingsPage() {
     integrations: 'dashboards'
   };
 
-  // Pega categoria e seção da URL
-  const requestedCategory = searchParams.get('category') || 'crm';
+  // Pega categoria e seção da URL com normalização
+  const requestedCategory = normalizeParam(searchParams.get('category')) || 'crm';
   const activeCategory = Object.prototype.hasOwnProperty.call(CATEGORIES, requestedCategory)
     ? requestedCategory
     : 'crm';
   const categorySections = CATEGORY_SECTIONS[activeCategory] || [];
-  const requestedSection = searchParams.get('section');
+  const requestedSection = normalizeParam(searchParams.get('section'));
   const activeSection = categorySections.includes(requestedSection || '')
     ? requestedSection!
     : defaultSectionByCategory[activeCategory];
@@ -132,8 +134,8 @@ export default function SettingsPage() {
 
   // Sincroniza com URL quando categoria/seção mudam externamente (via sidebar)
   useEffect(() => {
-    const category = searchParams.get('category') || 'crm';
-    const section = searchParams.get('section');
+    const category = normalizeParam(searchParams.get('category')) || 'crm';
+    const section = normalizeParam(searchParams.get('section'));
 
     if (category === 'crm' && section && CATEGORY_SECTIONS.crm.includes(section)) {
       setCrmSection(section);

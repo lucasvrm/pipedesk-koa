@@ -222,4 +222,41 @@ describe('LeadsSalesList', () => {
       expect(screen.queryByTestId('leads-sales-scrollbar-mirror')).not.toBeInTheDocument()
     })
   })
+
+  it('keeps mirror scrollbar in sync with table scroll positions', async () => {
+    const leads: LeadSalesViewItem[] = [
+      {
+        id: 'sync-scroll',
+        priorityBucket: 'hot',
+        legalName: 'Lead com sincronização'
+      }
+    ]
+
+    renderWithProviders(<LeadsSalesList {...baseProps} leads={leads} />)
+
+    const scrollContainer = screen.getByTestId('leads-sales-scroll')
+    Object.defineProperty(scrollContainer, 'clientWidth', { value: 500, configurable: true })
+    Object.defineProperty(scrollContainer, 'scrollWidth', { value: 1000, configurable: true })
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    const mirrorWrapper = await screen.findByTestId('leads-sales-scrollbar-mirror')
+    const mirrorScroll = mirrorWrapper.querySelector('div') as HTMLDivElement
+
+    act(() => {
+      scrollContainer.scrollLeft = 120
+      scrollContainer.dispatchEvent(new Event('scroll'))
+    })
+
+    expect(mirrorScroll.scrollLeft).toBe(scrollContainer.scrollLeft)
+
+    act(() => {
+      mirrorScroll.scrollLeft = 260
+      mirrorScroll.dispatchEvent(new Event('scroll'))
+    })
+
+    expect(scrollContainer.scrollLeft).toBe(mirrorScroll.scrollLeft)
+  })
 })
