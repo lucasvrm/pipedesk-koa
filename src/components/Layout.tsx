@@ -53,100 +53,100 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="flex items-center h-16 px-6 gap-6">
-          <div className="flex items-center gap-6 min-w-0 flex-1">
-            <h1
-              className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate('/dashboard')}
+        <div className="flex items-center h-16 px-6 gap-4">
+          <h1
+            className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/dashboard')}
+          >
+            PipeDesk
+          </h1>
+
+          <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2 ml-auto">
+            <Button
+              variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+              data-tour="dashboard-nav"
             >
-              PipeDesk
-            </h1>
+              <Link to="/dashboard">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
 
-            <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">
-              <Button
-                variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-                data-tour="dashboard-nav"
-              >
-                <Link to="/dashboard">
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/leads') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/leads">
+                <Filter className="mr-2 h-4 w-4" />
+                Leads
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/leads') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/leads">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Leads
-                </Link>
-              </Button>
+            <Button
+              variant={
+                isActive('/deals') && !isActive('/deals/comparison')
+                  ? 'secondary'
+                  : 'ghost'
+              }
+              size="sm"
+              asChild
+              data-tour="deals-nav"
+            >
+              <Link to="/deals">
+                <Kanban className="mr-2 h-4 w-4" />
+                Deals
+              </Link>
+            </Button>
 
-              <Button
-                variant={
-                  isActive('/deals') && !isActive('/deals/comparison')
-                    ? 'secondary'
-                    : 'ghost'
-                }
-                size="sm"
-                asChild
-                data-tour="deals-nav"
-              >
-                <Link to="/deals">
-                  <Kanban className="mr-2 h-4 w-4" />
-                  Deals
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/companies') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/companies">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Empresas
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/companies') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/companies">
-                  <Briefcase className="mr-2 h-4 w-4" />
-                  Empresas
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/contacts') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/contacts">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Contatos
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/contacts') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/contacts">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Contatos
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/players') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/players">
+                <Building2 className="mr-2 h-4 w-4" />
+                Players
+              </Link>
+            </Button>
 
-              <Button
-                variant={isActive('/players') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/players">
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Players
-                </Link>
-              </Button>
+            <Button
+              variant={isActive('/tasks') ? 'secondary' : 'ghost'}
+              size="sm"
+              asChild
+            >
+              <Link to="/tasks">
+                <ListTodo className="mr-2 h-4 w-4" />
+                Tarefas
+              </Link>
+            </Button>
+          </nav>
 
-              <Button
-                variant={isActive('/tasks') ? 'secondary' : 'ghost'}
-                size="sm"
-                asChild
-              >
-                <Link to="/tasks">
-                  <ListTodo className="mr-2 h-4 w-4" />
-                  Tarefas
-                </Link>
-              </Button>
-            </nav>
-          </div>
+          <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
 
           <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
 
