@@ -73,6 +73,7 @@ import { ContactPreviewModal } from '../components/ContactPreviewModal'
 import { LeadDetailQuickActions } from '../components/LeadDetailQuickActions'
 import { LeadPriorityBadge } from '../components/LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
+import { parseLeadPriorityConfig } from '../utils/parseLeadPriorityConfig'
 import type { CommentFormData, TimelineAuthor } from '@/components/timeline-v2/types'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useLeadTasks } from '../hooks/useLeadTasks'
@@ -117,7 +118,7 @@ export default function LeadDetailPage() {
   const { profile, user } = useAuth()
 
   // 🔹 Chamada ÚNICA ao hook de metadata
-  const { leadStatuses, getLeadStatusById } = useSystemMetadata()
+  const { leadStatuses, leadOrigins, getLeadStatusById, getSetting } = useSystemMetadata()
 
   const { data: lead, isLoading } = useLead(id!)
   const { data: leadTasksData, isLoading: leadTasksLoading } = useLeadTasks(id || '', false)
@@ -131,6 +132,12 @@ export default function LeadDetailPage() {
   const { data: leadTags } = useEntityTags(id || '', 'lead')
   
   const tagOps = useTagOperations()
+
+  // Parse priority config from system settings
+  const priorityConfig = useMemo(() => {
+    const rawConfig = getSetting('lead_priority_config')
+    return parseLeadPriorityConfig(rawConfig)
+  }, [getSetting])
 
   // Timeline V2 hooks and mutations
   const { 
@@ -194,9 +201,13 @@ export default function LeadDetailPage() {
       priorityBucket: lead.priorityBucket,
       lastInteractionAt: lead.lastInteractionAt,
       createdAt: lead.createdAt,
-      leadStatusId: lead.leadStatusId
+      leadStatusId: lead.leadStatusId,
+      leadOriginId: lead.leadOriginId
+    }, priorityConfig, {
+      leadStatuses,
+      leadOrigins
     })
-  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId])
+  }, [lead?.priorityScore, lead?.priorityBucket, lead?.lastInteractionAt, lead?.createdAt, lead?.leadStatusId, lead?.leadOriginId, priorityConfig, leadStatuses, leadOrigins])
 
   // Prepare actions list with nextAction at the first position if defined
   const sidebarActions = useMemo(() => {

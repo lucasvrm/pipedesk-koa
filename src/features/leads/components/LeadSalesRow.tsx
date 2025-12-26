@@ -33,6 +33,7 @@ import { LeadContactsModal } from './LeadContactsModal'
 import { OwnerActionMenu } from './OwnerActionMenu'
 import { LeadPriorityBadge } from './LeadPriorityBadge'
 import { calculateLeadPriority } from '../utils/calculateLeadPriority'
+import { parseLeadPriorityConfig } from '../utils/parseLeadPriorityConfig'
 import { useEntityTags } from '@/services/tagService'
 import { useLead } from '@/services/leadService'
 import { LeadTasksModal } from './LeadTasksModal'
@@ -184,12 +185,18 @@ export function LeadSalesRow({
   const actualLeadId = id ?? leadId ?? lead_id
 
   // 1. Hooks de dados (sempre no topo)
-  const { getLeadStatusById, leadStatuses } = useSystemMetadata()
+  const { getLeadStatusById, leadStatuses, leadOrigins, getSetting } = useSystemMetadata()
   const updateLeadMutation = useUpdateLead()
   const { data: leadTags = [] } = useEntityTags(actualLeadId || '', 'lead')
   const { data: fullLead } = useLead(actualLeadId || '')
 
-  // 2. useState
+  // 2. useMemo - Parse priority config once
+  const priorityConfig = useMemo(() => {
+    const rawConfig = getSetting('lead_priority_config')
+    return parseLeadPriorityConfig(rawConfig)
+  }, [getSetting])
+
+  // 3. useState
   const [isDriveLoading, setIsDriveLoading] = useState(false)
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [tasksModalOpen, setTasksModalOpen] = useState(false)
@@ -505,9 +512,13 @@ export function LeadSalesRow({
       priorityBucket,
       lastInteractionAt,
       createdAt: createdAt ?? created_at,
-      leadStatusId: status
+      leadStatusId: status,
+      leadOriginId: origin
+    }, priorityConfig, {
+      leadStatuses,
+      leadOrigins
     })
-  }, [priorityScore, priorityBucket, lastInteractionAt, createdAt, created_at, status])
+  }, [priorityScore, priorityBucket, lastInteractionAt, createdAt, created_at, status, origin, priorityConfig, leadStatuses, leadOrigins])
 
   // Use priority for background and border
   const priorityKey = (computedPriority.bucket || 'default') as string

@@ -433,10 +433,16 @@ function mapFromDb(item: any, type: SettingType): any {
       return {
         ...metadataBase,
         color: item.color,
+        priorityWeight: item.priority_weight ?? 0,
       }
     case 'relationship_levels':
     case 'company_types':
+      return metadataBase
     case 'lead_origins':
+      return {
+        ...metadataBase,
+        priorityWeight: item.priority_weight ?? 0,
+      }
     case 'lead_member_roles':
       return metadataBase
     case 'user_role_metadata':
@@ -505,10 +511,16 @@ function mapToDb(item: any, type: SettingType): any {
       return {
         ...metadataBase,
         color: item.color,
+        priority_weight: item.priorityWeight ?? 0,
       }
     case 'relationship_levels':
     case 'company_types':
+      return metadataBase
     case 'lead_origins':
+      return {
+        ...metadataBase,
+        priority_weight: item.priorityWeight ?? 0,
+      }
     case 'lead_member_roles':
       return metadataBase
     case 'user_role_metadata':
