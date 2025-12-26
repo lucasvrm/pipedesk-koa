@@ -44,6 +44,9 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StandardPageLayout } from '@/components/layouts';
 
+const PREFERENCE_TABS = ['notifications'] as const;
+type PreferenceTabId = (typeof PREFERENCE_TABS)[number];
+
 // Ícones por categoria
 const CATEGORY_ICONS: Record<NotificationCategory, React.ElementType> = {
   mention: MessageCircle,
@@ -90,23 +93,26 @@ export default function ProfilePreferencesPage() {
   const { data: preferences, isLoading } = useNotificationPreferences(profile?.id || null);
   const updatePreferences = useUpdateNotificationPreferences();
   const toggleDND = useToggleDND();
-  const availableTabs = ['notifications'] as const;
   const selectedTab = searchParams.get('tab');
-  const activeTab = availableTabs.includes(selectedTab as (typeof availableTabs)[number])
-    ? (selectedTab as (typeof availableTabs)[number])
-    : 'notifications';
+  const isValidTab = PREFERENCE_TABS.includes(selectedTab as PreferenceTabId);
+  const activeTab: PreferenceTabId = isValidTab ? (selectedTab as PreferenceTabId) : 'notifications';
 
   useEffect(() => {
-    if (!selectedTab || !availableTabs.includes(selectedTab as (typeof availableTabs)[number])) {
-      setSearchParams({ tab: 'notifications' }, { replace: true });
+    const currentTab = searchParams.get('tab');
+    if (currentTab !== activeTab) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('tab', activeTab);
+      setSearchParams(nextParams, { replace: true });
     }
-  }, [availableTabs, selectedTab, setSearchParams]);
+  }, [activeTab, searchParams, setSearchParams]);
 
   const handleTabChange = (value: string) => {
-    const nextTab = availableTabs.includes(value as (typeof availableTabs)[number])
-      ? value
+    const nextTab = PREFERENCE_TABS.includes(value as PreferenceTabId)
+      ? (value as PreferenceTabId)
       : 'notifications';
-    setSearchParams({ tab: nextTab }, { replace: true });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', nextTab);
+    setSearchParams(nextParams, { replace: true });
   };
 
   const handleToggleCategory = async (category: NotificationCategory, enabled: boolean) => {
