@@ -148,7 +148,9 @@ export function Layout({ children }: LayoutProps) {
 
           <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
 
-          <div className="flex items-center gap-3">
+          <Separator orientation="vertical" className="hidden sm:block h-6 bg-border/80" />
+
+          <div className="flex items-center gap-3 ml-auto">
             {/* Busca Global */}
             <Button
               variant="ghost"
