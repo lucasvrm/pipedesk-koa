@@ -7,6 +7,7 @@ import { buildBreadcrumbs, BreadcrumbItem } from '@/utils/breadcrumbs';
 
 interface PageHeaderContextValue {
   setHeaderContent: (content: ReactNode | null) => void;
+  setBreadcrumbs: (breadcrumbs: BreadcrumbItem[] | null) => void;
 }
 
 const PageHeaderContext = createContext<PageHeaderContextValue | null>(null);
@@ -15,6 +16,10 @@ interface UnifiedLayoutProps {
   children: ReactNode;
   title?: string;
   description?: string;
+  /**
+   * Explicit breadcrumbs override the automatic URL-based builder.
+   * Use only for derived state (data-driven labels/steps) that cannot live in the URL.
+   */
   breadcrumbs?: BreadcrumbItem[];
   activeSection?: 'profile' | 'management' | 'settings';
   activeItem?: string;
@@ -35,25 +40,30 @@ export function UnifiedLayout({
   showBreadcrumbs = true,
 }: UnifiedLayoutProps) {
   const [headerContent, setHeaderContent] = useState<ReactNode | null>(null);
+  const [pageBreadcrumbs, setPageBreadcrumbs] = useState<BreadcrumbItem[] | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const headerContext = useMemo(
-    () => ({ setHeaderContent }),
-    [setHeaderContent]
+    () => ({ setHeaderContent, setBreadcrumbs: setPageBreadcrumbs }),
+    [setHeaderContent, setPageBreadcrumbs]
   );
 
   const finalBreadcrumbs: BreadcrumbItem[] = useMemo(() => {
     if (breadcrumbs) return breadcrumbs;
+    if (pageBreadcrumbs) return pageBreadcrumbs;
     return buildBreadcrumbs(location.pathname, new URLSearchParams(location.search));
-  }, [breadcrumbs, location.pathname, location.search]);
+  }, [breadcrumbs, location.pathname, location.search, pageBreadcrumbs]);
 
   const handleNavigate = (path: string) => {
     navigate(path);
   };
 
   useEffect(() => {
-    return () => setHeaderContent(null);
-  }, [setHeaderContent]);
+    return () => {
+      setHeaderContent(null);
+      setPageBreadcrumbs(null);
+    };
+  }, [setHeaderContent, setPageBreadcrumbs]);
 
   return (
     <PageHeaderContext.Provider value={headerContext}>
@@ -137,4 +147,15 @@ export function usePageHeader(content: ReactNode | null) {
 
     return () => context.setHeaderContent(null);
   }, [content, context]);
+}
+
+export function usePageBreadcrumbs(breadcrumbs: BreadcrumbItem[] | null) {
+  const context = useContext(PageHeaderContext);
+
+  useEffect(() => {
+    if (!context) return;
+    context.setBreadcrumbs(breadcrumbs);
+
+    return () => context.setBreadcrumbs(null);
+  }, [breadcrumbs, context]);
 }

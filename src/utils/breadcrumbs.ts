@@ -5,6 +5,23 @@ export interface BreadcrumbItem {
   path?: string
 }
 
+type PageBreadcrumbInput = Pick<BreadcrumbItem, 'label' | 'path'> | null | undefined | false
+
+/**
+ * Page-driven breadcrumbs fallback: use when labels depend on in-page state
+ * (e.g., data-derived names) and cannot live in the URL.
+ */
+export function buildPageBreadcrumbs(segments: PageBreadcrumbInput[]): BreadcrumbItem[] {
+  const validSegments = segments.filter(
+    (segment): segment is Pick<BreadcrumbItem, 'label' | 'path'> => Boolean(segment?.label)
+  )
+
+  return validSegments.map((segment, index) => ({
+    label: segment.label,
+    path: index < validSegments.length - 1 ? segment.path : undefined,
+  }))
+}
+
 const CATEGORY_SECTIONS: Record<string, string[]> = {
   crm: ['leads', 'deals', 'companies'],
   products: ['products', 'operation_types', 'deal_sources', 'loss_reasons'],

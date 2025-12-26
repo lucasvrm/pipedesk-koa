@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildBreadcrumbs } from '@/utils/breadcrumbs'
+import { buildBreadcrumbs, buildPageBreadcrumbs } from '@/utils/breadcrumbs'
 
 describe('buildBreadcrumbs helper', () => {
   it('builds admin CRM breadcrumbs with section', () => {
@@ -78,5 +78,18 @@ describe('buildBreadcrumbs helper', () => {
     const breadcrumbs = buildBreadcrumbs('/profile/preferences', new URLSearchParams('tab=unknown'))
 
     expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Preferências', 'Notificações'])
+  })
+
+  it('builds page-driven breadcrumbs ignoring optional segments', () => {
+    const breadcrumbs = buildPageBreadcrumbs([
+      { label: 'Negócios', path: '/deals' },
+      null,
+      { label: 'Deal Name', path: '/deals/123' },
+    ])
+
+    expect(breadcrumbs).toEqual([
+      { label: 'Negócios', path: '/deals' },
+      { label: 'Deal Name', path: undefined },
+    ])
   })
 })
