@@ -3,6 +3,7 @@ import { formatDistanceToNow, isValid, parseISO, differenceInDays, startOfDay } 
 import { ptBR } from 'date-fns/locale'
 import { MessageCircle, Mail, Copy, Calendar, Phone, HardDrive, Loader2, MoreVertical, CalendarDays, Check, Plus, ListTodo } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { UserBadge } from '@/components/ui/user-badge'
 import { Button } from '@/components/ui/button'
