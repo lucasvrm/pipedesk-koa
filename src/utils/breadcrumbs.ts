@@ -27,6 +27,15 @@ const CUSTOMIZE_TAB_LABELS: Record<(typeof CUSTOMIZE_TABS)[number], string> = {
   rail: 'Rail/Sidebar',
 }
 
+const PROFILE_TABS = ['overview', 'documents', 'financial'] as const
+const PROFILE_TAB_LABELS: Record<(typeof PROFILE_TABS)[number], string> = {
+  overview: ROUTE_LABELS.overview || 'Visão Geral',
+  documents: ROUTE_LABELS.documents || 'Documentos',
+  financial: ROUTE_LABELS.financial || 'Financeiro',
+}
+
+const PREFERENCES_TABS = ['notifications'] as const
+
 const isIdLike = (segment: string) => /^[0-9a-f-]{6,}$/i.test(segment)
 
 const formatSegment = (segment: string) =>
@@ -85,6 +94,31 @@ export function buildBreadcrumbs(pathname: string, searchParams: URLSearchParams
     if (tab && (CUSTOMIZE_TABS as readonly string[]).includes(tab)) {
       breadcrumbs.push({ label: CUSTOMIZE_TAB_LABELS[tab as (typeof CUSTOMIZE_TABS)[number]] })
     }
+
+    return breadcrumbs
+  }
+
+  if (pathParts[0] === 'profile' && !pathParts[1]) {
+    const tab = searchParams.get('tab')
+    const activeTab = PROFILE_TABS.includes(tab as (typeof PROFILE_TABS)[number])
+      ? (tab as (typeof PROFILE_TABS)[number])
+      : 'overview'
+
+    breadcrumbs.push({ label: getLabel('profile'), path: '/profile' })
+    breadcrumbs.push({ label: PROFILE_TAB_LABELS[activeTab] })
+
+    return breadcrumbs
+  }
+
+  if (pathParts[0] === 'profile' && pathParts[1] === 'preferences') {
+    const tab = searchParams.get('tab')
+    const activeTab = PREFERENCES_TABS.includes(tab as (typeof PREFERENCES_TABS)[number])
+      ? (tab as (typeof PREFERENCES_TABS)[number])
+      : PREFERENCES_TABS[0]
+
+    breadcrumbs.push({ label: getLabel('profile'), path: '/profile' })
+    breadcrumbs.push({ label: getLabel('preferences'), path: '/profile/preferences' })
+    breadcrumbs.push({ label: getLabel(activeTab) })
 
     return breadcrumbs
   }
