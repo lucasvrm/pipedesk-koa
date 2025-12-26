@@ -92,6 +92,7 @@ export interface LeadStatusMeta {
   description?: string
   isActive: boolean
   sortOrder: number
+  priorityWeight: number
   createdAt: string
 }
 
@@ -105,6 +106,7 @@ export interface LeadOriginMeta {
   description?: string
   isActive: boolean
   sortOrder: number
+  priorityWeight: number
   createdAt: string
 }
 
@@ -163,3 +165,36 @@ export type EntityType = 'stage' | 'operation' | 'status' | 'lossReason'
  * Date filter options supported by the system
  */
 export type DateFilterType = 'today' | '7d' | '30d' | '90d' | '1y' | 'ytd' | 'all'
+
+/**
+ * Lead priority configuration from system_settings.lead_priority_config
+ * Defines thresholds, scoring weights, and calculation parameters
+ */
+export interface LeadPriorityConfig {
+  /** Thresholds for priority buckets */
+  thresholds: {
+    /** Minimum score for 'hot' bucket (inclusive) */
+    hot: number
+    /** Minimum score for 'warm' bucket (inclusive) */
+    warm: number
+  }
+  /** Scoring configuration */
+  scoring: {
+    /** Maximum points for recency calculation */
+    recencyMaxPoints: number
+    /** Number of days before a lead is considered stale */
+    staleDays: number
+    /** Points awarded for having an upcoming meeting */
+    upcomingMeetingPoints: number
+    /** Minimum score (floor) */
+    minScore: number
+    /** Maximum score (ceiling) */
+    maxScore: number
+  }
+  /** Descriptive labels for each bucket */
+  descriptions: {
+    hot: string
+    warm: string
+    cold: string
+  }
+}

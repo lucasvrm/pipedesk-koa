@@ -212,6 +212,7 @@ export function SystemMetadataProvider({ children }: SystemMetadataProviderProps
         description: item.description,
         isActive: item.is_active,
         sortOrder: item.sort_order,
+        priorityWeight: item.priority_weight ?? 0,
         createdAt: item.created_at
       }))
 
@@ -222,6 +223,7 @@ export function SystemMetadataProvider({ children }: SystemMetadataProviderProps
         description: item.description,
         isActive: item.is_active,
         sortOrder: item.sort_order,
+        priorityWeight: item.priority_weight ?? 0,
         createdAt: item.created_at
       }))
 
