@@ -41,11 +41,6 @@ export default function ProfileSecurityPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Segurança</h1>
-        <p className="text-sm text-muted-foreground">Gerencie a segurança da sua conta</p>
-      </div>
-
       {/* Grid 2x2 em desktop, 1 coluna em mobile */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Linha 1 - Esquerda: Senha */}
