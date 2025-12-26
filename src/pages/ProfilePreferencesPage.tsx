@@ -44,7 +44,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StandardPageLayout } from '@/components/layouts';
 
-const PREFERENCE_TABS = ['notifications'] as const;
+const PREFERENCE_TABS = ['notifications', 'timeline'] as const;
 type PreferenceTabId = (typeof PREFERENCE_TABS)[number];
 
 // Ícones por categoria
@@ -86,6 +86,30 @@ const CATEGORY_EXAMPLES: Record<NotificationCategory, NotificationType[]> = {
 // Categorias ordenadas para o grid
 const CATEGORIES_LEFT: NotificationCategory[] = ['mention', 'assignment', 'status', 'sla'];
 const CATEGORIES_RIGHT: NotificationCategory[] = ['deadline', 'activity', 'system'];
+
+const TIMELINE_ITEMS = [
+  {
+    id: 'notif-settings',
+    title: 'Preferências ajustadas',
+    description: 'Você atualizou as notificações padrão.',
+    icon: Bell,
+    timestamp: 'Há 2 dias'
+  },
+  {
+    id: 'dnd',
+    title: 'Modo Não Perturbe',
+    description: 'Modo Não Perturbe foi alternado.',
+    icon: BellOff,
+    timestamp: 'Há 5 dias'
+  },
+  {
+    id: 'alerts',
+    title: 'Alertas críticos',
+    description: 'Configuração de prioridade mínima revisada.',
+    icon: AlertTriangle,
+    timestamp: 'Há 1 semana'
+  }
+];
 
 export default function ProfilePreferencesPage() {
   const { profile } = useAuth();
@@ -240,6 +264,10 @@ export default function ProfilePreferencesPage() {
             <Bell className="h-4 w-4" />
             Notificações
           </TabsTrigger>
+          <TabsTrigger value="timeline" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Timeline
+          </TabsTrigger>
         </TabsList>
 
         {/* Notifications Tab Content */}
@@ -363,6 +391,40 @@ export default function ProfilePreferencesPage() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="timeline" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Histórico de preferências</CardTitle>
+              <CardDescription>Veja as últimas alterações realizadas nas suas preferências.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {TIMELINE_ITEMS.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Nenhum evento registrado ainda.</div>
+              ) : (
+                TIMELINE_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
+                      <div className="mt-0.5">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{item.title}</p>
+                          <Badge variant="outline" className="text-[10px]">
+                            {item.timestamp}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
         </TabsContent>

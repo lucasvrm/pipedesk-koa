@@ -51,9 +51,10 @@ const PROFILE_TAB_LABELS: Record<(typeof PROFILE_TABS)[number], string> = {
   financial: ROUTE_LABELS.financial || 'Financeiro',
 }
 
-const PREFERENCES_TABS = ['notifications'] as const
+const PREFERENCES_TABS = ['notifications', 'timeline'] as const
 const PREFERENCES_TAB_LABELS: Record<(typeof PREFERENCES_TABS)[number], string> = {
   notifications: ROUTE_LABELS.notifications || 'Notificações',
+  timeline: ROUTE_LABELS.timeline || 'Timeline'
 }
 
 const isIdLike = (segment: string) => /^[0-9a-f-]{6,}$/i.test(segment)
@@ -65,20 +66,22 @@ const formatSegment = (segment: string) =>
 
 const getLabel = (segment: string) => ROUTE_LABELS[segment] || formatSegment(segment)
 
+const normalizeParam = (value: string | null) => value?.trim().toLowerCase() || null
+
 export function buildBreadcrumbs(pathname: string, searchParams: URLSearchParams): BreadcrumbItem[] {
   const pathParts = pathname.split('/').filter(Boolean)
   const breadcrumbs: BreadcrumbItem[] = []
 
   // Admin settings: Configurações > Categoria > Seção > Sub (quando existir)
   if (pathParts[0] === 'admin' && pathParts[1] === 'settings') {
-    const requestedCategory = searchParams.get('category') || 'crm'
+    const requestedCategory = normalizeParam(searchParams.get('category')) || 'crm'
     const category = ROUTE_LABELS[requestedCategory] ? requestedCategory : 'crm'
     const allowedSections = CATEGORY_SECTIONS[category] || []
-    const requestedSection = searchParams.get('section')
+    const requestedSection = normalizeParam(searchParams.get('section'))
     const section = requestedSection && allowedSections.includes(requestedSection)
       ? requestedSection
       : DEFAULT_SECTION_BY_CATEGORY[category]
-    const sub = searchParams.get('sub')
+    const sub = normalizeParam(searchParams.get('sub'))
 
     breadcrumbs.push({ label: ROUTE_LABELS.settings || 'Configurações', path: '/admin/settings' })
 
@@ -119,7 +122,7 @@ export function buildBreadcrumbs(pathname: string, searchParams: URLSearchParams
   }
 
   if (pathParts[0] === 'profile' && !pathParts[1]) {
-    const tab = searchParams.get('tab')
+    const tab = normalizeParam(searchParams.get('tab'))
     const activeTab = PROFILE_TABS.includes(tab as (typeof PROFILE_TABS)[number])
       ? (tab as (typeof PROFILE_TABS)[number])
       : 'overview'
@@ -131,7 +134,7 @@ export function buildBreadcrumbs(pathname: string, searchParams: URLSearchParams
   }
 
   if (pathParts[0] === 'profile' && pathParts[1] === 'preferences') {
-    const tab = searchParams.get('tab')
+    const tab = normalizeParam(searchParams.get('tab'))
     const activeTab = PREFERENCES_TABS.includes(tab as (typeof PREFERENCES_TABS)[number])
       ? (tab as (typeof PREFERENCES_TABS)[number])
       : PREFERENCES_TABS[0]

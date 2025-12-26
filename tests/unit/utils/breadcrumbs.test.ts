@@ -16,6 +16,20 @@ describe('buildBreadcrumbs helper', () => {
     expect(breadcrumbs[1]?.path).toBe('/admin/settings?category=crm')
   })
 
+  it('normalizes admin CRM section param with whitespace', () => {
+    const breadcrumbs = buildBreadcrumbs(
+      '/admin/settings',
+      new URLSearchParams('category=crm&section=companies%20')
+    )
+
+    expect(breadcrumbs.map((b) => b.label)).toEqual([
+      'Configurações',
+      'CRM & Vendas',
+      'Empresas & Contatos',
+    ])
+    expect(breadcrumbs[2]?.path).toBeUndefined()
+  })
+
   it('includes profile customize tab without duplicating profile label', () => {
     const breadcrumbs = buildBreadcrumbs(
       '/profile/customize',
@@ -72,6 +86,12 @@ describe('buildBreadcrumbs helper', () => {
     const breadcrumbs = buildBreadcrumbs('/profile/preferences', new URLSearchParams('tab=notifications'))
 
     expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Preferências', 'Notificações'])
+  })
+
+  it('builds profile preferences breadcrumbs for timeline tab', () => {
+    const breadcrumbs = buildBreadcrumbs('/profile/preferences', new URLSearchParams('tab=timeline'))
+
+    expect(breadcrumbs.map((b) => b.label)).toEqual(['Meu Perfil', 'Preferências', 'Timeline'])
   })
 
   it('falls back to default preferences tab when invalid', () => {

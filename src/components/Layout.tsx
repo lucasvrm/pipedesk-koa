@@ -61,123 +61,125 @@ export function Layout({ children }: LayoutProps) {
             PipeDesk
           </h1>
 
-          <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">
-            <Button
-              variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
-              data-tour="dashboard-nav"
-            >
-              <Link to="/dashboard">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Dashboard
-              </Link>
-            </Button>
+          <div className="ml-auto flex items-center gap-4">
+            <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">
+              <Button
+                variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+                data-tour="dashboard-nav"
+              >
+                <Link to="/dashboard">
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
 
-            <Button
-              variant={isActive('/leads') ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
-            >
-              <Link to="/leads">
-                <Filter className="mr-2 h-4 w-4" />
-                Leads
-              </Link>
-            </Button>
+              <Button
+                variant={isActive('/leads') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/leads">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Leads
+                </Link>
+              </Button>
 
-            <Button
-              variant={
-                isActive('/deals') && !isActive('/deals/comparison')
-                  ? 'secondary'
-                  : 'ghost'
-              }
-              size="sm"
-              asChild
-              data-tour="deals-nav"
-            >
-              <Link to="/deals">
-                <Kanban className="mr-2 h-4 w-4" />
-                Deals
-              </Link>
-            </Button>
+              <Button
+                variant={
+                  isActive('/deals') && !isActive('/deals/comparison')
+                    ? 'secondary'
+                    : 'ghost'
+                }
+                size="sm"
+                asChild
+                data-tour="deals-nav"
+              >
+                <Link to="/deals">
+                  <Kanban className="mr-2 h-4 w-4" />
+                  Deals
+                </Link>
+              </Button>
 
-            <Button
-              variant={isActive('/companies') ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
-            >
-              <Link to="/companies">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Empresas
-              </Link>
-            </Button>
+              <Button
+                variant={isActive('/companies') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/companies">
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  Empresas
+                </Link>
+              </Button>
 
-            <Button
-              variant={isActive('/contacts') ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
-            >
-              <Link to="/contacts">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Contatos
-              </Link>
-            </Button>
+              <Button
+                variant={isActive('/contacts') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/contacts">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Contatos
+                </Link>
+              </Button>
 
-            <Button
-              variant={isActive('/players') ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
-            >
-              <Link to="/players">
-                <Building2 className="mr-2 h-4 w-4" />
-                Players
-              </Link>
-            </Button>
+              <Button
+                variant={isActive('/players') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/players">
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Players
+                </Link>
+              </Button>
 
-            <Button
-              variant={isActive('/tasks') ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
-            >
-              <Link to="/tasks">
-                <ListTodo className="mr-2 h-4 w-4" />
-                Tarefas
-              </Link>
-            </Button>
-          </nav>
+              <Button
+                variant={isActive('/tasks') ? 'secondary' : 'ghost'}
+                size="sm"
+                asChild
+              >
+                <Link to="/tasks">
+                  <ListTodo className="mr-2 h-4 w-4" />
+                  Tarefas
+                </Link>
+              </Button>
+            </nav>
 
-          <Separator orientation="vertical" className="h-8 ml-auto" />
+            <Separator orientation="vertical" className="h-8" />
 
-          <div className="flex items-center gap-3">
-            {/* Busca Global */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSearchOpen(true)}
-              title="Busca Global (Ctrl+K)"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-3">
+              {/* Busca Global */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSearchOpen(true)}
+                title="Busca Global (Ctrl+K)"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
 
-            {/* Notificações */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => setInboxOpen(true)}
-              data-tour="notifications"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Button>
+              {/* Notificações */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => setInboxOpen(true)}
+                data-tour="notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-medium">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
 
-            {/* Botão +Novo */}
-            <div className="hidden md:block">
-              <CreateNewDropdown />
+              {/* Botão +Novo */}
+              <div className="hidden md:block">
+                <CreateNewDropdown />
+              </div>
             </div>
           </div>
         </div>

@@ -122,6 +122,17 @@ export function LeadsSalesList({
     syncMirrorWidth()
   }, [columns, safeLeads.length, syncMirrorWidth])
 
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver(() => syncMirrorWidth())
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [syncMirrorWidth])
+
   // Helper to get column width by id
   const colWidth = (id: string) => getColumnWidth(id)
 

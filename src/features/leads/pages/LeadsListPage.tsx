@@ -746,7 +746,7 @@ export default function LeadsListPage() {
   const endItem = Math.min(currentPage * safePageSize, totalLeads)
 
   return (
-    <div className="h-[calc(100vh-4rem)] min-h-0 overflow-hidden p-6 bg-background flex flex-col">
+    <div className="h-full min-h-0 overflow-hidden p-6 bg-background flex flex-col">
       {/* Main container with optional sidebar layout */}
       <div className="flex-1 min-h-0 flex gap-6 overflow-hidden items-stretch">
         {/* Desktop Sidebar - controlled by toggle, only on non-mobile */}
