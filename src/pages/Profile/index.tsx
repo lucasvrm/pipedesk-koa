@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -81,6 +82,9 @@ const BANNER_OPTIONS = [
   { id: 'solid-dark', label: 'Escuro', value: 'bg-gray-800' },
   { id: 'solid-primary', label: 'Primário', value: 'bg-primary' },
 ]
+
+const PROFILE_TAB_IDS = ['overview', 'documents', 'financial'] as const
+type ProfileTabId = (typeof PROFILE_TAB_IDS)[number]
 
 // ============================================================================
 // EDITABLE FIELD COMPONENT
@@ -321,14 +325,27 @@ function DocumentCard({ title, icon, documentUrl, onUpload, onDownload, isSaving
 export default function Profile() {
   const { getUserRoleByCode } = useSystemMetadata()
   const { profile } = useAuth()
-  
-  const [activeTab, setActiveTab] = useState('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const selectedTab = searchParams.get('tab')
+  const isValidTab = PROFILE_TAB_IDS.includes(selectedTab as ProfileTabId)
+  const activeTab: ProfileTabId = isValidTab ? (selectedTab as ProfileTabId) : 'overview'
+
   const [isSaving, setIsSaving] = useState(false)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [lastLogin, setLastLogin] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab')
+    if (currentTab !== activeTab) {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.set('tab', activeTab)
+      setSearchParams(nextParams, { replace: true })
+    }
+  }, [activeTab, searchParams, setSearchParams])
 
   const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
@@ -404,6 +421,13 @@ export default function Profile() {
   }, [profile])
 
   // Handlers
+  const handleTabChange = (tab: ProfileTabId) => {
+    if (tab === activeTab) return
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('tab', tab)
+    setSearchParams(nextParams, { replace: true })
+  }
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0 || !profile) return
     const file = event.target.files[0]
@@ -558,7 +582,7 @@ export default function Profile() {
     return format(new Date(dateStr), "dd 'de' MMM 'de' yyyy", { locale: ptBR })
   }
 
-  const tabs = [
+  const tabs: { id: ProfileTabId; label: string; icon: typeof User }[] = [
     { id: 'overview', label: 'Visão Geral', icon: User },
     { id: 'documents', label: 'Documentos', icon: FileText },
     { id: 'financial', label: 'Financeiro', icon: Landmark },
@@ -770,7 +794,7 @@ export default function Profile() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabChange(tab.id)}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap",
                       activeTab === tab.id

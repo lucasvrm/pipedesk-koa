@@ -49,4 +49,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   notifications: 'Notificações',
   avatar: 'Avatar',
   rail: 'Rail/Sidebar',
+  overview: 'Visão Geral',
+  documents: 'Documentos',
+  financial: 'Financeiro',
 };
