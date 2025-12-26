@@ -92,18 +92,19 @@ export default function SettingsPage() {
     : 'crm';
   const categorySections = CATEGORY_SECTIONS[activeCategory] || [];
   const requestedSection = normalizeParam(searchParams.get('section'));
-  const activeSection = categorySections.includes(requestedSection || '')
+  const isValidSection = requestedSection ? categorySections.includes(requestedSection) : false;
+  const activeSection = isValidSection
     ? requestedSection!
     : defaultSectionByCategory[activeCategory];
 
   useEffect(() => {
     const shouldKeepSub = activeCategory === 'crm' && activeSection === 'companies';
-    const nextParams = new URLSearchParams(searchParams.toString());
-    const needsCategoryUpdate = requestedCategory !== activeCategory;
-    const needsSectionUpdate = requestedSection !== activeSection;
-    const hasInvalidSub = !shouldKeepSub && nextParams.get('sub');
+    const isCategoryValid = Object.prototype.hasOwnProperty.call(CATEGORIES, requestedCategory);
+    const isSectionValid = requestedSection ? categorySections.includes(requestedSection) : false;
+    const hasInvalidSub = !shouldKeepSub && searchParams.get('sub');
 
-    if (needsCategoryUpdate || needsSectionUpdate || hasInvalidSub) {
+    if (!isCategoryValid || !isSectionValid || hasInvalidSub) {
+      const nextParams = new URLSearchParams(searchParams.toString());
       nextParams.set('category', activeCategory);
       nextParams.set('section', activeSection);
       if (shouldKeepSub && searchParams.get('sub')) {
@@ -113,10 +114,9 @@ export default function SettingsPage() {
       }
       setSearchParams(nextParams, { replace: true });
     }
-  }, [activeCategory, activeSection, requestedCategory, requestedSection, searchParams, setSearchParams]);
+  }, [activeCategory, activeSection, categorySections, requestedCategory, requestedSection, searchParams, setSearchParams]);
 
   // States para cada categoria
-  const [crmSection, setCrmSection] = useState(activeCategory === 'crm' ? activeSection : 'leads');
   const [productsSection, setProductsSection] = useState(activeCategory === 'products' ? activeSection : 'products');
   const [systemSection, setSystemSection] = useState(activeCategory === 'system' ? activeSection : 'defaults');
   const [productivitySection, setProductivitySection] = useState(activeCategory === 'productivity' ? activeSection : 'tasks');
@@ -135,9 +135,6 @@ export default function SettingsPage() {
     const category = normalizeParam(searchParams.get('category')) || 'crm';
     const section = normalizeParam(searchParams.get('section'));
 
-    if (category === 'crm' && section && CATEGORY_SECTIONS.crm.includes(section)) {
-      setCrmSection(section);
-    }
     if (category === 'products' && section && CATEGORY_SECTIONS.products.includes(section)) {
       setProductsSection(section);
     }
@@ -177,9 +174,8 @@ export default function SettingsPage() {
             />
             
             <Tabs
-              value={crmSection}
+              value={activeSection}
               onValueChange={(value) => {
-                setCrmSection(value);
                 updateSearchParams(value);
               }}
               className="w-full"

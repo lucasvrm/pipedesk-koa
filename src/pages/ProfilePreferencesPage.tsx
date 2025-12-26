@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  useNotificationPreferences, 
+import {
+  useNotificationPreferences,
   useUpdateNotificationPreferences,
   useToggleDND,
 } from '@/services/notificationService';
@@ -27,15 +27,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Bell, 
-  BellOff, 
-  MessageCircle, 
-  UserCircle, 
-  RefreshCw, 
-  AlertTriangle, 
-  Clock, 
-  Activity, 
+import {
+  Bell,
+  BellOff,
+  MessageCircle,
+  UserCircle,
+  RefreshCw,
+  AlertTriangle,
+  Clock,
+  Activity,
   Settings,
   Info,
 } from 'lucide-react';
@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StandardPageLayout } from '@/components/layouts';
+import { TimelineSettings } from '@/pages/Profile/components/TimelineSettings';
 
 const PREFERENCE_TABS = ['notifications', 'timeline'] as const;
 type PreferenceTabId = (typeof PREFERENCE_TABS)[number];
@@ -86,30 +87,6 @@ const CATEGORY_EXAMPLES: Record<NotificationCategory, NotificationType[]> = {
 // Categorias ordenadas para o grid
 const CATEGORIES_LEFT: NotificationCategory[] = ['mention', 'assignment', 'status', 'sla'];
 const CATEGORIES_RIGHT: NotificationCategory[] = ['deadline', 'activity', 'system'];
-
-const TIMELINE_ITEMS = [
-  {
-    id: 'notif-settings',
-    title: 'Preferências ajustadas',
-    description: 'Você atualizou as notificações padrão.',
-    icon: Bell,
-    timestamp: 'Há 2 dias'
-  },
-  {
-    id: 'dnd',
-    title: 'Modo Não Perturbe',
-    description: 'Modo Não Perturbe foi alternado.',
-    icon: BellOff,
-    timestamp: 'Há 5 dias'
-  },
-  {
-    id: 'alerts',
-    title: 'Alertas críticos',
-    description: 'Configuração de prioridade mínima revisada.',
-    icon: AlertTriangle,
-    timestamp: 'Há 1 semana'
-  }
-];
 
 export default function ProfilePreferencesPage() {
   const { profile } = useAuth();
@@ -396,37 +373,7 @@ export default function ProfilePreferencesPage() {
         </TabsContent>
 
         <TabsContent value="timeline" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Histórico de preferências</CardTitle>
-              <CardDescription>Veja as últimas alterações realizadas nas suas preferências.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {TIMELINE_ITEMS.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Nenhum evento registrado ainda.</div>
-              ) : (
-                TIMELINE_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
-                      <div className="mt-0.5">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <Badge variant="outline" className="text-[10px]">
-                            {item.timestamp}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
+          <TimelineSettings />
         </TabsContent>
       </Tabs>
     </StandardPageLayout>
