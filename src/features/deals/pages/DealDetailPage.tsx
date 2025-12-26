@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useDeal, useUpdateDeal, useDeleteDeal } from '@/services/dealService'
 import { useTracks, useUpdateTrack } from '@/services/trackService'
 import { logActivity } from '@/services/activityService'
@@ -17,14 +17,6 @@ import { KeyMetricsSidebar } from '@/components/detail-layout/KeyMetricsSidebar'
 import { PipelineVisualizer } from '@/components/detail-layout/PipelineVisualizer'
 import { BuyingCommitteeCard } from '@/components/BuyingCommitteeCard'
 import { UnifiedTimeline } from '@/components/UnifiedTimeline'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +60,8 @@ import { RelationshipMap, RelationshipNode, RelationshipEdge } from '@/component
 import { useLeads } from '@/services/leadService'
 import { QuickActionsMenu } from '@/components/QuickActionsMenu'
 import { getDealQuickActions } from '@/hooks/useQuickActions'
+import { buildPageBreadcrumbs } from '@/utils/breadcrumbs'
+import { usePageBreadcrumbs } from '@/components/UnifiedLayout'
 
 export default function DealDetailPage() {
   const { id } = useParams()
@@ -91,8 +85,6 @@ export default function DealDetailPage() {
   const updateTrack = useUpdateTrack()
   const { data: dealTags, isLoading: isLoadingTags } = useEntityTags(id || '', 'deal')
   const tagOps = useTagOperations()
-
-  console.log('[DealDetailPage] Tags:', { dealTags, isLoadingTags, dealId: id })
   
   const [createPlayerOpen, setCreatePlayerOpen] = useState(false)
   const [editDealOpen, setEditDealOpen] = useState(false)
@@ -181,6 +173,18 @@ export default function DealDetailPage() {
     return { nodes, edges }
   }, [deal, allLeads, allDealTracks])
 
+  const pageBreadcrumbs = useMemo(
+    () =>
+      buildPageBreadcrumbs([
+        { label: 'Negócios', path: '/deals' },
+        deal?.company ? { label: deal.company.name, path: `/companies/${deal.company.id}` } : null,
+        deal ? { label: deal.clientName } : null,
+      ]),
+    [deal]
+  )
+
+  usePageBreadcrumbs(deal ? pageBreadcrumbs : null)
+
   const handleNodeClick = (node: RelationshipNode) => {
     const routes: Record<typeof node.type, string> = {
       lead: `/leads/${node.id}`,
@@ -210,11 +214,6 @@ export default function DealDetailPage() {
   if (isLoading) {
     return (
       <PageContainer>
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList>
-            <Skeleton className="h-5 w-24" />
-          </BreadcrumbList>
-        </Breadcrumb>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <Skeleton className="h-16 w-full" />
@@ -295,31 +294,6 @@ export default function DealDetailPage() {
 
   return (
     <PageContainer>
-      {/* Breadcrumbs */}
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/deals">Negócios</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {deal.company && (
-            <>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to={`/companies/${deal.company.id}`}>{deal.company.name}</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{deal.clientName}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <EntityDetailLayout
         header={
           <PipelineVisualizer
