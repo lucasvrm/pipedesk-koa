@@ -364,6 +364,18 @@ export function LeadsSalesList({
         </Button>
       </div>
 
+      {/* Mirror scrollbar - positioned at TOP for immediate visibility */}
+      {showMirrorScrollbar && (
+        <div
+          className="sticky top-0 left-0 right-0 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 z-10"
+          data-testid="leads-sales-scrollbar-mirror"
+        >
+          <div ref={mirrorScrollRef} className="overflow-x-auto">
+            <div ref={mirrorContentRef} className="h-3" />
+          </div>
+        </div>
+      )}
+
       <div
         ref={scrollContainerRef}
         className="overflow-x-auto pb-3"
@@ -531,17 +543,6 @@ export function LeadsSalesList({
           </TableBody>
         </Table>
       </div>
-
-      {showMirrorScrollbar && (
-        <div
-          className="sticky bottom-0 left-0 right-0 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
-          data-testid="leads-sales-scrollbar-mirror"
-        >
-          <div ref={mirrorScrollRef} className="overflow-x-auto">
-            <div ref={mirrorContentRef} className="h-3" />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

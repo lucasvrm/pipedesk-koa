@@ -150,7 +150,7 @@ export function Layout({ children }: LayoutProps) {
             <Separator
               orientation="vertical"
               data-testid="header-menu-separator"
-              className="hidden h-8 w-px md:block"
+              className="hidden h-8 w-px md:block bg-border/60"
             />
 
             <div className="flex items-center gap-3">
