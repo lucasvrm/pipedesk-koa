@@ -101,7 +101,6 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowRight,
-  ArrowLeft as ArrowLeftIcon,
   ArrowUp,
   ArrowDown,
   Kanban,
@@ -480,7 +479,7 @@ export default function CustomizeSidebarPage() {
   // Early returns após todos os hooks
   if (!profile) {
     return (
-      <div className="p-6 text-center text-muted-foreground">
+      <div className="px-3 pt-1 pb-6 text-center text-muted-foreground">
         Carregando perfil...
       </div>
     );
@@ -488,7 +487,7 @@ export default function CustomizeSidebarPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="px-3 pt-1 pb-6 space-y-4">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-96" />
         <div className="space-y-3 mt-6">
@@ -502,7 +501,7 @@ export default function CustomizeSidebarPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-3 pt-1 pb-6">
         <Card className="border-destructive">
           <CardContent className="pt-6">
             <p className="text-destructive">Erro ao carregar preferências: {error.message}</p>
@@ -517,21 +516,7 @@ export default function CustomizeSidebarPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Palette className="h-6 w-6 text-primary" />
-            Customização
-          </h1>
-          <p className="text-muted-foreground mt-1">Personalize sua experiência</p>
-        </div>
-        <Button variant="ghost" onClick={() => navigate('/profile')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />Voltar
-        </Button>
-      </div>
-
+    <div className="px-3 pt-1 pb-6 space-y-6">
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="avatar">

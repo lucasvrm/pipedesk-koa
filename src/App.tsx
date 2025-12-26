@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
 import { UnifiedLayout } from '@/components/UnifiedLayout'
@@ -74,9 +74,13 @@ const PageLoader = () => (
 // WRAPPER: Layout + UnifiedLayout (Rail + Sidebar em todas as rotas)
 // ═══════════════════════════════════════════════════════════════
 function LayoutWithSidebar({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const isProfileCustomize = location.pathname.startsWith('/profile/customize')
+  const contentClassName = isProfileCustomize ? 'px-2 py-1' : undefined
+
   return (
     <Layout>
-      <UnifiedLayout showBreadcrumbs={true}>
+      <UnifiedLayout showBreadcrumbs={true} contentClassName={contentClassName}>
         {children}
       </UnifiedLayout>
     </Layout>
