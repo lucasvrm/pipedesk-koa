@@ -13,11 +13,19 @@ vi.mock('@/hooks/useSystemMetadata', () => ({
   })
 }))
 
-// Mock the updateLead hook
+// Mock the updateLead hook and useLead
 vi.mock('@/services/leadService', () => ({
   useUpdateLead: () => ({
     mutateAsync: vi.fn(),
     isPending: false
+  }),
+  useLead: () => ({
+    data: undefined,
+    isLoading: false
+  }),
+  useLeadContacts: () => ({
+    addContact: { mutateAsync: vi.fn(), isPending: false },
+    removeContact: { mutateAsync: vi.fn(), isPending: false }
   })
 }))
 
@@ -36,6 +44,20 @@ vi.mock('@/services/tagService', () => ({
 vi.mock('@/services/userService', () => ({
   useUsers: () => ({ data: [], isLoading: false })
 }))
+
+// Mock contactService
+vi.mock('@/services/contactService', () => ({
+  useContacts: () => ({ data: [], isLoading: false })
+}))
+
+// Mock ResizeObserver
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+vi.stubGlobal('ResizeObserver', ResizeObserverMock)
 
 describe('LeadsSalesList', () => {
   const queryClient = new QueryClient({
