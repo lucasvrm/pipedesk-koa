@@ -15,7 +15,7 @@ import {
   MapPin,
   Compass,
   Route,
-  Map,
+  Map as MapIcon,
   Briefcase,
   Building2,
   TrendingUp,
@@ -100,7 +100,7 @@ export const ICON_OPTIONS: IconOption[] = [
   { value: 'MapPin', label: 'Map Pin', Icon: MapPin, category: 'navigation' },
   { value: 'Compass', label: 'Compass', Icon: Compass, category: 'navigation' },
   { value: 'Route', label: 'Route', Icon: Route, category: 'navigation' },
-  { value: 'Map', label: 'Map', Icon: Map, category: 'navigation' },
+  { value: 'Map', label: 'Map', Icon: MapIcon, category: 'navigation' },
   
   // Negócios (12)
   { value: 'Briefcase', label: 'Briefcase', Icon: Briefcase, category: 'business' },
