@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { normalizeIconName } from '@/lib/iconRegistry';
 
 // ============================================================================
 // TYPES
@@ -97,8 +98,12 @@ export function normalizeSection(section: Partial<SidebarSectionConfig> & Pick<S
   const defaultChildren = (section.children || defaultSection?.children || []).filter(
     (child) => !(section.id === 'deals' && child.id === 'comparison')
   );
+  
+  // Normalizar ícones de seção e children
+  const normalizedIcon = normalizeIconName(section.icon);
   const children = defaultChildren.map((child) => ({
     ...child,
+    icon: normalizeIconName(child.icon),
   }));
   
   return {
@@ -106,7 +111,7 @@ export function normalizeSection(section: Partial<SidebarSectionConfig> & Pick<S
     enabled: section.enabled,
     order: section.order,
     color: section.color,
-    icon: section.icon,
+    icon: normalizedIcon,
     type,
     label,
     tooltip,

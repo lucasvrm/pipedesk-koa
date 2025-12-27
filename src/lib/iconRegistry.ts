@@ -176,6 +176,78 @@ const ICON_MAP = new Map<string, LucideIcon>(
 );
 
 /**
+ * ICON_CANONICAL_BY_LOWER - Map para lookup case-insensitive O(1)
+ * Mapeia nome em lowercase para o nome canônico (PascalCase)
+ */
+const ICON_CANONICAL_BY_LOWER = new Map<string, string>(
+  ICON_OPTIONS.map(opt => [opt.value.toLowerCase(), opt.value])
+);
+
+/**
+ * ICON_ALIASES - Mapeamento de nomes legados/aliases para nomes canônicos
+ * Usado para suportar configs antigas sem quebrar a aplicação
+ */
+const ICON_ALIASES: Record<string, string> = {
+  'dashboard': 'LayoutDashboard',
+  'kanban': 'Kanban',
+  'clock': 'Clock',
+  'home': 'Home',
+  'user': 'User',
+  'users': 'Users',
+  'settings': 'Settings',
+  'briefcase': 'Briefcase',
+  'building': 'Building2',
+  'building2': 'Building2',
+};
+
+/**
+ * normalizeIconName - Normaliza nome de ícone para formato canônico
+ * 
+ * Aplica normalização case-insensitive e resolve aliases legados
+ * para garantir que configs antigas continuem funcionando.
+ * 
+ * @param iconName - Nome do ícone (pode ser null/undefined/case incorreto)
+ * @returns Nome canônico do ícone, ou DEFAULT_ICON_KEY se não encontrado
+ * 
+ * @example
+ * normalizeIconName('clock') // => 'Clock'
+ * normalizeIconName('KANBAN') // => 'Kanban'
+ * normalizeIconName('dashboard') // => 'LayoutDashboard'
+ * normalizeIconName('invalid') // => 'Home'
+ */
+export function normalizeIconName(iconName?: string | null): string {
+  if (!iconName || typeof iconName !== 'string') {
+    return DEFAULT_ICON_KEY;
+  }
+  
+  const trimmed = iconName.trim();
+  if (!trimmed) {
+    return DEFAULT_ICON_KEY;
+  }
+  
+  // Fast path: se já existe exatamente como está, retorna direto
+  if (ICON_MAP.has(trimmed)) {
+    return trimmed;
+  }
+  
+  const lower = trimmed.toLowerCase();
+  
+  // Tentar resolver via alias
+  if (ICON_ALIASES[lower]) {
+    return ICON_ALIASES[lower];
+  }
+  
+  // Tentar resolver via lookup case-insensitive
+  const canonical = ICON_CANONICAL_BY_LOWER.get(lower);
+  if (canonical) {
+    return canonical;
+  }
+  
+  // Fallback: retornar default
+  return DEFAULT_ICON_KEY;
+}
+
+/**
  * getIconComponent - Resolver string de ícone para componente Lucide
  * 
  * @param iconName - Nome do ícone (ex: 'Clock', 'LayoutDashboard')
@@ -184,20 +256,40 @@ const ICON_MAP = new Map<string, LucideIcon>(
  * @example
  * const IconComponent = getIconComponent('Clock'); // Retorna Clock
  * const FallbackIcon = getIconComponent('InvalidIcon'); // Retorna Home
+ * const CaseInsensitive = getIconComponent('clock'); // Retorna Clock (normalizado)
  */
 export function getIconComponent(iconName: string | null | undefined): LucideIcon {
   if (!iconName) return Home;
-  return ICON_MAP.get(iconName) || Home;
+  
+  // Fast path: lookup direto (sem overhead de normalização)
+  const directMatch = ICON_MAP.get(iconName);
+  if (directMatch) return directMatch;
+  
+  // Slow path: normalizar e tentar novamente
+  const normalized = normalizeIconName(iconName);
+  return ICON_MAP.get(normalized) || Home;
 }
 
 /**
  * isValidIcon - Verificar se um nome de ícone é válido
  * 
  * @param iconName - Nome do ícone a validar
- * @returns true se o ícone existe no registro
+ * @returns true se o ícone existe no registro (após normalização)
+ * 
+ * @example
+ * isValidIcon('Clock') // => true
+ * isValidIcon('clock') // => true (normalizado)
+ * isValidIcon('invalid') // => false
  */
 export function isValidIcon(iconName: string): boolean {
-  return ICON_MAP.has(iconName);
+  if (!iconName) return false;
+  
+  // Fast path: check direto
+  if (ICON_MAP.has(iconName)) return true;
+  
+  // Slow path: normalizar e verificar
+  const normalized = normalizeIconName(iconName);
+  return normalized !== DEFAULT_ICON_KEY || iconName.toLowerCase() === DEFAULT_ICON_KEY.toLowerCase();
 }
 
 /**

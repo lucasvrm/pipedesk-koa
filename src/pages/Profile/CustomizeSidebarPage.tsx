@@ -60,8 +60,6 @@ import {
   Trash,
   Clock,
   FileText,
-  Kanban,
-  Lock,
   Plus,
 } from 'lucide-react';
 import { ICON_OPTIONS, getIconComponent } from '@/lib/iconRegistry';
@@ -74,6 +72,10 @@ import { toast } from 'sonner';
 // CONSTANTS
 // ============================================================================
 // ICON_OPTIONS agora vem de @/lib/iconRegistry (single source of truth)
+
+// Obter ícones via registry para evitar ReferenceError
+const KanbanIcon = getIconComponent('Kanban');
+const LockIcon = getIconComponent('Lock');
 
 // ============================================================================
 // ICON PICKER COMPONENT
@@ -564,7 +566,7 @@ export default function CustomizeSidebarPage() {
             <Palette className="h-4 w-4 mr-2" />Avatar
           </TabsTrigger>
           <TabsTrigger value="rail">
-            <Kanban className="h-4 w-4 mr-2" />Rail/Sidebar
+            <KanbanIcon className="h-4 w-4 mr-2" />Rail/Sidebar
           </TabsTrigger>
         </TabsList>
 
@@ -644,7 +646,7 @@ export default function CustomizeSidebarPage() {
                                 <TooltipTrigger asChild>
                                   <span className="inline-flex">
                                     <Badge variant="secondary" className="text-[10px] flex items-center gap-1">
-                                      <Lock className="h-3 w-3" />
+                                      <LockIcon className="h-3 w-3" />
                                       Bloqueado
                                     </Badge>
                                   </span>
