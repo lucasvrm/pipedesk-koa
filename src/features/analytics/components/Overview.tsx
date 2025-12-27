@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 import { PlayerStage, STAGE_PROBABILITIES } from '@/lib/types'
 import { formatCurrency, calculateWeightedVolume } from '@/lib/helpers'
-import DealsList from '@/features/deals/components/DealsList'
 import DealsByStageChart from '@/features/deals/components/DealsByStageChart'
 import { CreateDealDialog } from '@/features/deals/components/CreateDealDialog'
 import { toast } from 'sonner'
@@ -187,7 +186,17 @@ export default function Overview() {
               <CardTitle>Negócios Recentes</CardTitle>
             </CardHeader>
             <CardContent>
-              <DealsList deals={(masterDeals || []).slice(0, 5)} compact />
+              <div className="space-y-2">
+                {(masterDeals || []).slice(0, 5).map((deal) => (
+                  <div key={deal.id} className="flex justify-between items-center p-2 rounded-lg hover:bg-muted/50">
+                    <span className="font-medium text-sm truncate">{deal.clientName}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(deal.volume)}</span>
+                  </div>
+                ))}
+                {(!masterDeals || masterDeals.length === 0) && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum negócio encontrado</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

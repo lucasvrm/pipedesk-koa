@@ -33,7 +33,7 @@ export default function PlayerIntelligenceDashboard() {
   // --------------------------------------------------------------------------
 
   // A. Matriz de Apetite (Heatmap Data)
-  const appetiteMatrix = useMemo(() => {
+  const appetiteMatrix = useMemo((): Record<string, Record<string, number>> => {
     if (!tracks) return {}
     const matrix: Record<string, Record<string, number>> = {}
     
@@ -53,7 +53,7 @@ export default function PlayerIntelligenceDashboard() {
         return sumB - sumA
       })
       .slice(0, 8)
-      .reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})
+      .reduce<Record<string, Record<string, number>>>((acc, [k, v]) => ({ ...acc, [k]: v }), {})
 
     return topPlayers
   }, [tracks])
