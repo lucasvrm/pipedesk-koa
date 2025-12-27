@@ -605,300 +605,311 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Helper type to make id, timestamps, and fields with DB defaults optional for inserts
+// These fields are typically auto-generated or have default values in the database
+type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at' | 'added_at' | 'is_synthetic' | 'deleted_at'> & {
+  id?: string
+  created_at?: string
+  updated_at?: string
+  added_at?: string
+  is_synthetic?: boolean
+  deleted_at?: string | null
+}
+
 export type Database = {
   public: {
     Tables: {
       master_deals: {
         Row: MasterDealDB
-        Insert: Partial<MasterDealDB>
+        Insert: InsertType<MasterDealDB>
         Update: Partial<MasterDealDB>
         Relationships: []
       }
       player_tracks: {
         Row: PlayerTrackDB
-        Insert: Partial<PlayerTrackDB>
+        Insert: InsertType<PlayerTrackDB>
         Update: Partial<PlayerTrackDB>
         Relationships: []
       }
       tasks: {
         Row: TaskDB
-        Insert: Partial<TaskDB>
+        Insert: InsertType<TaskDB>
         Update: Partial<TaskDB>
         Relationships: []
       }
       users: {
         Row: UserDB
-        Insert: Partial<UserDB>
+        Insert: InsertType<UserDB>
         Update: Partial<UserDB>
         Relationships: []
       }
       profiles: {
         Row: ProfileDB
-        Insert: Partial<ProfileDB>
+        Insert: InsertType<ProfileDB>
         Update: Partial<ProfileDB>
         Relationships: []
       }
       companies: {
         Row: CompanyDB
-        Insert: Partial<CompanyDB>
+        Insert: InsertType<CompanyDB>
         Update: Partial<CompanyDB>
         Relationships: []
       }
       contacts: {
         Row: ContactDB
-        Insert: Partial<ContactDB>
+        Insert: InsertType<ContactDB>
         Update: Partial<ContactDB>
         Relationships: []
       }
       players: {
         Row: PlayerDB
-        Insert: Partial<PlayerDB>
+        Insert: InsertType<PlayerDB>
         Update: Partial<PlayerDB>
         Relationships: []
       }
       player_contacts: {
         Row: PlayerContactDB
-        Insert: Partial<PlayerContactDB>
+        Insert: InsertType<PlayerContactDB>
         Update: Partial<PlayerContactDB>
         Relationships: []
       }
       leads: {
         Row: LeadDB
-        Insert: Partial<LeadDB>
+        Insert: InsertType<LeadDB>
         Update: Partial<LeadDB>
         Relationships: []
       }
       lead_contacts: {
         Row: LeadContactDB
-        Insert: Partial<LeadContactDB>
+        Insert: InsertType<LeadContactDB>
         Update: Partial<LeadContactDB>
         Relationships: []
       }
       lead_members: {
         Row: LeadMemberDB
-        Insert: Partial<LeadMemberDB>
+        Insert: InsertType<LeadMemberDB>
         Update: Partial<LeadMemberDB>
         Relationships: []
       }
       deal_members: {
         Row: DealMemberDB
-        Insert: Partial<DealMemberDB>
+        Insert: InsertType<DealMemberDB>
         Update: Partial<DealMemberDB>
         Relationships: []
       }
       comments: {
         Row: CommentDB
-        Insert: Partial<CommentDB>
+        Insert: InsertType<CommentDB>
         Update: Partial<CommentDB>
         Relationships: []
       }
       notifications: {
         Row: NotificationDB
-        Insert: Partial<NotificationDB>
+        Insert: InsertType<NotificationDB>
         Update: Partial<NotificationDB>
         Relationships: []
       }
       activity_log: {
         Row: ActivityLogDB
-        Insert: Partial<ActivityLogDB>
+        Insert: InsertType<ActivityLogDB>
         Update: Partial<ActivityLogDB>
         Relationships: []
       }
       roles: {
         Row: RoleDB
-        Insert: Partial<RoleDB>
+        Insert: InsertType<RoleDB>
         Update: Partial<RoleDB>
         Relationships: []
       }
       permissions: {
         Row: PermissionDB
-        Insert: Partial<PermissionDB>
+        Insert: InsertType<PermissionDB>
         Update: Partial<PermissionDB>
         Relationships: []
       }
       role_permissions: {
         Row: RolePermissionDB
-        Insert: Partial<RolePermissionDB>
+        Insert: InsertType<RolePermissionDB>
         Update: Partial<RolePermissionDB>
         Relationships: []
       }
       tags: {
         Row: TagDB
-        Insert: Partial<TagDB>
+        Insert: InsertType<TagDB>
         Update: Partial<TagDB>
         Relationships: []
       }
       entity_tags: {
         Row: EntityTagDB
-        Insert: Partial<EntityTagDB>
+        Insert: InsertType<EntityTagDB>
         Update: Partial<EntityTagDB>
         Relationships: []
       }
       sla_policies: {
         Row: SlaPolicyDB
-        Insert: Partial<SlaPolicyDB>
+        Insert: InsertType<SlaPolicyDB>
         Update: Partial<SlaPolicyDB>
         Relationships: []
       }
       phase_transition_rules: {
         Row: PhaseTransitionRuleDB
-        Insert: Partial<PhaseTransitionRuleDB>
+        Insert: InsertType<PhaseTransitionRuleDB>
         Update: Partial<PhaseTransitionRuleDB>
         Relationships: []
       }
       operation_types: {
         Row: OperationTypeDB
-        Insert: Partial<OperationTypeDB>
+        Insert: InsertType<OperationTypeDB>
         Update: Partial<OperationTypeDB>
         Relationships: []
       }
       loss_reasons: {
         Row: LossReasonDB
-        Insert: Partial<LossReasonDB>
+        Insert: InsertType<LossReasonDB>
         Update: Partial<LossReasonDB>
         Relationships: []
       }
       system_settings: {
         Row: SystemSettingsDB
-        Insert: Partial<SystemSettingsDB>
+        Insert: InsertType<SystemSettingsDB>
         Update: Partial<SystemSettingsDB>
         Relationships: []
       }
       deal_statuses: {
         Row: DealStatusDB
-        Insert: Partial<DealStatusDB>
+        Insert: InsertType<DealStatusDB>
         Update: Partial<DealStatusDB>
         Relationships: []
       }
       company_relationship_levels: {
         Row: CompanyRelationshipLevelDB
-        Insert: Partial<CompanyRelationshipLevelDB>
+        Insert: InsertType<CompanyRelationshipLevelDB>
         Update: Partial<CompanyRelationshipLevelDB>
         Relationships: []
       }
       company_types: {
         Row: CompanyTypeDB
-        Insert: Partial<CompanyTypeDB>
+        Insert: InsertType<CompanyTypeDB>
         Update: Partial<CompanyTypeDB>
         Relationships: []
       }
       lead_statuses: {
         Row: LeadStatusDB
-        Insert: Partial<LeadStatusDB>
+        Insert: InsertType<LeadStatusDB>
         Update: Partial<LeadStatusDB>
         Relationships: []
       }
       lead_origins: {
         Row: LeadOriginDB
-        Insert: Partial<LeadOriginDB>
+        Insert: InsertType<LeadOriginDB>
         Update: Partial<LeadOriginDB>
         Relationships: []
       }
       lead_member_roles: {
         Row: LeadMemberRoleDB
-        Insert: Partial<LeadMemberRoleDB>
+        Insert: InsertType<LeadMemberRoleDB>
         Update: Partial<LeadMemberRoleDB>
         Relationships: []
       }
       user_role_metadata: {
         Row: UserRoleMetadataDB
-        Insert: Partial<UserRoleMetadataDB>
+        Insert: InsertType<UserRoleMetadataDB>
         Update: Partial<UserRoleMetadataDB>
         Relationships: []
       }
       task_statuses: {
         Row: TaskStatusDB
-        Insert: Partial<TaskStatusDB>
+        Insert: InsertType<TaskStatusDB>
         Update: Partial<TaskStatusDB>
         Relationships: []
       }
       task_priorities: {
         Row: TaskPriorityDB
-        Insert: Partial<TaskPriorityDB>
+        Insert: InsertType<TaskPriorityDB>
         Update: Partial<TaskPriorityDB>
         Relationships: []
       }
       track_statuses: {
         Row: TrackStatusDB
-        Insert: Partial<TrackStatusDB>
+        Insert: InsertType<TrackStatusDB>
         Update: Partial<TrackStatusDB>
         Relationships: []
       }
       document_templates: {
         Row: DocumentTemplateDB
-        Insert: Partial<DocumentTemplateDB>
+        Insert: InsertType<DocumentTemplateDB>
         Update: Partial<DocumentTemplateDB>
         Relationships: []
       }
       document_type_configs: {
         Row: DocumentTypeConfigDB
-        Insert: Partial<DocumentTypeConfigDB>
+        Insert: InsertType<DocumentTypeConfigDB>
         Update: Partial<DocumentTypeConfigDB>
         Relationships: []
       }
       user_notification_preferences: {
         Row: UserNotificationPreferencesDB
-        Insert: Partial<UserNotificationPreferencesDB>
+        Insert: InsertType<UserNotificationPreferencesDB>
         Update: Partial<UserNotificationPreferencesDB>
         Relationships: []
       }
       custom_field_definitions: {
         Row: CustomFieldDefinitionDB
-        Insert: Partial<CustomFieldDefinitionDB>
+        Insert: InsertType<CustomFieldDefinitionDB>
         Update: Partial<CustomFieldDefinitionDB>
         Relationships: []
       }
       custom_field_values: {
         Row: CustomFieldValueDB
-        Insert: Partial<CustomFieldValueDB>
+        Insert: InsertType<CustomFieldValueDB>
         Update: Partial<CustomFieldValueDB>
         Relationships: []
       }
       folders: {
         Row: FolderDB
-        Insert: Partial<FolderDB>
+        Insert: InsertType<FolderDB>
         Update: Partial<FolderDB>
         Relationships: []
       }
       entity_locations: {
         Row: EntityLocationDB
-        Insert: Partial<EntityLocationDB>
+        Insert: InsertType<EntityLocationDB>
         Update: Partial<EntityLocationDB>
         Relationships: []
       }
       stage_history: {
         Row: StageHistoryDB
-        Insert: Partial<StageHistoryDB>
+        Insert: InsertType<StageHistoryDB>
         Update: Partial<StageHistoryDB>
         Relationships: []
       }
       google_integrations: {
         Row: GoogleIntegrationDB
-        Insert: Partial<GoogleIntegrationDB>
+        Insert: InsertType<GoogleIntegrationDB>
         Update: Partial<GoogleIntegrationDB>
         Relationships: []
       }
       google_drive_folders: {
         Row: GoogleDriveFolderDB
-        Insert: Partial<GoogleDriveFolderDB>
+        Insert: InsertType<GoogleDriveFolderDB>
         Update: Partial<GoogleDriveFolderDB>
         Relationships: []
       }
       calendar_events: {
         Row: CalendarEventDB
-        Insert: Partial<CalendarEventDB>
+        Insert: InsertType<CalendarEventDB>
         Update: Partial<CalendarEventDB>
         Relationships: []
       }
       magic_links: {
         Row: MagicLinkDB
-        Insert: Partial<MagicLinkDB>
+        Insert: InsertType<MagicLinkDB>
         Update: Partial<MagicLinkDB>
         Relationships: []
       }
       pipeline_stages: {
         Row: PipelineStageDB
-        Insert: Partial<PipelineStageDB>
+        Insert: InsertType<PipelineStageDB>
         Update: Partial<PipelineStageDB>
         Relationships: []
       }
