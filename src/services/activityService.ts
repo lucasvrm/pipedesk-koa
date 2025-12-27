@@ -7,6 +7,7 @@ export type ActivityEntityType =
   | 'task'
   | 'lead'
   | 'company'
+  | 'contact'
   | 'user'
   | 'folder'
   | 'player'
