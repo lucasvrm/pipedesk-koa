@@ -3,8 +3,8 @@ import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEn
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useStages, useUpdateStage, useCreateStage, useDeleteStage, useReorderStages } from '@/services/pipelineService';
-import { useSlaPolicies, useUpdateSlaPolicy } from '@/services/slaService';
-import { PipelineStage, SlaPolicy } from '@/lib/types';
+import { useSlaPolicies, useUpdateSlaPolicy, SlaPolicy } from '@/services/slaService';
+import { PipelineStage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

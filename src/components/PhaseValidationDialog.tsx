@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { PlayerStage } from '@/lib/types'
-import { XCircle, ArrowRight } from '@phosphor-icons/react'
+import { XCircle, ArrowRight, Warning, Check } from '@phosphor-icons/react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { ValidationResult, formatConditionDescription } from '@/lib/phaseValidation' // REMOVIDO: getStageLabel

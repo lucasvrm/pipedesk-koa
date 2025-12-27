@@ -22,7 +22,7 @@ import {
 import { MasterDeal, PlayerTrack, Task, User, DealStatus, PlayerStage } from '@/lib/types'
 import { CheckSquare, Trash, ArrowRight, Users as UsersIcon, XCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { logActivity } from '@/components/ActivityHistory'
+import { logActivity } from '@/services/activityService'
 
 interface BulkOperationsProps {
   entityType: 'deal' | 'track' | 'task'

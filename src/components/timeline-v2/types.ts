@@ -1,9 +1,13 @@
-export type TimelineItemType = 'comment' | 'email' | 'meeting' | 'audit' | 'system'
+export type TimelineItemType = 'comment' | 'email' | 'meeting' | 'audit' | 'system' | 'activity'
 
 export interface TimelineAuthor {
-  id: string
+  id?: string
   name: string
   avatar?: string
+  avatar_url?: string
+  avatarBgColor?: string
+  avatarTextColor?: string
+  avatarBorderColor?: string
 }
 
 export interface TimelineItem {

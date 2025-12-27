@@ -34,7 +34,7 @@ import {
   getStageLabel,
   formatConditionDescription,
 } from '@/lib/phaseValidation'
-import PhaseRuleEditor from './PhaseRuleEditor'
+import { PhaseRuleEditor } from './PhaseRuleEditor'
 import { toast } from 'sonner'
 
 interface PhaseValidationManagerProps {
@@ -51,6 +51,7 @@ export default function PhaseValidationManager({
   const [rules, setRules] = useKV<PhaseTransitionRule[]>('phaseTransitionRules', [])
   const [selectedRule, setSelectedRule] = useState<PhaseTransitionRule | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const handleCreateRule = () => {
     setSelectedRule(null)
@@ -62,7 +63,7 @@ export default function PhaseValidationManager({
     setEditorOpen(true)
   }
 
-  const handleDeleteRule = (ruleId: string) => {
+  const handleDeleteRule = async (ruleId: string) => {
     setRules((current) => (current || []).filter(r => r.id !== ruleId))
     toast.success('Regra removida com sucesso')
   }
@@ -74,17 +75,22 @@ export default function PhaseValidationManager({
     toast.success(enabled ? 'Regra ativada' : 'Regra desativada')
   }
 
-  const handleSaveRule = (rule: PhaseTransitionRule) => {
-    setRules((current) => {
-      const currentRules = current || []
-      const existing = currentRules.find(r => r.id === rule.id)
-      if (existing) {
-        return currentRules.map(r => r.id === rule.id ? rule : r)
-      }
-      return [...currentRules, rule]
-    })
-    setEditorOpen(false)
-    toast.success(selectedRule ? 'Regra atualizada' : 'Regra criada com sucesso')
+  const handleSaveRule = async (rule: PhaseTransitionRule) => {
+    setIsSaving(true)
+    try {
+      setRules((current) => {
+        const currentRules = current || []
+        const existing = currentRules.find(r => r.id === rule.id)
+        if (existing) {
+          return currentRules.map(r => r.id === rule.id ? rule : r)
+        }
+        return [...currentRules, rule]
+      })
+      setEditorOpen(false)
+      toast.success(selectedRule ? 'Regra atualizada' : 'Regra criada com sucesso')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -209,13 +215,18 @@ export default function PhaseValidationManager({
         </DialogContent>
       </Dialog>
 
-      <PhaseRuleEditor
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        rule={selectedRule}
-        onSave={handleSaveRule}
-        currentUser={currentUser}
-      />
+      {/* Editor Dialog */}
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <PhaseRuleEditor
+            ruleToEdit={selectedRule}
+            onSave={handleSaveRule}
+            onCancel={() => setEditorOpen(false)}
+            isSaving={isSaving}
+            onDelete={selectedRule ? handleDeleteRule : undefined}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

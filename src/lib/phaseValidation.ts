@@ -10,7 +10,7 @@ export interface FieldCondition {
   fieldType: FieldType
   operator: ValidationOperator
   value?: any
-  label: string
+  label?: string
 }
 
 export interface PhaseTransitionRule {
@@ -180,4 +180,14 @@ export function formatConditionDescription(condition: FieldCondition): string {
   }
   
   return `${field?.label || condition.fieldName} ${operator} "${condition.value}"`
+}
+
+/**
+ * Helper function to get a stage label.
+ * Note: This is a fallback function that returns the stage ID as-is.
+ * For dynamic stage labels, use the useStages hook and map stage IDs to names.
+ */
+export function getStageLabel(stageId: PlayerStage | 'any'): string {
+  if (stageId === 'any') return 'Qualquer'
+  return stageId
 }

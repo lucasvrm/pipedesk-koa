@@ -1,4 +1,4 @@
-import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS, PipelineStage, SlaPolicy } from '@/lib/types'
+import { MasterDeal, PlayerTrack, STATUS_LABELS, OPERATION_LABELS, PipelineStage } from '@/lib/types'
 import { formatCurrency, formatDate, isOverdue } from '@/lib/helpers'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
