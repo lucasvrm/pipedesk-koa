@@ -192,11 +192,11 @@ export function PipelineSettingsDialog({
                             min={0}
                             max={100}
                             step={1}
-                            value={[field.value]}
+                            value={[field.value ?? 0]}
                             onValueChange={(val) => field.onChange(val[0])}
                             className="flex-1"
                         />
-                        <span className="w-10 text-right font-semibold text-lg">{field.value}%</span>
+                        <span className="w-10 text-right font-semibold text-lg">{field.value ?? 0}%</span>
                       </div>
                       <Input 
                         type="number"

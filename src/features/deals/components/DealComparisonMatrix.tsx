@@ -93,7 +93,7 @@ export function DealComparisonMatrix({ deals, playerTracks }: DealComparisonProp
           </p>
         </div>
         <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>

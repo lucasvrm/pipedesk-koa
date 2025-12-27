@@ -7,8 +7,8 @@ import { Loader2, AlertCircle } from 'lucide-react'
 import { StandardPageLayout } from '@/components/layouts'
 
 export default function DealComparison() {
-  const { data: deals, loading: dealsLoading, error: dealsError } = useDeals()
-  const { data: playerTracks, loading: tracksLoading, error: tracksError } = usePlayerTracks()
+  const { data: deals, isLoading: dealsLoading, error: dealsError } = useDeals()
+  const { data: playerTracks, isLoading: tracksLoading, error: tracksError } = usePlayerTracks()
 
   const loading = dealsLoading || tracksLoading
   const error = dealsError || tracksError

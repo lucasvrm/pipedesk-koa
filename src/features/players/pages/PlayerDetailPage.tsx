@@ -942,7 +942,7 @@ export default function PlayerDetailPage() {
                             <div className="flex justify-between items-start mb-1">
                                 <span className="font-semibold flex items-center gap-2">
                                 {contact.name}
-                                {contact.isPrimary && <Star weight="fill" className="text-yellow-500 h-3 w-3" title="Principal" />}
+                                {contact.isPrimary && <span title="Principal"><Star weight="fill" className="text-yellow-500 h-3 w-3" /></span>}
                                 </span>
                                 {isEditing && (
                                 <Button

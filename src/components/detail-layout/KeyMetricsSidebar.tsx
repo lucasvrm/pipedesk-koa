@@ -11,7 +11,7 @@ interface MetricItem {
 }
 
 interface KeyMetricsSidebarProps {
-  title: string
+  title: ReactNode
   subtitle?: string
   statusBadge?: ReactNode
   metrics: MetricItem[]
