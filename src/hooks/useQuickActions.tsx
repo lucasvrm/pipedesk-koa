@@ -281,7 +281,7 @@ export function getTrackQuickActions({
     deleteTrack.mutate(track.id, {
       onSuccess: () => {
         toast.success('Player excluído')
-        navigate(`/deals/${track.dealId}`)
+        navigate(`/deals/${track.masterDealId}`)
       },
       onError: () => toast.error('Erro ao excluir player'),
     })

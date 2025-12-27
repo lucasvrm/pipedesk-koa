@@ -513,7 +513,12 @@ export async function removeLeadMember(leadId: string, userId: string) {
 
 // --- Qualification ---
 
-export async function qualifyLead(input: QualifyLeadInput) {
+export interface QualifyLeadResult {
+  master_deal_id: string;
+  company_id: string;
+}
+
+export async function qualifyLead(input: QualifyLeadInput): Promise<QualifyLeadResult> {
   const { data, error } = await supabase.rpc('qualify_lead', {
     p_lead_id: input.leadId,
     p_company_id: input.companyId,
@@ -522,7 +527,7 @@ export async function qualifyLead(input: QualifyLeadInput) {
   });
 
   if (error) throw error;
-  return data;
+  return data as QualifyLeadResult;
 }
 
 export async function changeLeadOwner(data: ChangeLeadOwnerData): Promise<void> {
