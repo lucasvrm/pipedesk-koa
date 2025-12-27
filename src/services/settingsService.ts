@@ -291,6 +291,7 @@ export async function getSystemSetting(key: string): Promise<{ data: any | null;
 
 /**
  * Update a system setting by key
+ * If value is null or undefined, deletes the setting row instead of upserting
  */
 export async function updateSystemSetting(
   key: string,
@@ -300,6 +301,17 @@ export async function updateSystemSetting(
   try {
     if (!key || !key.trim()) {
       return { data: null, error: new Error('Key cannot be empty') }
+    }
+
+    // If value is null or undefined, delete the row instead of upserting
+    if (value === null || value === undefined) {
+      const { error } = await supabase
+        .from('system_settings')
+        .delete()
+        .eq('key', key)
+
+      if (error) return { data: null, error }
+      return { data: null, error: null }
     }
 
     const { data: userData } = await supabase.auth.getUser()
