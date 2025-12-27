@@ -271,13 +271,6 @@ export default function SettingsCustomizePage() {
 
   return (
     <StandardPageLayout>
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Customização</h1>
-        <p className="text-muted-foreground mt-2">
-          Personalize a identidade visual da sua organização
-        </p>
-      </div>
-
       {/* Logo Section */}
       <Card>
         <CardHeader>

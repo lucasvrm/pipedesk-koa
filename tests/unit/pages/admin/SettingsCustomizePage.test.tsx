@@ -71,8 +71,8 @@ describe('SettingsCustomizePage', () => {
   it('renders without crashing', () => {
     renderPage()
     
-    expect(screen.getByText('Customização')).toBeInTheDocument()
-    expect(screen.getByText('Personalize a identidade visual da sua organização')).toBeInTheDocument()
+    expect(screen.getByText('Logomarca')).toBeInTheDocument()
+    expect(screen.getByText('Favicon')).toBeInTheDocument()
   })
 
   it('renders logo section', () => {
