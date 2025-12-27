@@ -101,7 +101,7 @@ export function LeadEditSheet({ lead, open, onOpenChange }: LeadEditSheetProps) 
                 return (
                   <>
                     <StatusBadge
-                      semanticStatus={leadStatusMap(getLeadStatusById(lead.leadStatusId)?.code as any)}
+                      semanticStatus={leadStatusMap(getLeadStatusById(lead.leadStatusId)?.code)}
                       label={`Status: ${statusLabel}`}
                     />
                     <Badge variant="secondary">Origem: {originLabel}</Badge>
