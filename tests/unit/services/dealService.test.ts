@@ -82,7 +82,7 @@ describe('Deal Service - critical flows', () => {
       }),
     )
 
-    expect(result).toMatchObject<Deal>({
+    expect(result).toMatchObject<Partial<Deal>>({
       id: 'deal-123',
       clientName: 'Test Client',
       volume: 100000,
@@ -172,7 +172,7 @@ describe('Deal Service - critical flows', () => {
 
     expect(eq).toHaveBeenCalledWith('id', 'deal-789')
     expect(select).toHaveBeenCalled()
-    expect(result).toMatchObject<Deal>({
+    expect(result).toMatchObject<Partial<Deal>>({
       id: 'deal-789',
       clientName: 'Updated Client',
       status: 'concluded',

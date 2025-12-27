@@ -194,7 +194,7 @@ export interface MasterDeal {
   companyId?: string;
   // Fallback para código legado que acessa snake_case direto do banco sem mapeamento
   company_id?: string;
-  company?: Company;
+  company?: Partial<Company>;
 
   // NOVOS CAMPOS RELACIONAIS
   productId?: string;
