@@ -32,6 +32,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { StandardPageLayout } from '@/components/layouts';
 import {
   GripVertical,
@@ -197,6 +201,109 @@ const ICON_OPTIONS = [
   { value: 'Pencil', label: 'Pencil', Icon: Pencil, category: 'tasks' },
   { value: 'Plus', label: 'Plus', Icon: Plus, category: 'tasks' },
 ];
+
+// ============================================================================
+// ICON PICKER COMPONENT
+// ============================================================================
+
+interface IconPickerProps {
+  value: string;
+  onChange: (iconName: string) => void;
+  disabled?: boolean;
+}
+
+function IconPicker({ value, onChange, disabled }: IconPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const selectedIcon = ICON_OPTIONS.find(o => o.value === value);
+  const SelectedIcon = selectedIcon?.Icon || Home;
+
+  const filteredIcons = useMemo(() => {
+    if (!search) return ICON_OPTIONS;
+    const searchLower = search.toLowerCase();
+    return ICON_OPTIONS.filter(
+      o => o.label.toLowerCase().includes(searchLower) || o.value.toLowerCase().includes(searchLower)
+    );
+  }, [search]);
+
+  const groupedIcons = useMemo(() => {
+    const groups: Record<string, typeof ICON_OPTIONS> = {};
+    filteredIcons.forEach(icon => {
+      if (!groups[icon.category]) {
+        groups[icon.category] = [];
+      }
+      groups[icon.category].push(icon);
+    });
+    return groups;
+  }, [filteredIcons]);
+
+  const categoryLabels: Record<string, string> = {
+    navigation: 'Navegação',
+    business: 'Negócios',
+    documents: 'Documentos',
+    actions: 'Ações',
+    misc: 'Diversos',
+    charts: 'Gráficos',
+    tasks: 'Tarefas',
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between"
+        >
+          <span className="flex items-center gap-2">
+            <SelectedIcon className="h-4 w-4" />
+            {selectedIcon?.label || 'Selecionar ícone'}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0" align="start">
+        <Command>
+          <CommandInput 
+            placeholder="Buscar ícone..." 
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            <CommandEmpty>Nenhum ícone encontrado.</CommandEmpty>
+            {Object.entries(groupedIcons).map(([category, icons]) => (
+              <CommandGroup key={category} heading={categoryLabels[category] || category}>
+                {icons.map(icon => {
+                  const IconComponent = icon.Icon;
+                  return (
+                    <CommandItem
+                      key={icon.value}
+                      value={icon.value}
+                      onSelect={() => {
+                        onChange(icon.value);
+                        setOpen(false);
+                        setSearch('');
+                      }}
+                    >
+                      <IconComponent className="mr-2 h-4 w-4" />
+                      <span>{icon.label}</span>
+                      {value === icon.value && (
+                        <Check className="ml-auto h-4 w-4" />
+                      )}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // ============================================================================
 // COMPONENT
@@ -660,7 +767,19 @@ export default function CustomizeSidebarPage() {
                               <Badge variant="secondary" className="text-[10px]">Padrão</Badge>
                             )}
                             {section.type === 'default' && !isAdmin && (
-                              <Badge variant="secondary" className="text-[10px]">Somente admin</Badge>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex">
+                                    <Badge variant="secondary" className="text-[10px] flex items-center gap-1">
+                                      <Lock className="h-3 w-3" />
+                                      Bloqueado
+                                    </Badge>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Somente administradores podem editar/deletar itens de seções padrão</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">{section.tooltip} • {section.children.length} itens</p>
@@ -671,30 +790,61 @@ export default function CustomizeSidebarPage() {
                           onCheckedChange={() => toggleEnabled(section.id)}
                           disabled={(section.enabled && sections.filter(s => s.enabled).length <= 4) || (!section.enabled && sections.filter(s => s.enabled).length >= 10)}
                         />
-                        {(section.type === 'custom' || isAdmin) && (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                              setEditingSection(section);
-                              setSectionForm({ label: section.label, tooltip: section.tooltip, icon: section.icon, color: section.color, path: section.path });
-                              setSectionDialogOpen(true);
-                            }}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {section.type === 'custom' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex">
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 text-destructive" 
+                                className="h-8 w-8" 
+                                disabled={section.type === 'default' && !isAdmin}
                                 onClick={() => {
-                                  if (confirm(`Deletar "${section.label}"? Subitens ficarão órfãos.`)) {
-                                    handleDeleteSection(section.id);
-                                  }
+                                  setEditingSection(section);
+                                  setSectionForm({ label: section.label, tooltip: section.tooltip, icon: section.icon, color: section.color, path: section.path });
+                                  setSectionDialogOpen(true);
                                 }}
                               >
-                                <X className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            )}
-                          </>
+                            </span>
+                          </TooltipTrigger>
+                          {section.type === 'default' && !isAdmin && (
+                            <TooltipContent>
+                              <p>Apenas administradores podem editar seções padrão</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                        {section.type === 'custom' ? (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive" 
+                            onClick={() => {
+                              if (confirm(`Deletar "${section.label}"? Subitens ficarão órfãos.`)) {
+                                handleDeleteSection(section.id);
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground" 
+                                  disabled
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Seções padrão não podem ser deletadas</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
 
@@ -716,22 +866,32 @@ export default function CustomizeSidebarPage() {
                                   onCheckedChange={() => handleToggleItem(section.id, item.id)} 
                                   disabled={item.fixed} 
                                 />
-                                {(section.type === 'custom' || isAdmin) && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingItem({ sectionId: section.id, item });
-                                      setItemForm({ label: item.label, path: item.path, icon: item.icon ?? 'Home' });
-                                      setItemDialogOpen(true);
-                                    }}
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                )}
-                                {canDelete && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-7 w-7" 
+                                        disabled={section.type === 'default' && !isAdmin}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingItem({ sectionId: section.id, item });
+                                          setItemForm({ label: item.label, path: item.path, icon: item.icon ?? 'Home' });
+                                          setItemDialogOpen(true);
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {section.type === 'default' && !isAdmin && (
+                                    <TooltipContent>
+                                      <p>Apenas administradores podem editar itens de seções padrão</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                                {canDelete ? (
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button 
@@ -764,17 +924,28 @@ export default function CustomizeSidebarPage() {
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
-                                )}
-                                {isSystemFixed && !canDelete && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 opacity-30 cursor-not-allowed" 
-                                    disabled
-                                    title="Item fixo do sistema"
-                                  >
-                                    <Trash className="h-3 w-3" />
-                                  </Button>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon" 
+                                          className="h-7 w-7 text-muted-foreground" 
+                                          disabled
+                                        >
+                                          <Trash className="h-3 w-3" />
+                                        </Button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>
+                                        {isSystemFixed 
+                                          ? 'Item fixo do sistema não pode ser deletado' 
+                                          : 'Apenas administradores podem deletar itens de seções padrão'}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                               </div>
                             );
@@ -844,51 +1015,60 @@ export default function CustomizeSidebarPage() {
             {/* Itens Fixos */}
             <Card>
               <CardHeader>
-                <CardTitle>Itens Fixos</CardTitle>
-                <CardDescription>Itens fixos não podem ser desativados.</CardDescription>
+                <CardTitle>Configurações Avançadas</CardTitle>
+                <CardDescription>Gerencie itens fixos e configurações adicionais.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {sections.map(section => {
-                    if (section.children.length === 0) return null;
-                    
-                    const SectionIcon = ICON_OPTIONS.find(o => o.value === section.icon)?.Icon || Home;
-                    
-                    return (
-                      <div key={section.id} className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                          <SectionIcon className="h-4 w-4" />
-                          {section.label}
-                        </div>
-                        <div className="ml-6 space-y-1">
-                          {section.children.map(item => {
-                            const ItemIcon = ICON_OPTIONS.find(o => o.value === item.icon)?.Icon || FileText;
-                            const isSystemFixed = isItemFixed(section.id, item.id);
-                            
-                            return (
-                              <div key={item.id} className="flex items-center gap-2 p-2 rounded-md text-sm bg-accent/30">
-                                <ItemIcon className="h-4 w-4" />
-                                <span className="flex-1">{item.label}</span>
-                                {isSystemFixed && (
-                                  <span className="text-xs text-muted-foreground">Sistema</span>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <Label htmlFor={`fixed-${section.id}-${item.id}`} className="text-xs">Fixo</Label>
-                                  <Switch 
-                                    id={`fixed-${section.id}-${item.id}`}
-                                    checked={item.fixed || isSystemFixed} 
-                                    onCheckedChange={() => handleToggleFixed(section.id, item.id)}
-                                    disabled={isSystemFixed}
-                                  />
-                                </div>
+                <Accordion type="single" collapsible defaultValue="">
+                  <AccordionItem value="fixed-items">
+                    <AccordionTrigger>
+                      Itens Fixos ({sections.reduce((acc, s) => acc + s.children.filter(c => c.fixed).length, 0)} selecionados)
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4">
+                        {sections.map(section => {
+                          if (section.children.length === 0) return null;
+                          
+                          const SectionIcon = ICON_OPTIONS.find(o => o.value === section.icon)?.Icon || Home;
+                          
+                          return (
+                            <div key={section.id} className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <SectionIcon className="h-4 w-4" />
+                                {section.label}
                               </div>
-                            );
-                          })}
-                        </div>
+                              <div className="ml-6 space-y-1">
+                                {section.children.map(item => {
+                                  const ItemIcon = ICON_OPTIONS.find(o => o.value === item.icon)?.Icon || FileText;
+                                  const isSystemFixed = isItemFixed(section.id, item.id);
+                                  
+                                  return (
+                                    <div key={item.id} className="flex items-center gap-2 p-2 rounded-md text-sm bg-accent/30">
+                                      <ItemIcon className="h-4 w-4" />
+                                      <span className="flex-1">{item.label}</span>
+                                      {isSystemFixed && (
+                                        <span className="text-xs text-muted-foreground">Sistema</span>
+                                      )}
+                                      <div className="flex items-center gap-2">
+                                        <Label htmlFor={`fixed-${section.id}-${item.id}`} className="text-xs">Fixo</Label>
+                                        <Switch 
+                                          id={`fixed-${section.id}-${item.id}`}
+                                          checked={item.fixed || isSystemFixed} 
+                                          onCheckedChange={() => handleToggleFixed(section.id, item.id)}
+                                          disabled={isSystemFixed}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </CardContent>
             </Card>
           </div>
@@ -949,9 +1129,13 @@ export default function CustomizeSidebarPage() {
             <div><Label>Título *</Label><Input value={sectionForm.label} onChange={e => setSectionForm(p => ({...p, label: e.target.value}))} /></div>
             <div><Label>Tooltip *</Label><Input value={sectionForm.tooltip} onChange={e => setSectionForm(p => ({...p, tooltip: e.target.value}))} /></div>
             <div><Label>Path *</Label><Input value={sectionForm.path} onChange={e => setSectionForm(p => ({...p, path: e.target.value}))} /></div>
-            <div><Label>Ícone</Label><select value={sectionForm.icon} onChange={e => setSectionForm(p => ({...p, icon: e.target.value}))} className="w-full rounded-md border px-3 py-2">
-              {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select></div>
+            <div>
+              <Label>Ícone</Label>
+              <IconPicker
+                value={sectionForm.icon}
+                onChange={(icon) => setSectionForm(p => ({...p, icon}))}
+              />
+            </div>
             <div className="flex gap-2"><input type="color" value={sectionForm.color} onChange={e => setSectionForm(p => ({...p, color: e.target.value}))} className="w-20 h-10" /><Input value={sectionForm.color} onChange={e => setSectionForm(p => ({...p, color: e.target.value}))} /></div>
           </div>
           <DialogFooter>
@@ -967,9 +1151,13 @@ export default function CustomizeSidebarPage() {
           <div className="space-y-4 py-4">
             <div><Label>Título *</Label><Input value={itemForm.label} onChange={e => setItemForm(p => ({...p, label: e.target.value}))} /></div>
             <div><Label>Path *</Label><Input value={itemForm.path} onChange={e => setItemForm(p => ({...p, path: e.target.value}))} /></div>
-            <div><Label>Ícone</Label><select value={itemForm.icon} onChange={e => setItemForm(p => ({...p, icon: e.target.value}))} className="w-full rounded-md border px-3 py-2">
-              {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select></div>
+            <div>
+              <Label>Ícone</Label>
+              <IconPicker
+                value={itemForm.icon}
+                onChange={(icon) => setItemForm(p => ({...p, icon}))}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setItemDialogOpen(false)}>Cancelar</Button>
