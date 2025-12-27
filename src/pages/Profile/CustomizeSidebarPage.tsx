@@ -10,6 +10,7 @@ import {
   SidebarSectionConfig,
   SidebarItemConfig,
   validateSidebarConfig,
+  isItemFixed,
 } from '@/services/sidebarPreferencesService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,6 +111,7 @@ import {
   Clipboard,
   Pencil,
   User,
+  Trash,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarCustomizer } from '@/pages/Profile/components/AvatarCustomizer';
@@ -473,6 +475,52 @@ export default function CustomizeSidebarPage() {
   }, []);
 
   /**
+   * Toggle fixed status de subitem
+   */
+  const handleToggleFixed = useCallback((sectionId: string, itemId: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+      
+      return {
+        ...section,
+        children: section.children.map(child => {
+          if (child.id === itemId) {
+            const newFixed = !child.fixed;
+            // Se marcar como fixo, também ativar enabled
+            return { ...child, fixed: newFixed, enabled: newFixed ? true : child.enabled };
+          }
+          return child;
+        })
+      };
+    }));
+    
+    setHasChanges(true);
+  }, []);
+
+  /**
+   * Deletar subitem
+   */
+  const handleDeleteItem = useCallback((sectionId: string, itemId: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+      
+      return {
+        ...section,
+        children: section.children.filter(child => child.id !== itemId)
+      };
+    }));
+    
+    // Limpar editingItem se estiver editando o item deletado
+    if (editingItem?.sectionId === sectionId && editingItem?.item?.id === itemId) {
+      setEditingItem(null);
+      setItemDialogOpen(false);
+    }
+    
+    setHasChanges(true);
+    toast.success('Item deletado');
+  }, [editingItem]);
+
+  /**
    * Validar antes de salvar
    */
   const handleSaveWithValidation = useCallback(async () => {
@@ -558,12 +606,12 @@ export default function CustomizeSidebarPage() {
         </TabsContent>
 
         {/* TAB RAIL/SIDEBAR */}
-        <TabsContent value="rail">
+        <TabsContent value="rail" className="pb-24">
           {!isAdmin && (
             <div className="mb-4 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
               <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
                 <Info className="h-3 w-3" />
-                Apenas administradores podem editar seções padrão do sistema
+                Apenas administradores podem editar/deletar itens em seções padrão do sistema
               </p>
             </div>
           )}
@@ -607,8 +655,11 @@ export default function CustomizeSidebarPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{section.label}</span>
                             {section.type === 'custom' && <Badge variant="outline" className="text-[10px]">Custom</Badge>}
-                            {section.type === 'default' && isAdmin && (
-                              <Badge variant="secondary" className="text-[10px]">Admin Only</Badge>
+                            {section.type === 'default' && (
+                              <Badge variant="secondary" className="text-[10px]">Padrão</Badge>
+                            )}
+                            {section.type === 'default' && !isAdmin && (
+                              <Badge variant="secondary" className="text-[10px]">Somente admin</Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">{section.tooltip} • {section.children.length} itens</p>
@@ -651,6 +702,9 @@ export default function CustomizeSidebarPage() {
                         <div className="ml-12 pl-4 border-l-2 space-y-1">
                           {section.children.map(item => {
                             const ItemIcon = ICON_OPTIONS.find(o => o.value === item.icon)?.Icon || FileText;
+                            const isSystemFixed = isItemFixed(section.id, item.id);
+                            const canDelete = !isSystemFixed && (section.type === 'custom' || isAdmin);
+                            
                             return (
                               <div key={item.id} className="flex items-center gap-2 p-2 rounded-md text-sm bg-accent/50">
                                 <ItemIcon className="h-4 w-4" />
@@ -674,6 +728,51 @@ export default function CustomizeSidebarPage() {
                                     }}
                                   >
                                     <Pencil className="h-3 w-3" />
+                                  </Button>
+                                )}
+                                {canDelete && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10" 
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Trash className="h-3 w-3" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Deletar "{item.label}"?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Esta ação não pode ser desfeita. O item será removido permanentemente ao salvar.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteItem(section.id, item.id);
+                                          }}
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                          Deletar
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
+                                {isSystemFixed && !canDelete && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 opacity-30 cursor-not-allowed" 
+                                    disabled
+                                    title="Item fixo do sistema"
+                                  >
+                                    <Trash className="h-3 w-3" />
                                   </Button>
                                 )}
                               </div>
@@ -740,10 +839,61 @@ export default function CustomizeSidebarPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Itens Fixos */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Itens Fixos</CardTitle>
+                <CardDescription>Itens fixos não podem ser desativados.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {sections.map(section => {
+                    if (section.children.length === 0) return null;
+                    
+                    const SectionIcon = ICON_OPTIONS.find(o => o.value === section.icon)?.Icon || Home;
+                    
+                    return (
+                      <div key={section.id} className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <SectionIcon className="h-4 w-4" />
+                          {section.label}
+                        </div>
+                        <div className="ml-6 space-y-1">
+                          {section.children.map(item => {
+                            const ItemIcon = ICON_OPTIONS.find(o => o.value === item.icon)?.Icon || FileText;
+                            const isSystemFixed = isItemFixed(section.id, item.id);
+                            
+                            return (
+                              <div key={item.id} className="flex items-center gap-2 p-2 rounded-md text-sm bg-accent/30">
+                                <ItemIcon className="h-4 w-4" />
+                                <span className="flex-1">{item.label}</span>
+                                {isSystemFixed && (
+                                  <span className="text-xs text-muted-foreground">Sistema</span>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <Label htmlFor={`fixed-${section.id}-${item.id}`} className="text-xs">Fixo</Label>
+                                  <Switch 
+                                    id={`fixed-${section.id}-${item.id}`}
+                                    checked={item.fixed || isSystemFixed} 
+                                    onCheckedChange={() => handleToggleFixed(section.id, item.id)}
+                                    disabled={isSystemFixed}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-between mt-6">
+          {/* Sticky Action Bar */}
+          <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur mt-6 -mx-6 px-6 py-4 flex justify-between items-center">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline"><RotateCcw className="h-4 w-4 mr-2" />Resetar</Button>
@@ -760,7 +910,7 @@ export default function CustomizeSidebarPage() {
               </AlertDialogContent>
             </AlertDialog>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               {hasChanges && <Badge variant="secondary">Não salvo</Badge>}
               <Button onClick={handleSaveWithValidation} disabled={!hasChanges || updatePrefs.isPending}>
                 <Save className="h-4 w-4 mr-2" />{updatePrefs.isPending ? 'Salvando...' : 'Salvar'}
