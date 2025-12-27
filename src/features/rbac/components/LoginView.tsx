@@ -146,7 +146,7 @@ export default function LoginView() {
             </div>
             <CardTitle className="text-2xl font-bold">Email Enviado!</CardTitle>
             <CardDescription>
-              Verifique sua caixa de entrada e siga as instruções para redefinir sua senha
+              Verifique sua caixa de entrada. O link irá direcioná-lo para a página de redefinição de senha.
             </CardDescription>
           </CardHeader>
           <CardContent>
