@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MasterDealDB, CompanyDB, ProfileDB } from '@/lib/databaseTypes';
+import { MasterDealDB, CompanyDB, ProfileDB, type Database } from '@/lib/databaseTypes';
 import { MasterDeal, OperationType, DealStatus, Company, User, Tag, UserRole } from '@/lib/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncRemoteEntityName } from './pdGoogleDriveApi';
 import { getSetting } from './systemSettingsService';
 
@@ -15,6 +16,15 @@ type PostgrestQuery = any;
 function withoutDeleted(query: PostgrestQuery) {
   return query.is('deleted_at', null);
 }
+
+type SupabaseDB = SupabaseClient<Database>;
+const supabaseClient = supabase as SupabaseDB;
+type MasterDealRow = Database['public']['Tables']['master_deals']['Row'];
+type MasterDealInsert = Database['public']['Tables']['master_deals']['Insert'];
+type MasterDealUpdate = Database['public']['Tables']['master_deals']['Update'];
+type DealMemberInsert = Database['public']['Tables']['deal_members']['Insert'];
+type PlayerRow = Database['public']['Tables']['players']['Row'];
+type PlayerTrackInsert = Database['public']['Tables']['player_tracks']['Insert'];
 
 // ============================================================================
 // Types
@@ -150,7 +160,7 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
   try {
     // CORREÇÃO: Removido 'entity_tags!left(...)' que causava erro 400
     // O Supabase não consegue fazer join sem FK explícita.
-    let query = supabase
+    let query = supabaseClient
         .from('master_deals')
         .select(`
           *,
@@ -163,7 +173,7 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
     // Lógica de filtro por tags mantida apenas se houver ids, 
     // mas a busca de tags no select principal foi removida.
     if (tagIds && tagIds.length > 0) {
-      const { data: matchingIds, error: matchError } = await supabase
+      const { data: matchingIds, error: matchError } = await supabaseClient
         .from('entity_tags')
         .select('entity_id')
         .eq('entity_type', 'deal')
@@ -198,7 +208,7 @@ export async function getDeals(tagIds?: string[]): Promise<Deal[]> {
 // Helper de fallback mantido caso precise
 async function getDealFallback(dealId: string): Promise<Deal> {
   const { data, error } = await withoutDeleted(
-    supabase
+    supabaseClient
       .from('master_deals')
       .select(`
         *,
@@ -206,7 +216,7 @@ async function getDealFallback(dealId: string): Promise<Deal> {
         company:companies(id, name, type, site)
       `)
       .eq('id', dealId)
-  ).single();
+  ).single<DealQueryResult>();
 
   if (error) throw error;
   return mapDealFromDB(data as DealQueryResult);
@@ -216,7 +226,7 @@ export async function getDeal(dealId: string): Promise<Deal> {
   try {
     // CORREÇÃO: Removido entity_tags daqui também
     const { data, error } = await withoutDeleted(
-      supabase
+      supabaseClient
         .from('master_deals')
         .select(`
           *,
@@ -227,7 +237,7 @@ export async function getDeal(dealId: string): Promise<Deal> {
           )
         `)
         .eq('id', dealId)
-    ).single();
+    ).single<DealQueryResult>();
 
     if (error) {
       // Se falhar por causa de deal_members (ainda não migrado), usa fallback
@@ -254,62 +264,70 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
       dealStatus = defaultStatusSetting?.value || 'active'; // Fallback to 'active' if no setting
     }
 
-    const { data: masterDealData, error: dealError } = await supabase
+    const masterDealPayload: MasterDealInsert = {
+      client_name: deal.clientName,
+      volume: deal.volume ?? null,
+      operation_type: deal.operationType ?? null,
+      deadline: deal.deadline ?? null,
+      observations: deal.observations ?? null,
+      status: dealStatus,
+      fee_percentage: deal.feePercentage ?? null,
+      created_by: deal.createdBy,
+      company_id: deal.companyId ?? null,
+      deal_product: deal.dealProduct ?? null
+    };
+
+    const { data: masterDealData, error: dealError } = await supabaseClient
       .from('master_deals')
-      .insert({
-        client_name: deal.clientName,
-        volume: deal.volume,
-        operation_type: deal.operationType,
-        deadline: deal.deadline,
-        observations: deal.observations,
-        status: dealStatus,
-        fee_percentage: deal.feePercentage,
-        created_by: deal.createdBy,
-        company_id: deal.companyId,
-        deal_product: deal.dealProduct,
-      })
+      .insert(masterDealPayload)
       .select(`
         *,
         createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
         company:companies(id, name, type, site)
       `)
-      .single();
+      .single<DealQueryResult>();
 
     if (dealError) throw dealError;
 
     if (deal.createdBy) {
-      const { error: memberError } = await supabase
+      const memberPayload: DealMemberInsert = {
+        deal_id: masterDealData.id,
+        user_id: deal.createdBy
+      };
+
+      const { error: memberError } = await supabaseClient
         .from('deal_members')
-        .insert({
-          deal_id: masterDealData.id,
-          user_id: deal.createdBy
-        });
+        .insert(memberPayload);
       if (memberError) console.warn("Could not add creator to deal_members:", memberError.message);
     }
 
     if (deal.playerId) {
       try {
-        const { data: player } = await supabase
+        const { data: player } = await supabaseClient
           .from("players")
           .select("name")
           .eq("id", deal.playerId)
-          .single();
+          .single<PlayerRow>();
 
         if (player) {
           // Get default track probability from system settings
           const defaultProbabilitySetting = await getSetting('default_track_probability');
           const defaultProbability = defaultProbabilitySetting?.value ?? 10; // Fallback to 10 if no setting
 
-          await supabase.from("player_tracks").insert({
+          const playerTrackPayload: PlayerTrackInsert = {
             master_deal_id: masterDealData.id,
-            player_id: deal.playerId,
+            player_id: deal.playerId ?? null,
             player_name: player.name,
-            track_volume: deal.volume,
+            track_volume: deal.volume ?? null,
             current_stage: deal.initialStage || 'nda',
             status: 'active',
             probability: defaultProbability,
-            responsibles: [deal.createdBy]
-          });
+            responsibles: [deal.createdBy],
+            notes: null,
+            stage_entered_at: new Date().toISOString()
+          };
+
+          await supabaseClient.from("player_tracks").insert(playerTrackPayload);
         }
       } catch (trackError) {
         console.error("Master Deal created but track creation failed:", trackError);
@@ -325,19 +343,19 @@ export async function createDeal(deal: DealInput): Promise<Deal> {
 
 export async function updateDeal(dealId: string, updates: DealUpdate): Promise<Deal> {
   try {
-    const updateData: Partial<MasterDealDB> & { updated_at: string } = { updated_at: new Date().toISOString() };
+    const updateData: MasterDealUpdate & { updated_at: string } = { updated_at: new Date().toISOString() };
 
     if (updates.clientName !== undefined) updateData.client_name = updates.clientName;
     if (updates.volume !== undefined) updateData.volume = updates.volume;
     if (updates.operationType !== undefined) updateData.operation_type = updates.operationType;
-    if (updates.deadline !== undefined) updateData.deadline = updates.deadline;
-    if (updates.observations !== undefined) updateData.observations = updates.observations;
+    if (updates.deadline !== undefined) updateData.deadline = updates.deadline ?? null;
+    if (updates.observations !== undefined) updateData.observations = updates.observations ?? null;
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.feePercentage !== undefined) updateData.fee_percentage = updates.feePercentage;
-    if (updates.companyId !== undefined) updateData.company_id = updates.companyId;
-    if (updates.dealProduct !== undefined) updateData.deal_product = updates.dealProduct;
+    if (updates.companyId !== undefined) updateData.company_id = updates.companyId ?? null;
+    if (updates.dealProduct !== undefined) updateData.deal_product = updates.dealProduct ?? null;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('master_deals')
       .update(updateData)
       .eq('id', dealId)
@@ -346,7 +364,7 @@ export async function updateDeal(dealId: string, updates: DealUpdate): Promise<D
         createdByUser:profiles!master_deals_created_by_fkey(id, name, email, avatar_url),
         company:companies(id, name, type, site)
       `)
-      .single();
+      .single<DealQueryResult>();
 
     if (error) throw error;
 
@@ -365,7 +383,7 @@ export async function updateDeal(dealId: string, updates: DealUpdate): Promise<D
 
 export async function deleteDeal(dealId: string): Promise<void> {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('master_deals')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', dealId);
@@ -379,7 +397,7 @@ export async function deleteDeal(dealId: string): Promise<void> {
 
 export async function deleteDeals(ids: string[]): Promise<void> {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('master_deals')
       .update({ deleted_at: new Date().toISOString() })
       .in('id', ids);

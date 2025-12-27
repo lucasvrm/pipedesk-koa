@@ -1,9 +1,11 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Lead, LeadStatus, LeadMember, Contact, LeadPriorityBucket } from '@/lib/types'
+import { Lead, LeadStatus, LeadMember, Contact, LeadPriorityBucket, OperationType } from '@/lib/types'
 import { CompanyInput } from '@/services/companyService'
 import { syncRemoteEntityName } from './pdGoogleDriveApi'
 import { getSetting } from './systemSettingsService'
+import type { Database } from '@/lib/databaseTypes'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // ============================================================================
 // Query Keys
@@ -81,9 +83,103 @@ export interface ChangeLeadOwnerData {
   currentUserId: string;
 }
 
+type SupabaseDB = SupabaseClient<Database>;
+const supabaseClient = supabase as SupabaseDB;
+type LeadRow = Database['public']['Tables']['leads']['Row'];
+type LeadInsert = Database['public']['Tables']['leads']['Insert'];
+type LeadUpdateRow = Database['public']['Tables']['leads']['Update'];
+type LeadContactInsert = Database['public']['Tables']['lead_contacts']['Insert'];
+type LeadMemberInsert = Database['public']['Tables']['lead_members']['Insert'];
+type QualifyLeadReturn = Database['public']['Functions']['qualify_lead']['Returns'];
+type LeadQueryResult = LeadRow & { lead_contacts?: any[]; lead_members?: any[]; owner?: any };
+
 // ============================================================================
 // Helpers
 // ============================================================================
+
+const VALID_OPERATION_TYPES: OperationType[] = [
+  'ccb',
+  'cri_land',
+  'cri_construction',
+  'cri_corporate',
+  'debt_construction',
+  'receivables_advance',
+  'working_capital',
+  'built_to_suit',
+  'preferred_equity',
+  'repurchase',
+  'sale_and_lease_back',
+  'inventory_purchase',
+  'financial_swap',
+  'physical_swap',
+  'hybrid_swap'
+];
+
+const LEAD_MEMBER_ROLES: LeadMember['role'][] = ['owner', 'collaborator', 'watcher'];
+
+const normalizeOperationType = (value: unknown): OperationType | undefined => {
+  return typeof value === 'string' && VALID_OPERATION_TYPES.includes(value as OperationType)
+    ? (value as OperationType)
+    : undefined;
+};
+
+const normalizePriorityBucket = (value: unknown): LeadPriorityBucket | undefined => {
+  return typeof value === 'string' && ['hot', 'warm', 'cold'].includes(value as LeadPriorityBucket)
+    ? (value as LeadPriorityBucket)
+    : undefined;
+};
+
+const asNumber = (value: unknown): number | undefined => (typeof value === 'number' ? value : undefined);
+
+const mapContactFromLink = (link: any): Contact | null => {
+  const contact = link?.contacts ?? link;
+  if (!contact?.id || !contact?.name || !contact?.created_at || !contact?.created_by) {
+    return null;
+  }
+
+  return {
+    id: contact.id,
+    companyId: contact.company_id ?? contact.companyId ?? null,
+    name: contact.name,
+    email: contact.email ?? undefined,
+    phone: contact.phone ?? undefined,
+    role: contact.role ?? undefined,
+    department: contact.department ?? undefined,
+    linkedin: contact.linkedin ?? undefined,
+    notes: contact.notes ?? undefined,
+    isPrimary: Boolean(link?.is_primary ?? contact.is_primary ?? link?.isPrimary ?? contact.isPrimary ?? false),
+    buyingRole: contact.buying_role ?? contact.buyingRole ?? undefined,
+    sentiment: contact.sentiment ?? undefined,
+    createdAt: contact.created_at ?? contact.createdAt,
+    updatedAt: contact.updated_at ?? contact.updatedAt ?? undefined,
+    createdBy: contact.created_by ?? contact.createdBy,
+    isSynthetic: contact.is_synthetic ?? contact.isSynthetic ?? undefined
+  };
+};
+
+const mapMemberFromLink = (lm: any): LeadMember | null => {
+  if (!lm?.lead_id || !lm?.user_id || !lm?.added_at) return null;
+  const role = LEAD_MEMBER_ROLES.includes(lm.role as LeadMember['role'])
+    ? (lm.role as LeadMember['role'])
+    : 'collaborator';
+
+  const profile = lm.profiles;
+
+  return {
+    leadId: lm.lead_id,
+    userId: lm.user_id,
+    role,
+    addedAt: lm.added_at,
+    user: profile
+      ? {
+          id: profile.id,
+          name: profile.name ?? 'Usuário',
+          email: profile.email ?? '',
+          avatar: profile.avatar_url ?? undefined
+        }
+      : undefined
+  };
+};
 
 function mapLeadFromDB(item: any): Lead {
   return {
@@ -98,7 +194,7 @@ function mapLeadFromDB(item: any): Lead {
     description: item.description,
     leadStatusId: item.lead_status_id,
     leadOriginId: item.lead_origin_id,
-    operationType: item.operation_type,
+    operationType: normalizeOperationType(item.operation_type),
     ownerUserId: item.owner_user_id,
     owner: item.owner,
 
@@ -110,34 +206,21 @@ function mapLeadFromDB(item: any): Lead {
     updatedAt: item.updated_at,
     createdBy: item.created_by,
 
-    // Mapped via joins
-    contacts: item.lead_contacts?.map((lc: any) => ({
-      ...lc.contacts, // spread generic contact fields
-      isPrimary: lc.is_primary, // override with link-specific
-      // Rename snake to camel
-      companyId: lc.contacts.company_id,
-      createdAt: lc.contacts.created_at,
-      createdBy: lc.contacts.created_by
-    })) || [],
+    contacts:
+      item.lead_contacts
+        ?.map(mapContactFromLink)
+        .filter((contact): contact is Contact => Boolean(contact)) || [],
 
-    members: item.lead_members?.map((lm: any) => ({
-      leadId: lm.lead_id,
-      userId: lm.user_id,
-      role: lm.role,
-      addedAt: lm.added_at,
-      user: lm.profiles ? {
-        id: lm.profiles.id,
-        name: lm.profiles.name,
-        email: lm.profiles.email,
-        avatar: lm.profiles.avatar_url
-      } : undefined
-    })) || [],
+    members:
+      item.lead_members
+        ?.map(mapMemberFromLink)
+        .filter((member): member is LeadMember => Boolean(member)) || [],
 
-    priorityBucket: item.priority_bucket || item.priorityBucket,
-    priorityScore: item.priority_score || item.priorityScore,
+    priorityBucket: normalizePriorityBucket(item.priority_bucket ?? item.priorityBucket),
+    priorityScore: asNumber(item.priority_score ?? item.priorityScore),
     priorityDescription: item.priority_description || item.priorityDescription,
     lastInteractionAt: item.last_interaction_at || item.lastInteractionAt,
-    daysWithoutInteraction: item.days_without_interaction || item.daysWithoutInteraction,
+    daysWithoutInteraction: asNumber(item.days_without_interaction ?? item.daysWithoutInteraction),
     nextAction: item.next_action || item.nextAction
   };
 }
@@ -157,7 +240,7 @@ function mapLeadFromSalesView(item: any): Lead {
     description: item.description,
     leadStatusId: item.lead_status_id || item.leadStatusId || item.status,
     leadOriginId: item.lead_origin_id || item.leadOriginId || item.origin,
-    operationType: item.operation_type || item.operationType,
+    operationType: normalizeOperationType(item.operation_type ?? item.operationType),
     ownerUserId: item.owner_user_id || item.ownerUserId,
 
     qualifiedAt: item.qualified_at || item.qualifiedAt,
@@ -168,32 +251,21 @@ function mapLeadFromSalesView(item: any): Lead {
     updatedAt: item.updated_at || item.updatedAt,
     createdBy: item.created_by || item.createdBy,
 
-    contacts: contacts?.map((lc: any) => ({
-      ...lc.contacts ? lc.contacts : lc,
-      isPrimary: lc.is_primary ?? lc.isPrimary,
-      companyId: lc.contacts?.company_id || lc.contacts?.companyId || lc.company_id || lc.companyId,
-      createdAt: lc.contacts?.created_at || lc.contacts?.createdAt,
-      createdBy: lc.contacts?.created_by || lc.contacts?.createdBy
-    })) || [],
-    members: item.lead_members?.map((lm: any) => ({
-      leadId: lm.lead_id,
-      userId: lm.user_id,
-      role: lm.role,
-      addedAt: lm.added_at,
-      user: lm.profiles ? {
-        id: lm.profiles.id,
-        name: lm.profiles.name,
-        email: lm.profiles.email,
-        avatar: lm.profiles.avatar_url
-      } : undefined
-    })) || [],
+    contacts:
+      contacts
+        ?.map(mapContactFromLink)
+        .filter((contact): contact is Contact => Boolean(contact)) || [],
+    members:
+      item.lead_members
+        ?.map(mapMemberFromLink)
+        .filter((member): member is LeadMember => Boolean(member)) || [],
     isSynthetic: item.is_synthetic || item.isSynthetic,
 
-    priorityBucket: item.priority_bucket || item.priorityBucket,
-    priorityScore: item.priority_score || item.priorityScore,
+    priorityBucket: normalizePriorityBucket(item.priority_bucket ?? item.priorityBucket),
+    priorityScore: asNumber(item.priority_score ?? item.priorityScore),
     priorityDescription: item.priority_description || item.priorityDescription,
     lastInteractionAt: item.last_interaction_at || item.lastInteractionAt,
-    daysWithoutInteraction: item.days_without_interaction || item.daysWithoutInteraction,
+    daysWithoutInteraction: asNumber(item.days_without_interaction ?? item.daysWithoutInteraction),
     nextAction: item.next_action || item.nextAction,
     // Keep owner mapping when returned by API
     owner: item.owner
@@ -214,7 +286,7 @@ async function getQualifiedStatusId(): Promise<string | null> {
 
   if (!qualifiedStatusIdPromise) {
     qualifiedStatusIdPromise = (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('lead_statuses')
         .select('id')
         .eq('code', 'qualified')
@@ -247,7 +319,7 @@ async function getQualifiedStatusId(): Promise<string | null> {
 
 export async function getLeads(filters?: LeadFilters, options?: { includeQualified?: boolean }): Promise<Lead[]> {
   const includeQualified = options?.includeQualified ?? false;
-  let query = supabase
+  let query = supabaseClient
     .from('leads')
     .select(`
       *,
@@ -272,7 +344,7 @@ export async function getLeads(filters?: LeadFilters, options?: { includeQualifi
   if (filters) {
     // Handle tag filtering first (if provided)
     if (filters.tags && filters.tags.length > 0) {
-      const { data: matchingIds, error: matchError } = await supabase
+      const { data: matchingIds, error: matchError } = await supabaseClient
         .from('entity_tags')
         .select('entity_id')
         .eq('entity_type', 'lead')
@@ -307,11 +379,12 @@ export async function getLeads(filters?: LeadFilters, options?: { includeQualifi
   const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data.map(mapLeadFromDB);
+  const leads = (data as LeadQueryResult[] | null) ?? [];
+  return leads.map(mapLeadFromDB);
 }
 
 export async function getLead(id: string): Promise<Lead> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('leads')
     .select(`
       *,
@@ -320,7 +393,7 @@ export async function getLead(id: string): Promise<Lead> {
       owner:profiles!leads_owner_user_id_fkey(id, name, email, avatar_url)
     `)
     .eq('id', id)
-    .single();
+    .single<LeadQueryResult>();
 
   if (error) throw error;
   return mapLeadFromDB(data);
@@ -403,24 +476,26 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
   //   leadOriginId = defaultOriginSetting?.value || 'outbound';
   // }
 
-  const { data, error } = await supabase
+  const leadPayload: LeadInsert = {
+    legal_name: lead.legalName,
+    trade_name: lead.tradeName ?? null,
+    cnpj: lead.cnpj ?? null,
+    website: lead.website ?? null,
+    segment: lead.segment ?? null,
+    address_city: lead.addressCity ?? null,
+    address_state: lead.addressState ?? null,
+    description: lead.description ?? null,
+    lead_origin_id: leadOriginId ?? null,
+    operation_type: lead.operationType ?? null,
+    owner_user_id: lead.ownerUserId || userId, // Default owner is creator
+    created_by: userId
+  };
+
+  const { data, error } = await supabaseClient
     .from('leads')
-    .insert({
-      legal_name: lead.legalName,
-      trade_name: lead.tradeName,
-      cnpj: lead.cnpj,
-      website: lead.website,
-      segment: lead.segment,
-      address_city: lead.addressCity,
-      address_state: lead.addressState,
-      description: lead.description,
-      lead_origin_id: leadOriginId,
-      operation_type: lead.operationType,
-      owner_user_id: lead.ownerUserId || userId, // Default owner is creator
-      created_by: userId
-    })
+    .insert(leadPayload)
     .select()
-    .single();
+    .single<LeadRow>();
 
   if (error) throw error;
 
@@ -439,22 +514,22 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
 }
 
 export async function updateLead(id: string, updates: LeadUpdate) {
-  const updateData: any = { updated_at: new Date().toISOString() };
+  const updateData: LeadUpdateRow & { updated_at: string } = { updated_at: new Date().toISOString() };
 
   if (updates.legalName !== undefined) updateData.legal_name = updates.legalName;
-  if (updates.tradeName !== undefined) updateData.trade_name = updates.tradeName;
-  if (updates.cnpj !== undefined) updateData.cnpj = updates.cnpj;
-  if (updates.website !== undefined) updateData.website = updates.website;
-  if (updates.segment !== undefined) updateData.segment = updates.segment;
-  if (updates.addressCity !== undefined) updateData.address_city = updates.addressCity;
-  if (updates.addressState !== undefined) updateData.address_state = updates.addressState;
-  if (updates.description !== undefined) updateData.description = updates.description;
-  if (updates.leadStatusId !== undefined) updateData.lead_status_id = updates.leadStatusId;
-  if (updates.leadOriginId !== undefined) updateData.lead_origin_id = updates.leadOriginId;
-  if (updates.operationType !== undefined) updateData.operation_type = updates.operationType;
-  if (updates.ownerUserId !== undefined) updateData.owner_user_id = updates.ownerUserId;
+  if (updates.tradeName !== undefined) updateData.trade_name = updates.tradeName ?? null;
+  if (updates.cnpj !== undefined) updateData.cnpj = updates.cnpj ?? null;
+  if (updates.website !== undefined) updateData.website = updates.website ?? null;
+  if (updates.segment !== undefined) updateData.segment = updates.segment ?? null;
+  if (updates.addressCity !== undefined) updateData.address_city = updates.addressCity ?? null;
+  if (updates.addressState !== undefined) updateData.address_state = updates.addressState ?? null;
+  if (updates.description !== undefined) updateData.description = updates.description ?? null;
+  if (updates.leadStatusId !== undefined) updateData.lead_status_id = updates.leadStatusId ?? null;
+  if (updates.leadOriginId !== undefined) updateData.lead_origin_id = updates.leadOriginId ?? null;
+  if (updates.operationType !== undefined) updateData.operation_type = updates.operationType ?? null;
+  if (updates.ownerUserId !== undefined) updateData.owner_user_id = updates.ownerUserId ?? null;
 
-  const { data, error } = await supabase.from('leads').update(updateData).eq('id', id).select().single();
+  const { data, error } = await supabaseClient.from('leads').update(updateData).eq('id', id).select().single<LeadRow>();
   if (error) throw error;
 
   // --- GOOGLE DRIVE SYNC START ---
@@ -467,7 +542,7 @@ export async function updateLead(id: string, updates: LeadUpdate) {
 }
 
 export async function deleteLead(id: string) {
-  const { error } = await supabase.from('leads').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  const { error } = await supabaseClient.from('leads').update({ deleted_at: new Date().toISOString() }).eq('id', id);
   if (error) throw error;
 }
 
@@ -476,14 +551,15 @@ export async function deleteLead(id: string) {
 export async function addLeadContact(leadId: string, contactId: string, isPrimary: boolean = false) {
   // If setting primary, unset others first?
   if (isPrimary) {
-    await supabase.from('lead_contacts').update({ is_primary: false }).eq('lead_id', leadId);
+    await supabaseClient.from('lead_contacts').update({ is_primary: false }).eq('lead_id', leadId);
   }
-  const { error } = await supabase.from('lead_contacts').insert({ lead_id: leadId, contact_id: contactId, is_primary: isPrimary });
+  const leadContactPayload: LeadContactInsert = { lead_id: leadId, contact_id: contactId, is_primary: isPrimary };
+  const { error } = await supabaseClient.from('lead_contacts').insert(leadContactPayload);
   if (error) throw error;
 }
 
 export async function removeLeadContact(leadId: string, contactId: string) {
-  const { error } = await supabase.from('lead_contacts').delete().match({ lead_id: leadId, contact_id: contactId });
+  const { error } = await supabaseClient.from('lead_contacts').delete().match({ lead_id: leadId, contact_id: contactId });
   if (error) throw error;
 }
 
@@ -495,11 +571,13 @@ export async function addLeadMember(member: { leadId: string, userId: string, ro
     memberRole = defaultRoleSetting?.value || 'collaborator'; // Fallback to 'collaborator' if no setting
   }
 
-  const { error } = await supabase.from('lead_members').insert({
+  const memberPayload: LeadMemberInsert = {
     lead_id: member.leadId,
     user_id: member.userId,
     role: memberRole
-  });
+  };
+
+  const { error } = await supabaseClient.from('lead_members').insert(memberPayload);
   if (error) {
     // Ignore duplicate key error?
     if (error.code !== '23505') throw error;
@@ -507,7 +585,7 @@ export async function addLeadMember(member: { leadId: string, userId: string, ro
 }
 
 export async function removeLeadMember(leadId: string, userId: string) {
-  const { error } = await supabase.from('lead_members').delete().match({ lead_id: leadId, user_id: userId });
+  const { error } = await supabaseClient.from('lead_members').delete().match({ lead_id: leadId, user_id: userId });
   if (error) throw error;
 }
 
@@ -519,7 +597,7 @@ export interface QualifyLeadResult {
 }
 
 export async function qualifyLead(input: QualifyLeadInput): Promise<QualifyLeadResult> {
-  const { data, error } = await supabase.rpc('qualify_lead', {
+  const { data, error } = await supabaseClient.rpc('qualify_lead', {
     p_lead_id: input.leadId,
     p_company_id: input.companyId,
     p_new_company_data: input.newCompanyData,
@@ -527,7 +605,7 @@ export async function qualifyLead(input: QualifyLeadInput): Promise<QualifyLeadR
   });
 
   if (error) throw error;
-  return data as QualifyLeadResult;
+  return (data as QualifyLeadReturn) as QualifyLeadResult;
 }
 
 export async function changeLeadOwner(data: ChangeLeadOwnerData): Promise<void> {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import { RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js'
 
 export interface UseSupabaseReturn<T> {
   data: T[]
@@ -21,6 +21,7 @@ export function useSupabase<T extends { id: string }>(
     orderBy?: { column: string; ascending?: boolean }
   } = {}
 ): UseSupabaseReturn<T> {
+  const supabaseClient = supabase as SupabaseClient
   const [data, setData] = useState<T[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -33,7 +34,7 @@ export function useSupabase<T extends { id: string }>(
       setLoading(true)
       setError(null)
 
-      let query = supabase.from(tableName).select(select)
+      let query = supabaseClient.from(tableName).select(select)
 
       if (filter) {
         query = filter(query)
@@ -62,7 +63,7 @@ export function useSupabase<T extends { id: string }>(
   useEffect(() => {
     if (!realtime) return
 
-    const realtimeChannel = supabase
+    const realtimeChannel = supabaseClient
       .channel(`public:${tableName}`)
       .on(
         'postgres_changes',
@@ -95,7 +96,7 @@ export function useSupabase<T extends { id: string }>(
   const create = useCallback(
     async (item: Partial<T>): Promise<T | null> => {
       try {
-        const { data: newItem, error: createError } = await supabase
+        const { data: newItem, error: createError } = await supabaseClient
           .from(tableName)
           .insert(item as Record<string, unknown>)
           .select()
@@ -115,7 +116,7 @@ export function useSupabase<T extends { id: string }>(
   const update = useCallback(
     async (id: string, updates: Partial<T>): Promise<T | null> => {
       try {
-        const { data: updatedItem, error: updateError } = await supabase
+        const { data: updatedItem, error: updateError } = await supabaseClient
           .from(tableName)
           .update(updates as Record<string, unknown>)
           .eq('id', id)
@@ -136,7 +137,7 @@ export function useSupabase<T extends { id: string }>(
   const remove = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await supabaseClient
           .from(tableName)
           .delete()
           .eq('id', id)
