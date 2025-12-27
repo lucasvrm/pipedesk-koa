@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Lead, LeadStatus, LeadMember, Contact, CompanyInput, LeadPriorityBucket } from '@/lib/types'
+import { Lead, LeadStatus, LeadMember, Contact, LeadPriorityBucket } from '@/lib/types'
+import { CompanyInput } from '@/services/companyService'
 import { syncRemoteEntityName } from './pdGoogleDriveApi'
 import { getSetting } from './systemSettingsService'
 
