@@ -12,7 +12,11 @@ All required components have been successfully implemented for the branding cust
 - `supabase/migrations/20251227_create_branding_bucket.sql`
   - Creates `branding` bucket (public, 2MB limit)
   - Supports: PNG, JPG, JPEG, SVG, ICO
-  - RLS policies: SELECT (public), INSERT/UPDATE/DELETE (admin/analyst only)
+  - RLS policies: SELECT (public), INSERT/UPDATE/DELETE (admin/manager/analyst)
+  
+- `supabase/migrations/20251227_update_branding_policies_manager.sql`
+  - Updates storage policies to include manager role
+  - Aligns permissions with route access (/admin/settings/customize)
 
 ### 2. **Utilities**
 - `src/lib/favicon.ts`
@@ -36,6 +40,7 @@ All required components have been successfully implemented for the branding cust
   - Remove functionality with storage cleanup
   - Uses `updateSystemSetting()` service
   - Calls `refreshMetadata()` after changes
+  - **Layout:** Uses `StandardPageLayout` for full-width display
 
 ---
 
@@ -364,10 +369,15 @@ USING (
 
 - ✅ File type validation (client + server)
 - ✅ File size validation (2MB max)
-- ✅ RLS policies enforce admin/analyst only for writes
+- ✅ RLS policies enforce admin/manager/analyst only for writes
 - ✅ No XSS risk (images from Supabase CDN)
 - ✅ No secrets in code
 - ✅ Uses existing `updateSystemSetting()` service (includes audit trail)
+
+### Permissions (RLS)
+- **SELECT:** Public (anyone can view)
+- **INSERT/UPDATE/DELETE:** admin, manager, analyst roles only
+- Route access: admin and manager roles (`/admin/settings/customize`)
 
 ---
 
