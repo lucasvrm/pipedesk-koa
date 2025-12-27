@@ -244,6 +244,47 @@ describe('settingsService', () => {
       expect(result.error?.message).toBe('Key cannot be empty')
       expect(result.data).toBeNull()
     })
+
+    it('should delete a system setting when value is null', async () => {
+      const mockEq = vi.fn(() => Promise.resolve({ error: null }))
+      const mockDelete = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as any)
+
+      const result = await updateSystemSetting('test_key', null)
+
+      expect(result.error).toBeNull()
+      expect(result.data).toBeNull()
+      expect(mockDelete).toHaveBeenCalled()
+      expect(mockEq).toHaveBeenCalledWith('key', 'test_key')
+    })
+
+    it('should delete a system setting when value is undefined', async () => {
+      const mockEq = vi.fn(() => Promise.resolve({ error: null }))
+      const mockDelete = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as any)
+
+      const result = await updateSystemSetting('test_key', undefined)
+
+      expect(result.error).toBeNull()
+      expect(result.data).toBeNull()
+      expect(mockDelete).toHaveBeenCalled()
+      expect(mockEq).toHaveBeenCalledWith('key', 'test_key')
+    })
+
+    it('should return error when delete fails', async () => {
+      const mockError = new Error('Delete failed')
+      const mockEq = vi.fn(() => Promise.resolve({ error: mockError }))
+      const mockDelete = vi.fn(() => ({ eq: mockEq }))
+
+      vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as any)
+
+      const result = await updateSystemSetting('test_key', null)
+
+      expect(result.error).toBe(mockError)
+      expect(result.data).toBeNull()
+    })
   })
 
   describe('user_role_metadata CRUD', () => {
