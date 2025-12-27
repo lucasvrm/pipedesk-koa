@@ -266,6 +266,10 @@ export interface Comment {
   author?: {
     name: string
     avatar?: string
+    avatar_url?: string
+    avatarBgColor?: string
+    avatarTextColor?: string
+    avatarBorderColor?: string
   }
   content: string
   createdAt: string

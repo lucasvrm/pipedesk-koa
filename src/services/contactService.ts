@@ -42,6 +42,7 @@ function mapContactFromDB(item: any): ContactWithCompany {
     notes: item.notes || '',
     isPrimary: item.is_primary || false,
     createdAt: item.created_at,
+    updatedAt: item.updated_at,
     createdBy: item.created_by,
     companyName: item.companies?.name,
     companyType: item.companies?.type
