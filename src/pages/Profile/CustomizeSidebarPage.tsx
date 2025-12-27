@@ -606,16 +606,17 @@ export default function CustomizeSidebarPage() {
         </TabsContent>
 
         {/* TAB RAIL/SIDEBAR */}
-        <TabsContent value="rail" className="pb-24">
-          {!isAdmin && (
-            <div className="mb-4 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-              <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
-                <Info className="h-3 w-3" />
-                Apenas administradores podem editar/deletar itens em seções padrão do sistema
-              </p>
-            </div>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="rail">
+          <div className="space-y-6 pb-24">
+            {!isAdmin && (
+              <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <Info className="h-3 w-3" />
+                  Apenas administradores podem editar/deletar itens em seções padrão do sistema
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Config */}
             <Card>
               <CardHeader className="pb-3">
@@ -891,9 +892,10 @@ export default function CustomizeSidebarPage() {
               </CardContent>
             </Card>
           </div>
+          </div>
 
           {/* Sticky Action Bar */}
-          <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur mt-6 -mx-6 px-6 py-4 flex justify-between items-center">
+          <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur -mx-6 px-6 py-3 flex justify-between items-center min-h-[60px]">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline"><RotateCcw className="h-4 w-4 mr-2" />Resetar</Button>
@@ -911,9 +913,26 @@ export default function CustomizeSidebarPage() {
             </AlertDialog>
 
             <div className="flex gap-2 items-center">
-              {hasChanges && <Badge variant="secondary">Não salvo</Badge>}
-              <Button onClick={handleSaveWithValidation} disabled={!hasChanges || updatePrefs.isPending}>
-                <Save className="h-4 w-4 mr-2" />{updatePrefs.isPending ? 'Salvando...' : 'Salvar'}
+              {hasChanges && (
+                <Badge variant="secondary" className="text-xs">
+                  Alterações pendentes
+                </Badge>
+              )}
+              <Button 
+                onClick={handleSaveWithValidation} 
+                disabled={!hasChanges || updatePrefs.isPending}
+              >
+                {updatePrefs.isPending ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar
+                  </>
+                )}
               </Button>
             </div>
           </div>
