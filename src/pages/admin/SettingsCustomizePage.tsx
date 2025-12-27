@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Upload, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { StandardPageLayout } from '@/components/layouts'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 
@@ -268,7 +269,7 @@ export default function SettingsCustomizePage() {
   }
 
   return (
-    <div className="container max-w-4xl py-6 space-y-6">
+    <StandardPageLayout>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Customização</h1>
         <p className="text-muted-foreground mt-2">
@@ -465,6 +466,6 @@ export default function SettingsCustomizePage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </StandardPageLayout>
   )
 }
