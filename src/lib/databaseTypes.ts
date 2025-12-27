@@ -605,12 +605,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-// Helper type to make id and timestamps optional for inserts (auto-generated)
-// Required fields should NOT include: id, created_at, updated_at (usually auto-generated)
-type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at'> & {
+// Helper type to make id, timestamps, and fields with DB defaults optional for inserts
+// These fields are typically auto-generated or have default values in the database
+type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at' | 'is_synthetic' | 'deleted_at'> & {
   id?: string
   created_at?: string
   updated_at?: string
+  is_synthetic?: boolean
+  deleted_at?: string | null
 }
 
 export type Database = {
