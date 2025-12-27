@@ -607,10 +607,11 @@ export type Json =
 
 // Helper type to make id, timestamps, and fields with DB defaults optional for inserts
 // These fields are typically auto-generated or have default values in the database
-type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at' | 'is_synthetic' | 'deleted_at'> & {
+type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at' | 'added_at' | 'is_synthetic' | 'deleted_at'> & {
   id?: string
   created_at?: string
   updated_at?: string
+  added_at?: string
   is_synthetic?: boolean
   deleted_at?: string | null
 }
