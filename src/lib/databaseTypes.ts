@@ -14,6 +14,7 @@ export interface MasterDealDB {
   company_id: string | null
   deal_product: string | null
   deleted_at: string | null
+  is_synthetic: boolean
 }
 
 export interface ProfileDB {
@@ -21,12 +22,30 @@ export interface ProfileDB {
   name: string | null
   username?: string | null
   email: string | null
+  secondary_email?: string | null
+  cellphone?: string | null
+  rg?: string | null
+  cpf?: string | null
+  address?: string | null
+  pix_key_pf?: string | null
+  pix_key_pj?: string | null
   avatar_url: string | null
   avatar_bg_color?: string | null
   avatar_text_color?: string | null
   avatar_border_color?: string | null
   banner_style?: string | null
+  title?: string | null
+  department?: string | null
+  birth_date?: string | null
+  linkedin?: string | null
+  bio?: string | null
+  doc_identity_url?: string | null
+  doc_social_contract_url?: string | null
+  doc_service_agreement_url?: string | null
   role?: string | null
+  client_entity?: string | null
+  status?: string | null
+  last_login?: string | null
   has_completed_onboarding?: boolean | null
   preferences?: Record<string, unknown> | null
   created_at?: string
@@ -888,7 +907,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_synthetic_data_v2: {
+        Args: {
+          payload: {
+            companies_count: number
+            leads_count: number
+            deals_count: number
+            contacts_count: number
+            players_count: number
+            users_ids: string[]
+          }
+        }
+        Returns: {
+          companies: number
+          leads: number
+          deals: number
+          contacts: number
+          players: number
+        }
+      }
+      qualify_lead: {
+        Args: {
+          p_lead_id: string
+          p_company_id?: string
+          p_new_company_data?: Record<string, unknown>
+          p_user_id: string
+        }
+        Returns: {
+          master_deal_id: string
+          company_id: string
+        }
+      }
     }
     Enums: {
       [_ in never]: never
