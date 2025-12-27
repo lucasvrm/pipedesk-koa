@@ -23,6 +23,7 @@ import InboxPanel from '@/features/inbox/components/InboxPanel';
 import { SLAMonitoringService } from '@/components/SLAMonitoringService';
 import { OnboardingTour } from '@/components/OnboardingTour';
 import { CreateNewDropdown } from '@/components/CreateNewDropdown';
+import { BrandMark } from '@/components/BrandMark';
 
 interface LayoutProps {
   children: ReactNode;
@@ -53,12 +54,12 @@ export function Layout({ children }: LayoutProps) {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="flex items-center h-16 px-6 gap-4">
-          <h1
-            className="text-xl font-bold text-primary tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+          <div
+            className="cursor-pointer"
             onClick={() => navigate('/dashboard')}
           >
-            PipeDesk
-          </h1>
+            <BrandMark variant="header" />
+          </div>
 
           <div className="ml-auto flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-2 overflow-x-auto pr-2">

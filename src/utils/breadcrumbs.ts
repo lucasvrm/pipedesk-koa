@@ -72,6 +72,13 @@ export function buildBreadcrumbs(pathname: string, searchParams: URLSearchParams
   const pathParts = pathname.split('/').filter(Boolean)
   const breadcrumbs: BreadcrumbItem[] = []
 
+  // Admin settings customize: Configurações > Customização
+  if (pathParts[0] === 'admin' && pathParts[1] === 'settings' && pathParts[2] === 'customize') {
+    breadcrumbs.push({ label: ROUTE_LABELS.settings || 'Configurações', path: '/admin/settings' })
+    breadcrumbs.push({ label: ROUTE_LABELS.customize || 'Customização' })
+    return breadcrumbs
+  }
+
   // Admin settings: Configurações > Categoria > Seção > Sub (quando existir)
   if (pathParts[0] === 'admin' && pathParts[1] === 'settings') {
     const requestedCategory = normalizeParam(searchParams.get('category')) || 'crm'

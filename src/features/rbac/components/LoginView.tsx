@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator'
 import { Lock, Eye, EyeOff, ArrowLeft, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { BrandMark } from '@/components/BrandMark'
 
 type ViewState = 'login' | 'reset' | 'reset-success'
 
@@ -178,7 +179,9 @@ export default function LoginView() {
           <div className="mx-auto mb-4 bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center">
             <Lock className="w-6 h-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">PipeDesk Koa</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            <BrandMark variant="login" />
+          </CardTitle>
           <CardDescription>Acesso ao Sistema de DealFlow</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

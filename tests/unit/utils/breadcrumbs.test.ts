@@ -112,4 +112,18 @@ describe('buildBreadcrumbs helper', () => {
       { label: 'Deal Name', path: undefined },
     ])
   })
+
+  it('builds admin settings customize breadcrumbs', () => {
+    const breadcrumbs = buildBreadcrumbs(
+      '/admin/settings/customize',
+      new URLSearchParams()
+    )
+
+    expect(breadcrumbs.map((b) => b.label)).toEqual([
+      'Configurações',
+      'Customização',
+    ])
+    expect(breadcrumbs[0]?.path).toBe('/admin/settings')
+    expect(breadcrumbs[1]?.path).toBeUndefined()
+  })
 })
