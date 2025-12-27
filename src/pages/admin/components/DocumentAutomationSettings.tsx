@@ -329,7 +329,7 @@ export default function DocumentAutomationSettings() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="capitalize">
-                      {item.event_type.replaceAll('_', ' ')}
+                      {String(item.event_type).replaceAll('_', ' ')}
                     </Badge>
                     <span className="font-semibold">{item.name}</span>
                     <Badge variant="outline">{item.entity_type}</Badge>

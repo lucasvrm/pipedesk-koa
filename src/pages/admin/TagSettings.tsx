@@ -64,7 +64,7 @@ export default function TagSettings() {
   // Form
   const [tagName, setTagName] = useState('');
   const [tagColor, setTagColor] = useState(TAG_COLORS[0]);
-  const [tagType, setTagType] = useState<'global' | 'deal' | 'track' | 'lead'>('global');
+  const [tagType, setTagType] = useState<'global' | 'deal' | 'track' | 'lead' | 'company'>('global');
 
   const rawConfig = settings?.find((s) => s.key === 'tags_config')?.value;
   const tagsConfig = {

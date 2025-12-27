@@ -17,7 +17,7 @@ export function TagCard({ tag, onEdit, onDelete }: TagCardProps) {
       <div className="flex items-center gap-3">
         <div
           className="w-3 h-3 rounded-full shrink-0 ring-2 ring-offset-1"
-          style={{ backgroundColor: tag.color, ringColor: tag.color }}
+          style={{ backgroundColor: tag.color, '--tw-ring-color': tag.color } as React.CSSProperties}
         />
         <div className="flex flex-col">
           <span className="font-medium text-sm leading-none">{tag.name}</span>
