@@ -17,7 +17,9 @@ function mapContactFromDB(item: any): PlayerContact {
     phone: item.phone || '',
     isPrimary: item.is_primary,
     createdAt: item.created_at,
-    createdBy: item.created_by
+    createdBy: item.created_by,
+    updatedAt: item.updated_at,
+    updatedBy: item.updated_by
   }
 }
 
@@ -92,8 +94,9 @@ export async function getPlayer(id: string): Promise<Player> {
 }
 
 export async function createPlayer(player: Partial<Player>, userId: string): Promise<Player> {
-  const { data, error } = await supabase
-    .from('players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('players') as any)
     .insert({
       name: player.name,
       cnpj: player.cnpj,
@@ -114,8 +117,9 @@ export async function createPlayer(player: Partial<Player>, userId: string): Pro
 }
 
 export async function updatePlayer(id: string, updates: Partial<Player>, userId: string): Promise<Player> {
-  const { data, error } = await supabase
-    .from('players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('players') as any)
     .update({
       name: updates.name,
       cnpj: updates.cnpj,
@@ -137,8 +141,9 @@ export async function updatePlayer(id: string, updates: Partial<Player>, userId:
 }
 
 export async function deletePlayer(id: string, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from('players') as any)
     .update({
       deleted_at: new Date().toISOString(),
       updated_by: userId
@@ -150,8 +155,9 @@ export async function deletePlayer(id: string, userId: string): Promise<void> {
 
 // --- NOVA FUNÇÃO: Deleção em Massa ---
 export async function deletePlayers(ids: string[], userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from('players') as any)
     .update({
       deleted_at: new Date().toISOString(),
       updated_by: userId

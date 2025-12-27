@@ -32,8 +32,9 @@ export async function toggleTransitionRule(fromStage: string, toStage: string, e
     .single();
 
   if (existing) {
-    const { data, error } = await supabase
-      .from('phase_transition_rules')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+      .from('phase_transition_rules') as any)
       .update({ enabled })
       .eq('id', existing.id)
       .select()
@@ -43,8 +44,9 @@ export async function toggleTransitionRule(fromStage: string, toStage: string, e
   } else {
     // Create new
     const { data: userData } = await supabase.auth.getUser();
-    const { data, error } = await supabase
-      .from('phase_transition_rules')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+      .from('phase_transition_rules') as any)
       .insert({
         from_stage: fromStage,
         to_stage: toStage,

@@ -118,8 +118,9 @@ export async function createTrack(track: TrackInput): Promise<PlayerTrack> {
         trackProbability = defaultProbabilitySetting?.value ?? 0; // Fallback to 0 if no setting
     }
 
-    const { data, error } = await supabase
-        .from('player_tracks')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+        .from('player_tracks') as any)
         .insert({
             master_deal_id: track.masterDealId,
             player_name: track.playerName,
@@ -195,8 +196,9 @@ export async function updateTrack(trackId: string, updates: TrackUpdate): Promis
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
 
-    const { data, error } = await supabase
-        .from('player_tracks')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+        .from('player_tracks') as any)
         .update(updateData)
         .eq('id', trackId)
         .select()

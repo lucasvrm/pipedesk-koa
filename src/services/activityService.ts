@@ -34,7 +34,8 @@ export async function logActivity(
   details?: any
 ) {
   try {
-    await supabase.from('activity_log').insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('activity_log') as any).insert({
       entity_id: entityId,
       entity_type: entityType,
       action: action,

@@ -52,8 +52,9 @@ export async function createMagicLink(userId: string): Promise<MagicLink> {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
 
-    const { data, error } = await supabase
-        .from('magic_links')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+        .from('magic_links') as any)
         .insert({
             user_id: userId,
             token,
@@ -71,8 +72,9 @@ export async function createMagicLink(userId: string): Promise<MagicLink> {
  * Revoke a magic link
  */
 export async function revokeMagicLink(linkId: string): Promise<void> {
-    const { error } = await supabase
-        .from('magic_links')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase
+        .from('magic_links') as any)
         .update({ revoked_at: new Date().toISOString() })
         .eq('id', linkId);
 
@@ -99,8 +101,9 @@ export async function useMagicLink(token: string): Promise<MagicLink | null> {
     }
 
     // Mark as used
-    const { data: updated, error: updateError } = await supabase
-        .from('magic_links')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: updated, error: updateError } = await (supabase
+        .from('magic_links') as any)
         .update({ used_at: new Date().toISOString() })
         .eq('id', data.id)
         .select()

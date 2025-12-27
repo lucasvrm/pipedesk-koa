@@ -563,8 +563,9 @@ export async function getNotificationPreferences(
 
   // Se não existe, criar com defaults
   if (!data) {
-    const { data: created, error: createError } = await supabase
-      .from('user_notification_preferences')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: created, error: createError } = await (supabase
+      .from('user_notification_preferences') as any)
       .insert({ user_id: userId })
       .select()
       .single();
@@ -598,8 +599,9 @@ export async function updateNotificationPreferences(
   if (updates.channelEmail !== undefined) payload.channel_email = updates.channelEmail;
   if (updates.channelPush !== undefined) payload.channel_push = updates.channelPush;
 
-  const { data, error } = await supabase
-    .from('user_notification_preferences')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('user_notification_preferences') as any)
     .upsert({ user_id: userId, ...payload })
     .select()
     .single();
