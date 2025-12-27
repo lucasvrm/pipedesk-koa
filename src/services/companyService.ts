@@ -25,6 +25,7 @@ export interface CompanyUpdate extends Partial<CompanyInput> {}
 function mapContactFromDB(item: any): PlayerContact {
   return {
     id: item.id,
+    companyId: item.company_id || null, // Required by Contact interface
     playerId: item.company_id, // Usamos 'playerId' na interface genérica para guardar o ID do pai (empresa)
     name: item.name,
     role: item.role || '',

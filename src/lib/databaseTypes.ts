@@ -28,6 +28,7 @@ export interface ProfileDB {
   banner_style?: string | null
   role?: string | null
   has_completed_onboarding?: boolean | null
+  preferences?: Record<string, unknown> | null
   created_at?: string
   updated_at?: string
 }

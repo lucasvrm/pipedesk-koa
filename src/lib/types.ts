@@ -66,6 +66,7 @@ export interface PipelineStage {
   stageOrder: number
   probability: number
   isDefault: boolean
+  active: boolean
   createdAt: string
   updatedAt: string
 }
@@ -212,6 +213,8 @@ export interface PlayerTrack {
   masterDealId: string
   // Fallback para código legado
   playerId?: string
+  // Alias for masterDealId for backward compatibility
+  dealId?: string
   playerName: string
   trackVolume: number
   currentStage: PlayerStage
@@ -935,6 +938,7 @@ export interface Contact {
   sentiment?: ContactSentiment;
 
   createdAt: string;
+  updatedAt?: string;
   createdBy: string;
   isSynthetic?: boolean;
 }

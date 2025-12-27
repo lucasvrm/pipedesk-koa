@@ -97,7 +97,7 @@ export function useSupabase<T extends { id: string }>(
       try {
         const { data: newItem, error: createError } = await supabase
           .from(tableName)
-          .insert(item)
+          .insert(item as Record<string, unknown>)
           .select()
           .single()
 
@@ -117,7 +117,7 @@ export function useSupabase<T extends { id: string }>(
       try {
         const { data: updatedItem, error: updateError } = await supabase
           .from(tableName)
-          .update(updates)
+          .update(updates as Record<string, unknown>)
           .eq('id', id)
           .select()
           .single()
