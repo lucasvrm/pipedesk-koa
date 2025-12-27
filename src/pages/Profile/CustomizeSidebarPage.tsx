@@ -661,6 +661,21 @@ export default function CustomizeSidebarPage() {
                                   onCheckedChange={() => handleToggleItem(section.id, item.id)} 
                                   disabled={item.fixed} 
                                 />
+                                {(section.type === 'custom' || isAdmin) && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingItem({ sectionId: section.id, item });
+                                      setItemForm({ label: item.label, path: item.path, icon: item.icon ?? 'Home' });
+                                      setItemDialogOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             );
                           })}
@@ -683,7 +698,7 @@ export default function CustomizeSidebarPage() {
             <Card className="sticky top-6">
               <CardHeader><CardTitle>Preview</CardTitle></CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-xs font-medium mb-2">Rail</p>
                     <div className="bg-slate-900 rounded-lg p-3 flex flex-col items-center gap-2">
@@ -711,16 +726,16 @@ export default function CustomizeSidebarPage() {
                       })}
                     </div>
                   </div>
-                  
-                  <div className="text-xs space-y-2">
-                    <div className="flex items-center gap-2">
-                      {sections.filter(s => s.enabled).length >= 4 ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-destructive" />}
-                      <span>Min 4 ativas ({sections.filter(s => s.enabled).length}/4)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {sections.filter(s => s.enabled).length <= 10 ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-destructive" />}
-                      <span>Max 10 ativas ({sections.filter(s => s.enabled).length}/10)</span>
-                    </div>
+                </div>
+                
+                <div className="text-xs space-y-2">
+                  <div className="flex items-center gap-2">
+                    {sections.filter(s => s.enabled).length >= 4 ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-destructive" />}
+                    <span>Min 4 ativas ({sections.filter(s => s.enabled).length}/4)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {sections.filter(s => s.enabled).length <= 10 ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-destructive" />}
+                    <span>Max 10 ativas ({sections.filter(s => s.enabled).length}/10)</span>
                   </div>
                 </div>
               </CardContent>
