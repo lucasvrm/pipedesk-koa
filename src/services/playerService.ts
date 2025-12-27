@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 function mapContactFromDB(item: any): PlayerContact {
   return {
     id: item.id,
+    companyId: null, // Required by Contact interface - players use playerId instead
     playerId: item.player_id,
     name: item.name,
     role: item.role || '',

@@ -1,4 +1,3 @@
-import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MasterDealDB, CompanyDB, ProfileDB } from '@/lib/databaseTypes';
@@ -10,7 +9,8 @@ import { getSetting } from './systemSettingsService';
 // Query Helpers
 // ============================================================================
 
-type PostgrestQuery = PostgrestFilterBuilder<any, any, any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PostgrestQuery = any;
 
 function withoutDeleted(query: PostgrestQuery) {
   return query.is('deleted_at', null);
@@ -27,7 +27,7 @@ export interface Deal extends MasterDeal {
     email: string;
     avatar?: string;
   };
-  company?: Company;
+  company?: Partial<Company>;
   responsibles?: User[];
   tags?: Tag[];
 }
@@ -98,7 +98,7 @@ function mapProfileToUser(profile?: ProfileDB | null): User | undefined {
 
 function mapDealFromDB(item: DealQueryResult): Deal {
   const profile = mapProfileToUser(item.createdByUser);
-  const company = item.company
+  const company: Partial<Company> | undefined = item.company
     ? {
         id: item.company.id,
         name: item.company.name,

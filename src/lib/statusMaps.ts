@@ -9,7 +9,7 @@ import type { LeadStatus, DealStatus } from './types'
 /**
  * Maps Lead status to semantic status colors
  */
-export function leadStatusMap(status: LeadStatus): SemanticStatus {
+export function leadStatusMap(status: LeadStatus | string | undefined): SemanticStatus {
   switch (status) {
     case 'new':
       return 'info' // New leads are informational (blue)
@@ -28,7 +28,7 @@ export function leadStatusMap(status: LeadStatus): SemanticStatus {
  * Maps Deal/Track status to semantic status colors
  * Both Deal and Track use the same status types: active, cancelled, concluded, on_hold
  */
-export function dealStatusMap(status: DealStatus): SemanticStatus {
+export function dealStatusMap(status: DealStatus | string | undefined): SemanticStatus {
   switch (status) {
     case 'active':
       return 'success' // Active deals or tracks (green)

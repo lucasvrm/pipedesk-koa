@@ -66,6 +66,7 @@ export interface PipelineStage {
   stageOrder: number
   probability: number
   isDefault: boolean
+  active: boolean
   createdAt: string
   updatedAt: string
 }
@@ -212,6 +213,8 @@ export interface PlayerTrack {
   masterDealId: string
   // Fallback para código legado
   playerId?: string
+  // Alias for masterDealId for backward compatibility
+  dealId?: string
   playerName: string
   trackVolume: number
   currentStage: PlayerStage
@@ -675,6 +678,11 @@ export interface SLAConfig {
   warningThresholdPercent: number
 }
 
+// Alias for backward compatibility
+export type SlaPolicy = SLAConfig
+
+export type PlayerTrackStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
+
 export interface AnalyticsMetrics {
   totalDeals: number
   activeDeals: number
@@ -935,6 +943,7 @@ export interface Contact {
   sentiment?: ContactSentiment;
 
   createdAt: string;
+  updatedAt?: string;
   createdBy: string;
   isSynthetic?: boolean;
 }

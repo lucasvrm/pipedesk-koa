@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PlayerTrack, PlayerStage } from '@/lib/types';
+import { PlayerTrack, PlayerStage, DealStatus } from '@/lib/types';
 import { toast } from 'sonner';
 import { getSetting } from './systemSettingsService';
 
@@ -16,7 +16,7 @@ export interface TrackInput {
     currentStage: PlayerStage;
     probability?: number;
     responsibles?: string[];
-    status?: 'active' | 'concluded' | 'cancelled';
+    status?: DealStatus;
     notes?: string;
 }
 
@@ -27,7 +27,7 @@ export interface TrackUpdate {
     currentStage?: PlayerStage;
     probability?: number;
     responsibles?: string[];
-    status?: 'active' | 'concluded' | 'cancelled';
+    status?: DealStatus;
     notes?: string;
 }
 
