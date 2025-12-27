@@ -19,21 +19,378 @@ export interface MasterDealDB {
 export interface ProfileDB {
   id: string
   name: string | null
+  username?: string | null
   email: string | null
   avatar_url: string | null
+  avatar_bg_color?: string | null
+  avatar_text_color?: string | null
+  avatar_border_color?: string | null
+  banner_style?: string | null
   role?: string | null
+  has_completed_onboarding?: boolean | null
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CompanyDB {
   id: string
   name: string
+  cnpj: string | null
   type: string | null
   site: string | null
+  description: string | null
+  relationship_level: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  deleted_at: string | null
+}
+
+export interface ContactDB {
+  id: string
+  company_id: string | null
+  name: string
+  email: string | null
+  phone: string | null
+  role: string | null
+  department: string | null
+  linkedin: string | null
+  notes: string | null
+  is_primary: boolean
+  buying_role: string | null
+  sentiment: string | null
+  created_at: string
+  created_by: string
+  updated_at: string
+  updated_by: string
+}
+
+export interface PlayerDB {
+  id: string
+  name: string
+  cnpj: string | null
+  site: string | null
+  description: string | null
+  logo_url: string | null
+  type: string
+  gestora_types: string[] | null
+  relationship_level: string
+  product_capabilities: Record<string, unknown> | null
+  category_id: string | null
+  created_at: string
+  created_by: string
+  updated_at: string
+  updated_by: string
+  deleted_at: string | null
+  is_synthetic: boolean
+}
+
+export interface PlayerContactDB {
+  id: string
+  player_id: string
+  name: string
+  email: string | null
+  phone: string | null
+  role: string | null
+  is_primary: boolean
+  created_at: string
+  created_by: string
+  updated_at: string
+  updated_by: string
+}
+
+export interface LeadDB {
+  id: string
+  legal_name: string
+  trade_name: string | null
+  cnpj: string | null
+  website: string | null
+  segment: string | null
+  address_city: string | null
+  address_state: string | null
+  description: string | null
+  operation_type: string | null
+  lead_status_id: string
+  lead_origin_id: string
+  owner_user_id: string | null
+  priority_bucket: string | null
+  priority_score: number | null
+  priority_description: string | null
+  last_interaction_at: string | null
+  next_action: Record<string, unknown> | null
+  qualified_at: string | null
+  qualified_company_id: string | null
+  qualified_master_deal_id: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  deleted_at: string | null
+  is_synthetic: boolean
+}
+
+export interface LeadContactDB {
+  id: string
+  lead_id: string
+  contact_id: string
+  is_primary: boolean
+  created_at: string
+}
+
+export interface LeadMemberDB {
+  id: string
+  lead_id: string
+  user_id: string
+  role: string
+  added_at: string
+}
+
+export interface DealMemberDB {
+  id: string
+  deal_id: string
+  user_id: string
+  created_at: string
+}
+
+export interface ActivityLogDB {
+  id: string
+  entity_id: string
+  entity_type: string
+  action: string
+  user_id: string
+  changes: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface RoleDB {
+  id: string
+  name: string
+  description: string | null
+  is_system: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PermissionDB {
+  id: string
+  code: string
+  description: string | null
+  created_at: string
+}
+
+export interface RolePermissionDB {
+  id: string
+  role_id: string
+  permission_id: string
+  created_at: string
+}
+
+export interface TagDB {
+  id: string
+  name: string
+  color: string
+  entity_type: string | null
+  created_at: string
+  created_by: string
+}
+
+export interface EntityTagDB {
+  id: string
+  tag_id: string
+  entity_id: string
+  entity_type: string
+  created_at: string
+}
+
+export interface SlaPolicyDB {
+  id: string
+  stage_id: string
+  max_hours: number
+  warning_threshold_hours: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PhaseTransitionRuleDB {
+  id: string
+  from_stage: string
+  to_stage: string
+  enabled: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OperationTypeDB {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface LossReasonDB {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface SystemSettingsDB {
+  id: string
+  key: string
+  value: Record<string, unknown> | null
+  description: string | null
+  updated_at: string
+  updated_by: string | null
+}
+
+export interface DealStatusDB {
+  id: string
+  code: string
+  label: string
+  color: string | null
+  description: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface CompanyRelationshipLevelDB {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface CompanyTypeDB {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface LeadStatusDB {
+  id: string
+  code: string
+  label: string
+  color: string | null
+  description: string | null
+  is_active: boolean
+  sort_order: number
+  priority_weight: number | null
+  created_at: string
+}
+
+export interface LeadOriginDB {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
+  priority_weight: number | null
+  created_at: string
+}
+
+export interface LeadMemberRoleDB {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface UserRoleMetadataDB {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  badge_variant: string | null
+  permissions: string[] | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface TaskStatusDB {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface TaskPriorityDB {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface TrackStatusDB {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DocumentTemplateDB {
+  id: string
+  name: string
+  entity_type: string
+  structure: Record<string, unknown> | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DocumentTypeConfigDB {
+  id: string
+  name: string
+  entity_type: string
+  config: Record<string, unknown> | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UserNotificationPreferencesDB {
+  id: string
+  user_id: string
+  dnd_enabled: boolean
+  pref_mention: boolean
+  pref_assignment: boolean
+  pref_status: boolean
+  pref_sla: boolean
+  pref_deadline: boolean
+  pref_activity: boolean
+  pref_system: boolean
+  min_priority: string | null
+  channel_inapp: boolean
+  channel_email: boolean
+  channel_push: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface PlayerTrackDB {
   id: string
   master_deal_id: string
+  player_id: string | null
   player_name: string
   track_volume: number | null
   current_stage: string
@@ -41,8 +398,10 @@ export interface PlayerTrackDB {
   responsibles: string[]
   status: string
   notes: string | null
+  stage_entered_at: string | null
   created_at: string
   updated_at: string
+  is_synthetic: boolean
 }
 
 export interface TaskDB {
@@ -80,7 +439,9 @@ export interface CommentDB {
   author_id: string
   content: string
   mentions: string[]
+  parent_id: string | null
   created_at: string
+  updated_at: string | null
 }
 
 export interface NotificationDB {
@@ -91,6 +452,13 @@ export interface NotificationDB {
   message: string
   link: string | null
   read: boolean
+  priority: string | null
+  category: string | null
+  entity_id: string | null
+  entity_type: string | null
+  group_key: string | null
+  metadata: Record<string, unknown> | null
+  expires_at: string | null
   created_at: string
 }
 
@@ -202,7 +570,9 @@ export interface PipelineStageDB {
   name: string
   color: string
   stage_order: number
+  probability: number | null
   is_default: boolean
+  active: boolean
   created_at: string
   updated_at: string
 }
@@ -242,6 +612,60 @@ export type Database = {
         Update: Partial<UserDB>
         Relationships: []
       }
+      profiles: {
+        Row: ProfileDB
+        Insert: Partial<ProfileDB>
+        Update: Partial<ProfileDB>
+        Relationships: []
+      }
+      companies: {
+        Row: CompanyDB
+        Insert: Partial<CompanyDB>
+        Update: Partial<CompanyDB>
+        Relationships: []
+      }
+      contacts: {
+        Row: ContactDB
+        Insert: Partial<ContactDB>
+        Update: Partial<ContactDB>
+        Relationships: []
+      }
+      players: {
+        Row: PlayerDB
+        Insert: Partial<PlayerDB>
+        Update: Partial<PlayerDB>
+        Relationships: []
+      }
+      player_contacts: {
+        Row: PlayerContactDB
+        Insert: Partial<PlayerContactDB>
+        Update: Partial<PlayerContactDB>
+        Relationships: []
+      }
+      leads: {
+        Row: LeadDB
+        Insert: Partial<LeadDB>
+        Update: Partial<LeadDB>
+        Relationships: []
+      }
+      lead_contacts: {
+        Row: LeadContactDB
+        Insert: Partial<LeadContactDB>
+        Update: Partial<LeadContactDB>
+        Relationships: []
+      }
+      lead_members: {
+        Row: LeadMemberDB
+        Insert: Partial<LeadMemberDB>
+        Update: Partial<LeadMemberDB>
+        Relationships: []
+      }
+      deal_members: {
+        Row: DealMemberDB
+        Insert: Partial<DealMemberDB>
+        Update: Partial<DealMemberDB>
+        Relationships: []
+      }
       comments: {
         Row: CommentDB
         Insert: Partial<CommentDB>
@@ -252,6 +676,150 @@ export type Database = {
         Row: NotificationDB
         Insert: Partial<NotificationDB>
         Update: Partial<NotificationDB>
+        Relationships: []
+      }
+      activity_log: {
+        Row: ActivityLogDB
+        Insert: Partial<ActivityLogDB>
+        Update: Partial<ActivityLogDB>
+        Relationships: []
+      }
+      roles: {
+        Row: RoleDB
+        Insert: Partial<RoleDB>
+        Update: Partial<RoleDB>
+        Relationships: []
+      }
+      permissions: {
+        Row: PermissionDB
+        Insert: Partial<PermissionDB>
+        Update: Partial<PermissionDB>
+        Relationships: []
+      }
+      role_permissions: {
+        Row: RolePermissionDB
+        Insert: Partial<RolePermissionDB>
+        Update: Partial<RolePermissionDB>
+        Relationships: []
+      }
+      tags: {
+        Row: TagDB
+        Insert: Partial<TagDB>
+        Update: Partial<TagDB>
+        Relationships: []
+      }
+      entity_tags: {
+        Row: EntityTagDB
+        Insert: Partial<EntityTagDB>
+        Update: Partial<EntityTagDB>
+        Relationships: []
+      }
+      sla_policies: {
+        Row: SlaPolicyDB
+        Insert: Partial<SlaPolicyDB>
+        Update: Partial<SlaPolicyDB>
+        Relationships: []
+      }
+      phase_transition_rules: {
+        Row: PhaseTransitionRuleDB
+        Insert: Partial<PhaseTransitionRuleDB>
+        Update: Partial<PhaseTransitionRuleDB>
+        Relationships: []
+      }
+      operation_types: {
+        Row: OperationTypeDB
+        Insert: Partial<OperationTypeDB>
+        Update: Partial<OperationTypeDB>
+        Relationships: []
+      }
+      loss_reasons: {
+        Row: LossReasonDB
+        Insert: Partial<LossReasonDB>
+        Update: Partial<LossReasonDB>
+        Relationships: []
+      }
+      system_settings: {
+        Row: SystemSettingsDB
+        Insert: Partial<SystemSettingsDB>
+        Update: Partial<SystemSettingsDB>
+        Relationships: []
+      }
+      deal_statuses: {
+        Row: DealStatusDB
+        Insert: Partial<DealStatusDB>
+        Update: Partial<DealStatusDB>
+        Relationships: []
+      }
+      company_relationship_levels: {
+        Row: CompanyRelationshipLevelDB
+        Insert: Partial<CompanyRelationshipLevelDB>
+        Update: Partial<CompanyRelationshipLevelDB>
+        Relationships: []
+      }
+      company_types: {
+        Row: CompanyTypeDB
+        Insert: Partial<CompanyTypeDB>
+        Update: Partial<CompanyTypeDB>
+        Relationships: []
+      }
+      lead_statuses: {
+        Row: LeadStatusDB
+        Insert: Partial<LeadStatusDB>
+        Update: Partial<LeadStatusDB>
+        Relationships: []
+      }
+      lead_origins: {
+        Row: LeadOriginDB
+        Insert: Partial<LeadOriginDB>
+        Update: Partial<LeadOriginDB>
+        Relationships: []
+      }
+      lead_member_roles: {
+        Row: LeadMemberRoleDB
+        Insert: Partial<LeadMemberRoleDB>
+        Update: Partial<LeadMemberRoleDB>
+        Relationships: []
+      }
+      user_role_metadata: {
+        Row: UserRoleMetadataDB
+        Insert: Partial<UserRoleMetadataDB>
+        Update: Partial<UserRoleMetadataDB>
+        Relationships: []
+      }
+      task_statuses: {
+        Row: TaskStatusDB
+        Insert: Partial<TaskStatusDB>
+        Update: Partial<TaskStatusDB>
+        Relationships: []
+      }
+      task_priorities: {
+        Row: TaskPriorityDB
+        Insert: Partial<TaskPriorityDB>
+        Update: Partial<TaskPriorityDB>
+        Relationships: []
+      }
+      track_statuses: {
+        Row: TrackStatusDB
+        Insert: Partial<TrackStatusDB>
+        Update: Partial<TrackStatusDB>
+        Relationships: []
+      }
+      document_templates: {
+        Row: DocumentTemplateDB
+        Insert: Partial<DocumentTemplateDB>
+        Update: Partial<DocumentTemplateDB>
+        Relationships: []
+      }
+      document_type_configs: {
+        Row: DocumentTypeConfigDB
+        Insert: Partial<DocumentTypeConfigDB>
+        Update: Partial<DocumentTypeConfigDB>
+        Relationships: []
+      }
+      user_notification_preferences: {
+        Row: UserNotificationPreferencesDB
+        Insert: Partial<UserNotificationPreferencesDB>
+        Update: Partial<UserNotificationPreferencesDB>
         Relationships: []
       }
       custom_field_definitions: {
