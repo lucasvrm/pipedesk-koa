@@ -176,13 +176,10 @@ export default function LoginView() {
       
       <Card className="w-full max-w-md shadow-lg border relative z-10">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center">
-            <Lock className="w-6 h-6 text-primary" />
-          </div>
           <CardTitle className="text-2xl font-bold">
             <BrandMark variant="login" />
           </CardTitle>
-          <CardDescription>Acesso ao Sistema de DealFlow</CardDescription>
+          <CardDescription>Sistema de DealFlow da Koa Capital.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handlePasswordLogin} className="space-y-4">

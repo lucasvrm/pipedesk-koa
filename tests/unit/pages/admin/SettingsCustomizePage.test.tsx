@@ -92,12 +92,21 @@ describe('SettingsCustomizePage', () => {
   it('uses full-width layout without container restrictions', () => {
     const { container } = renderPage()
     
-    // Should NOT have container or max-width classes
+    // Should NOT have container class
     const containerDiv = container.querySelector('.container')
     expect(containerDiv).toBeNull()
     
-    const maxWDiv = container.querySelector('[class*="max-w-"]')
-    expect(maxWDiv).toBeNull()
+    // Check initial render specifically - no max-w-* in Card elements at root level
+    // The Cards inside StandardPageLayout should not have max-w-* constraints
+    const cards = container.querySelectorAll('[class*="max-w-"]')
+    // Filter out any max-w-full or max-w-none which are fine
+    const restrictiveMaxW = Array.from(cards).filter(el => {
+      const classes = el.className
+      return classes.includes('max-w-') && 
+             !classes.includes('max-w-full') && 
+             !classes.includes('max-w-none')
+    })
+    expect(restrictiveMaxW.length).toBe(0)
   })
 
   it('displays empty state messages when no assets are configured', () => {
