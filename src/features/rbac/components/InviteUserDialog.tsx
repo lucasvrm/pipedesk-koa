@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { magicLinkService } from '@/services/magicLinkService'
 import { User } from '@/lib/types'
 import { useSystemMetadata } from '@/hooks/useSystemMetadata'
 

@@ -40,7 +40,7 @@ export default function AuthSettingsPanel() {
     if (!profile) return
     setLoading(true)
     try {
-      await updateAuthSettings(settings, profile.id)
+      await updateAuthSettings(settings)
       toast.success('Políticas de autenticação atualizadas com sucesso!')
     } catch (err) {
       console.error(err)

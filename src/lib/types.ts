@@ -678,6 +678,11 @@ export interface SLAConfig {
   warningThresholdPercent: number
 }
 
+// Alias for backward compatibility
+export type SlaPolicy = SLAConfig
+
+export type PlayerTrackStatus = 'active' | 'cancelled' | 'concluded' | 'on_hold'
+
 export interface AnalyticsMetrics {
   totalDeals: number
   activeDeals: number
