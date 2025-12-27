@@ -60,6 +60,9 @@ const CustomizeSidebarPage = lazy(() => import('@/pages/Profile/CustomizeSidebar
 // Test Pages
 const UnifiedSidebarTest = lazy(() => import('@/pages/UnifiedSidebarTest'))
 
+// Auth Pages
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'))
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="text-center">
@@ -93,6 +96,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={!user ? <LoginView /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute><LayoutWithSidebar><Outlet /></LayoutWithSidebar></ProtectedRoute>}>
