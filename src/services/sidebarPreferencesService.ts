@@ -311,9 +311,8 @@ export async function upsertSidebarPreferences(
     sections: config.sections.map(normalizeSection)
   };
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase
-    .from('user_sidebar_preferences') as any)
+  const { data, error } = await supabase
+    .from('user_sidebar_preferences')
     .upsert(
       { user_id: userId, config: normalizedConfig, updated_at: new Date().toISOString() },
       { onConflict: 'user_id' }

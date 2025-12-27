@@ -107,9 +107,8 @@ export async function getTask(taskId: string): Promise<Task> {
  * Create a new task
  */
 export async function createTask(task: TaskInput): Promise<Task> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-        .from('tasks') as any)
+    const { data, error } = await supabase
+        .from('tasks')
         .insert({
             player_track_id: task.playerTrackId,
             title: task.title,
@@ -150,9 +149,8 @@ export async function updateTask(taskId: string, updates: TaskUpdate): Promise<T
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.priority !== undefined) updateData.priority = updates.priority;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-        .from('tasks') as any)
+    const { data, error } = await supabase
+        .from('tasks')
         .update(updateData)
         .eq('id', taskId)
         .select()

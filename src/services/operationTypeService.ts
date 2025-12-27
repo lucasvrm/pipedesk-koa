@@ -39,9 +39,8 @@ export const operationTypeService = {
   },
 
   async createOperationType(payload: OperationTypeInput): Promise<OperationTypeRecord> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('operation_types') as any)
+    const { data, error } = await supabase
+      .from('operation_types')
       .insert(mapToDb(payload))
       .select()
       .single()
@@ -51,9 +50,8 @@ export const operationTypeService = {
   },
 
   async updateOperationType(id: string, payload: OperationTypeInput): Promise<OperationTypeRecord> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('operation_types') as any)
+    const { data, error } = await supabase
+      .from('operation_types')
       .update(mapToDb(payload))
       .eq('id', id)
       .select()
@@ -73,9 +71,8 @@ export const operationTypeService = {
   },
 
   async toggleOperationType(id: string, isActive: boolean): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase
-      .from('operation_types') as any)
+    const { error } = await supabase
+      .from('operation_types')
       .update({ is_active: isActive })
       .eq('id', id)
 

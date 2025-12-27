@@ -38,9 +38,8 @@ export const trackStatusService = {
   },
 
   async createTrackStatus(payload: TrackStatusInput): Promise<TrackStatus> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('track_statuses') as any)
+    const { data, error } = await supabase
+      .from('track_statuses')
       .insert(mapToDb(payload))
       .select()
       .single()
@@ -50,9 +49,8 @@ export const trackStatusService = {
   },
 
   async updateTrackStatus(id: string, payload: TrackStatusInput): Promise<TrackStatus> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('track_statuses') as any)
+    const { data, error } = await supabase
+      .from('track_statuses')
       .update(mapToDb(payload))
       .eq('id', id)
       .select()
@@ -72,9 +70,8 @@ export const trackStatusService = {
   },
 
   async toggleTrackStatus(id: string, isActive: boolean): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase
-      .from('track_statuses') as any)
+    const { error } = await supabase
+      .from('track_statuses')
       .update({ is_active: isActive })
       .eq('id', id)
 

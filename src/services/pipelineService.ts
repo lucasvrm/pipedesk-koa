@@ -92,9 +92,8 @@ export async function getStages(pipelineId: string | null = null, includeInactiv
  * Cria um novo estágio
  */
 export async function createStage(stage: StageInput): Promise<PipelineStage> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase
-    .from('pipeline_stages') as any)
+  const { data, error } = await supabase
+    .from('pipeline_stages')
     .insert({
       pipeline_id: stage.pipelineId || null,
       name: stage.name,
@@ -127,9 +126,8 @@ export async function updateStage({ stageId, updates }: { stageId: string; updat
   if (updates.isDefault !== undefined) updateData.is_default = updates.isDefault;
   if (updates.active !== undefined) updateData.active = updates.active;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase
-    .from('pipeline_stages') as any)
+  const { data, error } = await supabase
+    .from('pipeline_stages')
     .update(updateData)
     .eq('id', stageId)
     .select()

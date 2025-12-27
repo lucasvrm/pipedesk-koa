@@ -48,9 +48,8 @@ export async function getPermissions(): Promise<Permission[]> {
 
 export async function createRole(name: string, description: string, permissionIds: string[]) {
   // 1. Criar Role
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: role, error: roleError } = await (supabase
-    .from('roles') as any)
+  const { data: role, error: roleError } = await supabase
+    .from('roles')
     .insert({ name, description })
     .select()
     .single();
@@ -63,8 +62,7 @@ export async function createRole(name: string, description: string, permissionId
       role_id: role.id,
       permission_id: pid
     }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: permError } = await (supabase.from('role_permissions') as any).insert(associations);
+    const { error: permError } = await supabase.from('role_permissions').insert(associations);
     if (permError) throw permError;
   }
 
@@ -73,9 +71,8 @@ export async function createRole(name: string, description: string, permissionId
 
 export async function updateRole(roleId: string, name: string, description: string, permissionIds: string[]) {
   // 1. Atualizar dados básicos
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: roleError } = await (supabase
-    .from('roles') as any)
+  const { error: roleError } = await supabase
+    .from('roles')
     .update({ name, description })
     .eq('id', roleId);
 
@@ -90,8 +87,7 @@ export async function updateRole(roleId: string, name: string, description: stri
       role_id: roleId,
       permission_id: pid
     }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('role_permissions') as any).insert(associations);
+    await supabase.from('role_permissions').insert(associations);
   }
 }
 

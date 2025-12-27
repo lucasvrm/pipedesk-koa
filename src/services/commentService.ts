@@ -38,9 +38,8 @@ export async function createComment(data: {
   parentId?: string | null
 }) {
   // 1. Criar o Comentário
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: comment, error } = await (supabase
-    .from('comments') as any)
+  const { data: comment, error } = await supabase
+    .from('comments')
     .insert({
       entity_id: data.entityId,
       entity_type: data.entityType,

@@ -316,9 +316,8 @@ export async function updateSystemSetting(
 
     const { data: userData } = await supabase.auth.getUser()
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('system_settings') as any)
+    const { data, error } = await supabase
+      .from('system_settings')
       .upsert({
         key,
         value,
@@ -362,9 +361,8 @@ export async function updateAuthSettings(settings: AuthSettings): Promise<void> 
   try {
     const { data: userData } = await supabase.auth.getUser();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase
-      .from('system_settings') as any) // FIX: Changed from app_settings
+    const { error } = await supabase
+      .from('system_settings') // FIX: Changed from app_settings
       .upsert({
         key: 'auth_config',
         value: settings,

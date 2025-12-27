@@ -38,9 +38,8 @@ export const taskStatusService = {
   },
 
   async createTaskStatus(payload: TaskStatusInput): Promise<TaskStatusDefinition> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('task_statuses') as any)
+    const { data, error } = await supabase
+      .from('task_statuses')
       .insert(mapToDb(payload))
       .select()
       .single()
@@ -50,9 +49,8 @@ export const taskStatusService = {
   },
 
   async updateTaskStatus(id: string, payload: TaskStatusInput): Promise<TaskStatusDefinition> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('task_statuses') as any)
+    const { data, error } = await supabase
+      .from('task_statuses')
       .update(mapToDb(payload))
       .eq('id', id)
       .select()
@@ -72,9 +70,8 @@ export const taskStatusService = {
   },
 
   async toggleTaskStatus(id: string, isActive: boolean): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase
-      .from('task_statuses') as any)
+    const { error } = await supabase
+      .from('task_statuses')
       .update({ is_active: isActive })
       .eq('id', id)
 

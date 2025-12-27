@@ -75,12 +75,10 @@ export async function getContact(id: string): Promise<Contact> {
 export async function createContact(contact: ContactInput, userId: string): Promise<Contact> {
   // Logic: enforce 1 primary per company
   if (contact.isPrimary && contact.companyId) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('contacts') as any).update({ is_primary: false }).eq('company_id', contact.companyId);
+    await supabase.from('contacts').update({ is_primary: false }).eq('company_id', contact.companyId);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('contacts') as any).insert({
+  const { data, error } = await supabase.from('contacts').insert({
     company_id: contact.companyId,
     name: contact.name,
     email: contact.email,
@@ -116,13 +114,11 @@ export async function updateContact(id: string, updates: ContactUpdate) {
      const targetCompanyId = updates.companyId !== undefined ? updates.companyId : current?.company_id;
 
      if (targetCompanyId) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('contacts') as any).update({ is_primary: false }).eq('company_id', targetCompanyId);
+        await supabase.from('contacts').update({ is_primary: false }).eq('company_id', targetCompanyId);
      }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('contacts') as any).update(updateData).eq('id', id).select().single();
+  const { data, error } = await supabase.from('contacts').update(updateData).eq('id', id).select().single();
   if (error) throw error;
   return mapContactFromDB(data);
 }

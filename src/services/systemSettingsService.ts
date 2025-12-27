@@ -54,9 +54,8 @@ export async function getSetting(key: string): Promise<any> {
 export async function updateSetting(key: string, value: any, description?: string) {
   const { data: userData } = await supabase.auth.getUser();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase
-    .from('system_settings') as any)
+  const { data, error } = await supabase
+    .from('system_settings')
     .upsert({
       key,
       value,

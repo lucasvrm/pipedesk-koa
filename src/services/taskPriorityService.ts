@@ -38,9 +38,8 @@ export const taskPriorityService = {
   },
 
   async createTaskPriority(payload: TaskPriorityInput): Promise<TaskPriorityDefinition> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('task_priorities') as any)
+    const { data, error } = await supabase
+      .from('task_priorities')
       .insert(mapToDb(payload))
       .select()
       .single()
@@ -50,9 +49,8 @@ export const taskPriorityService = {
   },
 
   async updateTaskPriority(id: string, payload: TaskPriorityInput): Promise<TaskPriorityDefinition> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('task_priorities') as any)
+    const { data, error } = await supabase
+      .from('task_priorities')
       .update(mapToDb(payload))
       .eq('id', id)
       .select()
@@ -72,9 +70,8 @@ export const taskPriorityService = {
   },
 
   async toggleTaskPriority(id: string, isActive: boolean): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase
-      .from('task_priorities') as any)
+    const { error } = await supabase
+      .from('task_priorities')
       .update({ is_active: isActive })
       .eq('id', id)
 

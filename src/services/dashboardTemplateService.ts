@@ -98,9 +98,8 @@ export async function saveTemplate(
   role: string | null,
   config: DashboardConfig
 ): Promise<DashboardTemplate> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase
-    .from('dashboard_templates') as any)
+  const { data, error } = await supabase
+    .from('dashboard_templates')
     .upsert(
       {
         role,

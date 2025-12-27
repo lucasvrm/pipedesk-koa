@@ -95,11 +95,9 @@ export function useSupabase<T extends { id: string }>(
   const create = useCallback(
     async (item: Partial<T>): Promise<T | null> => {
       try {
-        // Cast to 'any' for dynamic table access - type safety is handled by the caller
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: newItem, error: createError } = await (supabase
-          .from(tableName) as any)
-          .insert(item)
+        const { data: newItem, error: createError } = await supabase
+          .from(tableName)
+          .insert(item as Record<string, unknown>)
           .select()
           .single()
 
@@ -117,11 +115,9 @@ export function useSupabase<T extends { id: string }>(
   const update = useCallback(
     async (id: string, updates: Partial<T>): Promise<T | null> => {
       try {
-        // Cast to 'any' for dynamic table access - type safety is handled by the caller
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: updatedItem, error: updateError } = await (supabase
-          .from(tableName) as any)
-          .update(updates)
+        const { data: updatedItem, error: updateError } = await supabase
+          .from(tableName)
+          .update(updates as Record<string, unknown>)
           .eq('id', id)
           .select()
           .single()
