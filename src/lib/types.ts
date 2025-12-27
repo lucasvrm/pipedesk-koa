@@ -950,6 +950,7 @@ export interface Contact {
   createdAt: string;
   updatedAt?: string;
   createdBy: string;
+  updatedBy?: string;
   isSynthetic?: boolean;
 }
 

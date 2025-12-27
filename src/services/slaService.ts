@@ -36,8 +36,9 @@ export async function updateSlaPolicy(stageId: string, maxHours: number, warning
     .single();
 
   if (existing) {
-    const { data, error } = await supabase
-      .from('sla_policies')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+      .from('sla_policies') as any)
       .update({
         max_hours: maxHours,
         warning_threshold_hours: warningThresholdHours,
@@ -49,8 +50,9 @@ export async function updateSlaPolicy(stageId: string, maxHours: number, warning
     if (error) throw error;
     return data;
   } else {
-    const { data, error } = await supabase
-      .from('sla_policies')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+      .from('sla_policies') as any)
       .insert({
         stage_id: stageId,
         max_hours: maxHours,

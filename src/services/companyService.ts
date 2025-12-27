@@ -33,7 +33,9 @@ function mapContactFromDB(item: any): PlayerContact {
     phone: item.phone || '',
     isPrimary: item.is_primary || false,
     createdAt: item.created_at,
-    createdBy: item.created_by
+    createdBy: item.created_by,
+    updatedAt: item.updated_at,
+    updatedBy: item.updated_by
   }
 }
 
@@ -91,8 +93,9 @@ export async function getCompany(id: string): Promise<Company> {
 }
 
 export async function createCompany(company: CompanyInput, userId: string) {
-  const { data, error } = await supabase
-    .from('companies')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('companies') as any)
     .insert({ 
       name: company.name,
       cnpj: company.cnpj,
@@ -121,8 +124,9 @@ export async function updateCompany(id: string, updates: CompanyUpdate) {
   if (updates.type !== undefined) updateData.type = updates.type
   if (updates.relationshipLevel !== undefined) updateData.relationship_level = updates.relationshipLevel
 
-  const { data, error } = await supabase
-    .from('companies')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('companies') as any)
     .update(updateData)
     .eq('id', id)
     .select()
@@ -141,8 +145,9 @@ export async function updateCompany(id: string, updates: CompanyUpdate) {
 
 export async function deleteCompany(id: string) {
   // Soft Delete
-  const { error } = await supabase
-    .from('companies')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from('companies') as any)
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
 
@@ -151,8 +156,9 @@ export async function deleteCompany(id: string) {
 
 export async function deleteCompanies(ids: string[]) {
   // Bulk Soft Delete
-  const { error } = await supabase
-    .from('companies')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from('companies') as any)
     .update({ deleted_at: new Date().toISOString() })
     .in('id', ids)
 
@@ -169,14 +175,16 @@ export async function createCompanyContact(contact: Partial<PlayerContact>, user
 
   // Se for primário, remove o flag dos outros contatos desta empresa
   if (contact.isPrimary && companyId) {
-    await supabase
-      .from('contacts')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase
+      .from('contacts') as any)
       .update({ is_primary: false })
       .eq('company_id', companyId)
   }
 
-  const { data, error } = await supabase
-    .from('contacts')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('contacts') as any)
     .insert({
       company_id: companyId,
       name: contact.name,

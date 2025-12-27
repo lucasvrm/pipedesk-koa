@@ -70,8 +70,9 @@ export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'createdBy'>
     entity_type: tag.entity_type === 'global' ? null : (tag.entity_type || null)
   };
 
-  const { data, error } = await supabase
-    .from('tags')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('tags') as any)
     .insert(payload)
     .select()
     .single();
@@ -94,8 +95,9 @@ export async function updateTag(id: string, updates: Partial<Tag>) {
     updatePayload.entity_type = updates.entity_type === 'global' ? null : updates.entity_type;
   }
 
-  const { data, error } = await supabase
-    .from('tags')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('tags') as any)
     .update(updatePayload)
     .eq('id', id)
     .select()
@@ -131,8 +133,9 @@ export async function assignTagToEntity(tagId: string, entityId: string, entityT
 
   if (existing) return existing;
 
-  const { data, error } = await supabase
-    .from('entity_tags')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('entity_tags') as any)
     .insert({ tag_id: tagId, entity_id: entityId, entity_type: entityType })
     .select()
     .single();
@@ -267,8 +270,9 @@ export function useAssignTag() {
       entityType: string
       tagId: string 
     }) => {
-      const { error } = await supabase
-        .from('entity_tags')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase
+        .from('entity_tags') as any)
         .insert({ 
           entity_id: entityId, 
           entity_type: entityType, 

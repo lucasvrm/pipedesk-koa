@@ -88,8 +88,9 @@ export async function getFolders(): Promise<Folder[]> {
  * Create a folder
  */
 export async function createFolder(folder: FolderInput): Promise<Folder> {
-    const { data, error } = await supabase
-        .from('folders')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+        .from('folders') as any)
         .insert({
             name: folder.name,
             description: folder.description,
@@ -121,8 +122,9 @@ export async function updateFolder(folderId: string, updates: FolderUpdate): Pro
     if (updates.parentId !== undefined) updateData.parent_id = updates.parentId;
     if (updates.position !== undefined) updateData.position = updates.position;
 
-    const { data, error } = await supabase
-        .from('folders')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+        .from('folders') as any)
         .update(updateData)
         .eq('id', folderId)
         .select()
@@ -171,8 +173,9 @@ export async function getEntityLocations(
  * Add entity to folder
  */
 export async function addEntityToFolder(location: EntityLocationInput): Promise<EntityLocation> {
-    const { data, error } = await supabase
-        .from('entity_locations')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase
+        .from('entity_locations') as any)
         .insert({
             entity_id: location.entityId,
             entity_type: location.entityType,

@@ -50,8 +50,9 @@ async function fetchDocumentTypes(): Promise<DocumentTypeConfig[]> {
 }
 
 async function upsertStructureTemplate(template: StructureTemplate) {
-  const { error, data } = await supabase
-    .from('structure_templates')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error, data } = await (supabase
+    .from('structure_templates') as any)
     .upsert(template)
     .select()
     .single()
@@ -66,8 +67,9 @@ async function deleteStructureTemplate(id: string) {
 }
 
 async function upsertDocumentType(config: DocumentTypeConfig) {
-  const { error, data } = await supabase
-    .from('document_type_configs')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error, data } = await (supabase
+    .from('document_type_configs') as any)
     .upsert(config)
     .select()
     .single()

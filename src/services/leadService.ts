@@ -1,9 +1,11 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Lead, LeadStatus, LeadMember, Contact, LeadPriorityBucket } from '@/lib/types'
-import { CompanyInput } from '@/services/companyService'
 import { syncRemoteEntityName } from './pdGoogleDriveApi'
 import { getSetting } from './systemSettingsService'
+
+// Import CompanyInput type from companyService
+import type { CompanyInput } from '@/services/companyService'
 
 // ============================================================================
 // Query Keys
@@ -403,8 +405,9 @@ export async function createLead(lead: LeadInput, userId: string): Promise<Lead>
   //   leadOriginId = defaultOriginSetting?.value || 'outbound';
   // }
 
-  const { data, error } = await supabase
-    .from('leads')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase
+    .from('leads') as any)
     .insert({
       legal_name: lead.legalName,
       trade_name: lead.tradeName,
@@ -454,7 +457,8 @@ export async function updateLead(id: string, updates: LeadUpdate) {
   if (updates.operationType !== undefined) updateData.operation_type = updates.operationType;
   if (updates.ownerUserId !== undefined) updateData.owner_user_id = updates.ownerUserId;
 
-  const { data, error } = await supabase.from('leads').update(updateData).eq('id', id).select().single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from('leads') as any).update(updateData).eq('id', id).select().single();
   if (error) throw error;
 
   // --- GOOGLE DRIVE SYNC START ---
@@ -467,7 +471,8 @@ export async function updateLead(id: string, updates: LeadUpdate) {
 }
 
 export async function deleteLead(id: string) {
-  const { error } = await supabase.from('leads').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('leads') as any).update({ deleted_at: new Date().toISOString() }).eq('id', id);
   if (error) throw error;
 }
 
@@ -476,9 +481,11 @@ export async function deleteLead(id: string) {
 export async function addLeadContact(leadId: string, contactId: string, isPrimary: boolean = false) {
   // If setting primary, unset others first?
   if (isPrimary) {
-    await supabase.from('lead_contacts').update({ is_primary: false }).eq('lead_id', leadId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('lead_contacts') as any).update({ is_primary: false }).eq('lead_id', leadId);
   }
-  const { error } = await supabase.from('lead_contacts').insert({ lead_id: leadId, contact_id: contactId, is_primary: isPrimary });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('lead_contacts') as any).insert({ lead_id: leadId, contact_id: contactId, is_primary: isPrimary });
   if (error) throw error;
 }
 
@@ -495,7 +502,8 @@ export async function addLeadMember(member: { leadId: string, userId: string, ro
     memberRole = defaultRoleSetting?.value || 'collaborator'; // Fallback to 'collaborator' if no setting
   }
 
-  const { error } = await supabase.from('lead_members').insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('lead_members') as any).insert({
     lead_id: member.leadId,
     user_id: member.userId,
     role: memberRole
