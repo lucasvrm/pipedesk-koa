@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getIconComponent } from '@/lib/iconRegistry';
 import {
   User,
   Settings,
@@ -59,15 +60,6 @@ import {
   FileText,
   Palette,
 } from 'lucide-react';
-
-// Helper: Mapear string de ícone para componente
-const getIconComponent = (iconName: string): React.ElementType => {
-  const iconMap: Record<string, React.ElementType> = {
-    Home, Filter, Briefcase, Kanban, Building2, User, Users, CheckSquare,
-    BarChart3, Settings, Palette, Activity, Shield, FileText,
-  };
-  return iconMap[iconName] || Home;
-};
 
 // Tipos
 type SectionId = 

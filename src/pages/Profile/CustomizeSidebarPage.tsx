@@ -47,59 +47,6 @@ import {
   ArrowLeft,
   Info,
   Home,
-  LayoutDashboard,
-  Menu,
-  Navigation,
-  MapPin,
-  Compass,
-  Route,
-  Map,
-  Briefcase,
-  Building2,
-  TrendingUp,
-  DollarSign,
-  ShoppingCart,
-  Package,
-  Users,
-  UserCircle,
-  Contact,
-  Phone,
-  Mail,
-  MessageCircle,
-  FileText,
-  Folder,
-  FolderOpen,
-  Archive,
-  File,
-  FileSpreadsheet,
-  FileBarChart,
-  Paperclip,
-  Download,
-  Upload,
-  Settings,
-  Wrench,
-  Hammer,
-  Zap,
-  Bell,
-  Calendar,
-  Clock,
-  Timer,
-  Flag,
-  Star,
-  Heart,
-  Bookmark,
-  Image,
-  Shield,
-  Lock,
-  Key,
-  BarChart3,
-  PieChart,
-  Activity,
-  TrendingDown,
-  Filter,
-  Search,
-  Plus,
-  Minus,
   X,
   Check,
   ChevronRight,
@@ -109,14 +56,12 @@ import {
   ArrowRight,
   ArrowUp,
   ArrowDown,
-  Kanban,
-  CheckSquare,
-  ListTodo,
-  Clipboard,
   Pencil,
-  User,
   Trash,
+  Clock,
+  FileText,
 } from 'lucide-react';
+import { ICON_OPTIONS, getIconComponent } from '@/lib/iconRegistry';
 import { cn } from '@/lib/utils';
 import { AvatarCustomizer } from '@/pages/Profile/components/AvatarCustomizer';
 import { supabase } from '@/lib/supabaseClient';
@@ -125,82 +70,7 @@ import { toast } from 'sonner';
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const ICON_OPTIONS = [
-  // Navegação (8)
-  { value: 'Home', label: 'Home', Icon: Home, category: 'navigation' },
-  { value: 'LayoutDashboard', label: 'Dashboard', Icon: LayoutDashboard, category: 'navigation' },
-  { value: 'Menu', label: 'Menu', Icon: Menu, category: 'navigation' },
-  { value: 'Navigation', label: 'Navigation', Icon: Navigation, category: 'navigation' },
-  { value: 'MapPin', label: 'Map Pin', Icon: MapPin, category: 'navigation' },
-  { value: 'Compass', label: 'Compass', Icon: Compass, category: 'navigation' },
-  { value: 'Route', label: 'Route', Icon: Route, category: 'navigation' },
-  { value: 'Map', label: 'Map', Icon: Map, category: 'navigation' },
-  
-  // Negócios (12)
-  { value: 'Briefcase', label: 'Briefcase', Icon: Briefcase, category: 'business' },
-  { value: 'Building2', label: 'Building', Icon: Building2, category: 'business' },
-  { value: 'TrendingUp', label: 'Trending Up', Icon: TrendingUp, category: 'business' },
-  { value: 'DollarSign', label: 'Dollar', Icon: DollarSign, category: 'business' },
-  { value: 'ShoppingCart', label: 'Shopping', Icon: ShoppingCart, category: 'business' },
-  { value: 'Package', label: 'Package', Icon: Package, category: 'business' },
-  { value: 'Users', label: 'Users', Icon: Users, category: 'business' },
-  { value: 'UserCircle', label: 'User Circle', Icon: UserCircle, category: 'business' },
-  { value: 'Contact', label: 'Contact', Icon: Contact, category: 'business' },
-  { value: 'Phone', label: 'Phone', Icon: Phone, category: 'business' },
-  { value: 'Mail', label: 'Mail', Icon: Mail, category: 'business' },
-  { value: 'MessageCircle', label: 'Message', Icon: MessageCircle, category: 'business' },
-  
-  // Documentos (10)
-  { value: 'FileText', label: 'File Text', Icon: FileText, category: 'documents' },
-  { value: 'Folder', label: 'Folder', Icon: Folder, category: 'documents' },
-  { value: 'FolderOpen', label: 'Folder Open', Icon: FolderOpen, category: 'documents' },
-  { value: 'Archive', label: 'Archive', Icon: Archive, category: 'documents' },
-  { value: 'File', label: 'File', Icon: File, category: 'documents' },
-  { value: 'FileSpreadsheet', label: 'Spreadsheet', Icon: FileSpreadsheet, category: 'documents' },
-  { value: 'FileBarChart', label: 'File Chart', Icon: FileBarChart, category: 'documents' },
-  { value: 'Paperclip', label: 'Paperclip', Icon: Paperclip, category: 'documents' },
-  { value: 'Download', label: 'Download', Icon: Download, category: 'documents' },
-  { value: 'Upload', label: 'Upload', Icon: Upload, category: 'documents' },
-  
-  // Ações (10)
-  { value: 'Settings', label: 'Settings', Icon: Settings, category: 'actions' },
-  { value: 'Wrench', label: 'Wrench', Icon: Wrench, category: 'actions' },
-  { value: 'Hammer', label: 'Hammer', Icon: Hammer, category: 'actions' },
-  { value: 'Zap', label: 'Zap', Icon: Zap, category: 'actions' },
-  { value: 'Bell', label: 'Bell', Icon: Bell, category: 'actions' },
-  { value: 'Calendar', label: 'Calendar', Icon: Calendar, category: 'actions' },
-  { value: 'Clock', label: 'Clock', Icon: Clock, category: 'actions' },
-  { value: 'Timer', label: 'Timer', Icon: Timer, category: 'actions' },
-  { value: 'Search', label: 'Search', Icon: Search, category: 'actions' },
-  { value: 'Filter', label: 'Filter', Icon: Filter, category: 'actions' },
-  
-  // Diversos (10)
-  { value: 'Flag', label: 'Flag', Icon: Flag, category: 'misc' },
-  { value: 'Star', label: 'Star', Icon: Star, category: 'misc' },
-  { value: 'Heart', label: 'Heart', Icon: Heart, category: 'misc' },
-  { value: 'Bookmark', label: 'Bookmark', Icon: Bookmark, category: 'misc' },
-  { value: 'Palette', label: 'Palette', Icon: Palette, category: 'misc' },
-  { value: 'Image', label: 'Image', Icon: Image, category: 'misc' },
-  { value: 'Shield', label: 'Shield', Icon: Shield, category: 'misc' },
-  { value: 'Lock', label: 'Lock', Icon: Lock, category: 'misc' },
-  { value: 'Key', label: 'Key', Icon: Key, category: 'misc' },
-  { value: 'User', label: 'User', Icon: User, category: 'misc' },
-  
-  // Gráficos (5)
-  { value: 'BarChart3', label: 'Bar Chart', Icon: BarChart3, category: 'charts' },
-  { value: 'PieChart', label: 'Pie Chart', Icon: PieChart, category: 'charts' },
-  { value: 'Activity', label: 'Activity', Icon: Activity, category: 'charts' },
-  { value: 'TrendingDown', label: 'Trending Down', Icon: TrendingDown, category: 'charts' },
-  { value: 'Kanban', label: 'Kanban', Icon: Kanban, category: 'charts' },
-  
-  // Tarefas (5)
-  { value: 'CheckSquare', label: 'Check Square', Icon: CheckSquare, category: 'tasks' },
-  { value: 'ListTodo', label: 'Todo List', Icon: ListTodo, category: 'tasks' },
-  { value: 'Clipboard', label: 'Clipboard', Icon: Clipboard, category: 'tasks' },
-  { value: 'Pencil', label: 'Pencil', Icon: Pencil, category: 'tasks' },
-  { value: 'Plus', label: 'Plus', Icon: Plus, category: 'tasks' },
-];
+// ICON_OPTIONS agora vem de @/lib/iconRegistry (single source of truth)
 
 // ============================================================================
 // ICON PICKER COMPONENT
@@ -740,7 +610,7 @@ export default function CustomizeSidebarPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {sections.map((section, index) => {
-                  const Icon = ICON_OPTIONS.find(o => o.value === section.icon)?.Icon || Home;
+                  const Icon = getIconComponent(section.icon);
                   return (
                     <div key={section.id} className="space-y-2">
                       <div
@@ -852,7 +722,7 @@ export default function CustomizeSidebarPage() {
                       {section.children.length > 0 && (
                         <div className="ml-12 pl-4 border-l-2 space-y-1">
                           {section.children.map(item => {
-                            const ItemIcon = ICON_OPTIONS.find(o => o.value === item.icon)?.Icon || FileText;
+                            const ItemIcon = getIconComponent(item.icon);
                             const isSystemFixed = isItemFixed(section.id, item.id);
                             const canDelete = !isSystemFixed && (section.type === 'custom' || isAdmin);
                             
@@ -974,7 +844,7 @@ export default function CustomizeSidebarPage() {
                     <p className="text-xs font-medium mb-2">Rail</p>
                     <div className="bg-slate-900 rounded-lg p-3 flex flex-col items-center gap-2">
                       {sections.filter(s => s.enabled).sort((a,b) => a.order - b.order).map(s => {
-                        const Icon = ICON_OPTIONS.find(o => o.value === s.icon)?.Icon || Home;
+                        const Icon = getIconComponent(s.icon);
                         return <div key={s.id} className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/10" style={{color: s.color}} title={s.tooltip}><Icon className="h-5 w-5" /></div>;
                       })}
                     </div>
@@ -984,12 +854,12 @@ export default function CustomizeSidebarPage() {
                     <p className="text-xs font-medium mb-2">Sidebar</p>
                     <div className="border rounded-lg p-3 max-h-[400px] overflow-y-auto space-y-1">
                       {sections.filter(s => s.enabled).sort((a,b) => a.order - b.order).map(s => {
-                        const Icon = ICON_OPTIONS.find(o => o.value === s.icon)?.Icon || Home;
+                        const Icon = getIconComponent(s.icon);
                         return s.children.filter(c => c.enabled).length > 0 ? (
                           <div key={s.id}>
                             <div className="flex items-center gap-2 px-2 py-1 text-xs font-medium text-muted-foreground"><Icon className="h-3 w-3" />{s.label}</div>
                             {s.children.filter(c => c.enabled).map(i => {
-                              const IIcon = ICON_OPTIONS.find(o => o.value === i.icon)?.Icon || FileText;
+                              const IIcon = getIconComponent(i.icon);
                               return <div key={i.id} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-accent"><IIcon className="h-4 w-4" />{i.label}</div>;
                             })}
                           </div>
@@ -1029,7 +899,7 @@ export default function CustomizeSidebarPage() {
                         {sections.map(section => {
                           if (section.children.length === 0) return null;
                           
-                          const SectionIcon = ICON_OPTIONS.find(o => o.value === section.icon)?.Icon || Home;
+                          const SectionIcon = getIconComponent(section.icon);
                           
                           return (
                             <div key={section.id} className="space-y-2">
@@ -1039,7 +909,7 @@ export default function CustomizeSidebarPage() {
                               </div>
                               <div className="ml-6 space-y-1">
                                 {section.children.map(item => {
-                                  const ItemIcon = ICON_OPTIONS.find(o => o.value === item.icon)?.Icon || FileText;
+                                  const ItemIcon = getIconComponent(item.icon);
                                   const isSystemFixed = isItemFixed(section.id, item.id);
                                   
                                   return (
