@@ -60,6 +60,9 @@ import {
   Trash,
   Clock,
   FileText,
+  Kanban,
+  Lock,
+  Plus,
 } from 'lucide-react';
 import { ICON_OPTIONS, getIconComponent } from '@/lib/iconRegistry';
 import { cn } from '@/lib/utils';
