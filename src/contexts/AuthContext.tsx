@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useRef } fro
 import { User as SupabaseUser, Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { User } from '@/lib/types'
+import { ProfileDB } from '@/lib/databaseTypes'
 import { getAuthSettings } from '@/services/settingsService'
 
 interface AuthContextType {
@@ -53,6 +54,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  // Helper function to map ProfileDB to User type
+  const mapProfileDBToUser = (profile: ProfileDB): User => ({
+    id: profile.id,
+    name: profile.name ?? '',
+    email: profile.email ?? '',
+    role: (profile.role as User['role']) ?? 'client',
+    avatar: profile.avatar_url ?? undefined,
+    avatar_url: profile.avatar_url ?? undefined,
+    avatarBgColor: profile.avatar_bg_color ?? undefined,
+    avatarTextColor: profile.avatar_text_color ?? undefined,
+    avatarBorderColor: profile.avatar_border_color ?? undefined,
+    bannerStyle: profile.banner_style ?? undefined,
+    clientEntity: profile.client_entity ?? undefined,
+    has_completed_onboarding: profile.has_completed_onboarding ?? undefined,
+    createdAt: profile.created_at,
+    updatedAt: profile.updated_at,
+    address: profile.address ?? undefined,
+    cellphone: profile.cellphone ?? undefined,
+    pixKeyPJ: profile.pix_key_pj ?? undefined,
+    pixKeyPF: profile.pix_key_pf ?? undefined,
+    rg: profile.rg ?? undefined,
+    cpf: profile.cpf ?? undefined,
+    secondaryEmail: profile.secondary_email ?? undefined,
+    docIdentityUrl: profile.doc_identity_url ?? undefined,
+    docSocialContractUrl: profile.doc_social_contract_url ?? undefined,
+    docServiceAgreementUrl: profile.doc_service_agreement_url ?? undefined,
+    title: profile.title ?? undefined,
+    department: profile.department ?? undefined,
+    birthDate: profile.birth_date ?? undefined,
+    linkedin: profile.linkedin ?? undefined,
+    bio: profile.bio ?? undefined,
+    status: profile.status as User['status'],
+    lastLogin: profile.last_login ?? undefined,
+  })
+
   const fetchProfile = async (userId: string, userEmail?: string) => {
     // Cache de memória
     if (loadedProfileId.current === userId && profile) return;
@@ -86,28 +122,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
             .single();
 
           if (newProfile) {
-            setProfile({ 
-              ...newProfile, 
-              avatar: newProfile.avatar_url,
-              avatarBgColor: newProfile.avatar_bg_color,
-              avatarTextColor: newProfile.avatar_text_color,
-              avatarBorderColor: newProfile.avatar_border_color,
-              bannerStyle: newProfile.banner_style,
-            });
+            const profileRow = newProfile as unknown as ProfileDB;
+            setProfile(mapProfileDBToUser(profileRow));
             loadedProfileId.current = userId;
           }
         } else {
           console.error('Erro ao buscar perfil:', error);
         }
       } else if (data) {
-        setProfile({ 
-          ...data, 
-          avatar: data.avatar_url,
-          avatarBgColor: data.avatar_bg_color,
-          avatarTextColor: data.avatar_text_color,
-          avatarBorderColor: data.avatar_border_color,
-          bannerStyle: data.banner_style,
-        });
+        const profileRow = data as unknown as ProfileDB;
+        setProfile(mapProfileDBToUser(profileRow));
         loadedProfileId.current = userId;
       }
     } catch (err) {

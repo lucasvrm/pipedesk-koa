@@ -8,6 +8,15 @@ import {
 } from '@/lib/types';
 import { Stage } from '@/types/metadata';
 import { DateRange } from '@/utils/dateRangeUtils';
+import { 
+    MasterDealDB, 
+    PlayerTrackDB, 
+    TaskDB, 
+    StageHistoryDB, 
+    PipelineStageDB,
+    ProfileDB,
+    LeadDB
+} from '@/lib/databaseTypes';
 
 // ============================================================================
 // Types
@@ -44,8 +53,8 @@ export async function getAnalyticsSummary(
                 .from('pipeline_stages')
                 .select('id, name, probability, pipeline_id, color, stage_order, is_default, active, created_at, updated_at');
             
-            // Safe fallback for stages data
-            const safeStagesData = stagesData ?? [];
+            // Safe fallback for stages data with proper typing
+            const safeStagesData = (stagesData ?? []) as unknown as PipelineStageDB[];
             stages = safeStagesData.map(s => ({
                 id: s.id,
                 pipelineId: s.pipeline_id,
@@ -88,8 +97,8 @@ export async function getAnalyticsSummary(
         const { data: deals, error: dealsError } = await dealsQuery;
         if (dealsError) throw dealsError;
 
-        // Safe fallback for deals
-        const safeDeals = deals ?? [];
+        // Safe fallback for deals with proper typing
+        const safeDeals = (deals ?? []) as unknown as MasterDealDB[];
         const dealIds = safeDeals.map(d => d.id);
         let tracksQuery = supabase.from('player_tracks').select('*');
         if (dealIds.length > 0) tracksQuery = tracksQuery.in('master_deal_id', dealIds);
@@ -97,8 +106,8 @@ export async function getAnalyticsSummary(
         const { data: tracks, error: tracksError } = await tracksQuery;
         if (tracksError) throw tracksError;
 
-        // Safe fallback for tracks
-        const safeTracks = tracks ?? [];
+        // Safe fallback for tracks with proper typing
+        const safeTracks = (tracks ?? []) as unknown as PlayerTrackDB[];
 
         // Filtro de Time (Client-side para arrays)
         const filteredTracks = teamFilter === 'all'
@@ -112,9 +121,9 @@ export async function getAnalyticsSummary(
         const { data: tasks, error: tasksError } = await supabase.from('tasks').select('*').eq('completed', false);
         if (tasksError) throw tasksError;
 
-        // Safe fallbacks for history and tasks
-        const safeHistory = history ?? [];
-        const safeTasks = tasks ?? [];
+        // Safe fallbacks for history and tasks with proper typing
+        const safeHistory = (history ?? []) as unknown as StageHistoryDB[];
+        const safeTasks = (tasks ?? []) as unknown as TaskDB[];
 
         // 3. Calcular Métricas
         const activeDeals = safeDeals.filter(d => d.status === 'active').length;
@@ -151,6 +160,9 @@ export async function getAnalyticsSummary(
         // Carga de Trabalho da Equipe
         let teamWorkload: { userId: string; userName: string; activeTracks: number; activeTasks: number }[] = [];
         
+        // Type for partial profile data used in analytics
+        type ProfilePartial = Pick<ProfileDB, 'id' | 'name' | 'role'>;
+        
         // Use provided team members or fetch based on roles
         if (options?.teamMembers && options.teamMembers.length > 0) {
             const { data: users } = await supabase
@@ -158,8 +170,8 @@ export async function getAnalyticsSummary(
                 .select('id, name')
                 .in('id', options.teamMembers);
 
-            // Safe fallback for users
-            const safeUsers = users ?? [];
+            // Safe fallback for users with proper typing
+            const safeUsers = (users ?? []) as unknown as ProfilePartial[];
             teamWorkload = safeUsers.map(user => {
                 const userTracks = filteredTracks.filter(t =>
                     t.status === 'active' && Array.isArray(t.responsibles) && t.responsibles.includes(user.id)
@@ -171,7 +183,7 @@ export async function getAnalyticsSummary(
 
                 return {
                     userId: user.id,
-                    userName: user.name,
+                    userName: user.name ?? '',
                     activeTracks: userTracks,
                     activeTasks: userTasks
                 };
@@ -183,8 +195,8 @@ export async function getAnalyticsSummary(
                 .select('id, name, role')
                 .in('role', ['analyst', 'admin', 'newbusiness']);
 
-            // Safe fallback for users
-            const safeUsers = users ?? [];
+            // Safe fallback for users with proper typing
+            const safeUsers = (users ?? []) as unknown as ProfilePartial[];
             teamWorkload = safeUsers.map(user => {
                 const userTracks = filteredTracks.filter(t =>
                     t.status === 'active' && Array.isArray(t.responsibles) && t.responsibles.includes(user.id)
@@ -196,7 +208,7 @@ export async function getAnalyticsSummary(
 
                 return {
                     userId: user.id,
-                    userName: user.name,
+                    userName: user.name ?? '',
                     activeTracks: userTracks,
                     activeTasks: userTasks
                 };
@@ -318,8 +330,11 @@ export async function getAnalyticsSummary(
             .from('leads')
             .select('id, lead_origin_id, qualified_master_deal_id');
 
-        // Safe fallback for leads
-        const safeLeadsData = leadsData ?? [];
+        // Type for partial lead data used in analytics
+        type LeadPartial = Pick<LeadDB, 'id' | 'lead_origin_id' | 'qualified_master_deal_id'>;
+        
+        // Safe fallback for leads with proper typing
+        const safeLeadsData = (leadsData ?? []) as unknown as LeadPartial[];
         const leadOriginMap: Record<string, { total: number; converted: number; volumes: number[] }> = {};
         
         safeLeadsData.forEach(lead => {
