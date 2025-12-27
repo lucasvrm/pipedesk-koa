@@ -107,7 +107,13 @@ export function CreateDealDialog({
 
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = isControlled ? setControlledOpen : setInternalOpen;
+  const setOpen = (value: boolean) => {
+    if (isControlled && setControlledOpen) {
+      setControlledOpen(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
 
   const defaultStageId = stages.find(s => s.isDefault)?.id || stages[0]?.id || '';
 

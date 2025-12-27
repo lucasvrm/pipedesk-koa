@@ -416,7 +416,7 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                                 <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
                                 <CommandGroup>
                                   {users?.map(user => {
-                                    const isSelected = field.value.includes(user.id)
+                                    const isSelected = (field.value ?? []).includes(user.id)
                                     if (isSelected) return null // Não mostra quem já está
                                     return (
                                       <CommandItem key={user.id} onSelect={() => toggleUser(user.id)}>
@@ -443,10 +443,10 @@ export function EditDealDialog({ deal, open, onOpenChange }: EditDealDialogProps
                       </FormLabel>
                       
                       <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/20 rounded-md border border-dashed">
-                        {field.value.length === 0 ? (
+                        {(field.value ?? []).length === 0 ? (
                           <span className="text-xs text-muted-foreground p-1">Nenhum membro atribuído.</span>
                         ) : (
-                          field.value.map(userId => {
+                          (field.value ?? []).map(userId => {
                             const user = users?.find(u => u.id === userId)
                             return (
                               <Badge key={userId} variant="secondary" className="pl-1 pr-2 py-1 gap-2 flex items-center">
