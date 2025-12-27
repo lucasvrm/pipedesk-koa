@@ -31,15 +31,17 @@ export function BrandMark({ variant = 'header', className }: BrandMarkProps) {
   }
 
   if (logoUrl) {
+    const variantImageClasses = {
+      header: 'h-8 w-auto object-contain',
+      login: 'h-12 w-auto object-contain mx-auto block',
+    }
+
     return (
       <img
         src={logoUrl}
         alt="Logo"
-        className={cn(
-          'max-h-8 w-auto object-contain',
-          variant === 'login' && 'max-h-12',
-          className
-        )}
+        data-testid="brandmark-img"
+        className={cn(variantImageClasses[variant], className)}
       />
     )
   }

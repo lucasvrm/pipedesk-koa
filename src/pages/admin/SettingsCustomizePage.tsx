@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Upload, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Upload, Trash2, Image as ImageIcon, Loader2, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { StandardPageLayout } from '@/components/layouts'
+import { format } from 'date-fns'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 
@@ -286,89 +287,163 @@ export default function SettingsCustomizePage() {
             Formatos aceitos: PNG, JPG, SVG (máx. 2MB)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Preview */}
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "w-32 h-32 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden",
-              logoData?.url ? "border-border bg-muted" : "border-muted-foreground/25 bg-muted/50"
-            )}>
-              {logoData?.url ? (
-                <img
-                  src={logoData.url}
-                  alt="Logo preview"
-                  className="max-w-full max-h-full object-contain"
-                />
-              ) : (
-                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-              )}
-            </div>
-            <div className="flex-1 space-y-2">
-              {logoData?.url && (
-                <p className="text-sm text-muted-foreground">
-                  Logo atual configurado
-                </p>
-              )}
-              {!logoData?.url && (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum logo configurado. O sistema usará "PipeDesk" como texto.
-                </p>
-              )}
-            </div>
-          </div>
+        <CardContent className="space-y-6">
+          {logoData?.url ? (
+            <>
+              {/* Preview: Como aparece no topo */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Como aparece no topo</Label>
+                <div className="border rounded-lg bg-card h-16 px-4 flex items-center">
+                  <img
+                    src={logoData.url}
+                    alt="Logo preview no header"
+                    className="h-8 w-auto object-contain"
+                  />
+                </div>
+              </div>
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Label htmlFor="logo-upload">
-              <Button
-                variant="default"
-                disabled={logoUploading || logoRemoving}
-                asChild
-              >
-                <span>
-                  {logoUploading ? (
+              {/* Preview: Como aparece no login */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Como aparece no login</Label>
+                <div className="border rounded-lg bg-card p-6">
+                  <div className="text-center space-y-2">
+                    <img
+                      src={logoData.url}
+                      alt="Logo preview no login"
+                      className="h-12 w-auto object-contain mx-auto block"
+                    />
+                    <p className="text-sm text-muted-foreground">Sistema de DealFlow da Koa Capital.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metadata */}
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Tipo:</span>
+                  <span className="font-mono">{logoData.contentType || 'N/A'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Atualizado:</span>
+                  <span>{logoData.updatedAt ? format(new Date(logoData.updatedAt), 'dd/MM/yyyy HH:mm') : 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <a href={logoData.url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Abrir em nova aba
+                  </a>
+                </Button>
+                
+                <Label htmlFor="logo-upload">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={logoUploading || logoRemoving}
+                    asChild
+                  >
+                    <span>
+                      {logoUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Substituir
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </Label>
+                <Input
+                  id="logo-upload"
+                  type="file"
+                  accept={LOGO_ALLOWED_TYPES.join(',')}
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                  disabled={logoUploading || logoRemoving}
+                />
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleLogoRemove}
+                  disabled={logoUploading || logoRemoving}
+                >
+                  {logoRemoving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
+                      Removendo...
                     </>
                   ) : (
                     <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      {logoData?.url ? 'Substituir Logo' : 'Enviar Logo'}
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Remover
                     </>
                   )}
-                </span>
-              </Button>
-            </Label>
-            <Input
-              id="logo-upload"
-              type="file"
-              accept={LOGO_ALLOWED_TYPES.join(',')}
-              className="hidden"
-              onChange={handleLogoUpload}
-              disabled={logoUploading || logoRemoving}
-            />
-            
-            {logoData?.url && (
-              <Button
-                variant="destructive"
-                onClick={handleLogoRemove}
-                disabled={logoUploading || logoRemoving}
-              >
-                {logoRemoving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Removendo...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Remover
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Empty State */}
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "w-32 h-32 rounded-lg border-2 border-dashed flex items-center justify-center",
+                  "border-muted-foreground/25 bg-muted/50"
+                )}>
+                  <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum logo configurado. O sistema usará "PipeDesk" como texto.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Label htmlFor="logo-upload">
+                  <Button
+                    variant="default"
+                    disabled={logoUploading || logoRemoving}
+                    asChild
+                  >
+                    <span>
+                      {logoUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Enviar Logo
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </Label>
+                <Input
+                  id="logo-upload"
+                  type="file"
+                  accept={LOGO_ALLOWED_TYPES.join(',')}
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                  disabled={logoUploading || logoRemoving}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -381,89 +456,149 @@ export default function SettingsCustomizePage() {
             Formatos aceitos: PNG, ICO, SVG (máx. 2MB)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Preview */}
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden",
-              faviconData?.url ? "border-border bg-muted" : "border-muted-foreground/25 bg-muted/50"
-            )}>
-              {faviconData?.url ? (
-                <img
-                  src={faviconData.url}
-                  alt="Favicon preview"
-                  className="max-w-full max-h-full object-contain"
-                />
-              ) : (
-                <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
-              )}
-            </div>
-            <div className="flex-1 space-y-2">
-              {faviconData?.url && (
-                <p className="text-sm text-muted-foreground">
-                  Favicon atual configurado e aplicado no navegador
-                </p>
-              )}
-              {!faviconData?.url && (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum favicon configurado. O sistema usará o ícone padrão.
-                </p>
-              )}
-            </div>
-          </div>
+        <CardContent className="space-y-6">
+          {faviconData?.url ? (
+            <>
+              {/* Preview: Como aparece na aba */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Como aparece na aba do navegador</Label>
+                <div className="border rounded-md bg-card px-3 py-2 flex items-center gap-2 w-fit">
+                  <img
+                    src={faviconData.url}
+                    alt="Favicon preview"
+                    className="h-4 w-4 object-contain"
+                  />
+                  <span className="text-sm">PipeDesk</span>
+                </div>
+              </div>
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Label htmlFor="favicon-upload">
-              <Button
-                variant="default"
-                disabled={faviconUploading || faviconRemoving}
-                asChild
-              >
-                <span>
-                  {faviconUploading ? (
+              {/* Metadata */}
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Tipo:</span>
+                  <span className="font-mono">{faviconData.contentType || 'N/A'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Atualizado:</span>
+                  <span>{faviconData.updatedAt ? format(new Date(faviconData.updatedAt), 'dd/MM/yyyy HH:mm') : 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <a href={faviconData.url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Abrir em nova aba
+                  </a>
+                </Button>
+                
+                <Label htmlFor="favicon-upload">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={faviconUploading || faviconRemoving}
+                    asChild
+                  >
+                    <span>
+                      {faviconUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Substituir
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </Label>
+                <Input
+                  id="favicon-upload"
+                  type="file"
+                  accept={FAVICON_ALLOWED_TYPES.join(',')}
+                  className="hidden"
+                  onChange={handleFaviconUpload}
+                  disabled={faviconUploading || faviconRemoving}
+                />
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleFaviconRemove}
+                  disabled={faviconUploading || faviconRemoving}
+                >
+                  {faviconRemoving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
+                      Removendo...
                     </>
                   ) : (
                     <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      {faviconData?.url ? 'Substituir Favicon' : 'Enviar Favicon'}
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Remover
                     </>
                   )}
-                </span>
-              </Button>
-            </Label>
-            <Input
-              id="favicon-upload"
-              type="file"
-              accept={FAVICON_ALLOWED_TYPES.join(',')}
-              className="hidden"
-              onChange={handleFaviconUpload}
-              disabled={faviconUploading || faviconRemoving}
-            />
-            
-            {faviconData?.url && (
-              <Button
-                variant="destructive"
-                onClick={handleFaviconRemove}
-                disabled={faviconUploading || faviconRemoving}
-              >
-                {faviconRemoving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Removendo...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Remover
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Empty State */}
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center",
+                  "border-muted-foreground/25 bg-muted/50"
+                )}>
+                  <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum favicon configurado. O sistema usará o ícone padrão.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Label htmlFor="favicon-upload">
+                  <Button
+                    variant="default"
+                    disabled={faviconUploading || faviconRemoving}
+                    asChild
+                  >
+                    <span>
+                      {faviconUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Enviar Favicon
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </Label>
+                <Input
+                  id="favicon-upload"
+                  type="file"
+                  accept={FAVICON_ALLOWED_TYPES.join(',')}
+                  className="hidden"
+                  onChange={handleFaviconUpload}
+                  disabled={faviconUploading || faviconRemoving}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </StandardPageLayout>
