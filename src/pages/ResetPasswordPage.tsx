@@ -145,9 +145,9 @@ export default function ResetPasswordPage() {
   const getStrengthConfig = (strength: PasswordStrength) => {
     const configs = {
       weak: { label: 'Fraca', color: 'bg-destructive', width: 'w-1/4' },
-      fair: { label: 'Razoável', color: 'bg-yellow-500', width: 'w-2/4' },
-      good: { label: 'Boa', color: 'bg-blue-500', width: 'w-3/4' },
-      strong: { label: 'Forte', color: 'bg-green-500', width: 'w-full' },
+      fair: { label: 'Razoável', color: 'bg-secondary', width: 'w-2/4' },
+      good: { label: 'Boa', color: 'bg-accent', width: 'w-3/4' },
+      strong: { label: 'Forte', color: 'bg-success', width: 'w-full' },
     }
     return configs[strength]
   }
@@ -222,8 +222,8 @@ export default function ResetPasswordPage() {
           
           <Card className="shadow-lg border">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 bg-green-500/10 w-16 h-16 rounded-full flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              <div className="mx-auto mb-4 bg-success/10 w-16 h-16 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-success" />
               </div>
               <CardTitle className="text-2xl font-bold">Senha Alterada!</CardTitle>
               <CardDescription className="text-base">
@@ -314,9 +314,9 @@ export default function ResetPasswordPage() {
                       <span className={cn(
                         "font-medium",
                         passwordStrength === 'weak' && "text-destructive",
-                        passwordStrength === 'fair' && "text-yellow-600",
-                        passwordStrength === 'good' && "text-blue-600",
-                        passwordStrength === 'strong' && "text-green-600"
+                        passwordStrength === 'fair' && "text-secondary-foreground",
+                        passwordStrength === 'good' && "text-accent-foreground",
+                        passwordStrength === 'strong' && "text-success-foreground"
                       )}>
                         {getStrengthConfig(passwordStrength).label}
                       </span>
@@ -338,7 +338,7 @@ export default function ResetPasswordPage() {
                   {PASSWORD_REQUIREMENTS.map((req, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm">
                       {requirementsMet[index] ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-success-foreground flex-shrink-0" />
                       ) : (
                         <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       )}
