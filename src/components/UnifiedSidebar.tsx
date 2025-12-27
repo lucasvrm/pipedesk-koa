@@ -185,6 +185,12 @@ const getMenuSections = (
                 { id: 'automation', label: 'Automação', section: 'automation' },
               ]
             },
+            { 
+              id: 'customize', 
+              label: 'Customização', 
+              icon: Palette, 
+              path: '/admin/settings/customize'
+            },
           ] : [];
         } else if (section.id === 'dashboard') {
           items = section.children
@@ -379,6 +385,12 @@ const getMenuSections = (
           { id: 'automation', label: 'Automação', section: 'automation' },
         ]
       },
+      { 
+        id: 'customize', 
+        label: 'Customização', 
+        icon: Palette, 
+        path: '/admin/settings/customize'
+      },
     ] : [],
   },
 ];
@@ -486,6 +498,9 @@ export function UnifiedSidebar({ activeSection: propActiveSection, activeItem: p
     if (path === '/profile/customize') return { activeSection: 'profile' as SectionId, activeItem: 'customize' };
     if (path === '/profile/activity') return { activeSection: 'profile' as SectionId, activeItem: 'activity' };
     if (path === '/profile/security') return { activeSection: 'profile' as SectionId, activeItem: 'security' };
+    if (path === '/admin/settings/customize') {
+      return { activeSection: 'settings' as SectionId, activeItem: 'customize' };
+    }
     if (path.startsWith('/admin/settings')) {
       return { activeSection: 'settings' as SectionId, activeItem: category || 'crm' };
     }

@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ImpersonationProvider } from './contexts/ImpersonationContext.tsx'
 import { SystemMetadataProvider } from './contexts/SystemMetadataContext.tsx'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
+import { BrandingApplier } from './components/BrandingApplier'
 
 import "./main.css"
 import "./styles/theme.css"
@@ -54,6 +55,7 @@ createRoot(document.getElementById('root')!).render(
           <AuthProvider>
             <ImpersonationProvider>
               <SystemMetadataProvider>
+                <BrandingApplier />
                 <App />
                 <ReactQueryDevtools initialIsOpen={false} />
               </SystemMetadataProvider>
