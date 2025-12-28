@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { DndContext, PointerSensor, useDroppable, useSensor, useSensors, DragEndEvent, closestCorners } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -21,9 +21,11 @@ import { useNavigate } from 'react-router-dom'
 interface LeadsKanbanProps {
   leads: Lead[]
   isLoading?: boolean
+  /** Optional ref to expose the horizontal scroll container to parent for external mirror scrollbar */
+  kanbanScrollRef?: React.RefObject<HTMLDivElement>
 }
 
-export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
+export function LeadsKanban({ leads, isLoading, kanbanScrollRef }: LeadsKanbanProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { leadStatuses, getLeadStatusById, getLeadStatusByCode, getLeadOriginById } = useSystemMetadata()
@@ -32,6 +34,11 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
       activationConstraint: { distance: 8 },
     })
   )
+
+  // Internal ref for scroll container, used if no external ref is provided
+  const internalScrollRef = useRef<HTMLDivElement>(null)
+  // Use external ref if provided, otherwise internal
+  const scrollContainerRef = kanbanScrollRef ?? internalScrollRef
 
   // Use metadata for columns with dynamic colors
   const columns = useMemo(() => {
@@ -244,7 +251,11 @@ export function LeadsKanban({ leads, isLoading }: LeadsKanbanProps) {
         </div>
       </div>
 
-      <div className="w-full flex gap-3 overflow-x-auto pb-4 px-4">
+      <div 
+        ref={scrollContainerRef}
+        className="w-full flex gap-3 overflow-x-auto pb-4 px-4"
+        data-testid="leads-kanban-scroll"
+      >
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
           {columns.map(column => (
             <SortableContext

@@ -181,6 +181,9 @@ export default function LeadsListPage() {
   
   // Ref for the horizontal scroll container in the sales table (for external mirror scrollbar)
   const salesTableScrollRef = useRef<HTMLDivElement>(null)
+  
+  // Ref for the horizontal scroll container in the kanban (for external mirror scrollbar)
+  const kanbanScrollRef = useRef<HTMLDivElement>(null)
 
   // Grid/Kanban pagination state (not URL-based)
   const [gridCurrentPage, setGridCurrentPage] = useState(1)
@@ -876,7 +879,7 @@ export default function LeadsListPage() {
                   }}
                 />
               ) : currentView === 'kanban' ? (
-                <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} />
+                <LeadsKanban leads={activeLeads as Lead[] || []} isLoading={isLoading} kanbanScrollRef={kanbanScrollRef} />
               ) : (
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -964,9 +967,12 @@ export default function LeadsListPage() {
           )}
         </div>
 
-        {/* Fixed footer horizontal scrollbar mirror - only for sales view when table has horizontal overflow */}
+        {/* Fixed footer horizontal scrollbar mirror - for sales and kanban views when table/kanban has horizontal overflow */}
         {currentView === 'sales' && (
           <HorizontalScrollbarMirror targetRef={salesTableScrollRef} />
+        )}
+        {currentView === 'kanban' && (
+          <HorizontalScrollbarMirror targetRef={kanbanScrollRef} />
         )}
 
           </div>
