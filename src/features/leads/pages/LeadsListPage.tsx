@@ -967,12 +967,16 @@ export default function LeadsListPage() {
           )}
         </div>
 
-        {/* Fixed footer horizontal scrollbar mirror - for sales and kanban views when table/kanban has horizontal overflow */}
+        {/* Fixed footer horizontal scrollbar mirror - OUTSIDE vertical scroll, fixed at bottom */}
         {currentView === 'sales' && (
-          <HorizontalScrollbarMirror targetRef={salesTableScrollRef} />
+          <div className="flex-shrink-0">
+            <HorizontalScrollbarMirror targetRef={salesTableScrollRef} />
+          </div>
         )}
         {currentView === 'kanban' && (
-          <HorizontalScrollbarMirror targetRef={kanbanScrollRef} />
+          <div className="flex-shrink-0">
+            <HorizontalScrollbarMirror targetRef={kanbanScrollRef} />
+          </div>
         )}
 
           </div>
